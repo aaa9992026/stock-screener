@@ -262,6 +262,9 @@ def get_fundamentals(
 def get_indicators(
     symbol: str,
     exchange: str = "US",
+    sma_short: int = 20,
+    sma_long: int = 50,
+    rsi_period: int = 14,
     db: Session = Depends(get_db)
 ):
     rows = (
@@ -274,24 +277,23 @@ def get_indicators(
         .all()
     )
 
-    if len(rows) < 20:
-        raise HTTPException(
-            status_code=404,
-            detail="Not enough historical data for indicators"
-        )
-
     closes = [float(r.close) for r in rows]
 
-    sma_20 = sum(closes[-20:]) / 20
+    minimum_required = max(sma_short, sma_long, rsi_period + 1)
 
-    sma_50 = None
-    if len(closes) >= 50:
-        sma_50 = sum(closes[-50:]) / 50
+    if len(closes) < minimum_required:
+        raise HTTPException(
+            status_code=404,
+            detail="Not enough historical data for selected indicator settings"
+        )
+
+    sma_short_value = sum(closes[-sma_short:]) / sma_short
+    sma_long_value = sum(closes[-sma_long:]) / sma_long
 
     gains = []
     losses = []
 
-    for i in range(-14, 0):
+    for i in range(-rsi_period, 0):
         change = closes[i] - closes[i - 1]
 
         if change > 0:
@@ -301,19 +303,24 @@ def get_indicators(
             gains.append(0)
             losses.append(abs(change))
 
-    avg_gain = sum(gains) / 14
-    avg_loss = sum(losses) / 14
+    avg_gain = sum(gains) / rsi_period
+    avg_loss = sum(losses) / rsi_period
 
     if avg_loss == 0:
-        rsi_14 = 100
+        rsi_value = 100
     else:
         rs = avg_gain / avg_loss
-        rsi_14 = 100 - (100 / (1 + rs))
+        rsi_value = 100 - (100 / (1 + rs))
 
     return {
         "symbol": symbol.upper(),
         "exchange": exchange.upper(),
-        "sma_20": round(sma_20, 2),
-        "sma_50": round(sma_50, 2) if sma_50 else None,
-        "rsi_14": round(rsi_14, 2)
+        "settings": {
+            "sma_short": sma_short,
+            "sma_long": sma_long,
+            "rsi_period": rsi_period
+        },
+        "sma_short": round(sma_short_value, 2),
+        "sma_long": round(sma_long_value, 2),
+        "rsi": round(rsi_value, 2)
     }
