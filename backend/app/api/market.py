@@ -290,6 +290,18 @@ def get_indicators(
     sma_short_value = sum(closes[-sma_short:]) / sma_short
     sma_long_value = sum(closes[-sma_long:]) / sma_long
 
+    def calculate_ema(values, period):
+        multiplier = 2 / (period + 1)
+        ema = sum(values[:period]) / period
+
+        for price in values[period:]:
+            ema = (price - ema) * multiplier + ema
+
+        return ema
+
+    ema_short_value = calculate_ema(closes, sma_short)
+    ema_long_value = calculate_ema(closes, sma_long)
+
     gains = []
     losses = []
 
@@ -322,5 +334,7 @@ def get_indicators(
         },
         "sma_short": round(sma_short_value, 2),
         "sma_long": round(sma_long_value, 2),
-        "rsi": round(rsi_value, 2)
+        "rsi": round(rsi_value, 2),
+        "ema_short": round(ema_short_value, 2),
+        "ema_long": round(ema_long_value, 2)
     }
