@@ -472,7 +472,9 @@ function App() {
               <div className="metric">
                 <span>Market Cap</span>
                 <strong>
-                  ${(fundamentals.fundamentals.market_cap / 1e9).toFixed(2)}B
+                  {fundamentals.fundamentals.market_cap != null
+                    ? `$${(fundamentals.fundamentals.market_cap / 1e9).toFixed(2)}B`
+                    : "-"}
                 </strong>
               </div>
 
@@ -484,44 +486,90 @@ function App() {
               </div>
 
               <div className="metric">
+                <span>Forward EPS</span>
+                <strong>
+                  {fundamentals.fundamentals.forward_eps ?? "-"}
+                </strong>
+              </div>
+
+              <div className="metric">
                 <span>Revenue</span>
                 <strong>
-                  ${(fundamentals.fundamentals.revenue / 1e9).toFixed(2)}B
+                  {fundamentals.fundamentals.revenue != null
+                    ? `$${(fundamentals.fundamentals.revenue / 1e9).toFixed(2)}B`
+                    : "-"}
                 </strong>
               </div>
 
               <div className="metric">
                 <span>Net Income</span>
                 <strong>
-                  ${(fundamentals.fundamentals.net_income / 1e9).toFixed(2)}B
+                  {fundamentals.fundamentals.net_income != null
+                    ? `$${(fundamentals.fundamentals.net_income / 1e9).toFixed(2)}B`
+                    : "-"}
                 </strong>
               </div>
 
               <div className="metric">
                 <span>Profit Margin</span>
                 <strong>
-                  {(fundamentals.fundamentals.profit_margin * 100).toFixed(2)}%
+                  {fundamentals.fundamentals.profit_margin != null
+                    ? `${(fundamentals.fundamentals.profit_margin * 100).toFixed(2)}%`
+                    : "-"}
                 </strong>
               </div>
 
               <div className="metric">
                 <span>ROE</span>
                 <strong>
-                  {(fundamentals.fundamentals.return_on_equity * 100).toFixed(2)}%
+                  {fundamentals.fundamentals.return_on_equity != null
+                    ? `${(fundamentals.fundamentals.return_on_equity * 100).toFixed(2)}%`
+                    : "-"}
+                </strong>
+              </div>
+
+              <div className="metric">
+                <span>ROA</span>
+                <strong>
+                  {fundamentals.fundamentals.return_on_assets != null
+                    ? `${(fundamentals.fundamentals.return_on_assets * 100).toFixed(2)}%`
+                    : "-"}
                 </strong>
               </div>
 
               <div className="metric">
                 <span>Insider Ownership</span>
                 <strong>
-                  {(fundamentals.ownership.insider_percent * 100).toFixed(2)}%
+                  {fundamentals.ownership.insider_percent != null
+                    ? `${(fundamentals.ownership.insider_percent * 100).toFixed(2)}%`
+                    : "-"}
                 </strong>
               </div>
 
               <div className="metric">
                 <span>Institution Ownership</span>
                 <strong>
-                  {(fundamentals.ownership.institution_percent * 100).toFixed(2)}%
+                  {fundamentals.ownership.institution_percent != null
+                    ? `${(fundamentals.ownership.institution_percent * 100).toFixed(2)}%`
+                    : "-"}
+                </strong>
+              </div>
+
+              <div className="metric">
+                <span>Shares Outstanding</span>
+                <strong>
+                  {fundamentals.ownership.shares_outstanding != null
+                    ? `${(fundamentals.ownership.shares_outstanding / 1e9).toFixed(2)}B`
+                    : "-"}
+                </strong>
+              </div>
+
+              <div className="metric">
+                <span>Float Shares</span>
+                <strong>
+                  {fundamentals.ownership.float_shares != null
+                    ? `${(fundamentals.ownership.float_shares / 1e9).toFixed(2)}B`
+                    : "-"}
                 </strong>
               </div>
             </div>
