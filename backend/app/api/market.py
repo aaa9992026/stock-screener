@@ -9,6 +9,7 @@ from app.services.providers.yahoo_provider import YahooProvider
 from app.services.ohlcv_sync import sync_ohlcv
 from app.services.fundamental_sync import sync_fundamental_data
 from app.models import Fundamental, Ownership
+from app.services.providers.bse_provider import BSEProvider
 
 router = APIRouter(prefix="/market", tags=["market"])
 
@@ -30,16 +31,15 @@ def refresh_symbol(
     try:
         provider = YahooProvider()
 
-        rows = provider.get_ohlcv(
-            symbol=symbol,
-            exchange=exchange,
-            start_date="2025-01-01"
-        )
-
-        if exchange.upper() == "BSE" and len(rows) < 10:
-            raise HTTPException(
-                status_code=503,
-                detail="BSE historical feed is currently unavailable or incomplete. Please use another configured provider."
+        if exchange.upper() == "BSE":
+            provider = BSEProvider()
+            rows = provider.get_ohlcv(symbol)
+        else:
+            provider = YahooProvider()
+            rows = provider.get_ohlcv(
+                symbol=symbol,
+                exchange=exchange,
+                start_date="2025-01-01"
             )
 
         if not rows:
