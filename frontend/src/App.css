@@ -370,3 +370,78 @@ th {
 .status.fresh .dot {
   background: #22c55e;
 }
+
+.indicator-settings {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: end;
+  margin-bottom: 22px;
+  padding: 18px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+}
+
+.indicator-settings > div {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 150px;
+}
+
+.indicator-settings label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.indicator-settings input {
+  width: 150px;
+  height: 42px;
+  padding: 0 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #ffffff;
+  font-size: 15px;
+  font-weight: 600;
+  color: #0f172a;
+  outline: none;
+  transition: 0.2s ease;
+}
+
+.indicator-settings input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.indicator-settings button {
+  height: 42px;
+  padding: 0 22px;
+  border: none;
+  border-radius: 10px;
+  background: #2563eb;
+  color: white;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.indicator-settings button:hover {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+@media (max-width: 700px) {
+  .indicator-settings {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .indicator-settings > div,
+  .indicator-settings input,
+  .indicator-settings button {
+    width: 100%;
+  }
+}
