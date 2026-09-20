@@ -257,3 +257,63 @@ def get_fundamentals(
             "float_shares": ownership.float_shares if ownership else None,
         }
     }
+
+@router.get("/indicators/{symbol}")
+def get_indicators(
+    symbol: str,
+    exchange: str = "US",
+    db: Session = Depends(get_db)
+):
+    rows = (
+        db.query(OHLCV)
+        .filter(
+            OHLCV.symbol == symbol.upper(),
+            OHLCV.exchange == exchange.upper()
+        )
+        .order_by(OHLCV.date.asc())
+        .all()
+    )
+
+    if len(rows) < 20:
+        raise HTTPException(
+            status_code=404,
+            detail="Not enough historical data for indicators"
+        )
+
+    closes = [float(r.close) for r in rows]
+
+    sma_20 = sum(closes[-20:]) / 20
+
+    sma_50 = None
+    if len(closes) >= 50:
+        sma_50 = sum(closes[-50:]) / 50
+
+    gains = []
+    losses = []
+
+    for i in range(-14, 0):
+        change = closes[i] - closes[i - 1]
+
+        if change > 0:
+            gains.append(change)
+            losses.append(0)
+        else:
+            gains.append(0)
+            losses.append(abs(change))
+
+    avg_gain = sum(gains) / 14
+    avg_loss = sum(losses) / 14
+
+    if avg_loss == 0:
+        rsi_14 = 100
+    else:
+        rs = avg_gain / avg_loss
+        rsi_14 = 100 - (100 / (1 + rs))
+
+    return {
+        "symbol": symbol.upper(),
+        "exchange": exchange.upper(),
+        "sma_20": round(sma_20, 2),
+        "sma_50": round(sma_50, 2) if sma_50 else None,
+        "rsi_14": round(rsi_14, 2)
+    }
