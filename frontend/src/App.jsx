@@ -106,9 +106,33 @@ function App() {
         `${API}/market/chart/${symbol}?exchange=${exchange}&timeframe=${timeframe}&limit=100`
       );
 
-      setData(res.data.data);
-    } catch {
+      const rows = res.data.data || [];
+
+      setData(rows);
+
+      if (rows.length > 0) {
+        setDataStale(false);
+        setDataStatus("fresh");
+        setMessage("");
+      } else {
+        setDataStale(true);
+        setDataStatus("stale");
+        setMessage("No market data is currently available.");
+      }
+
+    } catch (err) {
+      console.error("Chart load error:", err);
+
       setData([]);
+      setDataStale(true);
+      setDataStatus("stale");
+
+      const detail =
+        err.response?.data?.detail ||
+        "Market data could not be loaded.";
+
+      setMessage(detail);
+
     } finally {
       setLoading(false);
     }
