@@ -1,0 +1,259 @@
+from app.models import OHLCV
+
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi import Query
+from sqlalchemy.orm import Session
+
+from app.database import SessionLocal
+from app.services.providers.yahoo_provider import YahooProvider
+from app.services.ohlcv_sync import sync_ohlcv
+from app.services.fundamental_sync import sync_fundamental_data
+from app.models import Fundamental, Ownership
+
+router = APIRouter(prefix="/market", tags=["market"])
+
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+@router.post("/refresh/{symbol}")
+def refresh_symbol(
+    symbol: str,
+    exchange: str = "US",
+    db: Session = Depends(get_db)
+):
+    try:
+        provider = YahooProvider()
+
+        rows = provider.get_ohlcv(
+            symbol=symbol,
+            exchange=exchange,
+            start_date="2025-01-01"
+        )
+
+        if exchange.upper() == "BSE" and len(rows) < 10:
+            raise HTTPException(
+                status_code=503,
+                detail="BSE historical feed is currently unavailable or incomplete. Please use another configured provider."
+            )
+
+        if not rows:
+            raise HTTPException(
+                status_code=404,
+                detail="No market data returned"
+            )
+
+        result = sync_ohlcv(
+            db=db,
+            symbol=symbol.upper(),
+            exchange=exchange.upper(),
+            rows=rows
+        )
+
+        return {
+            "status": "success",
+            "symbol": symbol.upper(),
+            "exchange": exchange.upper(),
+            "records_received": len(rows),
+            **result
+        }
+
+    except HTTPException:
+        raise
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Market data refresh failed: {str(e)}"
+        )
+
+@router.get("/history/{symbol}")
+def get_history(
+    symbol: str,
+    exchange: str = "US",
+    limit: int = 100,
+    db: Session = Depends(get_db)
+):
+    rows = (
+        db.query(OHLCV)
+        .filter(
+            OHLCV.symbol == symbol.upper(),
+            OHLCV.exchange == exchange.upper()
+        )
+        .order_by(OHLCV.date.desc())
+        .limit(limit)
+        .all()
+    )
+
+    return [
+        {
+            "date": row.date,
+            "open": row.open,
+            "high": row.high,
+            "low": row.low,
+            "close": row.close,
+            "volume": row.volume
+        }
+        for row in rows
+    ]
+
+@router.get("/chart/{symbol}")
+def get_chart_data(
+    symbol: str,
+    exchange: str = "US",
+    timeframe: str = Query("daily", pattern="^(daily|weekly|monthly)$"),
+    limit: int = 100,
+    db: Session = Depends(get_db)
+):
+    rows = (
+        db.query(OHLCV)
+        .filter(
+            OHLCV.symbol == symbol.upper(),
+            OHLCV.exchange == exchange.upper()
+        )
+        .order_by(OHLCV.date.asc())
+        .all()
+    )
+
+    if not rows:
+        raise HTTPException(
+            status_code=404,
+            detail="No stored data found"
+        )
+
+    data = [
+        {
+            "date": row.date,
+            "open": row.open,
+            "high": row.high,
+            "low": row.low,
+            "close": row.close,
+            "volume": row.volume
+        }
+        for row in rows
+    ]
+
+    if timeframe == "daily":
+        result = data
+
+    else:
+        import pandas as pd
+
+        df = pd.DataFrame(data)
+        df["date"] = pd.to_datetime(df["date"])
+        df = df.set_index("date")
+
+        rule = "W" if timeframe == "weekly" else "ME"
+
+        df = df.resample(rule).agg({
+            "open": "first",
+            "high": "max",
+            "low": "min",
+            "close": "last",
+            "volume": "sum"
+        }).dropna()
+
+        df = df.reset_index()
+
+        result = df.to_dict(orient="records")
+
+    return {
+        "symbol": symbol.upper(),
+        "exchange": exchange.upper(),
+        "timeframe": timeframe,
+        "count": len(result[-limit:]),
+        "data": result[-limit:]
+    }
+
+@router.post("/fundamentals/{symbol}")
+def refresh_fundamentals(
+    symbol: str,
+    exchange: str = "US",
+    db: Session = Depends(get_db)
+):
+    try:
+        if exchange.upper() != "US":
+            raise HTTPException(
+                status_code=400,
+                detail="Fundamental refresh currently supports US stocks only"
+            )
+
+        provider = YahooProvider()
+        data = provider.get_fundamentals(symbol.upper())
+
+        result = sync_fundamental_data(
+            db=db,
+            symbol=symbol.upper(),
+            exchange="US",
+            data=data
+        )
+
+        return {
+            **result,
+            "fundamentals": data
+        }
+
+    except HTTPException:
+        raise
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Fundamental refresh failed: {str(e)}"
+        )
+
+@router.get("/fundamentals/{symbol}")
+def get_fundamentals(
+    symbol: str,
+    exchange: str = "US",
+    db: Session = Depends(get_db)
+):
+    fundamental = (
+        db.query(Fundamental)
+        .filter(
+            Fundamental.symbol == symbol.upper(),
+            Fundamental.exchange == exchange.upper()
+        )
+        .first()
+    )
+
+    ownership = (
+        db.query(Ownership)
+        .filter(
+            Ownership.symbol == symbol.upper(),
+            Ownership.exchange == exchange.upper()
+        )
+        .first()
+    )
+
+    if not fundamental and not ownership:
+        raise HTTPException(
+            status_code=404,
+            detail="No fundamental data found"
+        )
+
+    return {
+        "symbol": symbol.upper(),
+        "exchange": exchange.upper(),
+        "fundamentals": {
+            "market_cap": fundamental.market_cap if fundamental else None,
+            "trailing_eps": fundamental.trailing_eps if fundamental else None,
+            "forward_eps": fundamental.forward_eps if fundamental else None,
+            "revenue": fundamental.revenue if fundamental else None,
+            "net_income": fundamental.net_income if fundamental else None,
+            "profit_margin": fundamental.profit_margin if fundamental else None,
+            "return_on_equity": fundamental.return_on_equity if fundamental else None,
+            "return_on_assets": fundamental.return_on_assets if fundamental else None,
+        },
+        "ownership": {
+            "insider_percent": ownership.insider_percent if ownership else None,
+            "institution_percent": ownership.institution_percent if ownership else None,
+            "shares_outstanding": ownership.shares_outstanding if ownership else None,
+            "float_shares": ownership.float_shares if ownership else None,
+        }
+    }
