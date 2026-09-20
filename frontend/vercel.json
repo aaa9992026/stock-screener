@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://stock-screener-production-d90e.up.railway.app/:path*"
+    }
+  ]
+}
