@@ -251,7 +251,7 @@ function App() {
           >
             <option value="US">US Market</option>
             <option value="NSE">NSE India</option>
-            <option value="BSE">BSE India</option>
+            <option value="BSE">BSE India (Limited)</option>
           </select>
 
           <div className="symbol-search">
