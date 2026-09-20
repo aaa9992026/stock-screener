@@ -27,6 +27,11 @@ class BSEProvider:
             timeout=30,
         )
 
+        if response.status_code == 404:
+            raise RuntimeError(
+                "This BSE symbol is not available with the currently configured data plan."
+            )
+
         response.raise_for_status()
         payload = response.json()
 
