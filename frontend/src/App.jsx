@@ -210,7 +210,7 @@ function App() {
     } else if (value === "NSE") {
       setSymbol("RELIANCE");
     } else {
-      setSymbol("RELIANCE");
+      setSymbol("INFY");
     }
   };
 

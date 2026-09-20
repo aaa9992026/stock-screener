@@ -19,7 +19,7 @@ class BSEProvider:
             f"{self.BASE_URL}/time_series",
             params={
                 "symbol": symbol,
-                "exchange": "BSE",
+                "mic_code": "XBOM",
                 "interval": "1day",
                 "outputsize": 500,
                 "apikey": self.api_key,
