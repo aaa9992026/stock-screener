@@ -127,12 +127,10 @@ function App() {
       setDataStale(true);
       setDataStatus("stale");
 
-      const detail =
+      setMessage(
         err.response?.data?.detail ||
-        "Market data could not be loaded.";
-
-      setMessage(detail);
-
+        "Market data could not be loaded."
+      );
     } finally {
       setLoading(false);
     }
