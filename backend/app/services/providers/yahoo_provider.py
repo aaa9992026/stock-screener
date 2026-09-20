@@ -1,3 +1,5 @@
+import requests
+from datetime import datetime
 import yfinance as yf
 from app.services.base_provider import BaseMarketDataProvider
 
@@ -26,6 +28,12 @@ class YahooProvider(BaseMarketDataProvider):
         start_date=None,
         end_date=None
     ):
+        if exchange.upper() == "BSE":
+            rows = self._get_bse_history_direct(symbol)
+
+            if len(rows) >= 10:
+                return rows
+
         provider_symbol = self.format_symbol(symbol, exchange)
 
         ticker = yf.Ticker(provider_symbol)
@@ -77,3 +85,55 @@ class YahooProvider(BaseMarketDataProvider):
             "shares_outstanding": info.get("sharesOutstanding"),
             "float_shares": info.get("floatShares"),
         }
+
+    def _get_bse_history_direct(self, symbol: str):
+        yahoo_symbol = f"{symbol}.BO"
+
+        url = (
+            f"https://query1.finance.yahoo.com/v8/finance/chart/"
+            f"{yahoo_symbol}?range=2y&interval=1d"
+        )
+
+        response = requests.get(
+            url,
+            timeout=20,
+            headers={
+                "User-Agent": "Mozilla/5.0"
+            }
+        )
+
+        response.raise_for_status()
+
+        payload = response.json()
+
+        result = payload["chart"]["result"][0]
+
+        timestamps = result.get("timestamp", [])
+        quote = result["indicators"]["quote"][0]
+
+        rows = []
+
+        for i, ts in enumerate(timestamps):
+            try:
+                open_price = quote["open"][i]
+                high = quote["high"][i]
+                low = quote["low"][i]
+                close = quote["close"][i]
+                volume = quote["volume"][i]
+
+                if None in [open_price, high, low, close]:
+                    continue
+
+                rows.append({
+                    "date": datetime.fromtimestamp(ts).date(),
+                    "open": float(open_price),
+                    "high": float(high),
+                    "low": float(low),
+                    "close": float(close),
+                    "volume": float(volume or 0),
+                })
+
+            except (IndexError, TypeError):
+                continue
+
+        return rows
