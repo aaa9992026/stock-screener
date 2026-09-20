@@ -26,13 +26,17 @@ function App() {
   const [dataStatus, setDataStatus] = useState("connected");
   const [indicators, setIndicators] = useState(null);
 
+  const [smaShort, setSmaShort] = useState(20);
+  const [smaLong, setSmaLong] = useState(50);
+  const [rsiPeriod, setRsiPeriod] = useState(14);
+
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
   const loadIndicators = async () => {
     try {
       const res = await axios.get(
-        `${API}/market/indicators/${symbol}?exchange=${exchange}`
+        `${API}/market/indicators/${symbol}?exchange=${exchange}&sma_short=${smaShort}&sma_long=${smaLong}&rsi_period=${rsiPeriod}`
       );
 
       setIndicators(res.data);
@@ -445,20 +449,56 @@ function App() {
           <section className="fundamental-section">
             <h2>Technical Indicators</h2>
 
+            <div className="indicator-settings">
+              <div>
+                <label>SMA Short</label>
+                <input
+                  type="number"
+                  min="2"
+                  value={smaShort}
+                  onChange={(e) => setSmaShort(Number(e.target.value))}
+                />
+              </div>
+
+              <div>
+                <label>SMA Long</label>
+                <input
+                  type="number"
+                  min="2"
+                  value={smaLong}
+                  onChange={(e) => setSmaLong(Number(e.target.value))}
+                />
+              </div>
+
+              <div>
+                <label>RSI Period</label>
+                <input
+                  type="number"
+                  min="2"
+                  value={rsiPeriod}
+                  onChange={(e) => setRsiPeriod(Number(e.target.value))}
+                />
+              </div>
+
+              <button onClick={loadIndicators}>
+                Apply Indicators
+              </button>
+            </div>
+
             <div className="fundamental-grid">
               <div className="metric">
-                <span>SMA 20</span>
-                <strong>{indicators.sma_20 ?? "-"}</strong>
+                <span>SMA {indicators.settings?.sma_short ?? smaShort}</span>
+                <strong>{indicators.sma_short ?? "-"}</strong>
               </div>
 
               <div className="metric">
-                <span>SMA 50</span>
-                <strong>{indicators.sma_50 ?? "-"}</strong>
+                <span>SMA {indicators.settings?.sma_long ?? smaLong}</span>
+                <strong>{indicators.sma_long ?? "-"}</strong>
               </div>
 
               <div className="metric">
-                <span>RSI 14</span>
-                <strong>{indicators.rsi_14 ?? "-"}</strong>
+                <span>RSI {indicators.settings?.rsi_period ?? rsiPeriod}</span>
+                <strong>{indicators.rsi ?? "-"}</strong>
               </div>
             </div>
           </section>
