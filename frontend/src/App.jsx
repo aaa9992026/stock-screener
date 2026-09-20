@@ -64,8 +64,37 @@ function App() {
       );
 
       setFundamentals(res.data);
+
     } catch {
-      setFundamentals(null);
+      try {
+        const res = await axios.post(
+          `${API}/market/fundamentals/${symbol}?exchange=US`
+        );
+
+        setFundamentals({
+          symbol: res.data.symbol,
+          exchange: res.data.exchange,
+          fundamentals: {
+            market_cap: res.data.fundamentals.market_cap,
+            trailing_eps: res.data.fundamentals.trailing_eps,
+            forward_eps: res.data.fundamentals.forward_eps,
+            revenue: res.data.fundamentals.revenue,
+            net_income: res.data.fundamentals.net_income,
+            profit_margin: res.data.fundamentals.profit_margin,
+            return_on_equity: res.data.fundamentals.return_on_equity,
+            return_on_assets: res.data.fundamentals.return_on_assets,
+          },
+          ownership: {
+            insider_percent: res.data.fundamentals.insider_percent,
+            institution_percent: res.data.fundamentals.institution_percent,
+            shares_outstanding: res.data.fundamentals.shares_outstanding,
+            float_shares: res.data.fundamentals.float_shares,
+          }
+        });
+
+      } catch {
+        setFundamentals(null);
+      }
     }
   };
 
@@ -122,7 +151,13 @@ function App() {
 
   useEffect(() => {
     loadChart();
-  }, [timeframe]);
+
+    if (exchange === "US") {
+      loadFundamentals();
+    } else {
+      setFundamentals(null);
+    }
+  }, [timeframe, exchange]);
 
   const latest = !dataStale && data.length
     ? data[data.length - 1]
