@@ -204,13 +204,13 @@ function App() {
     setData([]);
     setMessage("");
     setIndicators(null);
-    
+
     if (value === "US") {
       setSymbol("AAPL");
     } else if (value === "NSE") {
       setSymbol("RELIANCE");
     } else {
-      setSymbol("500325");
+      setSymbol("RELIANCE");
     }
   };
 
