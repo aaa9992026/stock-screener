@@ -24,9 +24,22 @@ function App() {
   const [dataStale, setDataStale] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [dataStatus, setDataStatus] = useState("connected");
+  const [indicators, setIndicators] = useState(null);
 
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+
+  const loadIndicators = async () => {
+    try {
+      const res = await axios.get(
+        `${API}/market/indicators/${symbol}?exchange=${exchange}`
+      );
+
+      setIndicators(res.data);
+    } catch {
+      setIndicators(null);
+    }
+  };
 
   const searchCompanies = async (value) => {
     setSymbol(value.toUpperCase());
@@ -152,6 +165,7 @@ function App() {
       );
 
       await loadChart();
+      await loadIndicators();
 
     } catch (err) {
       console.error("Refresh error:", err);
@@ -299,6 +313,7 @@ function App() {
                 );
 
                 await loadChart();
+                await loadIndicators();
 
                 if (exchange === "US") {
                   await loadFundamentals();
@@ -421,6 +436,29 @@ function App() {
             </div>
           )}
         </section>
+
+        {indicators && (
+          <section className="fundamental-section">
+            <h2>Technical Indicators</h2>
+
+            <div className="fundamental-grid">
+              <div className="metric">
+                <span>SMA 20</span>
+                <strong>{indicators.sma_20 ?? "-"}</strong>
+              </div>
+
+              <div className="metric">
+                <span>SMA 50</span>
+                <strong>{indicators.sma_50 ?? "-"}</strong>
+              </div>
+
+              <div className="metric">
+                <span>RSI 14</span>
+                <strong>{indicators.rsi_14 ?? "-"}</strong>
+              </div>
+            </div>
+          </section>
+        )}
 
         {exchange === "US" && fundamentals && (
           <section className="fundamental-section">
