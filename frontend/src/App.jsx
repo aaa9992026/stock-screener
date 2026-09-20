@@ -269,9 +269,55 @@ function App() {
           </div>
 
           <button
-            onClick={() => {
-              loadChart();
-              loadFundamentals();
+            onClick={async () => {
+              try {
+                setLoading(true);
+
+                // First try to load existing stored data
+                const res = await axios.get(
+                  `${API}/market/chart/${symbol}?exchange=${exchange}&timeframe=${timeframe}&limit=100`
+                );
+
+                const rows = res.data.data || [];
+
+                if (rows.length > 0) {
+                  setData(rows);
+                  setDataStale(false);
+                  setDataStatus("fresh");
+                  setMessage("");
+
+                  if (exchange === "US") {
+                    await loadFundamentals();
+                  }
+
+                  return;
+                }
+
+                // If no stored data exists, fetch it automatically
+                await axios.post(
+                  `${API}/market/refresh/${symbol}?exchange=${exchange}`
+                );
+
+                await loadChart();
+
+                if (exchange === "US") {
+                  await loadFundamentals();
+                }
+
+              } catch (err) {
+                console.error("Search error:", err);
+
+                const detail =
+                  err.response?.data?.detail ||
+                  "Unable to load data for this symbol.";
+
+                setDataStale(true);
+                setDataStatus("stale");
+                setMessage(detail);
+
+              } finally {
+                setLoading(false);
+              }
             }}
           >
             Search
