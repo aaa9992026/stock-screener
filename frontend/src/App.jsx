@@ -497,6 +497,16 @@ function App() {
               </div>
 
               <div className="metric">
+                <span>EMA {indicators.settings?.sma_short ?? smaShort}</span>
+                <strong>{indicators.ema_short ?? "-"}</strong>
+              </div>
+
+              <div className="metric">
+                <span>EMA {indicators.settings?.sma_long ?? smaLong}</span>
+                <strong>{indicators.ema_long ?? "-"}</strong>
+              </div>
+
+              <div className="metric">
                 <span>RSI {indicators.settings?.rsi_period ?? rsiPeriod}</span>
                 <strong>{indicators.rsi ?? "-"}</strong>
               </div>
