@@ -185,6 +185,7 @@ function App() {
 
   useEffect(() => {
     loadChart();
+    loadIndicators();
 
     if (exchange === "US") {
       loadFundamentals();
@@ -202,7 +203,8 @@ function App() {
     setExchange(value);
     setData([]);
     setMessage("");
-
+    setIndicators(null);
+    
     if (value === "US") {
       setSymbol("AAPL");
     } else if (value === "NSE") {
@@ -299,6 +301,8 @@ function App() {
                   setDataStale(false);
                   setDataStatus("fresh");
                   setMessage("");
+
+                  await loadIndicators();
 
                   if (exchange === "US") {
                     await loadFundamentals();
