@@ -207,7 +207,7 @@ class YahooProvider(BaseMarketDataProvider):
             return results
 
         quarterly_results = build_periods(quarterly, 4)
-        annual_results = build_periods(annual, 3)
+        annual_results = build_periods(annual, 6)
 
         def growth(current_value, previous_value):
             if (
@@ -246,10 +246,54 @@ class YahooProvider(BaseMarketDataProvider):
             annual_results[-1]["yoy_pat"] = None
             annual_results[-1]["yoy_eps"] = None
 
+        def calculate_cagr(latest_value, old_value, years):
+            if (
+                latest_value is None
+                or old_value is None
+                or latest_value <= 0
+                or old_value <= 0
+                or years <= 0
+            ):
+                return None
+
+            return round(
+                ((latest_value / old_value) ** (1 / years) - 1) * 100,
+                2
+            )
+
+        cagr_3y = {
+            "sales": None,
+            "pat": None,
+            "eps": None,
+        }
+
+        if len(annual_results) >= 4:
+            latest = annual_results[0]
+            old = annual_results[3]
+
+            cagr_3y["sales"] = calculate_cagr(
+                latest["sales"],
+                old["sales"],
+                3
+            )
+
+            cagr_3y["pat"] = calculate_cagr(
+                latest["pat"],
+                old["pat"],
+                3
+            )
+
+            cagr_3y["eps"] = calculate_cagr(
+                latest["eps"],
+                old["eps"],
+                3
+            )
+
         return {
             "symbol": symbol.upper(),
             "quarterly": quarterly_results,
             "annual": annual_results,
+            "cagr_3y": cagr_3y,
         }
 
     def _get_bse_history_direct(self, symbol: str):

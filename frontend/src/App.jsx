@@ -756,6 +756,37 @@ function App() {
               </table>
             </div>
 
+            <h3>3-Year CAGR</h3>
+
+            <div className="fundamental-grid">
+              <div className="metric">
+                <span>Sales CAGR</span>
+                <strong>
+                  {fundamentalHistory.cagr_3y?.sales != null
+                    ? `${fundamentalHistory.cagr_3y.sales}%`
+                    : "-"}
+                </strong>
+              </div>
+
+              <div className="metric">
+                <span>PAT CAGR</span>
+                <strong>
+                  {fundamentalHistory.cagr_3y?.pat != null
+                    ? `${fundamentalHistory.cagr_3y.pat}%`
+                    : "-"}
+                </strong>
+              </div>
+
+              <div className="metric">
+                <span>EPS CAGR</span>
+                <strong>
+                  {fundamentalHistory.cagr_3y?.eps != null
+                    ? `${fundamentalHistory.cagr_3y.eps}%`
+                    : "-"}
+                </strong>
+              </div>
+            </div>
+
             <h3>Fundamental Trends</h3>
 
             <div className="fundamental-chart-grid">
