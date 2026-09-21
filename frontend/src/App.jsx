@@ -36,7 +36,7 @@ function App() {
   const loadIndicators = async () => {
     try {
       const res = await axios.get(
-        `${API}/market/indicators/${symbol}?exchange=${exchange}&sma_short=${smaShort}&sma_long=${smaLong}&rsi_period=${rsiPeriod}`
+        `${API}/market/indicators/${symbol}?exchange=${exchange}&timeframe=${timeframe}&sma_short=${smaShort}&sma_long=${smaLong}&rsi_period=${rsiPeriod}`
       );
 
       setIndicators(res.data);
@@ -196,7 +196,7 @@ function App() {
     } else {
       setFundamentals(null);
     }
-  }, [timeframe, exchange]);
+  }, [symbol, timeframe, exchange]);
 
   const latest = !dataStale && data.length
     ? data[data.length - 1]

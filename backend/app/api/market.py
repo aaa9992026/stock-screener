@@ -262,6 +262,7 @@ def get_fundamentals(
 def get_indicators(
     symbol: str,
     exchange: str = "US",
+    timeframe: str = "daily",
     sma_short: int = 20,
     sma_long: int = 50,
     rsi_period: int = 14,
@@ -277,31 +278,75 @@ def get_indicators(
         .all()
     )
 
-    closes = [float(r.close) for r in rows]
+    if not rows:
+        raise HTTPException(
+            status_code=404,
+            detail="No historical data found"
+        )
 
-    minimum_required = max(sma_short, sma_long, rsi_period + 1)
+    timeframe = timeframe.lower()
+
+    # Build closes for selected timeframe
+    if timeframe == "daily":
+        closes = [float(r.close) for r in rows]
+
+    elif timeframe == "weekly":
+        weekly = {}
+
+        for r in rows:
+            # ISO year + ISO week prevents week-number collisions across years
+            iso = r.date.isocalendar()
+            key = (iso.year, iso.week)
+            weekly[key] = float(r.close)
+
+        closes = list(weekly.values())
+
+    elif timeframe == "monthly":
+        monthly = {}
+
+        for r in rows:
+            key = (r.date.year, r.date.month)
+            monthly[key] = float(r.close)
+
+        closes = list(monthly.values())
+
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail="Timeframe must be daily, weekly, or monthly"
+        )
+
+    minimum_required = max(
+        sma_short,
+        sma_long,
+        rsi_period + 1
+    )
 
     if len(closes) < minimum_required:
         raise HTTPException(
             status_code=404,
-            detail="Not enough historical data for selected indicator settings"
+            detail=f"Not enough {timeframe} historical data for selected indicator settings"
         )
 
+    # SMA
     sma_short_value = sum(closes[-sma_short:]) / sma_short
     sma_long_value = sum(closes[-sma_long:]) / sma_long
 
+    # EMA
     def calculate_ema(values, period):
         multiplier = 2 / (period + 1)
+
         ema = sum(values[:period]) / period
 
         for price in values[period:]:
-            ema = (price - ema) * multiplier + ema
+            ema = ((price - ema) * multiplier) + ema
 
         return ema
 
     ema_short_value = calculate_ema(closes, sma_short)
     ema_long_value = calculate_ema(closes, sma_long)
 
+    # RSI
     gains = []
     losses = []
 
@@ -327,6 +372,7 @@ def get_indicators(
     return {
         "symbol": symbol.upper(),
         "exchange": exchange.upper(),
+        "timeframe": timeframe,
         "settings": {
             "sma_short": sma_short,
             "sma_long": sma_long,
@@ -334,7 +380,7 @@ def get_indicators(
         },
         "sma_short": round(sma_short_value, 2),
         "sma_long": round(sma_long_value, 2),
-        "rsi": round(rsi_value, 2),
         "ema_short": round(ema_short_value, 2),
-        "ema_long": round(ema_long_value, 2)
+        "ema_long": round(ema_long_value, 2),
+        "rsi": round(rsi_value, 2)
     }
