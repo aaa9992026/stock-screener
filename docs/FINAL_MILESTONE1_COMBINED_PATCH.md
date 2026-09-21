@@ -34,3 +34,8 @@ The dashboard includes editable weights for:
 - Breakout / VCP
 
 The weights do not need to total 100; the backend normalizes them. The chosen values are saved in the browser with localStorage. This lets the client decide the weighting without code changes.
+
+
+## Trading-date integrity
+- Daily OHLCV sync now rejects Saturday/Sunday rows for US, NSE, and BSE stocks.
+- Refresh also removes any previously stored weekend bars for the refreshed symbol.

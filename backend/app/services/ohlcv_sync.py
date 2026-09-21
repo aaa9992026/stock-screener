@@ -13,7 +13,35 @@ def sync_ohlcv(
     updated = 0
 
     if not rows:
-        return {"added": 0, "updated": 0}
+        return {"added": 0, "updated": 0, "removed_invalid_dates": 0}
+
+    exchange = exchange.upper()
+
+    # Stocks on US/NSE/BSE do not have normal weekend trading sessions.
+    # Some upstream feeds can expose a live/UTC timestamp that converts to a
+    # Saturday/Sunday calendar date. Never persist those rows as daily bars.
+    if exchange in {"US", "NSE", "BSE"}:
+        rows = [
+            row for row in rows
+            if row.get("date") is not None and row["date"].weekday() < 5
+        ]
+
+        # Clean any previously stored weekend rows for this symbol as well.
+        existing_all = (
+            db.query(OHLCV)
+            .filter(OHLCV.symbol == symbol, OHLCV.exchange == exchange)
+            .all()
+        )
+        invalid_existing = [row for row in existing_all if row.date.weekday() >= 5]
+        for row in invalid_existing:
+            db.delete(row)
+        removed_invalid_dates = len(invalid_existing)
+    else:
+        removed_invalid_dates = 0
+
+    if not rows:
+        db.commit()
+        return {"added": 0, "updated": 0, "removed_invalid_dates": removed_invalid_dates}
 
     incoming_dates = [row["date"] for row in rows]
     existing_rows = (
@@ -57,4 +85,5 @@ def sync_ohlcv(
     return {
         "added": added,
         "updated": updated,
+        "removed_invalid_dates": removed_invalid_dates,
     }
