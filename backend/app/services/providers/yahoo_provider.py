@@ -113,7 +113,9 @@ class YahooProvider(BaseMarketDataProvider):
             if df is None or df.empty:
                 return results
 
-            for column in list(df.columns)[:limit]:
+            columns = list(df.columns)[:limit]
+
+            for column in columns:
                 revenue = get_value(
                     df,
                     ["Total Revenue", "Operating Revenue"],
@@ -163,6 +165,44 @@ class YahooProvider(BaseMarketDataProvider):
                     "opm": round(opm, 2) if opm is not None else None,
                     "npm": round(npm, 2) if npm is not None else None,
                 })
+
+            # Add QoQ growth using the next older quarter
+            for i in range(len(results) - 1):
+                current = results[i]
+                previous = results[i + 1]
+
+                def growth(current_value, previous_value):
+                    if (
+                        current_value is None
+                        or previous_value is None
+                        or previous_value == 0
+                    ):
+                        return None
+
+                    return round(
+                        ((current_value - previous_value) / abs(previous_value)) * 100,
+                        2
+                    )
+
+                current["qoq_sales"] = growth(
+                    current["sales"],
+                    previous["sales"]
+                )
+
+                current["qoq_pat"] = growth(
+                    current["pat"],
+                    previous["pat"]
+                )
+
+                current["qoq_eps"] = growth(
+                    current["eps"],
+                    previous["eps"]
+                )
+
+            if results:
+                results[-1]["qoq_sales"] = None
+                results[-1]["qoq_pat"] = None
+                results[-1]["qoq_eps"] = None
 
             return results
 
