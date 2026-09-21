@@ -666,7 +666,7 @@ function App() {
                 </thead>
 
                 <tbody>
-                  {fundamentalHistory.quarterly?.map((row) => (
+                  {fundamentalHistory.quarterly?.slice(0, 4).map((row) => (
                     <tr key={row.period}>
                       <td>{row.period}</td>
                       <td>
