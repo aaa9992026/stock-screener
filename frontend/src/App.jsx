@@ -259,7 +259,7 @@ function App() {
     const candleSeries = chart.addSeries(CandlestickSeries, {});
 
     const candleData = data.map((row) => ({
-      time: row.date,
+      time: String(row.date).slice(0, 10),
       open: Number(row.open),
       high: Number(row.high),
       low: Number(row.low),
@@ -274,12 +274,63 @@ function App() {
         priceScaleId: "benchmark",
       });
 
-      const benchmarkData = benchmark.data.map((row) => ({
-        time: row.date,
+      let rawBenchmark = benchmark.data.map((row) => ({
+        time: String(row.date).slice(0, 10),
         value: Number(row.close),
       }));
 
-      benchmarkSeries.setData(benchmarkData);
+      if (timeframe === "weekly") {
+        const grouped = {};
+
+        rawBenchmark.forEach((row) => {
+          const d = new Date(row.time);
+
+          const day = d.getUTCDay();
+          const diff =
+            d.getUTCDate() - day + (day === 0 ? -6 : 1);
+
+          const monday = new Date(
+            Date.UTC(
+              d.getUTCFullYear(),
+              d.getUTCMonth(),
+              diff
+            )
+          );
+
+          const key = monday.toISOString().slice(0, 10);
+
+          grouped[key] = {
+            time: key,
+            value: row.value,
+          };
+        });
+
+        rawBenchmark = Object.values(grouped);
+      }
+
+      if (timeframe === "monthly") {
+        const grouped = {};
+
+        rawBenchmark.forEach((row) => {
+          const d = new Date(row.time);
+
+          const year = d.getUTCFullYear();
+          const month = String(
+            d.getUTCMonth() + 1
+          ).padStart(2, "0");
+
+          const key = `${year}-${month}-01`;
+
+          grouped[key] = {
+            time: key,
+            value: row.value,
+          };
+        });
+
+        rawBenchmark = Object.values(grouped);
+      }
+
+      benchmarkSeries.setData(rawBenchmark);
 
       chart.priceScale("benchmark").applyOptions({
         scaleMargins: {
@@ -305,7 +356,7 @@ function App() {
       window.removeEventListener("resize", handleResize);
       chart.remove();
     };
-  }, [data, benchmark]);
+  }, [data, benchmark, timeframe]);
 
   const latest = !dataStale && data.length
     ? data[data.length - 1]
