@@ -183,6 +183,33 @@ class YahooProvider(BaseMarketDataProvider):
                     column
                 )
 
+                net_income_to_common = get_value(
+                    df,
+                    ["Net Income Common Stockholders", "Net Income"],
+                    column
+                )
+
+                shares_diluted = get_value(
+                    df,
+                    ["Diluted Average Shares", "Basic Average Shares"],
+                    column
+                )
+
+                roe = None
+                cash_flow_per_share = None
+
+                if (
+                    net_income_to_common is not None
+                    and stockholders_equity not in (None, 0)
+                ):
+                    roe = (net_income_to_common / stockholders_equity) * 100
+
+                if (
+                    operating_cash_flow is not None
+                    and shares_diluted not in (None, 0)
+                ):
+                    cash_flow_per_share = operating_cash_flow / shares_diluted
+
                 debt_to_equity = None
 
                 if (
@@ -211,6 +238,8 @@ class YahooProvider(BaseMarketDataProvider):
                     "npm": round(npm, 2) if npm is not None else None,
                     "debt_to_equity": round(debt_to_equity, 2) if debt_to_equity is not None else None,
                     "operating_cash_flow": operating_cash_flow,
+                    "roe": round(roe, 2) if roe is not None else None,
+                    "cash_flow_per_share": round(cash_flow_per_share, 2) if cash_flow_per_share is not None else None,
                 })
 
             # Add QoQ growth using the next older quarter

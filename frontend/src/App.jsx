@@ -726,6 +726,8 @@ function App() {
                     <th>NPM</th>
                     <th>Debt/Equity</th>
                     <th>Operating Cash Flow</th>
+                    <th>ROE</th>
+                    <th>Cash Flow/Share</th>
                   </tr>
                 </thead>
 
@@ -767,6 +769,15 @@ function App() {
                       <td>
                         {row.operating_cash_flow != null
                           ? `$${(row.operating_cash_flow / 1e9).toFixed(2)}B`
+                          : "-"}
+                      </td>
+                      <td>
+                        {row.roe != null ? `${row.roe}%` : "-"}
+                      </td>
+
+                      <td>
+                        {row.cash_flow_per_share != null
+                          ? `$${row.cash_flow_per_share.toFixed(2)}`
                           : "-"}
                       </td>
                     </tr>
