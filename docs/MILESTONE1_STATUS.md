@@ -36,3 +36,11 @@
 - Python source files compile successfully with `py_compile`.
 - Frontend JSX structural delimiter/tag checks passed manually.
 - A full Vite build could not be executed in the Linux sandbox because the uploaded Windows `node_modules` native Rolldown binding is platform-specific. Install frontend dependencies on the deployment environment (`npm install`/`npm ci`) before building.
+
+
+## Final transparency patch
+- Sector/industry ranks are hidden until at least 5 scored peers are available; small universes are labeled insufficient instead of showing misleading 1/1 ranks.
+- RS Rating is hidden until at least 20 symbols have sufficient stored history.
+- The benchmark overlay is rebased to the stock's first overlapping price so relative performance is comparable while retaining true candlestick prices.
+- Missing 5-year CAGR remains explicitly unavailable when the provider does not supply six valid annual endpoints; no values are estimated.
+- Indian FII/DII/promoter-change data remains provider-limited and is labeled accordingly.

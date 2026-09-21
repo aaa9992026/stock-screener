@@ -563,3 +563,9 @@ th {
 @media (max-width: 520px) {
   .dashboard-summary { grid-template-columns: 1fr; }
 }
+
+.chart-note {
+  margin-top: 10px;
+  font-size: 0.85rem;
+  color: #64748b;
+}

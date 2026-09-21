@@ -309,10 +309,10 @@ function App() {
 
     candleSeries.setData(candleData);
 
-    if (benchmark?.data?.length) {
+    if (benchmark?.data?.length && candleData.length) {
       const benchmarkSeries = chart.addSeries(LineSeries, {
         lineWidth: 2,
-        priceScaleId: "benchmark",
+        priceScaleId: "right",
       });
 
       let rawBenchmark = benchmark.data.map((row) => ({
@@ -371,14 +371,20 @@ function App() {
         rawBenchmark = Object.values(grouped);
       }
 
-      benchmarkSeries.setData(rawBenchmark);
+      // Rebase the benchmark to the stock's first visible close. This keeps the
+      // candlesticks on their real price scale while making the benchmark line
+      // represent relative performance instead of an unrelated index price.
+      const firstBenchmark = rawBenchmark[0]?.value;
+      const firstStock = candleData[0]?.close;
 
-      chart.priceScale("benchmark").applyOptions({
-        scaleMargins: {
-          top: 0.1,
-          bottom: 0.1,
-        },
-      });
+      if (firstBenchmark && firstStock) {
+        benchmarkSeries.setData(
+          rawBenchmark.map((row) => ({
+            time: row.time,
+            value: (row.value / firstBenchmark) * firstStock,
+          }))
+        );
+      }
     }
 
     chart.timeScale().fitContent();
@@ -621,12 +627,20 @@ function App() {
             <div className="summary-item">
               <span>Sector</span>
               <strong>{dashboard.sector || "-"}</strong>
-              <small>Rank: {dashboard.sector_rank ? `${dashboard.sector_rank.rank}/${dashboard.sector_rank.total}` : "-"}</small>
+              <small>
+                {dashboard.sector_rank?.available
+                  ? `Rank: ${dashboard.sector_rank.rank}/${dashboard.sector_rank.total}`
+                  : (dashboard.sector_rank?.note || "Insufficient peer data")}
+              </small>
             </div>
             <div className="summary-item">
               <span>Industry</span>
               <strong>{dashboard.industry || "-"}</strong>
-              <small>Rank: {dashboard.industry_rank ? `${dashboard.industry_rank.rank}/${dashboard.industry_rank.total}` : "-"}</small>
+              <small>
+                {dashboard.industry_rank?.available
+                  ? `Rank: ${dashboard.industry_rank.rank}/${dashboard.industry_rank.total}`
+                  : (dashboard.industry_rank?.note || "Insufficient peer data")}
+              </small>
             </div>
           </section>
         )}
@@ -660,13 +674,26 @@ function App() {
           {benchmark?.warning && (
             <div className="provider-warning">{benchmark.warning}</div>
           )}
+          {benchmark?.data?.length > 0 && (
+            <div className="chart-note">
+              {benchmark.name} line is rebased to the stock price at the first overlapping date so relative performance can be compared on the same chart.
+            </div>
+          )}
         </section>
 
         {technicalSummary && (
           <section className="fundamental-section">
             <h2>Technical Screening Summary</h2>
             <div className="fundamental-grid">
-              <div className="metric"><span>RS Rating</span><strong>{technicalSummary.rs_rating ?? "-"}</strong><small>{technicalSummary.rs_universe_size ? `Stored universe: ${technicalSummary.rs_universe_size}` : "Insufficient peer history"}</small></div>
+              <div className="metric">
+                <span>RS Rating</span>
+                <strong>{technicalSummary.rs_rating ?? "Unavailable"}</strong>
+                <small>
+                  {technicalSummary.rs_rating != null
+                    ? `Stored universe: ${technicalSummary.rs_universe_size}`
+                    : `Insufficient universe: ${technicalSummary.rs_universe_size ?? 0}/${technicalSummary.rs_minimum_universe ?? 20}`}
+                </small>
+              </div>
               <div className="metric"><span>EMA Alignment</span><strong>{technicalSummary.ema_alignment}</strong></div>
               <div className="metric"><span>20-Day Avg Volume</span><strong>{technicalSummary.average_volume_20 != null ? Number(technicalSummary.average_volume_20).toLocaleString() : "-"}</strong></div>
               <div className="metric"><span>Volume Ratio</span><strong>{technicalSummary.volume_ratio ?? "-"}</strong></div>
@@ -1136,6 +1163,11 @@ function App() {
               <div className="metric"><span>PAT CAGR</span><strong>{fundamentalHistory.cagr_5y?.pat != null ? `${fundamentalHistory.cagr_5y.pat}%` : "Unavailable"}</strong></div>
               <div className="metric"><span>EPS CAGR</span><strong>{fundamentalHistory.cagr_5y?.eps != null ? `${fundamentalHistory.cagr_5y.eps}%` : "Unavailable"}</strong></div>
             </div>
+            {(fundamentalHistory.cagr_5y?.sales == null || fundamentalHistory.cagr_5y?.pat == null || fundamentalHistory.cagr_5y?.eps == null) && (
+              <div className="provider-warning">
+                5-year CAGR requires six valid annual endpoints. The configured provider currently returns insufficient usable annual history for this stock, so unavailable values are not estimated.
+              </div>
+            )}
 
             <h3>Fundamental Trends</h3>
 

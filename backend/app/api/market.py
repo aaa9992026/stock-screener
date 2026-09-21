@@ -125,10 +125,16 @@ def _score_symbol(db: Session, symbol: str, exchange: str):
     return max(0, min(100, score)), max(0, min(100, coverage))
 
 
-def _rank_within(db: Session, company: Company, field: str):
+def _rank_within(db: Session, company: Company, field: str, minimum_peers: int = 5):
     value = getattr(company, field)
     if not value:
-        return None
+        return {
+            "available": False,
+            "rank": None,
+            "total": 0,
+            "group": None,
+            "note": "Classification data is unavailable for this stock."
+        }
 
     peers = (
         db.query(Company)
@@ -147,17 +153,36 @@ def _rank_within(db: Session, company: Company, field: str):
         if score is not None:
             scored.append((peer.symbol, score))
 
-    if not scored:
-        return None
+    if len(scored) < minimum_peers:
+        return {
+            "available": False,
+            "rank": None,
+            "total": len(scored),
+            "group": value,
+            "note": f"Insufficient peer data ({len(scored)}/{minimum_peers} minimum)."
+        }
 
     scored.sort(key=lambda item: item[1], reverse=True)
     for index, (peer_symbol, _) in enumerate(scored, start=1):
         if peer_symbol == company.symbol:
-            return {"rank": index, "total": len(scored), "group": value}
-    return None
+            return {
+                "available": True,
+                "rank": index,
+                "total": len(scored),
+                "group": value,
+                "note": None
+            }
+
+    return {
+        "available": False,
+        "rank": None,
+        "total": len(scored),
+        "group": value,
+        "note": "The selected stock does not yet have enough comparable scored peer data."
+    }
 
 
-def _stored_rs_rating(db: Session, symbol: str, exchange: str):
+def _stored_rs_rating(db: Session, symbol: str, exchange: str, minimum_universe: int = 20):
     cutoff = date.today() - timedelta(days=220)
     rows = (
         db.query(OHLCV)
@@ -178,7 +203,7 @@ def _stored_rs_rating(db: Session, symbol: str, exchange: str):
         if len(closes) >= 40 and closes[0] != 0:
             returns[peer_symbol] = (closes[-1] / closes[0]) - 1
 
-    if symbol not in returns or len(returns) < 2:
+    if symbol not in returns or len(returns) < minimum_universe:
         return None, len(returns)
 
     target = returns[symbol]
@@ -417,7 +442,12 @@ def get_technical_summary(
         "pattern": pattern,
         "rs_rating": rs_rating,
         "rs_universe_size": rs_universe,
-        "rs_note": "RS rating is a percentile within symbols that currently have sufficient stored history in this deployment."
+        "rs_minimum_universe": 20,
+        "rs_note": (
+            "RS rating is shown only when at least 20 symbols have sufficient stored history."
+            if rs_rating is None
+            else "RS rating is a percentile within symbols that currently have sufficient stored history in this deployment."
+        )
     }
 
 
