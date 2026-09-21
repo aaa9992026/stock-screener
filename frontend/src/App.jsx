@@ -767,7 +767,9 @@ function App() {
                   >
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="period" />
-                    <YAxis />
+                    <YAxis
+                      tickFormatter={(value) => `${(value / 1e9).toFixed(0)}B`}
+                    />
                     <Tooltip
                       formatter={(value) =>
                         value != null ? `$${(value / 1e9).toFixed(2)}B` : "-"
@@ -809,7 +811,9 @@ function App() {
                   >
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="period" />
-                    <YAxis />
+                    <YAxis
+                      tickFormatter={(value) => `${(value / 1e9).toFixed(0)}B`}
+                    />
                     <Tooltip
                       formatter={(value) =>
                         value != null ? `$${(value / 1e9).toFixed(2)}B` : "-"
