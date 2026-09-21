@@ -652,10 +652,13 @@ function App() {
                     <th>Period</th>
                     <th>Sales</th>
                     <th>Sales QoQ</th>
+                    <th>Sales YoY</th>
                     <th>PAT</th>
                     <th>PAT QoQ</th>
+                    <th>PAT YoY</th>
                     <th>EPS</th>
                     <th>EPS QoQ</th>
+                    <th>EPS YoY</th>
                     <th>EBIT</th>
                     <th>OPM</th>
                     <th>NPM</th>
@@ -674,6 +677,7 @@ function App() {
                       <td>
                         {row.qoq_sales != null ? `${row.qoq_sales}%` : "-"}
                       </td>
+                      <td>{row.yoy_sales != null ? `${row.yoy_sales}%` : "-"}</td>
                       <td>
                         {row.pat != null
                           ? `$${(row.pat / 1e9).toFixed(2)}B`
@@ -682,10 +686,12 @@ function App() {
                       <td>
                         {row.qoq_pat != null ? `${row.qoq_pat}%` : "-"}
                       </td>
+                      <td>{row.yoy_pat != null ? `${row.yoy_pat}%` : "-"}</td>
                       <td>{row.eps ?? "-"}</td>
                       <td>
                         {row.qoq_eps != null ? `${row.qoq_eps}%` : "-"}
                       </td>
+                      <td>{row.yoy_eps != null ? `${row.yoy_eps}%` : "-"}</td>
                       <td>
                         {row.ebit != null
                           ? `$${(row.ebit / 1e9).toFixed(2)}B`

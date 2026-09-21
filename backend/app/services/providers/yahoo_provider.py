@@ -253,8 +253,6 @@ class YahooProvider(BaseMarketDataProvider):
 
             return results
 
-        quarterly_results = build_periods(quarterly, 4)
-        annual_results = build_periods(annual, 6)
 
         def growth(current_value, previous_value):
             if (
@@ -268,6 +266,34 @@ class YahooProvider(BaseMarketDataProvider):
                 ((current_value - previous_value) / abs(previous_value)) * 100,
                 2
             )
+
+        quarterly_results = build_periods(quarterly, 8)
+
+        for i in range(len(quarterly_results)):
+            quarterly_results[i]["yoy_sales"] = None
+            quarterly_results[i]["yoy_pat"] = None
+            quarterly_results[i]["yoy_eps"] = None
+
+        if len(quarterly_results) >= 5:
+            current = quarterly_results[0]
+            year_ago = quarterly_results[4]
+
+            current["yoy_sales"] = growth(
+                current["sales"],
+                year_ago["sales"]
+            )
+
+            current["yoy_pat"] = growth(
+                current["pat"],
+                year_ago["pat"]
+            )
+
+            current["yoy_eps"] = growth(
+                current["eps"],
+                year_ago["eps"]
+            )
+
+        annual_results = build_periods(annual, 6)
 
         for i in range(len(annual_results) - 1):
             current = annual_results[i]
