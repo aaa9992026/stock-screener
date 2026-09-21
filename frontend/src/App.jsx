@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createChart, CandlestickSeries } from "lightweight-charts";
 import axios from "axios";
 import {
   LineChart,
@@ -29,7 +30,7 @@ function App() {
   const [smaShort, setSmaShort] = useState(20);
   const [smaLong, setSmaLong] = useState(50);
   const [rsiPeriod, setRsiPeriod] = useState(14);
-
+  const chartContainerRef = useRef(null);
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
@@ -211,6 +212,60 @@ function App() {
       setFundamentalHistory(null);
     }
   }, [symbol, timeframe, exchange]);
+
+  useEffect(() => {
+    if (!chartContainerRef.current || !data?.length) return;
+
+    chartContainerRef.current.innerHTML = "";
+
+    const chart = createChart(chartContainerRef.current, {
+      width: chartContainerRef.current.clientWidth,
+      height: 420,
+      layout: {
+        background: { color: "#ffffff" },
+        textColor: "#334155",
+      },
+      grid: {
+        vertLines: { color: "#e2e8f0" },
+        horzLines: { color: "#e2e8f0" },
+      },
+      rightPriceScale: {
+        borderColor: "#cbd5e1",
+      },
+      timeScale: {
+        borderColor: "#cbd5e1",
+        timeVisible: true,
+      },
+    });
+
+    const candleSeries = chart.addSeries(CandlestickSeries, {});
+
+    const candleData = data.map((row) => ({
+      time: row.date,
+      open: Number(row.open),
+      high: Number(row.high),
+      low: Number(row.low),
+      close: Number(row.close),
+    }));
+
+    candleSeries.setData(candleData);
+    chart.timeScale().fitContent();
+
+    const handleResize = () => {
+      if (chartContainerRef.current) {
+        chart.applyOptions({
+          width: chartContainerRef.current.clientWidth,
+        });
+      }
+    };
+
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      chart.remove();
+    };
+  }, [data]);
 
   const latest = !dataStale && data.length
     ? data[data.length - 1]
@@ -432,26 +487,13 @@ function App() {
           </div>
 
           {!dataStale ? (
-            <ResponsiveContainer width="100%" height={420}>
-              <LineChart data={data}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis
-                  dataKey="date"
-                  minTickGap={35}
-                  tickFormatter={(value) =>
-                    new Date(value).toLocaleDateString()
-                  }
-                />
-                <YAxis domain={["auto", "auto"]} />
-                <Tooltip />
-                <Line
-                  type="monotone"
-                  dataKey="close"
-                  strokeWidth={2}
-                  dot={false}
-                />
-              </LineChart>
-            </ResponsiveContainer>
+            <div
+              ref={chartContainerRef}
+              style={{
+                width: "100%",
+                height: "420px"
+              }}
+            />
           ) : (
             <div className="stale-panel">
               Historical data is unavailable or incomplete for this provider.
@@ -528,7 +570,9 @@ function App() {
           </section>
         )}
 
-        {exchange === "US" && fundamentals && (
+        {exchange === "US" &&
+          fundamentals?.fundamentals &&
+          fundamentals?.ownership && (
           <section className="fundamental-section">
             <h2>Fundamentals & Ownership</h2>
 
