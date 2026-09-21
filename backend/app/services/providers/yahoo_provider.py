@@ -91,6 +91,8 @@ class YahooProvider(BaseMarketDataProvider):
 
         quarterly = ticker.quarterly_financials
         annual = ticker.financials
+        balance_sheet = ticker.balance_sheet
+        cashflow = ticker.cashflow
 
         def get_value(df, names, column):
             for name in names:
@@ -104,6 +106,16 @@ class YahooProvider(BaseMarketDataProvider):
                         pass
 
                     return float(value)
+
+            return None
+
+        def get_matching_value(df, names, target_column):
+            if df is None or df.empty:
+                return None
+
+            for column in df.columns:
+                if column.date() == target_column.date():
+                    return get_value(df, names, column)
 
             return None
 
@@ -146,6 +158,39 @@ class YahooProvider(BaseMarketDataProvider):
                     column
                 )
 
+                total_debt = get_matching_value(
+                    balance_sheet,
+                    ["Total Debt"],
+                    column
+                )
+
+                stockholders_equity = get_matching_value(
+                    balance_sheet,
+                    [
+                        "Stockholders Equity",
+                        "Total Stockholder Equity",
+                        "Common Stock Equity"
+                    ],
+                    column
+                )
+
+                operating_cash_flow = get_matching_value(
+                    cashflow,
+                    [
+                        "Operating Cash Flow",
+                        "Total Cash From Operating Activities"
+                    ],
+                    column
+                )
+
+                debt_to_equity = None
+
+                if (
+                    total_debt is not None
+                    and stockholders_equity not in (None, 0)
+                ):
+                    debt_to_equity = total_debt / stockholders_equity
+
                 opm = None
                 npm = None
 
@@ -164,6 +209,8 @@ class YahooProvider(BaseMarketDataProvider):
                     "ebit": ebit,
                     "opm": round(opm, 2) if opm is not None else None,
                     "npm": round(npm, 2) if npm is not None else None,
+                    "debt_to_equity": round(debt_to_equity, 2) if debt_to_equity is not None else None,
+                    "operating_cash_flow": operating_cash_flow,
                 })
 
             # Add QoQ growth using the next older quarter

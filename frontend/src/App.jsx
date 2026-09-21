@@ -718,6 +718,8 @@ function App() {
                     <th>EBIT</th>
                     <th>OPM</th>
                     <th>NPM</th>
+                    <th>Debt/Equity</th>
+                    <th>Operating Cash Flow</th>
                   </tr>
                 </thead>
 
@@ -749,6 +751,17 @@ function App() {
                       </td>
                       <td>
                         {row.npm != null ? `${row.npm}%` : "-"}
+                      </td>
+                      <td>
+                        {row.debt_to_equity != null
+                          ? row.debt_to_equity
+                          : "-"}
+                      </td>
+
+                      <td>
+                        {row.operating_cash_flow != null
+                          ? `$${(row.operating_cash_flow / 1e9).toFixed(2)}B`
+                          : "-"}
                       </td>
                     </tr>
                   ))}
