@@ -755,6 +755,75 @@ function App() {
                 </tbody>
               </table>
             </div>
+
+            <h3>Fundamental Trends</h3>
+
+            <div className="fundamental-chart-grid">
+              <div className="fundamental-chart-card">
+                <h4>Sales Trend</h4>
+                <ResponsiveContainer width="100%" height={250}>
+                  <LineChart
+                    data={[...(fundamentalHistory.annual || [])].reverse()}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="period" />
+                    <YAxis />
+                    <Tooltip
+                      formatter={(value) =>
+                        value != null ? `$${(value / 1e9).toFixed(2)}B` : "-"
+                      }
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="sales"
+                      strokeWidth={2}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+
+              <div className="fundamental-chart-card">
+                <h4>EPS Trend</h4>
+                <ResponsiveContainer width="100%" height={250}>
+                  <LineChart
+                    data={[...(fundamentalHistory.annual || [])].reverse()}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="period" />
+                    <YAxis />
+                    <Tooltip />
+                    <Line
+                      type="monotone"
+                      dataKey="eps"
+                      strokeWidth={2}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+
+              <div className="fundamental-chart-card">
+                <h4>PAT Trend</h4>
+                <ResponsiveContainer width="100%" height={250}>
+                  <LineChart
+                    data={[...(fundamentalHistory.annual || [])].reverse()}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="period" />
+                    <YAxis />
+                    <Tooltip
+                      formatter={(value) =>
+                        value != null ? `$${(value / 1e9).toFixed(2)}B` : "-"
+                      }
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="pat"
+                      strokeWidth={2}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
           </section>
         )}
 

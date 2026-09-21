@@ -488,3 +488,29 @@ th {
   margin-bottom: 12px;
   font-size: 17px;
 }
+
+.fundamental-chart-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 16px;
+}
+
+.fundamental-chart-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 16px;
+}
+
+.fundamental-chart-card h4 {
+  margin: 0 0 12px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+@media (max-width: 1000px) {
+  .fundamental-chart-grid {
+    grid-template-columns: 1fr;
+  }
+}
