@@ -348,19 +348,64 @@ def get_ownership_details(symbol: str, exchange: str = "US"):
 def get_technical_summary(
     symbol: str,
     exchange: str = "US",
+    timeframe: str = Query("daily", pattern="^(daily|weekly|monthly)$"),
     db: Session = Depends(get_db)
 ):
     symbol = symbol.upper()
     exchange = exchange.upper()
 
-    rows = (
+    daily_rows = (
         db.query(OHLCV)
         .filter(OHLCV.symbol == symbol, OHLCV.exchange == exchange)
         .order_by(OHLCV.date.asc())
         .all()
     )
-    if len(rows) < 20:
+    if len(daily_rows) < 20:
         raise HTTPException(status_code=404, detail="Not enough historical data for technical summary")
+
+    rows = daily_rows
+    if timeframe != "daily":
+        import pandas as pd
+        from types import SimpleNamespace
+
+        frame = pd.DataFrame([
+            {
+                "date": row.date,
+                "open": float(row.open),
+                "high": float(row.high),
+                "low": float(row.low),
+                "close": float(row.close),
+                "volume": float(row.volume or 0),
+            }
+            for row in daily_rows
+        ])
+        frame["date"] = pd.to_datetime(frame["date"])
+        frame["actual_date"] = frame["date"]
+        frame = frame.set_index("date")
+        rule = "W" if timeframe == "weekly" else "ME"
+        frame = frame.resample(rule).agg({
+            "open": "first",
+            "high": "max",
+            "low": "min",
+            "close": "last",
+            "volume": "sum",
+            "actual_date": "last",
+        }).dropna(subset=["open", "high", "low", "close"])
+
+        rows = [
+            SimpleNamespace(
+                date=item.actual_date.date(),
+                open=float(item.open),
+                high=float(item.high),
+                low=float(item.low),
+                close=float(item.close),
+                volume=float(item.volume or 0),
+            )
+            for item in frame.itertuples()
+        ]
+
+    if len(rows) < 20:
+        raise HTTPException(status_code=404, detail=f"Not enough {timeframe} historical data for technical summary")
 
     closes = [float(row.close) for row in rows]
     highs = [float(row.high) for row in rows]
@@ -399,7 +444,8 @@ def get_technical_summary(
     bb_width = ((bb_upper - bb_lower) / sma20 * 100) if sma20 else None
 
     range20 = ((max(highs[-20:]) - min(lows[-20:])) / min(lows[-20:]) * 100) if min(lows[-20:]) else None
-    lookback_52w = min(252, len(rows))
+    periods_per_52w = 252 if timeframe == "daily" else 52 if timeframe == "weekly" else 12
+    lookback_52w = min(periods_per_52w, len(rows))
     high_52w = max(highs[-lookback_52w:])
     distance_52w_high = ((high_52w - closes[-1]) / high_52w * 100) if high_52w else None
 
@@ -488,7 +534,7 @@ def get_technical_summary(
     try:
         hist = yf.Ticker(benchmark_symbol).history(period="2y", interval="1d", auto_adjust=False)
         benchmark_by_date = {idx.date(): float(row["Close"]) for idx, row in hist.iterrows() if row.get("Close") is not None}
-        aligned = [(r.date, float(r.close), benchmark_by_date.get(r.date)) for r in rows if benchmark_by_date.get(r.date) is not None]
+        aligned = [(r.date, float(r.close), benchmark_by_date.get(r.date)) for r in daily_rows if benchmark_by_date.get(r.date) is not None]
         period_scores = []
         for label, days in rs_periods.items():
             if len(aligned) > days:
@@ -512,6 +558,7 @@ def get_technical_summary(
     return {
         "symbol": symbol,
         "exchange": exchange,
+        "timeframe": timeframe,
         "ema": {key: (round(value, 2) if value is not None else None) for key, value in emas.items()},
         "ema_alignment": ema_alignment,
         "average_volume_20": round(avg_volume_20, 2),
@@ -534,7 +581,7 @@ def get_technical_summary(
         "rs_benchmark": benchmark_name,
         "rs_periods": rs_metrics,
         "rs_note": "RS compares stock returns with the broad-market benchmark over 1/2/3/4 weeks and 2/3/6/12 months. Each period is centered at 50 for benchmark-equivalent performance, then averaged and clipped to 0-100.",
-        "criteria_note": "Pivot = highest high of prior 20 sessions. Confirmed breakout requires close > pivot by 0.3%, volume >= 1.5x 20-day average, close > open, and close in the upper half of the day's range. VCP requires successive 20-session price-depth and ATR% contractions."
+        "criteria_note": f"Metrics use the selected {timeframe} timeframe. Pivot = highest high of prior 20 periods. Confirmed breakout requires close > pivot by 0.3%, volume >= 1.5x 20-period average, close > open, and close in the upper half of the period's range. VCP requires successive 20-period price-depth and ATR% contractions."
     }
 
 
@@ -642,6 +689,7 @@ def get_chart_data(
 
         df = pd.DataFrame(data)
         df["date"] = pd.to_datetime(df["date"])
+        df["actual_date"] = df["date"]
         df = df.set_index("date")
 
         rule = "W" if timeframe == "weekly" else "ME"
@@ -651,10 +699,11 @@ def get_chart_data(
             "high": "max",
             "low": "min",
             "close": "last",
-            "volume": "sum"
-        }).dropna()
+            "volume": "sum",
+            "actual_date": "last"
+        }).dropna(subset=["open", "high", "low", "close"])
 
-        df = df.reset_index()
+        df = df.reset_index(drop=True).rename(columns={"actual_date": "date"})
 
         result = df.to_dict(orient="records")
 
