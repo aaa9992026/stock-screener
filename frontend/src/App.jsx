@@ -722,7 +722,7 @@ function App() {
                 </thead>
 
                 <tbody>
-                  {fundamentalHistory.annual?.map((row) => (
+                  {fundamentalHistory.annual?.slice(0, 3).map((row) => (
                     <tr key={row.period}>
                       <td>{row.period}</td>
                       <td>
