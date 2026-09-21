@@ -8,19 +8,27 @@ def sync_ohlcv(
     exchange: str,
     rows: list[dict]
 ):
+    """Append/update OHLCV efficiently without one SELECT per incoming row."""
     added = 0
     updated = 0
 
-    for row in rows:
-        existing = (
-            db.query(OHLCV)
-            .filter(
-                OHLCV.symbol == symbol,
-                OHLCV.exchange == exchange,
-                OHLCV.date == row["date"]
-            )
-            .first()
+    if not rows:
+        return {"added": 0, "updated": 0}
+
+    incoming_dates = [row["date"] for row in rows]
+    existing_rows = (
+        db.query(OHLCV)
+        .filter(
+            OHLCV.symbol == symbol,
+            OHLCV.exchange == exchange,
+            OHLCV.date.in_(incoming_dates),
         )
+        .all()
+    )
+    existing_by_date = {row.date: row for row in existing_rows}
+
+    for row in rows:
+        existing = existing_by_date.get(row["date"])
 
         if existing:
             existing.open = row["open"]
@@ -39,7 +47,7 @@ def sync_ohlcv(
                     high=row["high"],
                     low=row["low"],
                     close=row["close"],
-                    volume=row["volume"]
+                    volume=row["volume"],
                 )
             )
             added += 1
@@ -48,5 +56,5 @@ def sync_ohlcv(
 
     return {
         "added": added,
-        "updated": updated
+        "updated": updated,
     }

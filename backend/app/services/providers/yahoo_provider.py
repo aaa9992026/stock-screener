@@ -121,6 +121,26 @@ class YahooProvider(BaseMarketDataProvider):
 
             return None
 
+        def get_average_matching_value(df, names, target_column):
+            """Average current and previous reported balance for return ratios."""
+            if df is None or df.empty:
+                return None
+
+            columns = list(df.columns)
+            for index, column in enumerate(columns):
+                if column.date() == target_column.date():
+                    current = get_value(df, names, column)
+                    previous = None
+                    if index + 1 < len(columns):
+                        previous = get_value(df, names, columns[index + 1])
+                    if current is None:
+                        return None
+                    if previous is None:
+                        return current
+                    return (current + previous) / 2
+
+            return None
+
         def build_periods(df, limit):
             results = []
 
@@ -176,6 +196,16 @@ class YahooProvider(BaseMarketDataProvider):
                     column
                 )
 
+                average_equity = get_average_matching_value(
+                    balance_sheet,
+                    [
+                        "Stockholders Equity",
+                        "Total Stockholder Equity",
+                        "Common Stock Equity"
+                    ],
+                    column
+                )
+
                 operating_cash_flow = get_matching_value(
                     cashflow,
                     [
@@ -197,7 +227,19 @@ class YahooProvider(BaseMarketDataProvider):
                     column
                 )
 
+                average_assets = get_average_matching_value(
+                    balance_sheet,
+                    ["Total Assets"],
+                    column
+                )
+
                 current_liabilities = get_matching_value(
+                    balance_sheet,
+                    ["Current Liabilities", "Total Current Liabilities"],
+                    column
+                )
+
+                average_current_liabilities = get_average_matching_value(
                     balance_sheet,
                     ["Current Liabilities", "Total Current Liabilities"],
                     column
@@ -222,9 +264,9 @@ class YahooProvider(BaseMarketDataProvider):
 
                 if (
                     net_income_to_common is not None
-                    and stockholders_equity not in (None, 0)
+                    and average_equity not in (None, 0)
                 ):
-                    roe = (net_income_to_common / stockholders_equity) * 100
+                    roe = (net_income_to_common / average_equity) * 100
 
                 if (
                     operating_cash_flow is not None
@@ -234,13 +276,13 @@ class YahooProvider(BaseMarketDataProvider):
 
                 if (
                     net_income_to_common is not None
-                    and total_assets not in (None, 0)
+                    and average_assets not in (None, 0)
                 ):
-                    roa = (net_income_to_common / total_assets) * 100
+                    roa = (net_income_to_common / average_assets) * 100
 
                 capital_employed = None
-                if total_assets is not None and current_liabilities is not None:
-                    capital_employed = total_assets - current_liabilities
+                if average_assets is not None and average_current_liabilities is not None:
+                    capital_employed = average_assets - average_current_liabilities
 
                 if ebit is not None and capital_employed not in (None, 0):
                     roce = (ebit / capital_employed) * 100
@@ -449,6 +491,11 @@ class YahooProvider(BaseMarketDataProvider):
             "annual": annual_results,
             "cagr_3y": cagr_3y,
             "cagr_5y": cagr_5y,
+            "ratio_methodology": {
+                "roe": "Net income / average stockholders equity",
+                "roa": "Net income / average total assets",
+                "roce": "EBIT / average (total assets - current liabilities)",
+            },
         }
 
     def get_ownership_details(self, symbol: str, exchange: str = "US"):

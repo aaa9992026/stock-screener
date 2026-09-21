@@ -44,3 +44,7 @@
 - The benchmark overlay is rebased to the stock's first overlapping price so relative performance is comparable while retaining true candlestick prices.
 - Missing 5-year CAGR remains explicitly unavailable when the provider does not supply six valid annual endpoints; no values are estimated.
 - Indian FII/DII/promoter-change data remains provider-limited and is labeled accordingly.
+
+## Final client corrections
+
+The final client formulas are implemented in `FINAL_MILESTONE1_CLIENT_CHANGES.md`. Remaining unavailable values are provider limitations and are displayed as unavailable instead of estimated/hard-coded.

@@ -3,6 +3,7 @@ import {
   createChart,
   CandlestickSeries,
   LineSeries,
+  HistogramSeries,
 } from "lightweight-charts";
 import axios from "axios";
 import {
@@ -41,6 +42,7 @@ function App() {
   const [dashboard, setDashboard] = useState(null);
   const [technicalSummary, setTechnicalSummary] = useState(null);
   const [ownershipDetails, setOwnershipDetails] = useState(null);
+  const [chartInfo, setChartInfo] = useState(null);
 
   const loadDashboard = async () => {
     try {
@@ -116,39 +118,38 @@ function App() {
     }
 
     try {
-      const res = await axios.get(
+      // Refresh first so an older empty DB row (for example BA) does not keep
+      // rendering dashes after provider data has become available.
+      const res = await axios.post(
         `${API}/market/fundamentals/${symbol}?exchange=US`
       );
 
-      setFundamentals(res.data);
-
+      setFundamentals({
+        symbol: res.data.symbol,
+        exchange: res.data.exchange,
+        fundamentals: {
+          market_cap: res.data.fundamentals.market_cap,
+          trailing_eps: res.data.fundamentals.trailing_eps,
+          forward_eps: res.data.fundamentals.forward_eps,
+          revenue: res.data.fundamentals.revenue,
+          net_income: res.data.fundamentals.net_income,
+          profit_margin: res.data.fundamentals.profit_margin,
+          return_on_equity: res.data.fundamentals.return_on_equity,
+          return_on_assets: res.data.fundamentals.return_on_assets,
+        },
+        ownership: {
+          insider_percent: res.data.fundamentals.insider_percent,
+          institution_percent: res.data.fundamentals.institution_percent,
+          shares_outstanding: res.data.fundamentals.shares_outstanding,
+          float_shares: res.data.fundamentals.float_shares,
+        }
+      });
     } catch {
       try {
-        const res = await axios.post(
+        const res = await axios.get(
           `${API}/market/fundamentals/${symbol}?exchange=US`
         );
-
-        setFundamentals({
-          symbol: res.data.symbol,
-          exchange: res.data.exchange,
-          fundamentals: {
-            market_cap: res.data.fundamentals.market_cap,
-            trailing_eps: res.data.fundamentals.trailing_eps,
-            forward_eps: res.data.fundamentals.forward_eps,
-            revenue: res.data.fundamentals.revenue,
-            net_income: res.data.fundamentals.net_income,
-            profit_margin: res.data.fundamentals.profit_margin,
-            return_on_equity: res.data.fundamentals.return_on_equity,
-            return_on_assets: res.data.fundamentals.return_on_assets,
-          },
-          ownership: {
-            insider_percent: res.data.fundamentals.insider_percent,
-            institution_percent: res.data.fundamentals.institution_percent,
-            shares_outstanding: res.data.fundamentals.shares_outstanding,
-            float_shares: res.data.fundamentals.float_shares,
-          }
-        });
-
+        setFundamentals(res.data);
       } catch {
         setFundamentals(null);
       }
@@ -172,7 +173,7 @@ function App() {
       setLoading(true);
 
       const res = await axios.get(
-        `${API}/market/chart/${symbol}?exchange=${exchange}&timeframe=${timeframe}&limit=100`
+        `${API}/market/chart/${symbol}?exchange=${exchange}&timeframe=${timeframe}&limit=260`
       );
 
       const rows = res.data.data || [];
@@ -208,7 +209,7 @@ function App() {
   const loadBenchmark = async () => {
     try {
       const res = await axios.get(
-        `${API}/market/benchmark/${exchange}?limit=100`
+        `${API}/market/benchmark/${exchange}?limit=400`
       );
 
       setBenchmark(res.data);
@@ -279,7 +280,7 @@ function App() {
 
     const chart = createChart(chartContainerRef.current, {
       width: chartContainerRef.current.clientWidth,
-      height: 420,
+      height: 520,
       layout: {
         background: { color: "#ffffff" },
         textColor: "#334155",
@@ -290,10 +291,14 @@ function App() {
       },
       rightPriceScale: {
         borderColor: "#cbd5e1",
+        scaleMargins: { top: 0.05, bottom: 0.28 },
       },
       timeScale: {
         borderColor: "#cbd5e1",
         timeVisible: true,
+      },
+      localization: {
+        dateFormat: "MM/dd/yyyy",
       },
     });
 
@@ -309,101 +314,192 @@ function App() {
 
     candleSeries.setData(candleData);
 
-    if (benchmark?.data?.length && candleData.length) {
-      const benchmarkSeries = chart.addSeries(LineSeries, {
-        lineWidth: 2,
-        priceScaleId: "right",
+    const calculateEmaSeries = (rows, period) => {
+      if (rows.length < period) return [];
+      const multiplier = 2 / (period + 1);
+      let ema = rows.slice(0, period).reduce((sum, row) => sum + row.close, 0) / period;
+      const result = [{ time: rows[period - 1].time, value: ema }];
+      for (let i = period; i < rows.length; i += 1) {
+        ema = ((rows[i].close - ema) * multiplier) + ema;
+        result.push({ time: rows[i].time, value: ema });
+      }
+      return result;
+    };
+
+    [20, 30, 50, 100, 150, 200].forEach((period) => {
+      const values = calculateEmaSeries(candleData, period);
+      if (!values.length) return;
+      const series = chart.addSeries(LineSeries, {
+        lineWidth: period <= 50 ? 2 : 1,
+        priceLineVisible: false,
+        lastValueVisible: false,
       });
+      series.setData(values);
+    });
 
-      let rawBenchmark = benchmark.data.map((row) => ({
-        time: String(row.date).slice(0, 10),
-        value: Number(row.close),
-      }));
-
-      if (timeframe === "weekly") {
-        const grouped = {};
-
-        rawBenchmark.forEach((row) => {
-          const d = new Date(row.time);
-
-          const day = d.getUTCDay();
-          const diff =
-            d.getUTCDate() - day + (day === 0 ? -6 : 1);
-
-          const monday = new Date(
-            Date.UTC(
-              d.getUTCFullYear(),
-              d.getUTCMonth(),
-              diff
-            )
-          );
-
-          const key = monday.toISOString().slice(0, 10);
-
-          grouped[key] = {
-            time: key,
-            value: row.value,
-          };
-        });
-
-        rawBenchmark = Object.values(grouped);
+    // Bollinger Bands: 20-period SMA +/- 2 standard deviations.
+    if (candleData.length >= 20) {
+      const upper = [];
+      const lower = [];
+      for (let i = 19; i < candleData.length; i += 1) {
+        const window = candleData.slice(i - 19, i + 1).map((row) => row.close);
+        const mean = window.reduce((a, b) => a + b, 0) / window.length;
+        const variance = window.reduce((sum, value) => sum + ((value - mean) ** 2), 0) / window.length;
+        const sd = Math.sqrt(variance);
+        upper.push({ time: candleData[i].time, value: mean + (2 * sd) });
+        lower.push({ time: candleData[i].time, value: mean - (2 * sd) });
       }
+      const bbUpper = chart.addSeries(LineSeries, { lineWidth: 1, priceLineVisible: false, lastValueVisible: false });
+      const bbLower = chart.addSeries(LineSeries, { lineWidth: 1, priceLineVisible: false, lastValueVisible: false });
+      bbUpper.setData(upper);
+      bbLower.setData(lower);
+    }
 
-      if (timeframe === "monthly") {
-        const grouped = {};
+    // Volume plus 50-period average volume in a lower pane-like scale.
+    const volumeSeries = chart.addSeries(HistogramSeries, {
+      priceScaleId: "volume",
+      priceFormat: { type: "volume" },
+      priceLineVisible: false,
+      lastValueVisible: false,
+    });
+    volumeSeries.setData(data.map((row) => ({
+      time: String(row.date).slice(0, 10),
+      value: Number(row.volume || 0),
+    })));
+    chart.priceScale("volume").applyOptions({ scaleMargins: { top: 0.78, bottom: 0 } });
 
-        rawBenchmark.forEach((row) => {
-          const d = new Date(row.time);
-
-          const year = d.getUTCFullYear();
-          const month = String(
-            d.getUTCMonth() + 1
-          ).padStart(2, "0");
-
-          const key = `${year}-${month}-01`;
-
-          grouped[key] = {
-            time: key,
-            value: row.value,
-          };
+    if (data.length >= 50) {
+      const avg50 = [];
+      for (let i = 49; i < data.length; i += 1) {
+        const window = data.slice(i - 49, i + 1);
+        avg50.push({
+          time: String(data[i].date).slice(0, 10),
+          value: window.reduce((sum, row) => sum + Number(row.volume || 0), 0) / 50,
         });
-
-        rawBenchmark = Object.values(grouped);
       }
+      const volumeAvg = chart.addSeries(LineSeries, {
+        priceScaleId: "volume",
+        lineWidth: 2,
+        priceLineVisible: false,
+        lastValueVisible: false,
+      });
+      volumeAvg.setData(avg50);
+    }
 
-      // Rebase the benchmark to the stock's first visible close. This keeps the
-      // candlesticks on their real price scale while making the benchmark line
-      // represent relative performance instead of an unrelated index price.
-      const firstBenchmark = rawBenchmark[0]?.value;
-      const firstStock = candleData[0]?.close;
+    // IBD-style relative-strength line: (stock / broad-market index), visually
+    // rebased to the stock's first overlapping close so it can share the price chart.
+    if (benchmark?.data?.length && candleData.length) {
+      const benchmarkRows = benchmark.data
+        .map((row) => ({ time: String(row.date).slice(0, 10), value: Number(row.close) }))
+        .filter((row) => Number.isFinite(row.value));
 
-      if (firstBenchmark && firstStock) {
-        benchmarkSeries.setData(
-          rawBenchmark.map((row) => ({
-            time: row.time,
-            value: (row.value / firstBenchmark) * firstStock,
-          }))
-        );
+      const nearestBenchmark = (dateText) => {
+        const target = new Date(`${dateText}T00:00:00Z`).getTime();
+        let best = null;
+        let bestDiff = Infinity;
+        for (const row of benchmarkRows) {
+          const diff = Math.abs(new Date(`${row.time}T00:00:00Z`).getTime() - target);
+          if (diff < bestDiff) {
+            bestDiff = diff;
+            best = row;
+          }
+        }
+        const maxGap = timeframe === "monthly" ? 35 : timeframe === "weekly" ? 8 : 4;
+        return best && bestDiff <= maxGap * 86400000 ? best : null;
+      };
+
+      const rsRaw = candleData.map((row) => {
+        const bench = nearestBenchmark(row.time);
+        if (!bench || !bench.value) return null;
+        return { time: row.time, ratio: row.close / bench.value, close: row.close };
+      }).filter(Boolean);
+
+      if (rsRaw.length) {
+        const firstRatio = rsRaw[0].ratio;
+        const firstClose = rsRaw[0].close;
+        const rsSeries = chart.addSeries(LineSeries, {
+          lineWidth: 2,
+          priceLineVisible: false,
+          lastValueVisible: false,
+        });
+        rsSeries.setData(rsRaw.map((row) => ({
+          time: row.time,
+          value: (row.ratio / firstRatio) * firstClose,
+        })));
       }
     }
+
+    // Quarterly EPS points/line on its own scale. Quarter-end dates are snapped
+    // to the nearest visible bar so weekend/fiscal dates still render.
+    if (fundamentalHistory?.quarterly?.length && candleData.length) {
+      const nearestCandle = (dateText) => {
+        const target = new Date(`${String(dateText).slice(0, 10)}T00:00:00Z`).getTime();
+        let best = null;
+        let bestDiff = Infinity;
+        candleData.forEach((row) => {
+          const diff = Math.abs(new Date(`${row.time}T00:00:00Z`).getTime() - target);
+          if (diff < bestDiff) {
+            bestDiff = diff;
+            best = row.time;
+          }
+        });
+        return best;
+      };
+
+      const epsData = [...fundamentalHistory.quarterly]
+        .filter((row) => row.eps != null)
+        .map((row) => ({ time: nearestCandle(row.period), value: Number(row.eps) }))
+        .filter((row) => row.time && Number.isFinite(row.value))
+        .sort((a, b) => a.time.localeCompare(b.time));
+
+      if (epsData.length) {
+        const unique = [];
+        epsData.forEach((row) => {
+          if (unique.length && unique[unique.length - 1].time === row.time) unique[unique.length - 1] = row;
+          else unique.push(row);
+        });
+        const epsSeries = chart.addSeries(LineSeries, {
+          priceScaleId: "eps",
+          lineWidth: 2,
+          pointMarkersVisible: true,
+          pointMarkersRadius: 4,
+          priceLineVisible: false,
+        });
+        epsSeries.setData(unique);
+        chart.priceScale("eps").applyOptions({ scaleMargins: { top: 0.05, bottom: 0.78 } });
+      }
+    }
+
+    const latestRow = data[data.length - 1];
+    setChartInfo(latestRow ? {
+      date: String(latestRow.date).slice(0, 10),
+      open: Number(latestRow.open), high: Number(latestRow.high), low: Number(latestRow.low), close: Number(latestRow.close),
+    } : null);
+
+    chart.subscribeCrosshairMove((param) => {
+      const point = param.seriesData?.get(candleSeries);
+      if (point && "open" in point) {
+        setChartInfo({
+          date: typeof param.time === "string" ? param.time : String(param.time ?? ""),
+          open: Number(point.open), high: Number(point.high), low: Number(point.low), close: Number(point.close),
+        });
+      }
+    });
 
     chart.timeScale().fitContent();
 
     const handleResize = () => {
       if (chartContainerRef.current) {
-        chart.applyOptions({
-          width: chartContainerRef.current.clientWidth,
-        });
+        chart.applyOptions({ width: chartContainerRef.current.clientWidth });
       }
     };
 
     window.addEventListener("resize", handleResize);
-
     return () => {
       window.removeEventListener("resize", handleResize);
       chart.remove();
     };
-  }, [data, benchmark, timeframe]);
+  }, [data, benchmark, timeframe, fundamentalHistory]);
 
   const latest = !dataStale && data.length
     ? data[data.length - 1]
@@ -502,7 +598,7 @@ function App() {
 
                 // First try to load existing stored data
                 const res = await axios.get(
-                  `${API}/market/chart/${symbol}?exchange=${exchange}&timeframe=${timeframe}&limit=100`
+                  `${API}/market/chart/${symbol}?exchange=${exchange}&timeframe=${timeframe}&limit=260`
                 );
 
                 const rows = res.data.data || [];
@@ -657,12 +753,20 @@ function App() {
             {loading && <span>Loading...</span>}
           </div>
 
+          {chartInfo && !dataStale && (
+            <div className="chart-note">
+              {new Date(`${chartInfo.date}T00:00:00`).toLocaleDateString("en-US")} &nbsp;
+              O {chartInfo.open.toFixed(2)} &nbsp; H {chartInfo.high.toFixed(2)} &nbsp;
+              L {chartInfo.low.toFixed(2)} &nbsp; C {chartInfo.close.toFixed(2)}
+            </div>
+          )}
+
           {!dataStale ? (
             <div
               ref={chartContainerRef}
               style={{
                 width: "100%",
-                height: "420px"
+                height: "520px"
               }}
             />
           ) : (
@@ -676,7 +780,7 @@ function App() {
           )}
           {benchmark?.data?.length > 0 && (
             <div className="chart-note">
-              {benchmark.name} line is rebased to the stock price at the first overlapping date so relative performance can be compared on the same chart.
+              Chart overlays: EMA 20/30/50/100/150/200, Bollinger Bands, volume + 50-period average volume, quarterly EPS, and Relative Strength = Stock Price / {benchmark.name}. The RS line is visually rebased only for overlay; its direction comes from the stock/index ratio.
             </div>
           )}
         </section>
@@ -686,19 +790,23 @@ function App() {
             <h2>Technical Screening Summary</h2>
             <div className="fundamental-grid">
               <div className="metric">
-                <span>RS Rating</span>
+                <span>RS Rating vs {technicalSummary.rs_benchmark || "Benchmark"}</span>
                 <strong>{technicalSummary.rs_rating ?? "Unavailable"}</strong>
-                <small>
-                  {technicalSummary.rs_rating != null
-                    ? `Stored universe: ${technicalSummary.rs_universe_size}`
-                    : `Insufficient universe: ${technicalSummary.rs_universe_size ?? 0}/${technicalSummary.rs_minimum_universe ?? 20}`}
-                </small>
+                <small>1/2/3/4W + 2/3/6/12M relative returns</small>
               </div>
               <div className="metric"><span>EMA Alignment</span><strong>{technicalSummary.ema_alignment}</strong></div>
               <div className="metric"><span>20-Day Avg Volume</span><strong>{technicalSummary.average_volume_20 != null ? Number(technicalSummary.average_volume_20).toLocaleString() : "-"}</strong></div>
               <div className="metric"><span>Volume Ratio</span><strong>{technicalSummary.volume_ratio ?? "-"}</strong></div>
               <div className="metric"><span>ADR (20D)</span><strong>{technicalSummary.adr_percent != null ? `${technicalSummary.adr_percent}%` : "-"}</strong></div>
+              <div className="metric"><span>ATR (14)</span><strong>{technicalSummary.atr_14 ?? "-"}</strong></div>
+              <div className="metric"><span>ATR %</span><strong>{technicalSummary.atr_percent != null ? `${technicalSummary.atr_percent}%` : "-"}</strong></div>
+              <div className="metric"><span>BB Width</span><strong>{technicalSummary.bollinger_width_percent != null ? `${technicalSummary.bollinger_width_percent}%` : "-"}</strong></div>
+              <div className="metric"><span>20-Day Range</span><strong>{technicalSummary.range_20d_percent != null ? `${technicalSummary.range_20d_percent}%` : "-"}</strong></div>
+              <div className="metric"><span>Distance from 52W High</span><strong>{technicalSummary.distance_from_52w_high_percent != null ? `${technicalSummary.distance_from_52w_high_percent}%` : "-"}</strong></div>
+              <div className="metric"><span>Pivot</span><strong>{technicalSummary.pivot ?? "-"}</strong></div>
               <div className="metric"><span>Breakout Status</span><strong>{technicalSummary.breakout_status}</strong></div>
+              <div className="metric"><span>Breakout Strength</span><strong>{technicalSummary.breakout_strength != null ? `${technicalSummary.breakout_strength}/100` : "-"}</strong></div>
+              <div className="metric"><span>Gap</span><strong>{technicalSummary.gap_percent != null ? `${technicalSummary.gap_percent}%` : "-"}</strong><small>{technicalSummary.gap_classification}</small></div>
               <div className="metric"><span>VCP Stage</span><strong>{technicalSummary.vcp_stage}</strong></div>
               <div className="metric"><span>Pattern</span><strong>{technicalSummary.pattern}</strong></div>
             </div>
@@ -711,6 +819,8 @@ function App() {
                 </div>
               ))}
             </div>
+            <div className="chart-note">{technicalSummary.criteria_note}</div>
+            <div className="chart-note">{technicalSummary.rs_note}</div>
           </section>
         )}
 
@@ -843,7 +953,9 @@ function App() {
               <div className="metric">
                 <span>ROE</span>
                 <strong>
-                  {fundamentals.fundamentals.return_on_equity != null
+                  {fundamentalHistory?.annual?.[0]?.roe != null
+                    ? `${fundamentalHistory.annual[0].roe}%`
+                    : fundamentals.fundamentals.return_on_equity != null
                     ? `${(fundamentals.fundamentals.return_on_equity * 100).toFixed(2)}%`
                     : "-"}
                 </strong>
@@ -852,8 +964,19 @@ function App() {
               <div className="metric">
                 <span>ROA</span>
                 <strong>
-                  {fundamentals.fundamentals.return_on_assets != null
+                  {fundamentalHistory?.annual?.[0]?.roa != null
+                    ? `${fundamentalHistory.annual[0].roa}%`
+                    : fundamentals.fundamentals.return_on_assets != null
                     ? `${(fundamentals.fundamentals.return_on_assets * 100).toFixed(2)}%`
+                    : "-"}
+                </strong>
+              </div>
+
+              <div className="metric">
+                <span>ROCE</span>
+                <strong>
+                  {fundamentalHistory?.annual?.[0]?.roce != null
+                    ? `${fundamentalHistory.annual[0].roce}%`
                     : "-"}
                 </strong>
               </div>
@@ -970,7 +1093,7 @@ function App() {
           <section className="fundamental-section">
             <h2>Fundamental History</h2>
 
-            <h3>Last 4 Quarters</h3>
+            <h3>Last 8 Quarters</h3>
             <div className="history-table-wrapper">
               <table className="history-table">
                 <thead>
@@ -992,7 +1115,7 @@ function App() {
                 </thead>
 
                 <tbody>
-                  {fundamentalHistory.quarterly?.slice(0, 4).map((row) => (
+                  {fundamentalHistory.quarterly?.slice(0, 8).map((row) => (
                     <tr key={row.period}>
                       <td>{row.period}</td>
                       <td>
@@ -1035,7 +1158,47 @@ function App() {
               </table>
             </div>
 
-            <h3>Previous 3 Years</h3>
+            <h3>Quarterly Result Trends</h3>
+            <div className="fundamental-chart-grid">
+              <div className="fundamental-chart-card">
+                <h4>Quarterly Sales</h4>
+                <ResponsiveContainer width="100%" height={220}>
+                  <LineChart data={[...(fundamentalHistory.quarterly || [])].slice(0, 8).reverse()}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="period" />
+                    <YAxis tickFormatter={(value) => `${(value / 1e9).toFixed(0)}B`} />
+                    <Tooltip formatter={(value) => value != null ? `$${(value / 1e9).toFixed(2)}B` : "-"} />
+                    <Line type="monotone" dataKey="sales" strokeWidth={2} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="fundamental-chart-card">
+                <h4>Quarterly EPS</h4>
+                <ResponsiveContainer width="100%" height={220}>
+                  <LineChart data={[...(fundamentalHistory.quarterly || [])].slice(0, 8).reverse()}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="period" />
+                    <YAxis />
+                    <Tooltip />
+                    <Line type="monotone" dataKey="eps" strokeWidth={2} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="fundamental-chart-card">
+                <h4>Quarterly PAT</h4>
+                <ResponsiveContainer width="100%" height={220}>
+                  <LineChart data={[...(fundamentalHistory.quarterly || [])].slice(0, 8).reverse()}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="period" />
+                    <YAxis tickFormatter={(value) => `${(value / 1e9).toFixed(0)}B`} />
+                    <Tooltip formatter={(value) => value != null ? `$${(value / 1e9).toFixed(2)}B` : "-"} />
+                    <Line type="monotone" dataKey="pat" strokeWidth={2} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            <h3>Previous 5 Years</h3>
             <div className="history-table-wrapper">
               <table className="history-table">
                 <thead>
@@ -1061,7 +1224,7 @@ function App() {
                 </thead>
 
                 <tbody>
-                  {fundamentalHistory.annual?.slice(0, 3).map((row) => (
+                  {fundamentalHistory.annual?.slice(0, 5).map((row) => (
                     <tr key={row.period}>
                       <td>{row.period}</td>
                       <td>

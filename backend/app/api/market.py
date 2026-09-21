@@ -229,7 +229,7 @@ def refresh_symbol(
             rows = provider.get_ohlcv(
                 symbol=symbol,
                 exchange=exchange,
-                start_date="2025-01-01"
+                start_date="2000-01-01"
             )
 
         if not rows:
@@ -266,7 +266,7 @@ def refresh_symbol(
 def get_history(
     symbol: str,
     exchange: str = "US",
-    limit: int = 100,
+    limit: int = 260,
     db: Session = Depends(get_db)
 ):
     rows = (
@@ -363,71 +363,151 @@ def get_technical_summary(
         raise HTTPException(status_code=404, detail="Not enough historical data for technical summary")
 
     closes = [float(row.close) for row in rows]
+    highs = [float(row.high) for row in rows]
+    lows = [float(row.low) for row in rows]
+    opens = [float(row.open) for row in rows]
     volumes = [float(row.volume or 0) for row in rows]
-    ema_periods = [20, 30, 50, 100, 150, 200]
-    emas = {str(period): (_ema(closes, period)) for period in ema_periods}
 
+    ema_periods = [20, 30, 50, 100, 150, 200]
+    emas = {str(period): _ema(closes, period) for period in ema_periods}
     available_emas = [emas[str(p)] for p in ema_periods if emas[str(p)] is not None]
     ema_alignment = "Unavailable"
     if len(available_emas) == len(ema_periods):
         bullish = all(available_emas[i] > available_emas[i + 1] for i in range(len(available_emas) - 1))
         bearish = all(available_emas[i] < available_emas[i + 1] for i in range(len(available_emas) - 1))
-        if bullish:
-            ema_alignment = "Bullish"
-        elif bearish:
-            ema_alignment = "Bearish"
-        else:
-            ema_alignment = "Mixed"
+        ema_alignment = "Bullish" if bullish else "Bearish" if bearish else "Mixed"
 
     avg_volume_20 = sum(volumes[-20:]) / 20
     volume_ratio = (volumes[-1] / avg_volume_20) if avg_volume_20 else None
 
-    adr_values = []
-    for row in rows[-20:]:
-        if row.close not in (None, 0) and row.high is not None and row.low is not None:
-            adr_values.append(((float(row.high) - float(row.low)) / float(row.close)) * 100)
+    adr_values = [((highs[i] - lows[i]) / closes[i]) * 100 for i in range(max(0, len(rows)-20), len(rows)) if closes[i] != 0]
     adr = sum(adr_values) / len(adr_values) if adr_values else None
 
-    previous = rows[-21:-1] if len(rows) >= 21 else rows[:-1]
-    previous_high = max((float(row.high) for row in previous if row.high is not None), default=None)
+    true_ranges = []
+    for i in range(len(rows)):
+        prev_close = closes[i - 1] if i > 0 else closes[i]
+        true_ranges.append(max(highs[i] - lows[i], abs(highs[i] - prev_close), abs(lows[i] - prev_close)))
+    atr14 = sum(true_ranges[-14:]) / 14 if len(true_ranges) >= 14 else None
+    atr_percent = (atr14 / closes[-1] * 100) if atr14 is not None and closes[-1] else None
+
+    recent20 = closes[-20:]
+    sma20 = sum(recent20) / 20
+    variance20 = sum((x - sma20) ** 2 for x in recent20) / 20
+    sd20 = variance20 ** 0.5
+    bb_upper = sma20 + 2 * sd20
+    bb_lower = sma20 - 2 * sd20
+    bb_width = ((bb_upper - bb_lower) / sma20 * 100) if sma20 else None
+
+    range20 = ((max(highs[-20:]) - min(lows[-20:])) / min(lows[-20:]) * 100) if min(lows[-20:]) else None
+    lookback_52w = min(252, len(rows))
+    high_52w = max(highs[-lookback_52w:])
+    distance_52w_high = ((high_52w - closes[-1]) / high_52w * 100) if high_52w else None
+
+    pivot_rows = rows[-21:-1] if len(rows) >= 21 else rows[:-1]
+    pivot = max((float(r.high) for r in pivot_rows), default=None)
+    buffer = 0.003
     latest_close = closes[-1]
-    if previous_high is None:
-        breakout_status = "Unavailable"
-    elif latest_close > previous_high:
-        breakout_status = "Breakout"
-    elif latest_close >= previous_high * 0.97:
-        breakout_status = "Near Breakout"
-    else:
-        breakout_status = "No Breakout"
+    latest_open = opens[-1]
+    latest_midpoint = (highs[-1] + lows[-1]) / 2
 
-    recent10 = rows[-10:]
-    prior20 = rows[-30:-10] if len(rows) >= 30 else []
-    def avg_range_percent(items):
-        vals = []
-        for row in items:
-            if row.close not in (None, 0) and row.high is not None and row.low is not None:
-                vals.append(((float(row.high) - float(row.low)) / float(row.close)) * 100)
-        return sum(vals) / len(vals) if vals else None
+    breakout_status = "Unavailable"
+    breakout_strength = None
+    if pivot is not None:
+        above_pivot = latest_close > pivot * (1 + buffer)
+        price_confirmation = latest_close > latest_open and latest_close >= latest_midpoint
+        volume_confirmation = volume_ratio is not None and volume_ratio >= 1.5
+        if above_pivot and price_confirmation and volume_confirmation:
+            breakout_status = "Confirmed Breakout"
+        elif latest_close > pivot:
+            breakout_status = "Potential Breakout"
+        elif latest_close >= pivot * 0.97:
+            breakout_status = "Near Breakout"
+        else:
+            breakout_status = "No Breakout"
 
-    recent_range = avg_range_percent(recent10)
-    prior_range = avg_range_percent(prior20)
-    recent_volume = sum(float(row.volume or 0) for row in recent10) / len(recent10) if recent10 else None
-    prior_volume = sum(float(row.volume or 0) for row in prior20) / len(prior20) if prior20 else None
+        points = 0
+        if latest_close > pivot: points += 20
+        if volume_ratio is not None and volume_ratio >= 1.5: points += 20
+        if volume_ratio is not None and volume_ratio >= 2.0: points += 10
+        if latest_close > pivot * 1.005: points += 10
+        if latest_close > pivot * 1.01: points += 10
+        if range20 is not None and range20 <= 10: points += 10
+        breakout_strength = min(100, points)
+
+    gap_percent = None
+    gap_classification = "Unavailable"
+    if len(rows) >= 2 and closes[-2]:
+        gap_percent = ((opens[-1] - closes[-2]) / closes[-2]) * 100
+        if gap_percent >= 8:
+            gap_classification = "Excessive Gap Breakout"
+        elif gap_percent >= 2:
+            gap_classification = "Gap Breakout"
+        else:
+            gap_classification = "Normal / No Material Gap"
+
+    # Three successive 20-session windows provide a transparent VCP contraction heuristic.
+    contractions = []
+    if len(rows) >= 60:
+        for start_i, end_i in [(-60, -40), (-40, -20), (-20, None)]:
+            segment = rows[start_i:end_i]
+            seg_high = max(float(r.high) for r in segment)
+            seg_low = min(float(r.low) for r in segment)
+            depth = ((seg_high - seg_low) / seg_high * 100) if seg_high else None
+            seg_tr = []
+            for j, r in enumerate(segment):
+                prev = float(segment[j-1].close) if j > 0 else float(r.close)
+                seg_tr.append(max(float(r.high)-float(r.low), abs(float(r.high)-prev), abs(float(r.low)-prev)))
+            seg_atr = sum(seg_tr[-14:]) / min(14, len(seg_tr)) if seg_tr else None
+            seg_atr_pct = (seg_atr / float(segment[-1].close) * 100) if seg_atr and segment[-1].close else None
+            contractions.append({"depth_percent": depth, "atr_percent": seg_atr_pct})
+
     vcp_stage = "Not Detected"
-    if recent_range is not None and prior_range is not None and recent_volume is not None and prior_volume not in (None, 0):
-        if recent_range < prior_range * 0.8 and recent_volume < prior_volume * 0.85:
-            vcp_stage = "Possible VCP"
+    if len(contractions) == 3:
+        depths = [c["depth_percent"] for c in contractions]
+        atrs = [c["atr_percent"] for c in contractions]
+        if all(v is not None for v in depths + atrs) and depths[1] < depths[0] and depths[2] < depths[1] and atrs[1] < atrs[0] and atrs[2] < atrs[1]:
+            vcp_stage = "VCP Contraction"
 
-    if breakout_status == "Breakout":
-        pattern = "20-Day Breakout"
-    elif breakout_status == "Near Breakout":
-        pattern = "Near 20-Day High"
-    elif recent_range is not None and recent_range < 2.5:
+    if breakout_status == "Confirmed Breakout":
+        pattern = "Confirmed Breakout"
+    elif vcp_stage == "VCP Contraction":
+        pattern = "VCP / Volatility Contraction"
+    elif range20 is not None and range20 <= 10:
         pattern = "Tight Consolidation"
+    elif breakout_status == "Near Breakout":
+        pattern = "Near Pivot"
     else:
         pattern = "None"
 
-    rs_rating, rs_universe = _stored_rs_rating(db, symbol, exchange)
+    # Relative strength versus the requested broad-market benchmark.
+    benchmark_symbol = "^GSPC" if exchange == "US" else "^CRSLDX"
+    benchmark_name = "S&P 500" if exchange == "US" else "NIFTY 500"
+    rs_periods = {"1w": 5, "2w": 10, "3w": 15, "4w": 20, "2m": 42, "3m": 63, "6m": 126, "12m": 252}
+    rs_metrics = {}
+    rs_rating = None
+    try:
+        hist = yf.Ticker(benchmark_symbol).history(period="2y", interval="1d", auto_adjust=False)
+        benchmark_by_date = {idx.date(): float(row["Close"]) for idx, row in hist.iterrows() if row.get("Close") is not None}
+        aligned = [(r.date, float(r.close), benchmark_by_date.get(r.date)) for r in rows if benchmark_by_date.get(r.date) is not None]
+        period_scores = []
+        for label, days in rs_periods.items():
+            if len(aligned) > days:
+                _, stock_now, bench_now = aligned[-1]
+                _, stock_old, bench_old = aligned[-1-days]
+                stock_return = (stock_now / stock_old) - 1 if stock_old else None
+                bench_return = (bench_now / bench_old) - 1 if bench_old else None
+                if stock_return is not None and bench_return is not None and (1 + bench_return) != 0:
+                    relative = ((1 + stock_return) / (1 + bench_return) - 1) * 100
+                    rs_metrics[label] = {
+                        "stock_return_percent": round(stock_return * 100, 2),
+                        "benchmark_return_percent": round(bench_return * 100, 2),
+                        "relative_return_percent": round(relative, 2),
+                    }
+                    period_scores.append(max(0, min(100, 50 + relative * 2)))
+        if period_scores:
+            rs_rating = round(sum(period_scores) / len(period_scores))
+    except Exception:
+        rs_metrics = {}
 
     return {
         "symbol": symbol,
@@ -437,142 +517,93 @@ def get_technical_summary(
         "average_volume_20": round(avg_volume_20, 2),
         "volume_ratio": round(volume_ratio, 2) if volume_ratio is not None else None,
         "adr_percent": round(adr, 2) if adr is not None else None,
+        "atr_14": round(atr14, 2) if atr14 is not None else None,
+        "atr_percent": round(atr_percent, 2) if atr_percent is not None else None,
+        "bollinger_width_percent": round(bb_width, 2) if bb_width is not None else None,
+        "range_20d_percent": round(range20, 2) if range20 is not None else None,
+        "distance_from_52w_high_percent": round(distance_52w_high, 2) if distance_52w_high is not None else None,
+        "pivot": round(pivot, 2) if pivot is not None else None,
         "breakout_status": breakout_status,
+        "breakout_strength": breakout_strength,
+        "gap_percent": round(gap_percent, 2) if gap_percent is not None else None,
+        "gap_classification": gap_classification,
         "vcp_stage": vcp_stage,
+        "vcp_contractions": [{k: (round(v, 2) if v is not None else None) for k, v in item.items()} for item in contractions],
         "pattern": pattern,
         "rs_rating": rs_rating,
-        "rs_universe_size": rs_universe,
-        "rs_minimum_universe": 20,
-        "rs_note": (
-            "RS rating is shown only when at least 20 symbols have sufficient stored history."
-            if rs_rating is None
-            else "RS rating is a percentile within symbols that currently have sufficient stored history in this deployment."
-        )
+        "rs_benchmark": benchmark_name,
+        "rs_periods": rs_metrics,
+        "rs_note": "RS compares stock returns with the broad-market benchmark over 1/2/3/4 weeks and 2/3/6/12 months. Each period is centered at 50 for benchmark-equivalent performance, then averaged and clipped to 0-100.",
+        "criteria_note": "Pivot = highest high of prior 20 sessions. Confirmed breakout requires close > pivot by 0.3%, volume >= 1.5x 20-day average, close > open, and close in the upper half of the day's range. VCP requires successive 20-session price-depth and ATR% contractions."
     }
 
 
 @router.get("/benchmark/{exchange}")
-def get_benchmark(
-    exchange: str,
-    limit: int = 100
-):
+def get_benchmark(exchange: str, limit: int = 400):
+    exchange = exchange.upper()
+    if exchange == "US":
+        ticker_symbol = "^GSPC"
+        benchmark_name = "S&P 500"
+    elif exchange in ["NSE", "BSE"]:
+        ticker_symbol = "^CRSLDX"
+        benchmark_name = "NIFTY 500"
+    else:
+        raise HTTPException(status_code=400, detail="Unsupported exchange")
+
+    # Yahoo is used first because it exposes both requested index series.
     try:
-        exchange = exchange.upper()
-
-        if exchange == "US":
-            ticker_symbol = "SPY"
-            benchmark_name = "S&P 500"
-
-        elif exchange in ["NSE", "BSE"]:
-            ticker_symbol = "MONIFTY500"
-            benchmark_name = "NIFTY 500 Proxy"
-
-            api_key = os.getenv("TWELVE_DATA_API_KEY")
-
-            response = requests.get(
-                "https://api.twelvedata.com/time_series",
-                params={
-                    "symbol": "MONIFTY500",
-                    "interval": "1day",
-                    "outputsize": limit,
-                    "apikey": api_key,
-                },
-                timeout=20,
-            )
-
-            payload = response.json()
-
-            if payload.get("status") == "error":
-                return {
-                    "name": benchmark_name,
-                    "symbol": ticker_symbol,
-                    "data": [],
-                    "warning": "NIFTY 500 benchmark data is not available from the currently configured provider."
-                }
-
-            values = payload.get("values", [])
-
-            benchmark_data = [
-                {
-                    "date": item["datetime"],
-                    "close": float(item["close"])
-                }
-                for item in reversed(values)
+        data = yf.Ticker(ticker_symbol).history(period="5y", interval="1d", auto_adjust=False)
+        if data is not None and not data.empty:
+            values = [
+                {"date": idx.date().isoformat(), "close": float(row["Close"])}
+                for idx, row in data.iterrows()
+                if row.get("Close") is not None
             ]
-
             return {
                 "name": benchmark_name,
                 "symbol": ticker_symbol,
-                "data": benchmark_data
+                "data": values[-limit:],
+                "method": "Broad-market index history from Yahoo Finance",
             }
+    except Exception:
+        pass
 
-        else:
-            raise HTTPException(
-                status_code=400,
-                detail="Unsupported exchange"
-            )
-
+    # US fallback for deployments where Yahoo index history is temporarily unavailable.
+    if exchange == "US":
         api_key = os.getenv("TWELVE_DATA_API_KEY")
+        if api_key:
+            try:
+                response = requests.get(
+                    "https://api.twelvedata.com/time_series",
+                    params={"symbol": "SPY", "interval": "1day", "outputsize": limit, "apikey": api_key},
+                    timeout=20,
+                )
+                payload = response.json()
+                if payload.get("status") != "error":
+                    values = payload.get("values", [])
+                    return {
+                        "name": "S&P 500 (SPY fallback)",
+                        "symbol": "SPY",
+                        "data": [{"date": item["datetime"], "close": float(item["close"])} for item in reversed(values)],
+                        "warning": "Using SPY ETF as fallback because the S&P 500 index feed was unavailable.",
+                    }
+            except Exception:
+                pass
 
-        if not api_key:
-            raise HTTPException(
-                status_code=500,
-                detail="TWELVE_DATA_API_KEY is not configured"
-            )
+    return {
+        "name": benchmark_name,
+        "symbol": ticker_symbol,
+        "data": [],
+        "warning": f"{benchmark_name} data is temporarily unavailable from the configured providers.",
+    }
 
-        response = requests.get(
-            "https://api.twelvedata.com/time_series",
-            params={
-                "symbol": ticker_symbol,
-                "exchange": "NSE" if exchange in ["NSE", "BSE"] else None,
-                "interval": "1day",
-                "outputsize": limit,
-                "apikey": api_key,
-            },
-            timeout=20,
-        )
-
-        response.raise_for_status()
-
-        payload = response.json()
-
-        if payload.get("status") == "error":
-            raise HTTPException(
-                status_code=502,
-                detail=payload.get("message", "Benchmark provider error")
-            )
-
-        values = payload.get("values", [])
-
-        benchmark_data = [
-            {
-                "date": item["datetime"],
-                "close": float(item["close"])
-            }
-            for item in reversed(values)
-        ]
-
-        return {
-            "name": benchmark_name,
-            "symbol": ticker_symbol,
-            "data": benchmark_data
-        }
-
-    except HTTPException:
-        raise
-
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Benchmark data failed: {str(e)}"
-        )
 
 @router.get("/chart/{symbol}")
 def get_chart_data(
     symbol: str,
     exchange: str = "US",
     timeframe: str = Query("daily", pattern="^(daily|weekly|monthly)$"),
-    limit: int = 100,
+    limit: int = 260,
     db: Session = Depends(get_db)
 ):
     rows = (
@@ -650,6 +681,20 @@ def refresh_fundamentals(
 
         provider = YahooProvider()
         data = provider.get_fundamentals(symbol.upper())
+
+        # Use statement-derived ratios for ROE/ROA when available. This keeps
+        # the snapshot consistent with the annual table and uses average balance
+        # sheet denominators instead of an opaque provider summary ratio.
+        try:
+            history = provider.get_fundamental_history(symbol.upper())
+            latest_annual = (history.get("annual") or [None])[0]
+            if latest_annual:
+                if latest_annual.get("roe") is not None:
+                    data["return_on_equity"] = latest_annual["roe"] / 100
+                if latest_annual.get("roa") is not None:
+                    data["return_on_assets"] = latest_annual["roa"] / 100
+        except Exception:
+            pass
 
         result = sync_fundamental_data(
             db=db,
