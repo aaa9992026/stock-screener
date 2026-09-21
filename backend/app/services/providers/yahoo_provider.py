@@ -2,6 +2,7 @@ import requests
 from datetime import datetime
 import yfinance as yf
 from app.services.base_provider import BaseMarketDataProvider
+from app.services.providers.sec_provider import SECFundamentalsProvider
 
 
 class YahooProvider(BaseMarketDataProvider):
@@ -264,9 +265,9 @@ class YahooProvider(BaseMarketDataProvider):
 
                 if (
                     net_income_to_common is not None
-                    and average_equity not in (None, 0)
+                    and stockholders_equity not in (None, 0)
                 ):
-                    roe = (net_income_to_common / average_equity) * 100
+                    roe = (net_income_to_common / stockholders_equity) * 100
 
                 if (
                     operating_cash_flow is not None
@@ -276,13 +277,13 @@ class YahooProvider(BaseMarketDataProvider):
 
                 if (
                     net_income_to_common is not None
-                    and average_assets not in (None, 0)
+                    and total_assets not in (None, 0)
                 ):
-                    roa = (net_income_to_common / average_assets) * 100
+                    roa = (net_income_to_common / total_assets) * 100
 
                 capital_employed = None
-                if average_assets is not None and average_current_liabilities is not None:
-                    capital_employed = average_assets - average_current_liabilities
+                if total_assets is not None and current_liabilities is not None:
+                    capital_employed = total_assets - current_liabilities
 
                 if ebit is not None and capital_employed not in (None, 0):
                     roce = (ebit / capital_employed) * 100
@@ -485,18 +486,44 @@ class YahooProvider(BaseMarketDataProvider):
             cagr_5y["pat"] = calculate_cagr(latest["pat"], old["pat"], 5)
             cagr_5y["eps"] = calculate_cagr(latest["eps"], old["eps"], 5)
 
-        return {
+        yahoo_result = {
             "symbol": symbol.upper(),
             "quarterly": quarterly_results,
             "annual": annual_results,
             "cagr_3y": cagr_3y,
             "cagr_5y": cagr_5y,
+            "source": "Yahoo Finance statements",
             "ratio_methodology": {
-                "roe": "Net income / average stockholders equity",
-                "roa": "Net income / average total assets",
-                "roce": "EBIT / average (total assets - current liabilities)",
+                "roe": "Net income / period-end stockholders equity",
+                "roa": "Net income / period-end total assets",
+                "roce": "EBIT / (period-end total assets - period-end current liabilities)",
             },
         }
+
+        # Yahoo commonly exposes only ~5 quarterly statement columns. For US
+        # stocks, use official SEC company facts as a fallback when it provides
+        # deeper usable history. This is intentionally a fallback, not a hard
+        # dependency: if SEC is unavailable, the Yahoo result still works.
+        try:
+            sec_result = SECFundamentalsProvider().get_history(symbol.upper())
+            if sec_result:
+                sec_quarters = sec_result.get("quarterly") or []
+                sec_annual = sec_result.get("annual") or []
+                if len(sec_quarters) > len(quarterly_results):
+                    yahoo_result["quarterly"] = sec_quarters
+                if len(sec_annual) > len(annual_results):
+                    yahoo_result["annual"] = sec_annual
+                    yahoo_result["cagr_3y"] = sec_result.get("cagr_3y", cagr_3y)
+                    yahoo_result["cagr_5y"] = sec_result.get("cagr_5y", cagr_5y)
+                    yahoo_result["ratio_methodology"] = sec_result.get(
+                        "ratio_methodology", yahoo_result["ratio_methodology"]
+                    )
+                if len(sec_quarters) > len(quarterly_results) or len(sec_annual) > len(annual_results):
+                    yahoo_result["source"] = "Yahoo Finance + SEC companyfacts fallback"
+        except Exception:
+            pass
+
+        return yahoo_result
 
     def get_ownership_details(self, symbol: str, exchange: str = "US"):
         provider_symbol = self.format_symbol(symbol, exchange)

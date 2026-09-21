@@ -1126,7 +1126,7 @@ function App() {
           <section className="fundamental-section">
             <h2>Fundamental History</h2>
 
-            <h3>Last 8 Quarters</h3>
+            <h3>Quarterly History ({Math.min(fundamentalHistory.quarterly?.length || 0, 8)}/8 available)</h3>
             <div className="history-table-wrapper">
               <table className="history-table">
                 <thead>
@@ -1231,7 +1231,7 @@ function App() {
               </div>
             </div>
 
-            <h3>Previous 5 Years</h3>
+            <h3>Previous 5 Years ({Math.min(fundamentalHistory.annual?.filter((row) => row.sales != null || row.pat != null || row.eps != null).length || 0, 5)}/5 available)</h3>
             <div className="history-table-wrapper">
               <table className="history-table">
                 <thead>
@@ -1362,6 +1362,12 @@ function App() {
             {(fundamentalHistory.cagr_5y?.sales == null || fundamentalHistory.cagr_5y?.pat == null || fundamentalHistory.cagr_5y?.eps == null) && (
               <div className="provider-warning">
                 5-year CAGR requires six valid annual endpoints. The configured provider currently returns insufficient usable annual history for this stock, so unavailable values are not estimated.
+              </div>
+            )}
+
+            {fundamentalHistory.source && (
+              <div className="provider-note">
+                Fundamental history source: {fundamentalHistory.source}. ROE = net income / period-end equity; ROA = net income / period-end assets; ROCE = EBIT / (assets - current liabilities).
               </div>
             )}
 

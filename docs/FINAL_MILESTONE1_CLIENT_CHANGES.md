@@ -22,3 +22,13 @@ Implemented from the client's final handwritten notes/screenshots:
 - Five-year CAGR requires six valid annual endpoints. It remains unavailable when the provider does not expose enough usable annual history.
 - Indian FII/DII/promoter/public historical shareholding percentages are not available from the currently configured providers. The application does not hard-code the illustrative values from the client's handwritten example.
 - Macrotrends can be used as a manual validation/reference source for US fundamentals, but this build does not rely on fragile website scraping as a production API.
+
+
+## Fundamental-history accuracy update
+- US history now keeps Yahoo Finance as the primary source and falls back to the official SEC Company Facts API when Yahoo exposes too few statement periods.
+- This fallback is intended to supply up to 8 quarterly periods and 6 annual endpoints (5-year CAGR requires six endpoints).
+- ROE is calculated as net income / period-end stockholders' equity.
+- ROA is calculated as net income / period-end total assets.
+- ROCE is calculated as EBIT (operating income fallback) / (period-end total assets - period-end current liabilities).
+- The UI reports how many requested quarterly/yearly periods are actually available and identifies the source used.
+- Set `SEC_USER_AGENT` in production to a descriptive app name and contact email for SEC API etiquette.
