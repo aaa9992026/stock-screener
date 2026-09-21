@@ -595,3 +595,44 @@ th {
 .score-weight-section .chart-note {
   margin-top: 4px;
 }
+
+/* Chart color legend */
+.ema-color-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  margin: 10px 0 12px;
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+  font-size: 13px;
+  color: #334155;
+}
+
+.ema-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.ema-legend-swatch {
+  width: 20px;
+  height: 4px;
+  border-radius: 999px;
+  display: inline-block;
+}
+
+.volume-legend-note {
+  margin-left: auto;
+  color: #64748b;
+}
+
+.volume-up-text { color: #16a34a; }
+.volume-down-text { color: #dc2626; }
+
+@media (max-width: 900px) {
+  .volume-legend-note { margin-left: 0; width: 100%; }
+}

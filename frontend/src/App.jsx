@@ -348,7 +348,13 @@ function App() {
       },
     });
 
-    const candleSeries = chart.addSeries(CandlestickSeries, {});
+    const candleSeries = chart.addSeries(CandlestickSeries, {
+      upColor: "#16a34a",
+      downColor: "#dc2626",
+      wickUpColor: "#16a34a",
+      wickDownColor: "#dc2626",
+      borderVisible: false,
+    });
 
     const candleData = data.map((row) => ({
       time: String(row.date).slice(0, 10),
@@ -373,13 +379,24 @@ function App() {
     };
 
     if (chartOverlays.ema) {
+      const emaColors = {
+        20: "#2563eb",
+        30: "#f59e0b",
+        50: "#7c3aed",
+        100: "#0891b2",
+        150: "#db2777",
+        200: "#92400e",
+      };
+
       [20, 30, 50, 100, 150, 200].forEach((period) => {
         const values = calculateEmaSeries(candleData, period);
         if (!values.length) return;
         const series = chart.addSeries(LineSeries, {
+          color: emaColors[period],
           lineWidth: period <= 50 ? 2 : 1,
           priceLineVisible: false,
           lastValueVisible: false,
+          title: `EMA ${period}`,
         });
         series.setData(values);
       });
@@ -438,6 +455,7 @@ function App() {
       volumeSeries.setData(data.map((row) => ({
         time: String(row.date).slice(0, 10),
         value: Number(row.volume || 0),
+        color: Number(row.close) >= Number(row.open) ? "#16a34a" : "#dc2626",
       })));
       chart.priceScale("volume").applyOptions({ scaleMargins: { top: 0.78, bottom: 0 } });
 
@@ -452,9 +470,11 @@ function App() {
         }
         const volumeAvg = chart.addSeries(LineSeries, {
           priceScaleId: "volume",
+          color: "#475569",
           lineWidth: 2,
           priceLineVisible: false,
           lastValueVisible: false,
+          title: "Volume 50P Avg",
         });
         volumeAvg.setData(avg50);
       }
@@ -891,6 +911,29 @@ function App() {
                   {label}
                 </label>
               ))}
+            </div>
+          )}
+
+          {!dataStale && chartOverlays.ema && (
+            <div className="ema-color-legend" aria-label="EMA color legend">
+              {[
+                [20, "#2563eb"],
+                [30, "#f59e0b"],
+                [50, "#7c3aed"],
+                [100, "#0891b2"],
+                [150, "#db2777"],
+                [200, "#92400e"],
+              ].map(([period, color]) => (
+                <span key={period} className="ema-legend-item">
+                  <span className="ema-legend-swatch" style={{ backgroundColor: color }} />
+                  EMA {period}
+                </span>
+              ))}
+              {chartOverlays.volume && (
+                <span className="volume-legend-note">
+                  Volume: <strong className="volume-up-text">green = up candle</strong>, <strong className="volume-down-text">red = down candle</strong>
+                </span>
+              )}
             </div>
           )}
 
