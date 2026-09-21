@@ -44,6 +44,18 @@ function App() {
   const [technicalSummary, setTechnicalSummary] = useState(null);
   const [ownershipDetails, setOwnershipDetails] = useState(null);
   const [chartInfo, setChartInfo] = useState(null);
+  const [scoreWeights, setScoreWeights] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("scoreWeights")) || {
+        technical: 35, fundamental: 35, relative_strength: 15, ownership: 10, breakout: 5
+      };
+    } catch {
+      return { technical: 35, fundamental: 35, relative_strength: 15, ownership: 10, breakout: 5 };
+    }
+  });
+  const [chartOverlays, setChartOverlays] = useState({
+    ema: true, sma: true, bollinger: true, volume: true, eps: true, rs: true
+  });
 
   useEffect(() => {
     const handleOutsideClick = (event) => {
@@ -72,9 +84,15 @@ function App() {
 
   const loadDashboard = async () => {
     try {
-      const res = await axios.get(
-        `${API}/market/dashboard/${symbol}?exchange=${exchange}`
-      );
+      const params = new URLSearchParams({
+        exchange,
+        technical_weight: scoreWeights.technical,
+        fundamental_weight: scoreWeights.fundamental,
+        relative_strength_weight: scoreWeights.relative_strength,
+        ownership_weight: scoreWeights.ownership,
+        breakout_weight: scoreWeights.breakout,
+      });
+      const res = await axios.get(`${API}/market/dashboard/${symbol}?${params.toString()}`);
       setDashboard(res.data);
     } catch {
       setDashboard(null);
@@ -354,19 +372,45 @@ function App() {
       return result;
     };
 
-    [20, 30, 50, 100, 150, 200].forEach((period) => {
-      const values = calculateEmaSeries(candleData, period);
-      if (!values.length) return;
-      const series = chart.addSeries(LineSeries, {
-        lineWidth: period <= 50 ? 2 : 1,
-        priceLineVisible: false,
-        lastValueVisible: false,
+    if (chartOverlays.ema) {
+      [20, 30, 50, 100, 150, 200].forEach((period) => {
+        const values = calculateEmaSeries(candleData, period);
+        if (!values.length) return;
+        const series = chart.addSeries(LineSeries, {
+          lineWidth: period <= 50 ? 2 : 1,
+          priceLineVisible: false,
+          lastValueVisible: false,
+        });
+        series.setData(values);
       });
-      series.setData(values);
-    });
+    }
+
+    const calculateSmaSeries = (rows, period) => {
+      const result = [];
+      for (let i = period - 1; i < rows.length; i += 1) {
+        const window = rows.slice(i - period + 1, i + 1);
+        const value = window.reduce((sum, row) => sum + row.close, 0) / period;
+        result.push({ time: rows[i].time, value });
+      }
+      return result;
+    };
+
+    if (chartOverlays.sma) {
+      [20, 50].forEach((period) => {
+        const values = calculateSmaSeries(candleData, period);
+        if (!values.length) return;
+        const series = chart.addSeries(LineSeries, {
+          lineWidth: 1,
+          lineStyle: 2,
+          priceLineVisible: false,
+          lastValueVisible: false,
+        });
+        series.setData(values);
+      });
+    }
 
     // Bollinger Bands: 20-period SMA +/- 2 standard deviations.
-    if (candleData.length >= 20) {
+    if (chartOverlays.bollinger && candleData.length >= 20) {
       const upper = [];
       const lower = [];
       for (let i = 19; i < candleData.length; i += 1) {
@@ -384,39 +428,41 @@ function App() {
     }
 
     // Volume plus 50-period average volume in a lower pane-like scale.
-    const volumeSeries = chart.addSeries(HistogramSeries, {
-      priceScaleId: "volume",
-      priceFormat: { type: "volume" },
-      priceLineVisible: false,
-      lastValueVisible: false,
-    });
-    volumeSeries.setData(data.map((row) => ({
-      time: String(row.date).slice(0, 10),
-      value: Number(row.volume || 0),
-    })));
-    chart.priceScale("volume").applyOptions({ scaleMargins: { top: 0.78, bottom: 0 } });
-
-    if (data.length >= 50) {
-      const avg50 = [];
-      for (let i = 49; i < data.length; i += 1) {
-        const window = data.slice(i - 49, i + 1);
-        avg50.push({
-          time: String(data[i].date).slice(0, 10),
-          value: window.reduce((sum, row) => sum + Number(row.volume || 0), 0) / 50,
-        });
-      }
-      const volumeAvg = chart.addSeries(LineSeries, {
+    if (chartOverlays.volume) {
+      const volumeSeries = chart.addSeries(HistogramSeries, {
         priceScaleId: "volume",
-        lineWidth: 2,
+        priceFormat: { type: "volume" },
         priceLineVisible: false,
         lastValueVisible: false,
       });
-      volumeAvg.setData(avg50);
+      volumeSeries.setData(data.map((row) => ({
+        time: String(row.date).slice(0, 10),
+        value: Number(row.volume || 0),
+      })));
+      chart.priceScale("volume").applyOptions({ scaleMargins: { top: 0.78, bottom: 0 } });
+
+      if (data.length >= 50) {
+        const avg50 = [];
+        for (let i = 49; i < data.length; i += 1) {
+          const window = data.slice(i - 49, i + 1);
+          avg50.push({
+            time: String(data[i].date).slice(0, 10),
+            value: window.reduce((sum, row) => sum + Number(row.volume || 0), 0) / 50,
+          });
+        }
+        const volumeAvg = chart.addSeries(LineSeries, {
+          priceScaleId: "volume",
+          lineWidth: 2,
+          priceLineVisible: false,
+          lastValueVisible: false,
+        });
+        volumeAvg.setData(avg50);
+      }
     }
 
     // IBD-style relative-strength line: (stock / broad-market index), visually
     // rebased to the stock's first overlapping close so it can share the price chart.
-    if (benchmark?.data?.length && candleData.length) {
+    if (chartOverlays.rs && benchmark?.data?.length && candleData.length) {
       const benchmarkRows = benchmark.data
         .map((row) => ({ time: String(row.date).slice(0, 10), value: Number(row.close) }))
         .filter((row) => Number.isFinite(row.value));
@@ -459,7 +505,7 @@ function App() {
 
     // Quarterly EPS points/line on its own scale. Quarter-end dates are snapped
     // to the nearest visible bar so weekend/fiscal dates still render.
-    if (fundamentalHistory?.quarterly?.length && candleData.length) {
+    if (chartOverlays.eps && fundamentalHistory?.quarterly?.length && candleData.length) {
       const nearestCandle = (dateText) => {
         const target = new Date(`${String(dateText).slice(0, 10)}T00:00:00Z`).getTime();
         let best = null;
@@ -527,7 +573,7 @@ function App() {
       window.removeEventListener("resize", handleResize);
       chart.remove();
     };
-  }, [data, benchmark, timeframe, fundamentalHistory]);
+  }, [data, benchmark, timeframe, fundamentalHistory, chartOverlays]);
 
   const latest = !dataStale && data.length
     ? data[data.length - 1]
@@ -774,6 +820,38 @@ function App() {
           </section>
         )}
 
+        {dashboard && (
+          <section className="fundamental-section score-weight-section">
+            <h2>Ranking Weight Settings</h2>
+            <div className="indicator-settings">
+              {[
+                ["technical", "Technical"],
+                ["fundamental", "Fundamental"],
+                ["relative_strength", "Relative Strength"],
+                ["ownership", "Ownership"],
+                ["breakout", "Breakout / VCP"],
+              ].map(([key, label]) => (
+                <div key={key}>
+                  <label>{label} %</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={scoreWeights[key]}
+                    onChange={(e) => setScoreWeights((prev) => ({ ...prev, [key]: Number(e.target.value) || 0 }))}
+                  />
+                </div>
+              ))}
+              <button onClick={() => { localStorage.setItem("scoreWeights", JSON.stringify(scoreWeights)); loadDashboard(); }}>
+                Apply Weights
+              </button>
+            </div>
+            <div className="chart-note">
+              Enter any non-negative weights and click Apply Weights. They do not need to total 100; the screener normalizes them automatically. Settings are saved in this browser. Current normalized weights: {Object.entries(dashboard.score_weights || {}).map(([k,v]) => `${k.replace("_", " ")}: ${v}%`).join(" • ")}
+            </div>
+          </section>
+        )}
+
         <section className="chart-card">
           <div className="chart-header">
             <div>
@@ -791,6 +869,28 @@ function App() {
               {new Date(`${chartInfo.date}T00:00:00`).toLocaleDateString("en-US")} &nbsp;
               O {chartInfo.open.toFixed(2)} &nbsp; H {chartInfo.high.toFixed(2)} &nbsp;
               L {chartInfo.low.toFixed(2)} &nbsp; C {chartInfo.close.toFixed(2)}
+            </div>
+          )}
+
+          {!dataStale && (
+            <div className="indicator-settings chart-overlay-controls">
+              {[
+                ["ema", "EMA 20/30/50/100/150/200"],
+                ["sma", "SMA 20/50"],
+                ["bollinger", "Bollinger Bands"],
+                ["volume", "Volume + 50P Avg"],
+                ["eps", "Quarterly EPS"],
+                ["rs", `RS vs ${benchmark?.name || "Benchmark"}`],
+              ].map(([key, label]) => (
+                <label key={key} className="overlay-toggle">
+                  <input
+                    type="checkbox"
+                    checked={chartOverlays[key]}
+                    onChange={(e) => setChartOverlays((prev) => ({ ...prev, [key]: e.target.checked }))}
+                  />
+                  {label}
+                </label>
+              ))}
             </div>
           )}
 

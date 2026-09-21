@@ -59,7 +59,25 @@ def _rsi(values, period=14):
     return 100 - (100 / (1 + rs))
 
 
-def _score_symbol(db: Session, symbol: str, exchange: str):
+def _normalize_score_weights(weights=None):
+    defaults = {
+        "technical": 35.0,
+        "fundamental": 35.0,
+        "relative_strength": 15.0,
+        "ownership": 10.0,
+        "breakout": 5.0,
+    }
+    if not weights:
+        return defaults
+
+    merged = {**defaults, **{k: max(0.0, float(v)) for k, v in weights.items() if k in defaults}}
+    total = sum(merged.values())
+    if total <= 0:
+        return defaults
+    return {k: (v / total) * 100.0 for k, v in merged.items()}
+
+
+def _score_symbol(db: Session, symbol: str, exchange: str, weights=None, include_components=False):
     rows = (
         db.query(OHLCV)
         .filter(OHLCV.symbol == symbol, OHLCV.exchange == exchange)
@@ -71,58 +89,122 @@ def _score_symbol(db: Session, symbol: str, exchange: str):
         .filter(Fundamental.symbol == symbol, Fundamental.exchange == exchange)
         .first()
     )
+    ownership = (
+        db.query(Ownership)
+        .filter(Ownership.symbol == symbol, Ownership.exchange == exchange)
+        .first()
+    )
 
-    points = 0.0
-    possible = 0.0
+    components = {
+        "technical": None,
+        "fundamental": None,
+        "relative_strength": None,
+        "ownership": None,
+        "breakout": None,
+    }
+
     closes = [float(row.close) for row in rows if row.close is not None]
+    highs = [float(row.high) for row in rows if row.high is not None]
+    lows = [float(row.low) for row in rows if row.low is not None]
+    volumes = [float(row.volume or 0) for row in rows]
 
     if closes:
         latest = closes[-1]
-        for period, weight in [(20, 8), (50, 8), (150, 7), (200, 7)]:
+        technical_points = 0.0
+        technical_possible = 0.0
+        for period in [20, 50, 150, 200]:
             ema = _ema(closes, period)
             if ema is not None:
-                possible += weight
+                technical_possible += 20
                 if latest > ema:
-                    points += weight
+                    technical_points += 20
 
         rsi = _rsi(closes, 14)
         if rsi is not None:
-            possible += 10
+            technical_possible += 20
             if 50 <= rsi <= 70:
-                points += 10
+                technical_points += 20
             elif 40 <= rsi < 50 or 70 < rsi <= 80:
-                points += 5
+                technical_points += 10
 
-        if len(closes) >= 60:
-            possible += 10
-            low = min(closes[-60:])
-            high = max(closes[-60:])
-            if high > low:
-                position = (latest - low) / (high - low)
-                points += max(0, min(10, position * 10))
+        if technical_possible:
+            components["technical"] = round((technical_points / technical_possible) * 100, 2)
+
+        # Relative-strength/momentum component from stored 6-month return.
+        # The dedicated Technical Summary still uses the requested S&P 500/NIFTY 500 comparison.
+        if len(closes) >= 126 and closes[-126] != 0:
+            six_month_return = ((latest / closes[-126]) - 1) * 100
+            components["relative_strength"] = round(max(0, min(100, 50 + six_month_return * 2)), 2)
+
+        if len(rows) >= 50 and len(highs) == len(rows) and len(lows) == len(rows):
+            pivot_rows = rows[-21:-1]
+            pivot = max((float(r.high) for r in pivot_rows), default=None)
+            avg_volume_50 = sum(volumes[-50:]) / 50 if len(volumes) >= 50 else None
+            volume_ratio_50 = (volumes[-1] / avg_volume_50) if avg_volume_50 else 0
+            recent_range = ((max(highs[-20:]) - min(lows[-20:])) / max(highs[-20:]) * 100) if max(highs[-20:]) else None
+            breakout_points = 0
+            if pivot is not None and latest >= pivot * 0.95:
+                breakout_points += 30
+            if pivot is not None and latest > pivot:
+                breakout_points += 25
+            if volume_ratio_50 >= 1.4:
+                breakout_points += 25
+            if recent_range is not None and recent_range <= 10:
+                breakout_points += 20
+            components["breakout"] = min(100, breakout_points)
 
     if fundamental:
+        values = []
         checks = [
-            (fundamental.trailing_eps, lambda x: x > 0, 10),
-            (fundamental.net_income, lambda x: x > 0, 10),
-            (fundamental.profit_margin, lambda x: x > 0, 10),
-            (fundamental.return_on_equity, lambda x: x >= 0.15, 10),
-            (fundamental.return_on_assets, lambda x: x >= 0.05, 10),
+            (fundamental.trailing_eps, lambda x: x > 0),
+            (fundamental.net_income, lambda x: x > 0),
+            (fundamental.profit_margin, lambda x: x > 0),
+            (fundamental.return_on_equity, lambda x: x >= 0.15),
+            (fundamental.return_on_assets, lambda x: x >= 0.05),
         ]
-        for value, check, weight in checks:
-            if value is not None:
-                possible += weight
-                if check(float(value)):
-                    points += weight
-                elif float(value) > 0:
-                    points += weight * 0.5
+        for value, check in checks:
+            if value is None:
+                continue
+            numeric = float(value)
+            values.append(100 if check(numeric) else (50 if numeric > 0 else 0))
+        if values:
+            components["fundamental"] = round(sum(values) / len(values), 2)
 
-    if possible == 0:
-        return None, 0
+    if ownership:
+        owner_scores = []
+        if ownership.institution_percent is not None:
+            pct = float(ownership.institution_percent)
+            if pct <= 1:
+                pct *= 100
+            owner_scores.append(max(0, min(100, pct)))
+        if ownership.insider_percent is not None:
+            pct = float(ownership.insider_percent)
+            if pct <= 1:
+                pct *= 100
+            # Moderate insider ownership is treated positively without over-rewarding concentration.
+            owner_scores.append(max(0, min(100, pct * 5)))
+        if owner_scores:
+            components["ownership"] = round(sum(owner_scores) / len(owner_scores), 2)
 
-    score = round((points / possible) * 100)
-    coverage = round((possible / 100) * 100)
-    return max(0, min(100, score)), max(0, min(100, coverage))
+    normalized_weights = _normalize_score_weights(weights)
+    weighted_points = 0.0
+    available_weight = 0.0
+    for key, weight in normalized_weights.items():
+        value = components.get(key)
+        if value is None:
+            continue
+        weighted_points += value * weight
+        available_weight += weight
+
+    if available_weight <= 0:
+        return (None, 0, components, normalized_weights) if include_components else (None, 0)
+
+    score = round(weighted_points / available_weight)
+    coverage = round(available_weight)
+    result = (max(0, min(100, score)), max(0, min(100, coverage)))
+    if include_components:
+        return result[0], result[1], components, normalized_weights
+    return result
 
 
 def _rank_within(db: Session, company: Company, field: str, minimum_peers: int = 5):
@@ -296,6 +378,11 @@ def get_history(
 def get_dashboard_summary(
     symbol: str,
     exchange: str = "US",
+    technical_weight: float = 35,
+    fundamental_weight: float = 35,
+    relative_strength_weight: float = 15,
+    ownership_weight: float = 10,
+    breakout_weight: float = 5,
     db: Session = Depends(get_db)
 ):
     symbol = symbol.upper()
@@ -307,7 +394,16 @@ def get_dashboard_summary(
         .first()
     )
 
-    score, coverage = _score_symbol(db, symbol, exchange)
+    requested_weights = {
+        "technical": technical_weight,
+        "fundamental": fundamental_weight,
+        "relative_strength": relative_strength_weight,
+        "ownership": ownership_weight,
+        "breakout": breakout_weight,
+    }
+    score, coverage, components, normalized_weights = _score_symbol(
+        db, symbol, exchange, weights=requested_weights, include_components=True
+    )
     if score is None:
         raise HTTPException(status_code=404, detail="Not enough data to calculate dashboard score")
 
@@ -327,11 +423,13 @@ def get_dashboard_summary(
         "score": score,
         "signal": signal,
         "score_coverage_percent": coverage,
+        "score_components": components,
+        "score_weights": {k: round(v, 2) for k, v in normalized_weights.items()},
         "sector": company.sector if company else None,
         "industry": company.industry if company else None,
         "sector_rank": sector_rank,
         "industry_rank": industry_rank,
-        "method_note": "Rule-based score from available stored technical and fundamental data; rank coverage grows as peer data is populated."
+        "method_note": "Overall score is weight-based. Change the five dashboard weights to customize the ranking score; available categories are automatically re-normalized when a metric is unavailable."
     }
 
 
@@ -423,7 +521,9 @@ def get_technical_summary(
         ema_alignment = "Bullish" if bullish else "Bearish" if bearish else "Mixed"
 
     avg_volume_20 = sum(volumes[-20:]) / 20
+    avg_volume_50 = sum(volumes[-50:]) / 50 if len(volumes) >= 50 else None
     volume_ratio = (volumes[-1] / avg_volume_20) if avg_volume_20 else None
+    volume_ratio_50 = (volumes[-1] / avg_volume_50) if avg_volume_50 else None
 
     adr_values = [((highs[i] - lows[i]) / closes[i]) * 100 for i in range(max(0, len(rows)-20), len(rows)) if closes[i] != 0]
     adr = sum(adr_values) / len(adr_values) if adr_values else None
@@ -449,8 +549,39 @@ def get_technical_summary(
     high_52w = max(highs[-lookback_52w:])
     distance_52w_high = ((high_52w - closes[-1]) / high_52w * 100) if high_52w else None
 
-    pivot_rows = rows[-21:-1] if len(rows) >= 21 else rows[:-1]
-    pivot = max((float(r.high) for r in pivot_rows), default=None)
+    # VCP/consolidation detection. Three successive 20-period windows are used
+    # as transparent contractions. When both price depth and ATR% contract in
+    # sequence, the final contraction high becomes the pivot (client-defined).
+    contractions = []
+    final_contraction_high = None
+    if len(rows) >= 60:
+        for start_i, end_i in [(-60, -40), (-40, -20), (-20, None)]:
+            segment = rows[start_i:end_i]
+            seg_high = max(float(r.high) for r in segment)
+            seg_low = min(float(r.low) for r in segment)
+            depth = ((seg_high - seg_low) / seg_high * 100) if seg_high else None
+            seg_tr = []
+            for j, r in enumerate(segment):
+                prev = float(segment[j-1].close) if j > 0 else float(r.close)
+                seg_tr.append(max(float(r.high)-float(r.low), abs(float(r.high)-prev), abs(float(r.low)-prev)))
+            seg_atr = sum(seg_tr[-14:]) / min(14, len(seg_tr)) if seg_tr else None
+            seg_atr_pct = (seg_atr / float(segment[-1].close) * 100) if seg_atr and segment[-1].close else None
+            contractions.append({"depth_percent": depth, "atr_percent": seg_atr_pct, "high": seg_high, "low": seg_low})
+
+    vcp_stage = "Not Detected"
+    if len(contractions) == 3:
+        depths = [c["depth_percent"] for c in contractions]
+        atrs = [c["atr_percent"] for c in contractions]
+        if all(v is not None for v in depths + atrs) and depths[1] < depths[0] and depths[2] < depths[1] and atrs[1] < atrs[0] and atrs[2] < atrs[1]:
+            vcp_stage = "VCP Contraction"
+            final_contraction_high = contractions[-1]["high"]
+
+    # If a formal VCP is not detected, use the recent consolidation high as the
+    # fallback pivot. Never use today's high itself as the pivot.
+    consolidation_rows = rows[-21:-1] if len(rows) >= 21 else rows[:-1]
+    consolidation_high = max((float(r.high) for r in consolidation_rows), default=None)
+    pivot = final_contraction_high if final_contraction_high is not None else consolidation_high
+
     buffer = 0.003
     latest_close = closes[-1]
     latest_open = opens[-1]
@@ -458,26 +589,44 @@ def get_technical_summary(
 
     breakout_status = "Unavailable"
     breakout_strength = None
+    near_pivot = False
     if pivot is not None:
+        near_pivot = (pivot * 0.95) <= latest_close <= (pivot * 1.02)
         above_pivot = latest_close > pivot * (1 + buffer)
         price_confirmation = latest_close > latest_open and latest_close >= latest_midpoint
-        volume_confirmation = volume_ratio is not None and volume_ratio >= 1.5
+        volume_confirmation = volume_ratio_50 is not None and volume_ratio_50 >= 1.4
+
         if above_pivot and price_confirmation and volume_confirmation:
             breakout_status = "Confirmed Breakout"
         elif latest_close > pivot:
             breakout_status = "Potential Breakout"
-        elif latest_close >= pivot * 0.97:
-            breakout_status = "Near Breakout"
+        elif near_pivot:
+            breakout_status = "Near Pivot"
         else:
             breakout_status = "No Breakout"
 
+        # Client-requested 0-100 breakout-strength model.
         points = 0
         if latest_close > pivot: points += 20
-        if volume_ratio is not None and volume_ratio >= 1.5: points += 20
-        if volume_ratio is not None and volume_ratio >= 2.0: points += 10
+        if volume_ratio_50 is not None and volume_ratio_50 >= 1.4: points += 20
+        if volume_ratio_50 is not None and volume_ratio_50 >= 2.0: points += 10
         if latest_close > pivot * 1.005: points += 10
         if latest_close > pivot * 1.01: points += 10
-        if range20 is not None and range20 <= 10: points += 10
+
+        atr_contraction = False
+        if len(contractions) >= 2:
+            a = contractions[-2].get("atr_percent")
+            b = contractions[-1].get("atr_percent")
+            atr_contraction = a is not None and b is not None and b < a
+        if atr_contraction: points += 10
+
+        if len(rows) >= 10:
+            tight_high = max(highs[-10:])
+            tight_low = min(lows[-10:])
+            tight_range = ((tight_high - tight_low) / tight_high * 100) if tight_high else None
+            if tight_range is not None and tight_range <= 10:
+                points += 10
+
         breakout_strength = min(100, points)
 
     gap_percent = None
@@ -491,36 +640,13 @@ def get_technical_summary(
         else:
             gap_classification = "Normal / No Material Gap"
 
-    # Three successive 20-session windows provide a transparent VCP contraction heuristic.
-    contractions = []
-    if len(rows) >= 60:
-        for start_i, end_i in [(-60, -40), (-40, -20), (-20, None)]:
-            segment = rows[start_i:end_i]
-            seg_high = max(float(r.high) for r in segment)
-            seg_low = min(float(r.low) for r in segment)
-            depth = ((seg_high - seg_low) / seg_high * 100) if seg_high else None
-            seg_tr = []
-            for j, r in enumerate(segment):
-                prev = float(segment[j-1].close) if j > 0 else float(r.close)
-                seg_tr.append(max(float(r.high)-float(r.low), abs(float(r.high)-prev), abs(float(r.low)-prev)))
-            seg_atr = sum(seg_tr[-14:]) / min(14, len(seg_tr)) if seg_tr else None
-            seg_atr_pct = (seg_atr / float(segment[-1].close) * 100) if seg_atr and segment[-1].close else None
-            contractions.append({"depth_percent": depth, "atr_percent": seg_atr_pct})
-
-    vcp_stage = "Not Detected"
-    if len(contractions) == 3:
-        depths = [c["depth_percent"] for c in contractions]
-        atrs = [c["atr_percent"] for c in contractions]
-        if all(v is not None for v in depths + atrs) and depths[1] < depths[0] and depths[2] < depths[1] and atrs[1] < atrs[0] and atrs[2] < atrs[1]:
-            vcp_stage = "VCP Contraction"
-
     if breakout_status == "Confirmed Breakout":
         pattern = "Confirmed Breakout"
     elif vcp_stage == "VCP Contraction":
         pattern = "VCP / Volatility Contraction"
     elif range20 is not None and range20 <= 10:
         pattern = "Tight Consolidation"
-    elif breakout_status == "Near Breakout":
+    elif near_pivot:
         pattern = "Near Pivot"
     else:
         pattern = "None"
@@ -562,7 +688,9 @@ def get_technical_summary(
         "ema": {key: (round(value, 2) if value is not None else None) for key, value in emas.items()},
         "ema_alignment": ema_alignment,
         "average_volume_20": round(avg_volume_20, 2),
+        "average_volume_50": round(avg_volume_50, 2) if avg_volume_50 is not None else None,
         "volume_ratio": round(volume_ratio, 2) if volume_ratio is not None else None,
+        "volume_ratio_50": round(volume_ratio_50, 2) if volume_ratio_50 is not None else None,
         "adr_percent": round(adr, 2) if adr is not None else None,
         "atr_14": round(atr14, 2) if atr14 is not None else None,
         "atr_percent": round(atr_percent, 2) if atr_percent is not None else None,
@@ -581,7 +709,7 @@ def get_technical_summary(
         "rs_benchmark": benchmark_name,
         "rs_periods": rs_metrics,
         "rs_note": "RS compares stock returns with the broad-market benchmark over 1/2/3/4 weeks and 2/3/6/12 months. Each period is centered at 50 for benchmark-equivalent performance, then averaged and clipped to 0-100.",
-        "criteria_note": f"Metrics use the selected {timeframe} timeframe. Pivot = highest high of prior 20 periods. Confirmed breakout requires close > pivot by 0.3%, volume >= 1.5x 20-period average, close > open, and close in the upper half of the period's range. VCP requires successive 20-period price-depth and ATR% contractions."
+        "criteria_note": f"Metrics use the selected {timeframe} timeframe. For a detected VCP, Pivot = highest high of the final contraction; otherwise it is the recent consolidation high. Near Pivot = 95%-102% of pivot. Confirmed breakout requires close > pivot by 0.3%, volume >= 1.4x 50-period average, close > open, and close in the upper half of the period's range. VCP requires successive price-depth and ATR% contractions."
     }
 
 

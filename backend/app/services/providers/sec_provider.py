@@ -85,8 +85,23 @@ class SECFundamentalsProvider:
         values = self._fact_items(facts, tags, preferred_units)
         chosen = {}
         for item in values:
-            if item.get("form") not in {"10-Q", "10-K"}:
+            form = item.get("form")
+            fp = str(item.get("fp") or "").upper()
+            if form not in {"10-Q", "10-K"}:
                 continue
+
+            # SEC companyfacts may contain comparative/YTD facts with annual-like
+            # durations. For annual history accept only true fiscal-year facts
+            # reported on a 10-K with fp=FY. This prevents Q2/Q3/YTD periods from
+            # being mistaken for separate annual years.
+            if kind == "annual" and not (form == "10-K" and fp == "FY"):
+                continue
+
+            # Quarterly facts should be genuine quarter periods. Q4 is often
+            # supplied only through the 10-K, so allow 10-K quarter-duration facts.
+            if kind == "quarter" and fp == "FY":
+                continue
+
             days = self._duration_days(item)
             if days is None:
                 continue
