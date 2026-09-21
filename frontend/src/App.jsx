@@ -36,6 +36,7 @@ function App() {
   const [smaLong, setSmaLong] = useState(50);
   const [rsiPeriod, setRsiPeriod] = useState(14);
   const chartContainerRef = useRef(null);
+  const symbolSearchRef = useRef(null);
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [benchmark, setBenchmark] = useState(null);
@@ -43,6 +44,31 @@ function App() {
   const [technicalSummary, setTechnicalSummary] = useState(null);
   const [ownershipDetails, setOwnershipDetails] = useState(null);
   const [chartInfo, setChartInfo] = useState(null);
+
+  useEffect(() => {
+    const handleOutsideClick = (event) => {
+      if (
+        symbolSearchRef.current &&
+        !symbolSearchRef.current.contains(event.target)
+      ) {
+        setShowSuggestions(false);
+      }
+    };
+
+    const handleEscape = (event) => {
+      if (event.key === "Escape") {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, []);
 
   const loadDashboard = async () => {
     try {
@@ -219,6 +245,8 @@ function App() {
   };
 
   const refreshData = async () => {
+    setShowSuggestions(false);
+    setSuggestions([]);
     setLoading(true);
 
     try {
@@ -507,6 +535,8 @@ function App() {
   const currency = exchange === "US" ? "$" : "₹";
 
   const changeExchange = (value) => {
+    setShowSuggestions(false);
+    setSuggestions([]);
     setExchange(value);
     setData([]);
     setMessage("");
@@ -561,7 +591,7 @@ function App() {
             <option value="BSE">BSE India (Limited)</option>
           </select>
 
-          <div className="symbol-search">
+          <div className="symbol-search" ref={symbolSearchRef}>
             <input
               value={symbol}
               onChange={(e) => searchCompanies(e.target.value)}
@@ -593,6 +623,9 @@ function App() {
 
           <button
             onClick={async () => {
+              setShowSuggestions(false);
+              setSuggestions([]);
+
               try {
                 setLoading(true);
 
