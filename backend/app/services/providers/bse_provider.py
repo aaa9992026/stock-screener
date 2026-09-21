@@ -21,7 +21,7 @@ class BSEProvider:
                 "symbol": symbol,
                 "mic_code": "XBOM",
                 "interval": "1day",
-                "outputsize": 500,
+                "outputsize": 5000,
                 "apikey": self.api_key,
             },
             timeout=30,

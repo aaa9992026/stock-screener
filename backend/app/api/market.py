@@ -347,21 +347,25 @@ def get_indicators(
     ema_long_value = calculate_ema(closes, sma_long)
 
     # RSI
-    gains = []
-    losses = []
+    changes = [
+        closes[i] - closes[i - 1]
+        for i in range(1, len(closes))
+    ]
 
-    for i in range(-rsi_period, 0):
-        change = closes[i] - closes[i - 1]
+    gains = [max(change, 0) for change in changes]
+    losses = [max(-change, 0) for change in changes]
 
-        if change > 0:
-            gains.append(change)
-            losses.append(0)
-        else:
-            gains.append(0)
-            losses.append(abs(change))
+    def calculate_rma(values, period):
+        rma = sum(values[:period]) / period
+        alpha = 1 / period
 
-    avg_gain = sum(gains) / rsi_period
-    avg_loss = sum(losses) / rsi_period
+        for value in values[period:]:
+            rma = (alpha * value) + ((1 - alpha) * rma)
+
+        return rma
+
+    avg_gain = calculate_rma(gains, rsi_period)
+    avg_loss = calculate_rma(losses, rsi_period)
 
     if avg_loss == 0:
         rsi_value = 100
