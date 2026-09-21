@@ -84,6 +84,8 @@ class YahooProvider(BaseMarketDataProvider):
             "institution_percent": info.get("heldPercentInstitutions"),
             "shares_outstanding": info.get("sharesOutstanding"),
             "float_shares": info.get("floatShares"),
+            "sector": info.get("sector"),
+            "industry": info.get("industry"),
         }
 
     def get_fundamental_history(self, symbol: str):

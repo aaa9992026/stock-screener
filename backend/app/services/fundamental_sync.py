@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 
-from app.models import Fundamental, Ownership
+from app.models import Fundamental, Ownership, Company
 
 
 def sync_fundamental_data(
@@ -54,6 +54,19 @@ def sync_fundamental_data(
     ownership.institution_percent = data.get("institution_percent")
     ownership.shares_outstanding = data.get("shares_outstanding")
     ownership.float_shares = data.get("float_shares")
+
+    company = (
+        db.query(Company)
+        .filter(
+            Company.symbol == symbol,
+            Company.exchange == exchange
+        )
+        .first()
+    )
+
+    if company:
+        company.sector = data.get("sector")
+        company.industry = data.get("industry")
 
     db.commit()
 
