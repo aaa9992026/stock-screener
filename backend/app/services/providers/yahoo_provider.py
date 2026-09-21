@@ -185,6 +185,24 @@ class YahooProvider(BaseMarketDataProvider):
                     column
                 )
 
+                free_cash_flow = get_matching_value(
+                    cashflow,
+                    ["Free Cash Flow"],
+                    column
+                )
+
+                total_assets = get_matching_value(
+                    balance_sheet,
+                    ["Total Assets"],
+                    column
+                )
+
+                current_liabilities = get_matching_value(
+                    balance_sheet,
+                    ["Current Liabilities", "Total Current Liabilities"],
+                    column
+                )
+
                 net_income_to_common = get_value(
                     df,
                     ["Net Income Common Stockholders", "Net Income"],
@@ -198,6 +216,8 @@ class YahooProvider(BaseMarketDataProvider):
                 )
 
                 roe = None
+                roa = None
+                roce = None
                 cash_flow_per_share = None
 
                 if (
@@ -211,6 +231,19 @@ class YahooProvider(BaseMarketDataProvider):
                     and shares_diluted not in (None, 0)
                 ):
                     cash_flow_per_share = operating_cash_flow / shares_diluted
+
+                if (
+                    net_income_to_common is not None
+                    and total_assets not in (None, 0)
+                ):
+                    roa = (net_income_to_common / total_assets) * 100
+
+                capital_employed = None
+                if total_assets is not None and current_liabilities is not None:
+                    capital_employed = total_assets - current_liabilities
+
+                if ebit is not None and capital_employed not in (None, 0):
+                    roce = (ebit / capital_employed) * 100
 
                 debt_to_equity = None
 
@@ -240,7 +273,10 @@ class YahooProvider(BaseMarketDataProvider):
                     "npm": round(npm, 2) if npm is not None else None,
                     "debt_to_equity": round(debt_to_equity, 2) if debt_to_equity is not None else None,
                     "operating_cash_flow": operating_cash_flow,
+                    "free_cash_flow": free_cash_flow,
                     "roe": round(roe, 2) if roe is not None else None,
+                    "roa": round(roa, 2) if roa is not None else None,
+                    "roce": round(roce, 2) if roce is not None else None,
                     "cash_flow_per_share": round(cash_flow_per_share, 2) if cash_flow_per_share is not None else None,
                 })
 
@@ -393,11 +429,103 @@ class YahooProvider(BaseMarketDataProvider):
                 3
             )
 
+        cagr_5y = {
+            "sales": None,
+            "pat": None,
+            "eps": None,
+        }
+
+        if len(annual_results) >= 6:
+            latest = annual_results[0]
+            old = annual_results[5]
+
+            cagr_5y["sales"] = calculate_cagr(latest["sales"], old["sales"], 5)
+            cagr_5y["pat"] = calculate_cagr(latest["pat"], old["pat"], 5)
+            cagr_5y["eps"] = calculate_cagr(latest["eps"], old["eps"], 5)
+
         return {
             "symbol": symbol.upper(),
             "quarterly": quarterly_results,
             "annual": annual_results,
             "cagr_3y": cagr_3y,
+            "cagr_5y": cagr_5y,
+        }
+
+    def get_ownership_details(self, symbol: str, exchange: str = "US"):
+        provider_symbol = self.format_symbol(symbol, exchange)
+        ticker = yf.Ticker(provider_symbol)
+
+        def dataframe_records(df, limit=10):
+            if df is None or getattr(df, "empty", True):
+                return []
+
+            frame = df.reset_index()
+            records = []
+
+            for _, row in frame.head(limit).iterrows():
+                item = {}
+                for key, value in row.items():
+                    if value is None:
+                        item[str(key)] = None
+                        continue
+
+                    try:
+                        if value != value:  # NaN
+                            item[str(key)] = None
+                            continue
+                    except Exception:
+                        pass
+
+                    if hasattr(value, "isoformat"):
+                        item[str(key)] = value.isoformat()
+                    elif hasattr(value, "item"):
+                        try:
+                            item[str(key)] = value.item()
+                        except Exception:
+                            item[str(key)] = str(value)
+                    else:
+                        item[str(key)] = value
+
+                records.append(item)
+
+            return records
+
+        try:
+            institutional = dataframe_records(ticker.institutional_holders, 10)
+        except Exception:
+            institutional = []
+
+        try:
+            mutual_funds = dataframe_records(ticker.mutualfund_holders, 10)
+        except Exception:
+            mutual_funds = []
+
+        try:
+            insider_transactions = dataframe_records(ticker.insider_transactions, 10)
+        except Exception:
+            insider_transactions = []
+
+        try:
+            major_holders = dataframe_records(ticker.major_holders, 10)
+        except Exception:
+            major_holders = []
+
+        note = None
+        if exchange.upper() in ["NSE", "BSE"]:
+            note = (
+                "Verified FII/DII/promoter-change breakdown is not exposed by the "
+                "configured Yahoo provider. Available holder data is shown without "
+                "estimating unavailable categories."
+            )
+
+        return {
+            "symbol": symbol.upper(),
+            "exchange": exchange.upper(),
+            "institutional_holders": institutional,
+            "mutual_fund_holders": mutual_funds,
+            "insider_transactions": insider_transactions,
+            "major_holders": major_holders,
+            "provider_note": note,
         }
 
     def _get_bse_history_direct(self, symbol: str):

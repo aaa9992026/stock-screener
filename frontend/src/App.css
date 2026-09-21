@@ -514,3 +514,52 @@ th {
     grid-template-columns: 1fr;
   }
 }
+.dashboard-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.summary-score,
+.summary-signal,
+.summary-item {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+  border: 1px solid #edf0f4;
+}
+
+.dashboard-summary span,
+.dashboard-summary small,
+.metric small {
+  display: block;
+  color: #718096;
+}
+
+.dashboard-summary span { margin-bottom: 8px; }
+.dashboard-summary strong { display: block; font-size: 24px; margin-bottom: 6px; }
+.dashboard-summary small, .metric small { font-size: 12px; }
+
+.signal-buy { border-left: 4px solid #22c55e; }
+.signal-watch { border-left: 4px solid #f59e0b; }
+.signal-sell { border-left: 4px solid #ef4444; }
+
+.provider-warning {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 9px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  color: #9a3412;
+  font-size: 13px;
+}
+
+@media (max-width: 900px) {
+  .dashboard-summary { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 520px) {
+  .dashboard-summary { grid-template-columns: 1fr; }
+}

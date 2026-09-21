@@ -44,3 +44,11 @@ Backend:
 cd backend
 pip install -r requirements.txt
 uvicorn app.main:app --reload
+
+## Milestone 1 dashboard additions
+
+- Rule-based 0-100 dashboard score with Buy/Watch/Sell signal.
+- Sector and industry classification/ranking when peer data is populated.
+- Extended technical screening: EMA 20/30/50/100/150/200 alignment, RS percentile within the stored universe, 20-day average volume, volume ratio, ADR, breakout status, VCP heuristic and pattern status.
+- Extended fundamental history: ROA, ROCE, free cash flow and 5-year CAGR when the provider supplies enough annual periods.
+- Ownership detail panels for institutional holders, mutual funds and insider transactions where Yahoo exposes them. Verified FII/DII/promoter-change fields are intentionally not estimated when the configured provider does not expose them.

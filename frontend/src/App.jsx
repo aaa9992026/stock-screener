@@ -38,6 +38,42 @@ function App() {
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [benchmark, setBenchmark] = useState(null);
+  const [dashboard, setDashboard] = useState(null);
+  const [technicalSummary, setTechnicalSummary] = useState(null);
+  const [ownershipDetails, setOwnershipDetails] = useState(null);
+
+  const loadDashboard = async () => {
+    try {
+      const res = await axios.get(
+        `${API}/market/dashboard/${symbol}?exchange=${exchange}`
+      );
+      setDashboard(res.data);
+    } catch {
+      setDashboard(null);
+    }
+  };
+
+  const loadTechnicalSummary = async () => {
+    try {
+      const res = await axios.get(
+        `${API}/market/technical-summary/${symbol}?exchange=${exchange}`
+      );
+      setTechnicalSummary(res.data);
+    } catch {
+      setTechnicalSummary(null);
+    }
+  };
+
+  const loadOwnershipDetails = async () => {
+    try {
+      const res = await axios.get(
+        `${API}/market/ownership-details/${symbol}?exchange=${exchange}`
+      );
+      setOwnershipDetails(res.data);
+    } catch {
+      setOwnershipDetails(null);
+    }
+  };
 
   const loadIndicators = async () => {
     try {
@@ -200,6 +236,8 @@ function App() {
 
       await loadChart();
       await loadIndicators();
+      await loadDashboard();
+      await loadTechnicalSummary();
 
     } catch (err) {
       console.error("Refresh error:", err);
@@ -221,6 +259,9 @@ function App() {
     loadChart();
     loadIndicators();
     loadBenchmark();
+    loadDashboard();
+    loadTechnicalSummary();
+    loadOwnershipDetails();
 
     if (exchange === "US") {
       loadFundamentals();
@@ -565,6 +606,31 @@ function App() {
           </div>
         </section>
 
+        {dashboard && (
+          <section className="dashboard-summary">
+            <div className="summary-score">
+              <span>Overall Score</span>
+              <strong>{dashboard.score}/100</strong>
+              <small>{dashboard.score_coverage_percent}% metric coverage</small>
+            </div>
+            <div className={`summary-signal signal-${dashboard.signal?.toLowerCase()}`}>
+              <span>Rule-Based Signal</span>
+              <strong>{dashboard.signal}</strong>
+              <small>Based on available technical + fundamental data</small>
+            </div>
+            <div className="summary-item">
+              <span>Sector</span>
+              <strong>{dashboard.sector || "-"}</strong>
+              <small>Rank: {dashboard.sector_rank ? `${dashboard.sector_rank.rank}/${dashboard.sector_rank.total}` : "-"}</small>
+            </div>
+            <div className="summary-item">
+              <span>Industry</span>
+              <strong>{dashboard.industry || "-"}</strong>
+              <small>Rank: {dashboard.industry_rank ? `${dashboard.industry_rank.rank}/${dashboard.industry_rank.total}` : "-"}</small>
+            </div>
+          </section>
+        )}
+
         <section className="chart-card">
           <div className="chart-header">
             <div>
@@ -590,7 +656,36 @@ function App() {
               Historical data is unavailable or incomplete for this provider.
             </div>
           )}
+
+          {benchmark?.warning && (
+            <div className="provider-warning">{benchmark.warning}</div>
+          )}
         </section>
+
+        {technicalSummary && (
+          <section className="fundamental-section">
+            <h2>Technical Screening Summary</h2>
+            <div className="fundamental-grid">
+              <div className="metric"><span>RS Rating</span><strong>{technicalSummary.rs_rating ?? "-"}</strong><small>{technicalSummary.rs_universe_size ? `Stored universe: ${technicalSummary.rs_universe_size}` : "Insufficient peer history"}</small></div>
+              <div className="metric"><span>EMA Alignment</span><strong>{technicalSummary.ema_alignment}</strong></div>
+              <div className="metric"><span>20-Day Avg Volume</span><strong>{technicalSummary.average_volume_20 != null ? Number(technicalSummary.average_volume_20).toLocaleString() : "-"}</strong></div>
+              <div className="metric"><span>Volume Ratio</span><strong>{technicalSummary.volume_ratio ?? "-"}</strong></div>
+              <div className="metric"><span>ADR (20D)</span><strong>{technicalSummary.adr_percent != null ? `${technicalSummary.adr_percent}%` : "-"}</strong></div>
+              <div className="metric"><span>Breakout Status</span><strong>{technicalSummary.breakout_status}</strong></div>
+              <div className="metric"><span>VCP Stage</span><strong>{technicalSummary.vcp_stage}</strong></div>
+              <div className="metric"><span>Pattern</span><strong>{technicalSummary.pattern}</strong></div>
+            </div>
+            <h3>EMA Alignment Values</h3>
+            <div className="fundamental-grid">
+              {[20, 30, 50, 100, 150, 200].map((period) => (
+                <div className="metric" key={period}>
+                  <span>EMA {period}</span>
+                  <strong>{technicalSummary.ema?.[String(period)] ?? "-"}</strong>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {indicators && (
           <section className="fundamental-section">
@@ -775,6 +870,75 @@ function App() {
           </section>
         )}
 
+        {ownershipDetails && (
+          <section className="fundamental-section">
+            <h2>Ownership Detail</h2>
+            {ownershipDetails.provider_note && (
+              <div className="provider-warning">{ownershipDetails.provider_note}</div>
+            )}
+
+            <h3>Top Institutional Holders</h3>
+            <div className="history-table-wrapper">
+              <table className="history-table">
+                <thead><tr><th>Holder</th><th>Shares</th><th>Value</th><th>% Held</th></tr></thead>
+                <tbody>
+                  {(ownershipDetails.institutional_holders || []).slice(0, 5).map((row, index) => (
+                    <tr key={index}>
+                      <td>{row.Holder || row.holder || "-"}</td>
+                      <td>{row.Shares != null ? Number(row.Shares).toLocaleString() : "-"}</td>
+                      <td>{row.Value != null ? Number(row.Value).toLocaleString() : "-"}</td>
+                      <td>{row.pctHeld != null ? `${(Number(row.pctHeld) * 100).toFixed(2)}%` : (row["% Out"] ?? "-")}</td>
+                    </tr>
+                  ))}
+                  {(!ownershipDetails.institutional_holders || ownershipDetails.institutional_holders.length === 0) && (
+                    <tr><td colSpan="4">No institutional-holder rows returned by the configured provider.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <h3>Top Mutual Fund Holders</h3>
+            <div className="history-table-wrapper">
+              <table className="history-table">
+                <thead><tr><th>Holder</th><th>Shares</th><th>Value</th><th>% Held</th></tr></thead>
+                <tbody>
+                  {(ownershipDetails.mutual_fund_holders || []).slice(0, 5).map((row, index) => (
+                    <tr key={index}>
+                      <td>{row.Holder || row.holder || "-"}</td>
+                      <td>{row.Shares != null ? Number(row.Shares).toLocaleString() : "-"}</td>
+                      <td>{row.Value != null ? Number(row.Value).toLocaleString() : "-"}</td>
+                      <td>{row.pctHeld != null ? `${(Number(row.pctHeld) * 100).toFixed(2)}%` : (row["% Out"] ?? "-")}</td>
+                    </tr>
+                  ))}
+                  {(!ownershipDetails.mutual_fund_holders || ownershipDetails.mutual_fund_holders.length === 0) && (
+                    <tr><td colSpan="4">No mutual-fund holder rows returned by the configured provider.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <h3>Recent Insider Transactions</h3>
+            <div className="history-table-wrapper">
+              <table className="history-table">
+                <thead><tr><th>Insider</th><th>Position</th><th>Transaction</th><th>Shares</th></tr></thead>
+                <tbody>
+                  {(ownershipDetails.insider_transactions || []).slice(0, 5).map((row, index) => (
+                    <tr key={index}>
+                      <td>{row.Insider || row.insider || row.Name || "-"}</td>
+                      <td>{row.Position || row.position || "-"}</td>
+                      <td>{row.Transaction || row.transaction || row.Text || "-"}</td>
+                      <td>{row.Shares != null ? Number(row.Shares).toLocaleString() : "-"}</td>
+                    </tr>
+                  ))}
+                  {(!ownershipDetails.insider_transactions || ownershipDetails.insider_transactions.length === 0) && (
+                    <tr><td colSpan="4">No insider transaction rows returned by the configured provider.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
+
         {exchange === "US" && fundamentalHistory && (
           <section className="fundamental-section">
             <h2>Fundamental History</h2>
@@ -861,7 +1025,10 @@ function App() {
                     <th>NPM</th>
                     <th>Debt/Equity</th>
                     <th>Operating Cash Flow</th>
+                    <th>Free Cash Flow</th>
                     <th>ROE</th>
+                    <th>ROA</th>
+                    <th>ROCE</th>
                     <th>Cash Flow/Share</th>
                   </tr>
                 </thead>
@@ -907,7 +1074,18 @@ function App() {
                           : "-"}
                       </td>
                       <td>
+                        {row.free_cash_flow != null
+                          ? `$${(row.free_cash_flow / 1e9).toFixed(2)}B`
+                          : "-"}
+                      </td>
+                      <td>
                         {row.roe != null ? `${row.roe}%` : "-"}
+                      </td>
+                      <td>
+                        {row.roa != null ? `${row.roa}%` : "-"}
+                      </td>
+                      <td>
+                        {row.roce != null ? `${row.roce}%` : "-"}
                       </td>
 
                       <td>
@@ -950,6 +1128,13 @@ function App() {
                     : "-"}
                 </strong>
               </div>
+            </div>
+
+            <h3>5-Year CAGR</h3>
+            <div className="fundamental-grid">
+              <div className="metric"><span>Sales CAGR</span><strong>{fundamentalHistory.cagr_5y?.sales != null ? `${fundamentalHistory.cagr_5y.sales}%` : "Unavailable"}</strong></div>
+              <div className="metric"><span>PAT CAGR</span><strong>{fundamentalHistory.cagr_5y?.pat != null ? `${fundamentalHistory.cagr_5y.pat}%` : "Unavailable"}</strong></div>
+              <div className="metric"><span>EPS CAGR</span><strong>{fundamentalHistory.cagr_5y?.eps != null ? `${fundamentalHistory.cagr_5y.eps}%` : "Unavailable"}</strong></div>
             </div>
 
             <h3>Fundamental Trends</h3>
