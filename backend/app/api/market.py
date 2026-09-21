@@ -11,6 +11,11 @@ from app.services.fundamental_sync import sync_fundamental_data
 from app.models import Fundamental, Ownership
 from app.services.providers.bse_provider import BSEProvider
 
+import os
+import requests
+from datetime import datetime, timedelta
+import yfinance as yf
+
 router = APIRouter(prefix="/market", tags=["market"])
 
 
@@ -101,6 +106,122 @@ def get_history(
         }
         for row in rows
     ]
+
+@router.get("/benchmark/{exchange}")
+def get_benchmark(
+    exchange: str,
+    limit: int = 100
+):
+    try:
+        exchange = exchange.upper()
+
+        if exchange == "US":
+            ticker_symbol = "SPY"
+            benchmark_name = "S&P 500"
+
+        elif exchange in ["NSE", "BSE"]:
+            ticker_symbol = "MONIFTY500"
+            benchmark_name = "NIFTY 500 Proxy"
+
+            api_key = os.getenv("TWELVE_DATA_API_KEY")
+
+            response = requests.get(
+                "https://api.twelvedata.com/time_series",
+                params={
+                    "symbol": "MONIFTY500",
+                    "interval": "1day",
+                    "outputsize": limit,
+                    "apikey": api_key,
+                },
+                timeout=20,
+            )
+
+            payload = response.json()
+
+            if payload.get("status") == "error":
+                return {
+                    "name": benchmark_name,
+                    "symbol": ticker_symbol,
+                    "data": [],
+                    "warning": "NIFTY 500 benchmark data is not available from the currently configured provider."
+                }
+
+            values = payload.get("values", [])
+
+            benchmark_data = [
+                {
+                    "date": item["datetime"],
+                    "close": float(item["close"])
+                }
+                for item in reversed(values)
+            ]
+
+            return {
+                "name": benchmark_name,
+                "symbol": ticker_symbol,
+                "data": benchmark_data
+            }
+
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail="Unsupported exchange"
+            )
+
+        api_key = os.getenv("TWELVE_DATA_API_KEY")
+
+        if not api_key:
+            raise HTTPException(
+                status_code=500,
+                detail="TWELVE_DATA_API_KEY is not configured"
+            )
+
+        response = requests.get(
+            "https://api.twelvedata.com/time_series",
+            params={
+                "symbol": ticker_symbol,
+                "exchange": "NSE" if exchange in ["NSE", "BSE"] else None,
+                "interval": "1day",
+                "outputsize": limit,
+                "apikey": api_key,
+            },
+            timeout=20,
+        )
+
+        response.raise_for_status()
+
+        payload = response.json()
+
+        if payload.get("status") == "error":
+            raise HTTPException(
+                status_code=502,
+                detail=payload.get("message", "Benchmark provider error")
+            )
+
+        values = payload.get("values", [])
+
+        benchmark_data = [
+            {
+                "date": item["datetime"],
+                "close": float(item["close"])
+            }
+            for item in reversed(values)
+        ]
+
+        return {
+            "name": benchmark_name,
+            "symbol": ticker_symbol,
+            "data": benchmark_data
+        }
+
+    except HTTPException:
+        raise
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Benchmark data failed: {str(e)}"
+        )
 
 @router.get("/chart/{symbol}")
 def get_chart_data(

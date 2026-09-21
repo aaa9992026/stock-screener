@@ -1,5 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { createChart, CandlestickSeries } from "lightweight-charts";
+import {
+  createChart,
+  CandlestickSeries,
+  LineSeries,
+} from "lightweight-charts";
 import axios from "axios";
 import {
   LineChart,
@@ -33,6 +37,7 @@ function App() {
   const chartContainerRef = useRef(null);
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [benchmark, setBenchmark] = useState(null);
 
   const loadIndicators = async () => {
     try {
@@ -164,6 +169,18 @@ function App() {
     }
   };
 
+  const loadBenchmark = async () => {
+    try {
+      const res = await axios.get(
+        `${API}/market/benchmark/${exchange}?limit=100`
+      );
+
+      setBenchmark(res.data);
+    } catch {
+      setBenchmark(null);
+    }
+  };
+
   const refreshData = async () => {
     setLoading(true);
 
@@ -203,6 +220,7 @@ function App() {
   useEffect(() => {
     loadChart();
     loadIndicators();
+    loadBenchmark();
 
     if (exchange === "US") {
       loadFundamentals();
@@ -249,6 +267,28 @@ function App() {
     }));
 
     candleSeries.setData(candleData);
+
+    if (benchmark?.data?.length) {
+      const benchmarkSeries = chart.addSeries(LineSeries, {
+        lineWidth: 2,
+        priceScaleId: "benchmark",
+      });
+
+      const benchmarkData = benchmark.data.map((row) => ({
+        time: row.date,
+        value: Number(row.close),
+      }));
+
+      benchmarkSeries.setData(benchmarkData);
+
+      chart.priceScale("benchmark").applyOptions({
+        scaleMargins: {
+          top: 0.1,
+          bottom: 0.1,
+        },
+      });
+    }
+
     chart.timeScale().fitContent();
 
     const handleResize = () => {
@@ -265,7 +305,7 @@ function App() {
       window.removeEventListener("resize", handleResize);
       chart.remove();
     };
-  }, [data]);
+  }, [data, benchmark]);
 
   const latest = !dataStale && data.length
     ? data[data.length - 1]
