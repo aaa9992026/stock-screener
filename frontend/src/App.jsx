@@ -25,7 +25,7 @@ function App() {
   const [lastUpdated, setLastUpdated] = useState(null);
   const [dataStatus, setDataStatus] = useState("connected");
   const [indicators, setIndicators] = useState(null);
-
+  const [fundamentalHistory, setFundamentalHistory] = useState(null);
   const [smaShort, setSmaShort] = useState(20);
   const [smaLong, setSmaLong] = useState(50);
   const [rsiPeriod, setRsiPeriod] = useState(14);
@@ -113,6 +113,18 @@ function App() {
     }
   };
 
+  const loadFundamentalHistory = async () => {
+    try {
+      const res = await axios.get(
+        `${API}/market/fundamentals-history/${symbol}?exchange=${exchange}`
+      );
+
+      setFundamentalHistory(res.data);
+    } catch {
+      setFundamentalHistory(null);
+    }
+  };
+
   const loadChart = async () => {
     try {
       setLoading(true);
@@ -193,8 +205,10 @@ function App() {
 
     if (exchange === "US") {
       loadFundamentals();
+      loadFundamentalHistory();
     } else {
       setFundamentals(null);
+      setFundamentalHistory(null);
     }
   }, [symbol, timeframe, exchange]);
 
@@ -622,6 +636,106 @@ function App() {
                     : "-"}
                 </strong>
               </div>
+            </div>
+          </section>
+        )}
+
+        {exchange === "US" && fundamentalHistory && (
+          <section className="fundamental-section">
+            <h2>Fundamental History</h2>
+
+            <h3>Last 4 Quarters</h3>
+            <div className="history-table-wrapper">
+              <table className="history-table">
+                <thead>
+                  <tr>
+                    <th>Period</th>
+                    <th>Sales</th>
+                    <th>PAT</th>
+                    <th>EPS</th>
+                    <th>EBIT</th>
+                    <th>OPM</th>
+                    <th>NPM</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {fundamentalHistory.quarterly?.map((row) => (
+                    <tr key={row.period}>
+                      <td>{row.period}</td>
+                      <td>
+                        {row.sales != null
+                          ? `$${(row.sales / 1e9).toFixed(2)}B`
+                          : "-"}
+                      </td>
+                      <td>
+                        {row.pat != null
+                          ? `$${(row.pat / 1e9).toFixed(2)}B`
+                          : "-"}
+                      </td>
+                      <td>{row.eps ?? "-"}</td>
+                      <td>
+                        {row.ebit != null
+                          ? `$${(row.ebit / 1e9).toFixed(2)}B`
+                          : "-"}
+                      </td>
+                      <td>
+                        {row.opm != null ? `${row.opm}%` : "-"}
+                      </td>
+                      <td>
+                        {row.npm != null ? `${row.npm}%` : "-"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <h3>Previous 3 Years</h3>
+            <div className="history-table-wrapper">
+              <table className="history-table">
+                <thead>
+                  <tr>
+                    <th>Period</th>
+                    <th>Sales</th>
+                    <th>PAT</th>
+                    <th>EPS</th>
+                    <th>EBIT</th>
+                    <th>OPM</th>
+                    <th>NPM</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {fundamentalHistory.annual?.map((row) => (
+                    <tr key={row.period}>
+                      <td>{row.period}</td>
+                      <td>
+                        {row.sales != null
+                          ? `$${(row.sales / 1e9).toFixed(2)}B`
+                          : "-"}
+                      </td>
+                      <td>
+                        {row.pat != null
+                          ? `$${(row.pat / 1e9).toFixed(2)}B`
+                          : "-"}
+                      </td>
+                      <td>{row.eps ?? "-"}</td>
+                      <td>
+                        {row.ebit != null
+                          ? `$${(row.ebit / 1e9).toFixed(2)}B`
+                          : "-"}
+                      </td>
+                      <td>
+                        {row.opm != null ? `${row.opm}%` : "-"}
+                      </td>
+                      <td>
+                        {row.npm != null ? `${row.npm}%` : "-"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </section>
         )}

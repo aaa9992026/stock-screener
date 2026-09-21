@@ -86,6 +86,92 @@ class YahooProvider(BaseMarketDataProvider):
             "float_shares": info.get("floatShares"),
         }
 
+    def get_fundamental_history(self, symbol: str):
+        ticker = yf.Ticker(symbol)
+
+        quarterly = ticker.quarterly_financials
+        annual = ticker.financials
+
+        def get_value(df, names, column):
+            for name in names:
+                if name in df.index:
+                    value = df.loc[name, column]
+
+                    try:
+                        if value != value:  # NaN
+                            return None
+                    except Exception:
+                        pass
+
+                    return float(value)
+
+            return None
+
+        def build_periods(df, limit):
+            results = []
+
+            if df is None or df.empty:
+                return results
+
+            for column in list(df.columns)[:limit]:
+                revenue = get_value(
+                    df,
+                    ["Total Revenue", "Operating Revenue"],
+                    column
+                )
+
+                net_income = get_value(
+                    df,
+                    ["Net Income", "Net Income Common Stockholders"],
+                    column
+                )
+
+                ebit = get_value(
+                    df,
+                    ["EBIT", "Operating Income"],
+                    column
+                )
+
+                eps = get_value(
+                    df,
+                    ["Diluted EPS", "Basic EPS"],
+                    column
+                )
+
+                operating_income = get_value(
+                    df,
+                    ["Operating Income"],
+                    column
+                )
+
+                opm = None
+                npm = None
+
+                if revenue not in (None, 0):
+                    if operating_income is not None:
+                        opm = (operating_income / revenue) * 100
+
+                    if net_income is not None:
+                        npm = (net_income / revenue) * 100
+
+                results.append({
+                    "period": column.strftime("%Y-%m-%d"),
+                    "sales": revenue,
+                    "pat": net_income,
+                    "eps": eps,
+                    "ebit": ebit,
+                    "opm": round(opm, 2) if opm is not None else None,
+                    "npm": round(npm, 2) if npm is not None else None,
+                })
+
+            return results
+
+        return {
+            "symbol": symbol.upper(),
+            "quarterly": build_periods(quarterly, 4),
+            "annual": build_periods(annual, 3),
+        }
+
     def _get_bse_history_direct(self, symbol: str):
         yahoo_symbol = f"{symbol}.BO"
 

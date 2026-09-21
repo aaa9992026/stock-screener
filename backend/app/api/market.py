@@ -258,6 +258,35 @@ def get_fundamentals(
         }
     }
 
+@router.get("/fundamentals-history/{symbol}")
+def get_fundamentals_history(
+    symbol: str,
+    exchange: str = "US"
+):
+    try:
+        if exchange.upper() != "US":
+            raise HTTPException(
+                status_code=400,
+                detail="Fundamental history currently supports US stocks only"
+            )
+
+        provider = YahooProvider()
+
+        data = provider.get_fundamental_history(
+            symbol.upper()
+        )
+
+        return data
+
+    except HTTPException:
+        raise
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Fundamental history failed: {str(e)}"
+        )
+
 @router.get("/indicators/{symbol}")
 def get_indicators(
     symbol: str,

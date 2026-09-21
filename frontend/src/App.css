@@ -445,3 +445,46 @@ th {
     width: 100%;
   }
 }
+
+.history-table-wrapper {
+  overflow-x: auto;
+  margin-bottom: 24px;
+}
+
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #ffffff;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.history-table th,
+.history-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.history-table th {
+  background: #f8fafc;
+  font-size: 13px;
+  font-weight: 700;
+  color: #475569;
+}
+
+.history-table td {
+  font-size: 14px;
+  color: #0f172a;
+}
+
+.history-table tr:last-child td {
+  border-bottom: none;
+}
+
+.fundamental-section h3 {
+  margin-top: 22px;
+  margin-bottom: 12px;
+  font-size: 17px;
+}
