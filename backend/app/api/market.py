@@ -27,6 +27,17 @@ def get_db():
         db.close()
 
 
+def _valid_trading_rows(rows, exchange: str):
+    """Exclude weekend-dated stock bars from all calculations and API output.
+
+    The DB cleanup path also removes these rows on refresh, but filtering here
+    protects the UI/calculations from any legacy or provider-misaligned rows.
+    """
+    if exchange.upper() not in {"US", "NSE", "BSE"}:
+        return list(rows)
+    return [row for row in rows if row.date is not None and row.date.weekday() < 5]
+
+
 def _ema(values, period):
     if len(values) < period:
         return None
@@ -84,6 +95,7 @@ def _score_symbol(db: Session, symbol: str, exchange: str, weights=None, include
         .order_by(OHLCV.date.asc())
         .all()
     )
+    rows = _valid_trading_rows(rows, exchange)
     fundamental = (
         db.query(Fundamental)
         .filter(Fundamental.symbol == symbol, Fundamental.exchange == exchange)
@@ -273,6 +285,7 @@ def _stored_rs_rating(db: Session, symbol: str, exchange: str, minimum_universe:
         .limit(50000)
         .all()
     )
+    rows = _valid_trading_rows(rows, exchange)
 
     grouped = {}
     for row in rows:
@@ -361,6 +374,7 @@ def get_history(
         .limit(limit)
         .all()
     )
+    rows = _valid_trading_rows(rows, exchange)
 
     return [
         {
@@ -458,6 +472,7 @@ def get_technical_summary(
         .order_by(OHLCV.date.asc())
         .all()
     )
+    daily_rows = _valid_trading_rows(daily_rows, exchange)
     if len(daily_rows) < 20:
         raise HTTPException(status_code=404, detail="Not enough historical data for technical summary")
 
@@ -790,6 +805,7 @@ def get_chart_data(
         .order_by(OHLCV.date.asc())
         .all()
     )
+    rows = _valid_trading_rows(rows, exchange)
 
     if not rows:
         raise HTTPException(
@@ -993,6 +1009,7 @@ def get_indicators(
         .order_by(OHLCV.date.asc())
         .all()
     )
+    rows = _valid_trading_rows(rows, exchange)
 
     if not rows:
         raise HTTPException(
