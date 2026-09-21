@@ -1566,7 +1566,7 @@ function App() {
                 {!dataStale &&
                   [...data].reverse().slice(0, 10).map((row) => (
                     <tr key={row.date}>
-                      <td>{new Date(row.date).toLocaleDateString()}</td>
+                      <td>{new Date(`${String(row.date).slice(0, 10)}T00:00:00`).toLocaleDateString("en-US")}</td>
                       <td>{Number(row.open).toFixed(2)}</td>
                       <td>{Number(row.high).toFixed(2)}</td>
                       <td>{Number(row.low).toFixed(2)}</td>
