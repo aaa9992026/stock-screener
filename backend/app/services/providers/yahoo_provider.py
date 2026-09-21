@@ -206,10 +206,50 @@ class YahooProvider(BaseMarketDataProvider):
 
             return results
 
+        quarterly_results = build_periods(quarterly, 4)
+        annual_results = build_periods(annual, 3)
+
+        def growth(current_value, previous_value):
+            if (
+                current_value is None
+                or previous_value is None
+                or previous_value == 0
+            ):
+                return None
+
+            return round(
+                ((current_value - previous_value) / abs(previous_value)) * 100,
+                2
+            )
+
+        for i in range(len(annual_results) - 1):
+            current = annual_results[i]
+            previous = annual_results[i + 1]
+
+            current["yoy_sales"] = growth(
+                current["sales"],
+                previous["sales"]
+            )
+
+            current["yoy_pat"] = growth(
+                current["pat"],
+                previous["pat"]
+            )
+
+            current["yoy_eps"] = growth(
+                current["eps"],
+                previous["eps"]
+            )
+
+        if annual_results:
+            annual_results[-1]["yoy_sales"] = None
+            annual_results[-1]["yoy_pat"] = None
+            annual_results[-1]["yoy_eps"] = None
+
         return {
             "symbol": symbol.upper(),
-            "quarterly": build_periods(quarterly, 4),
-            "annual": build_periods(annual, 3),
+            "quarterly": quarterly_results,
+            "annual": annual_results,
         }
 
     def _get_bse_history_direct(self, symbol: str):
