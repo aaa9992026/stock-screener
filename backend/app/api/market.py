@@ -10,6 +10,7 @@ from app.services.ohlcv_sync import sync_ohlcv
 from app.services.fundamental_sync import sync_fundamental_data
 from app.models import Fundamental, Ownership, Company
 from app.services.providers.bse_provider import BSEProvider
+from app.services.providers.india_shareholding_provider import IndiaShareholdingProvider
 
 import os
 import math
@@ -549,6 +550,20 @@ def get_ownership_details(symbol: str, exchange: str = "US"):
         return provider.get_ownership_details(symbol.upper(), exchange.upper())
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Ownership details failed: {str(e)}")
+
+
+@router.get("/india-shareholding/{symbol}")
+def get_india_shareholding(symbol: str, exchange: str = "NSE", limit: int = 8):
+    exchange = exchange.upper()
+    if exchange not in {"NSE", "BSE"}:
+        raise HTTPException(status_code=400, detail="Indian shareholding supports NSE/BSE symbols only")
+    try:
+        provider = IndiaShareholdingProvider()
+        return _json_safe(provider.get_history(symbol.upper(), limit=limit))
+    except Exception as e:
+        # Keep a clean 503 instead of turning a third-party provider outage into
+        # a generic 500 that makes the whole dashboard look broken.
+        raise HTTPException(status_code=503, detail=f"Indian shareholding data unavailable: {str(e)}")
 
 
 @router.get("/technical-summary/{symbol}")

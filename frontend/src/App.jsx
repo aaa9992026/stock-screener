@@ -45,6 +45,7 @@ function App() {
   const [dashboard, setDashboard] = useState(null);
   const [technicalSummary, setTechnicalSummary] = useState(null);
   const [ownershipDetails, setOwnershipDetails] = useState(null);
+  const [indiaShareholding, setIndiaShareholding] = useState(null);
   const [chartInfo, setChartInfo] = useState(null);
   const [scoreWeights, setScoreWeights] = useState(() => {
     try {
@@ -113,6 +114,10 @@ function App() {
   };
 
   const loadOwnershipDetails = async () => {
+    if (exchange !== "US") {
+      setOwnershipDetails(null);
+      return;
+    }
     try {
       const res = await axios.get(
         `${API}/market/ownership-details/${symbol}?exchange=${exchange}`
@@ -120,6 +125,21 @@ function App() {
       setOwnershipDetails(res.data);
     } catch {
       setOwnershipDetails(null);
+    }
+  };
+
+  const loadIndiaShareholding = async () => {
+    if (exchange === "US") {
+      setIndiaShareholding(null);
+      return;
+    }
+    try {
+      const res = await axios.get(
+        `${API}/market/india-shareholding/${symbol}?exchange=${exchange}&limit=8`
+      );
+      setIndiaShareholding(res.data);
+    } catch {
+      setIndiaShareholding(null);
     }
   };
 
@@ -311,6 +331,7 @@ function App() {
     loadDashboard();
     loadTechnicalSummary();
     loadOwnershipDetails();
+    loadIndiaShareholding();
 
     if (exchange === "US") {
       loadFundamentals();
@@ -1218,7 +1239,67 @@ function App() {
           </section>
         )}
 
-        {ownershipDetails && (
+        
+        {exchange !== "US" && (
+          <section className="fundamental-section">
+            <h2>Indian Shareholding History</h2>
+            {indiaShareholding ? (
+              <>
+                <div className="chart-note">{indiaShareholding.provider_note}</div>
+                {indiaShareholding.latest && (
+                  <div className="metrics-grid" style={{ marginTop: "14px" }}>
+                    {[
+                      ["Promoter", "promoter"],
+                      ["FII", "fii"],
+                      ["DII", "dii"],
+                      ["Mutual Funds", "mutual_funds"],
+                      ["Public", "public"],
+                    ].map(([label, key]) => (
+                      <div className="metric" key={key}>
+                        <span>{label}</span>
+                        <strong>{indiaShareholding.latest[key] != null ? `${Number(indiaShareholding.latest[key]).toFixed(2)}%` : "Unavailable"}</strong>
+                        <small>{indiaShareholding.latest[`${key}_change`] != null ? `QoQ change ${formatPctChange(indiaShareholding.latest[`${key}_change`])}` : "No separate change value"}</small>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <h3>Quarterly Ownership Changes</h3>
+                <div className="history-table-wrapper">
+                  <table className="history-table">
+                    <thead>
+                      <tr>
+                        <th>Quarter</th><th>Promoter</th><th>Change</th><th>FII</th><th>Change</th><th>DII</th><th>Change</th><th>MF</th><th>Change</th><th>Public</th><th>Change</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(indiaShareholding.history || []).map((row, index) => (
+                        <tr key={index}>
+                          <td>{row.period}</td>
+                          <td>{row.promoter != null ? `${Number(row.promoter).toFixed(2)}%` : "-"}</td>
+                          <td>{formatPctChange(row.promoter_change)}</td>
+                          <td>{row.fii != null ? `${Number(row.fii).toFixed(2)}%` : "-"}</td>
+                          <td>{formatPctChange(row.fii_change)}</td>
+                          <td>{row.dii != null ? `${Number(row.dii).toFixed(2)}%` : "-"}</td>
+                          <td>{formatPctChange(row.dii_change)}</td>
+                          <td>{row.mutual_funds != null ? `${Number(row.mutual_funds).toFixed(2)}%` : "-"}</td>
+                          <td>{formatPctChange(row.mutual_funds_change)}</td>
+                          <td>{row.public != null ? `${Number(row.public).toFixed(2)}%` : "-"}</td>
+                          <td>{formatPctChange(row.public_change)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="chart-note" style={{ marginTop: "10px" }}>Source: {indiaShareholding.source}. Missing categories are shown as unavailable rather than estimated.</div>
+              </>
+            ) : (
+              <div className="provider-warning">Indian shareholding history could not be loaded from the public provider right now. Technical and price data remain available.</div>
+            )}
+          </section>
+        )}
+
+{exchange === "US" && ownershipDetails && (
           <section className="fundamental-section">
             <h2>Ownership Detail</h2>
             <div className="chart-note">Holder tables now show the provider's latest reported date and reported position change when available. A full FII/DII/MF/Promoter/Public multi-quarter ownership-history table requires a provider that exposes that historical breakdown; unavailable history is not estimated.</div>
