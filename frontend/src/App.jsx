@@ -843,35 +843,54 @@ function App() {
         )}
 
         {dashboard && (
-          <section className="fundamental-section score-weight-section">
-            <h2>Ranking Weight Settings {exchange === "US" ? "(US)" : "(Indian Market)"}</h2>
-            <div className="indicator-settings">
-              {[
-                ["technical", "Technical"],
-                ["fundamental", "Fundamental"],
-                ["relative_strength", "Relative Strength"],
-                ["ownership", "Ownership"],
-                ["breakout", "Breakout / VCP"],
-              ].map(([key, label]) => (
-                <div key={key}>
-                  <label>{label} %</label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={scoreWeights[key]}
-                    onChange={(e) => setScoreWeights((prev) => ({ ...prev, [key]: Number(e.target.value) || 0 }))}
-                  />
-                </div>
-              ))}
-              <button onClick={() => { localStorage.setItem("scoreWeights", JSON.stringify(scoreWeights)); loadDashboard(); }}>
-                Apply Weights
-              </button>
-            </div>
-            <div className="chart-note">
-              Enter any non-negative weights and click Apply Weights. They do not need to total 100; the screener normalizes them automatically. Settings are saved in this browser. {exchange !== "US" && "If fundamental or ownership has a positive weight but that data is unavailable, the overall Indian-stock ranking is intentionally shown as N/A instead of being calculated from incomplete data. "}Current normalized weights: {Object.entries(dashboard.score_weights || {}).map(([k,v]) => `${k.replace("_", " ")}: ${v}%`).join(" • ")}
-            </div>
-          </section>
+          exchange === "US" ? (
+            <section className="fundamental-section score-weight-section">
+              <h2>Ranking Weight Settings (US)</h2>
+              <div className="indicator-settings">
+                {[
+                  ["technical", "Technical"],
+                  ["fundamental", "Fundamental"],
+                  ["relative_strength", "Relative Strength"],
+                  ["ownership", "Ownership"],
+                  ["breakout", "Breakout / VCP"],
+                ].map(([key, label]) => (
+                  <div key={key}>
+                    <label>{label} %</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={scoreWeights[key]}
+                      onChange={(e) => setScoreWeights((prev) => ({ ...prev, [key]: Number(e.target.value) || 0 }))}
+                    />
+                  </div>
+                ))}
+                <button onClick={() => { localStorage.setItem("scoreWeights", JSON.stringify(scoreWeights)); loadDashboard(); }}>
+                  Apply Weights
+                </button>
+              </div>
+              <div className="chart-note">
+                Enter any non-negative weights and click Apply Weights. They do not need to total 100; the screener normalizes them automatically. Settings are saved in this browser. Current normalized weights: {Object.entries(dashboard.score_weights || {}).map(([k,v]) => `${k.replace("_", " ")}: ${v}%`).join(" • ")}
+              </div>
+            </section>
+          ) : (
+            <section className="fundamental-section score-weight-section">
+              <h2>Indian Market Ranking</h2>
+              <div
+                style={{
+                  padding: "18px",
+                  border: "1px solid #f0c36d",
+                  borderRadius: "10px",
+                  background: "#fffaf0",
+                }}
+              >
+                <strong>Ranking unavailable</strong>
+                <p style={{ margin: "8px 0 0" }}>
+                  Fundamental and ownership data are required before an Indian-market ranking can be calculated. Technical analysis and RS vs NIFTY 500 remain available.
+                </p>
+              </div>
+            </section>
+          )
         )}
 
         <section className="chart-card">
