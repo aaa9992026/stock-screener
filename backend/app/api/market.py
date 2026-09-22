@@ -636,16 +636,22 @@ def get_technical_summary(
     volume_ratio_50 = (volumes[-1] / avg_volume_50) if avg_volume_50 else None
 
     # ADR is a DAILY metric even when the chart is weekly/monthly.
-    # TradingView-style ADR% is the 20-session average of each day's
-    # (High - Low) / Low * 100. Using the daily series avoids accidentally
-    # turning ADR into an average weekly/monthly range.
+    # Client/TradingView reference displays ADR(20) as an absolute price range:
+    # Average(High - Low, 20 daily sessions).  Keep ADR% separately for
+    # normalized comparisons and volatility logic.
     adr_daily_rows = daily_rows[-20:]
-    adr_values = [
+    adr_abs_values = [
+        float(r.high) - float(r.low)
+        for r in adr_daily_rows
+        if r.high is not None and r.low is not None
+    ]
+    adr_percent_values = [
         ((float(r.high) - float(r.low)) / float(r.low)) * 100
         for r in adr_daily_rows
-        if r.low not in (None, 0)
+        if r.high is not None and r.low not in (None, 0)
     ]
-    adr = sum(adr_values) / len(adr_values) if adr_values else None
+    adr_value = sum(adr_abs_values) / len(adr_abs_values) if adr_abs_values else None
+    adr_percent = sum(adr_percent_values) / len(adr_percent_values) if adr_percent_values else None
 
     # ATR uses Wilder's RMA (the same smoothing convention used by TradingView
     # ATR), calculated on the SELECTED timeframe.
@@ -784,7 +790,8 @@ def get_technical_summary(
         "average_volume_50": round(avg_volume_50, 2) if avg_volume_50 is not None else None,
         "volume_ratio": round(volume_ratio, 2) if volume_ratio is not None else None,
         "volume_ratio_50": round(volume_ratio_50, 2) if volume_ratio_50 is not None else None,
-        "adr_percent": round(adr, 2) if adr is not None else None,
+        "adr_20": round(adr_value, 2) if adr_value is not None else None,
+        "adr_percent": round(adr_percent, 2) if adr_percent is not None else None,
         "atr_14": round(atr14, 2) if atr14 is not None else None,
         "atr_percent": round(atr_percent, 2) if atr_percent is not None else None,
         "bollinger_width_percent": round(bb_width, 2) if bb_width is not None else None,
