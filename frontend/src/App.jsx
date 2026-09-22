@@ -21,6 +21,14 @@ const API = "/api";
 
 const chartLimitForTimeframe = (timeframe) => timeframe === "daily" ? 1040 : timeframe === "weekly" ? 260 : 240;
 
+const formatPctChange = (value) => {
+  if (value === null || value === undefined || value === "") return "-";
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return "-";
+  const prefix = numeric > 0 ? "+" : "";
+  return `${prefix}${numeric.toFixed(2)}%`;
+};
+
 function App() {
   const [symbol, setSymbol] = useState("AAPL");
   const [exchange, setExchange] = useState("US");
