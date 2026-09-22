@@ -19,6 +19,8 @@ import "./App.css";
 
 const API = "/api";
 
+const chartLimitForTimeframe = (timeframe) => timeframe === "daily" ? 1040 : timeframe === "weekly" ? 260 : 240;
+
 function App() {
   const [symbol, setSymbol] = useState("AAPL");
   const [exchange, setExchange] = useState("US");
@@ -217,7 +219,7 @@ function App() {
       setLoading(true);
 
       const res = await axios.get(
-        `${API}/market/chart/${symbol}?exchange=${exchange}&timeframe=${timeframe}&limit=260`
+        `${API}/market/chart/${symbol}?exchange=${exchange}&timeframe=${timeframe}&limit=${chartLimitForTimeframe(timeframe)}`
       );
 
       const rows = res.data.data || [];
@@ -697,7 +699,7 @@ function App() {
 
                 // First try to load existing stored data
                 const res = await axios.get(
-                  `${API}/market/chart/${symbol}?exchange=${exchange}&timeframe=${timeframe}&limit=260`
+                  `${API}/market/chart/${symbol}?exchange=${exchange}&timeframe=${timeframe}&limit=${chartLimitForTimeframe(timeframe)}`
                 );
 
                 const rows = res.data.data || [];
@@ -811,13 +813,13 @@ function App() {
           <section className="dashboard-summary">
             <div className="summary-score">
               <span>Overall Score</span>
-              <strong>{dashboard.score}/100</strong>
+              <strong>{dashboard.score != null ? `${dashboard.score}/100` : "N/A"}</strong>
               <small>{dashboard.score_coverage_percent}% metric coverage</small>
             </div>
             <div className={`summary-signal signal-${dashboard.signal?.toLowerCase()}`}>
               <span>Rule-Based Signal</span>
               <strong>{dashboard.signal}</strong>
-              <small>Based on available technical + fundamental data</small>
+              <small>{dashboard.score == null ? `Ranking withheld: missing ${dashboard.missing_required_score_categories?.join(" + ") || "required data"}` : "Based on configured weighted data"}</small>
             </div>
             <div className="summary-item">
               <span>Sector</span>
@@ -842,7 +844,7 @@ function App() {
 
         {dashboard && (
           <section className="fundamental-section score-weight-section">
-            <h2>Ranking Weight Settings</h2>
+            <h2>Ranking Weight Settings {exchange === "US" ? "(US)" : "(Indian Market)"}</h2>
             <div className="indicator-settings">
               {[
                 ["technical", "Technical"],
@@ -867,7 +869,7 @@ function App() {
               </button>
             </div>
             <div className="chart-note">
-              Enter any non-negative weights and click Apply Weights. They do not need to total 100; the screener normalizes them automatically. Settings are saved in this browser. Current normalized weights: {Object.entries(dashboard.score_weights || {}).map(([k,v]) => `${k.replace("_", " ")}: ${v}%`).join(" • ")}
+              Enter any non-negative weights and click Apply Weights. They do not need to total 100; the screener normalizes them automatically. Settings are saved in this browser. {exchange !== "US" && "If fundamental or ownership has a positive weight but that data is unavailable, the overall Indian-stock ranking is intentionally shown as N/A instead of being calculated from incomplete data. "}Current normalized weights: {Object.entries(dashboard.score_weights || {}).map(([k,v]) => `${k.replace("_", " ")}: ${v}%`).join(" • ")}
             </div>
           </section>
         )}
@@ -968,12 +970,12 @@ function App() {
               <div className="metric">
                 <span>RS Rating vs {technicalSummary.rs_benchmark || "Benchmark"}</span>
                 <strong>{technicalSummary.rs_rating ?? "Unavailable"}</strong>
-                <small>1/2/3/4W + 2/3/6/12M relative returns</small>
+                <small>1W 10% • 1M 30% • 2M 20% • 3M 15% • 6M 15% • 1Y 10%</small>
               </div>
               <div className="metric"><span>EMA Alignment</span><strong>{technicalSummary.ema_alignment}</strong></div>
               <div className="metric"><span>{timeframe === "daily" ? "20-Day Avg Volume" : "20-Period Avg Volume"}</span><strong>{technicalSummary.average_volume_20 != null ? Number(technicalSummary.average_volume_20).toLocaleString() : "-"}</strong></div>
               <div className="metric"><span>Volume Ratio</span><strong>{technicalSummary.volume_ratio ?? "-"}</strong></div>
-              <div className="metric"><span>{timeframe === "daily" ? "ADR (20D)" : "Avg Range (20P)"}</span><strong>{technicalSummary.adr_percent != null ? `${technicalSummary.adr_percent}%` : "-"}</strong></div>
+              <div className="metric"><span>ADR (20D)</span><strong>{technicalSummary.adr_percent != null ? `${technicalSummary.adr_percent}%` : "-"}</strong><small>20-session avg of (High-Low)/Low</small></div>
               <div className="metric"><span>ATR (14)</span><strong>{technicalSummary.atr_14 ?? "-"}</strong></div>
               <div className="metric"><span>ATR %</span><strong>{technicalSummary.atr_percent != null ? `${technicalSummary.atr_percent}%` : "-"}</strong></div>
               <div className="metric"><span>BB Width</span><strong>{technicalSummary.bollinger_width_percent != null ? `${technicalSummary.bollinger_width_percent}%` : "-"}</strong></div>
@@ -1199,6 +1201,7 @@ function App() {
         {ownershipDetails && (
           <section className="fundamental-section">
             <h2>Ownership Detail</h2>
+            <div className="chart-note">Holder tables now show the provider's latest reported date and reported position change when available. A full FII/DII/MF/Promoter/Public multi-quarter ownership-history table requires a provider that exposes that historical breakdown; unavailable history is not estimated.</div>
             {ownershipDetails.provider_note && (
               <div className="provider-warning">{ownershipDetails.provider_note}</div>
             )}
@@ -1206,18 +1209,20 @@ function App() {
             <h3>Top Institutional Holders</h3>
             <div className="history-table-wrapper">
               <table className="history-table">
-                <thead><tr><th>Holder</th><th>Shares</th><th>Value</th><th>% Held</th></tr></thead>
+                <thead><tr><th>Holder</th><th>Report Date</th><th>Shares</th><th>Value</th><th>% Held</th><th>Change</th></tr></thead>
                 <tbody>
                   {(ownershipDetails.institutional_holders || []).slice(0, 5).map((row, index) => (
                     <tr key={index}>
                       <td>{row.Holder || row.holder || "-"}</td>
+                      <td>{row["Date Reported"] ? String(row["Date Reported"]).slice(0, 10) : (row.dateReported ? String(row.dateReported).slice(0, 10) : "-")}</td>
                       <td>{row.Shares != null ? Number(row.Shares).toLocaleString() : "-"}</td>
                       <td>{row.Value != null ? Number(row.Value).toLocaleString() : "-"}</td>
                       <td>{row.pctHeld != null ? `${(Number(row.pctHeld) * 100).toFixed(2)}%` : (row["% Out"] ?? "-")}</td>
+                      <td>{row.pctChange != null ? `${(Number(row.pctChange) * 100).toFixed(2)}%` : (row["% Change"] ?? "-")}</td>
                     </tr>
                   ))}
                   {(!ownershipDetails.institutional_holders || ownershipDetails.institutional_holders.length === 0) && (
-                    <tr><td colSpan="4">No institutional-holder rows returned by the configured provider.</td></tr>
+                    <tr><td colSpan="6">No institutional-holder rows returned by the configured provider.</td></tr>
                   )}
                 </tbody>
               </table>
@@ -1226,18 +1231,20 @@ function App() {
             <h3>Top Mutual Fund Holders</h3>
             <div className="history-table-wrapper">
               <table className="history-table">
-                <thead><tr><th>Holder</th><th>Shares</th><th>Value</th><th>% Held</th></tr></thead>
+                <thead><tr><th>Holder</th><th>Report Date</th><th>Shares</th><th>Value</th><th>% Held</th><th>Change</th></tr></thead>
                 <tbody>
                   {(ownershipDetails.mutual_fund_holders || []).slice(0, 5).map((row, index) => (
                     <tr key={index}>
                       <td>{row.Holder || row.holder || "-"}</td>
+                      <td>{row["Date Reported"] ? String(row["Date Reported"]).slice(0, 10) : (row.dateReported ? String(row.dateReported).slice(0, 10) : "-")}</td>
                       <td>{row.Shares != null ? Number(row.Shares).toLocaleString() : "-"}</td>
                       <td>{row.Value != null ? Number(row.Value).toLocaleString() : "-"}</td>
                       <td>{row.pctHeld != null ? `${(Number(row.pctHeld) * 100).toFixed(2)}%` : (row["% Out"] ?? "-")}</td>
+                      <td>{row.pctChange != null ? `${(Number(row.pctChange) * 100).toFixed(2)}%` : (row["% Change"] ?? "-")}</td>
                     </tr>
                   ))}
                   {(!ownershipDetails.mutual_fund_holders || ownershipDetails.mutual_fund_holders.length === 0) && (
-                    <tr><td colSpan="4">No mutual-fund holder rows returned by the configured provider.</td></tr>
+                    <tr><td colSpan="6">No mutual-fund holder rows returned by the configured provider.</td></tr>
                   )}
                 </tbody>
               </table>

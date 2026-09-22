@@ -67,6 +67,17 @@ def _ema(values, period):
     return value
 
 
+def _rma(values, period):
+    """TradingView/Wilder moving average used by ATR and RSI-style smoothing."""
+    if len(values) < period:
+        return None
+    value = sum(values[:period]) / period
+    alpha = 1 / period
+    for item in values[period:]:
+        value = (alpha * item) + ((1 - alpha) * value)
+    return value
+
+
 def _rsi(values, period=14):
     if len(values) < period + 1:
         return None
@@ -87,6 +98,55 @@ def _rsi(values, period=14):
         return 100.0
     rs = avg_gain / avg_loss
     return 100 - (100 / (1 + rs))
+
+
+def _weighted_rs_against_benchmark(daily_rows, exchange: str):
+    """Client-specified weighted relative-strength model.
+
+    Weights: 1W 10%, 1M 30%, 2M 20%, 3M 15%, 6M 15%, 1Y 10%.
+    Each horizon is stock return relative to S&P 500 (US) or NIFTY 500 (India).
+    """
+    benchmark_symbol = "^GSPC" if exchange.upper() == "US" else "^CRSLDX"
+    benchmark_name = "S&P 500" if exchange.upper() == "US" else "NIFTY 500"
+    periods = {"1w": 5, "1m": 21, "2m": 42, "3m": 63, "6m": 126, "1y": 252}
+    weights = {"1w": 10, "1m": 30, "2m": 20, "3m": 15, "6m": 15, "1y": 10}
+    metrics = {}
+    try:
+        hist = yf.Ticker(benchmark_symbol).history(period="2y", interval="1d", auto_adjust=False)
+        benchmark_by_date = {idx.date(): float(row["Close"]) for idx, row in hist.iterrows() if row.get("Close") is not None}
+        aligned = [(r.date, float(r.close), benchmark_by_date.get(r.date)) for r in daily_rows if benchmark_by_date.get(r.date) is not None]
+        weighted_sum = 0.0
+        available_weight = 0.0
+        for label, days in periods.items():
+            if len(aligned) <= days:
+                continue
+            _, stock_now, bench_now = aligned[-1]
+            _, stock_old, bench_old = aligned[-1-days]
+            if not stock_old or not bench_old:
+                continue
+            stock_return = (stock_now / stock_old) - 1
+            bench_return = (bench_now / bench_old) - 1
+            if (1 + bench_return) == 0:
+                continue
+            relative = ((1 + stock_return) / (1 + bench_return) - 1) * 100
+            weight = weights[label]
+            metrics[label] = {
+                "weight_percent": weight,
+                "stock_return_percent": round(stock_return * 100, 2),
+                "benchmark_return_percent": round(bench_return * 100, 2),
+                "relative_return_percent": round(relative, 2),
+            }
+            weighted_sum += relative * weight
+            available_weight += weight
+
+        if available_weight <= 0:
+            return None, None, metrics, benchmark_name
+
+        weighted_relative = weighted_sum / available_weight
+        rating = round(max(0, min(100, 50 + weighted_relative * 2)))
+        return rating, weighted_relative, metrics, benchmark_name
+    except Exception:
+        return None, None, {}, benchmark_name
 
 
 def _normalize_score_weights(weights=None):
@@ -161,11 +221,11 @@ def _score_symbol(db: Session, symbol: str, exchange: str, weights=None, include
         if technical_possible:
             components["technical"] = round((technical_points / technical_possible) * 100, 2)
 
-        # Relative-strength/momentum component from stored 6-month return.
-        # The dedicated Technical Summary still uses the requested S&P 500/NIFTY 500 comparison.
-        if len(closes) >= 126 and closes[-126] != 0:
-            six_month_return = ((latest / closes[-126]) - 1) * 100
-            components["relative_strength"] = round(max(0, min(100, 50 + six_month_return * 2)), 2)
+        # Use the same client-specified weighted benchmark-relative RS model
+        # in the dashboard score so ranking and Technical Summary stay aligned.
+        rs_component, _, _, _ = _weighted_rs_against_benchmark(rows, exchange)
+        if rs_component is not None:
+            components["relative_strength"] = rs_component
 
         if len(rows) >= 50 and len(highs) == len(rows) and len(lows) == len(rows):
             pivot_rows = rows[-21:-1]
@@ -440,21 +500,37 @@ def get_dashboard_summary(
     if score is None:
         raise HTTPException(status_code=404, detail="Not enough data to calculate dashboard score")
 
-    if score >= 70:
-        signal = "Buy"
-    elif score >= 45:
-        signal = "Watch"
-    else:
-        signal = "Sell"
+    # Do not present a seemingly complete Indian-market ranking when weighted
+    # fundamental/ownership categories are unavailable. This directly exposes
+    # the data-coverage limitation instead of silently re-normalizing it away.
+    missing_required = []
+    if exchange in {"NSE", "BSE"}:
+        if normalized_weights.get("fundamental", 0) > 0 and components.get("fundamental") is None:
+            missing_required.append("fundamental")
+        if normalized_weights.get("ownership", 0) > 0 and components.get("ownership") is None:
+            missing_required.append("ownership")
 
-    sector_rank = _rank_within(db, company, "sector") if company else None
-    industry_rank = _rank_within(db, company, "industry") if company else None
+    if missing_required:
+        displayed_score = None
+        signal = "Insufficient Data"
+    else:
+        displayed_score = score
+        if score >= 70:
+            signal = "Buy"
+        elif score >= 45:
+            signal = "Watch"
+        else:
+            signal = "Sell"
+
+    sector_rank = _rank_within(db, company, "sector") if company and not missing_required else None
+    industry_rank = _rank_within(db, company, "industry") if company and not missing_required else None
 
     return _json_safe({
         "symbol": symbol,
         "exchange": exchange,
-        "score": score,
+        "score": displayed_score,
         "signal": signal,
+        "missing_required_score_categories": missing_required,
         "score_coverage_percent": coverage,
         "score_components": components,
         "score_weights": {k: round(v, 2) for k, v in normalized_weights.items()},
@@ -462,7 +538,7 @@ def get_dashboard_summary(
         "industry": company.industry if company else None,
         "sector_rank": sector_rank,
         "industry_rank": industry_rank,
-        "method_note": "Overall score is weight-based. Change the five dashboard weights to customize the ranking score; available categories are automatically re-normalized when a metric is unavailable."
+        "method_note": "Overall score is weight-based. For US stocks, change the five dashboard weights to match the client's chosen model. For NSE/BSE, a score is withheld when a positively weighted fundamental or ownership category is unavailable, rather than producing a misleading partial ranking."
     })
 
 
@@ -559,14 +635,25 @@ def get_technical_summary(
     volume_ratio = (volumes[-1] / avg_volume_20) if avg_volume_20 else None
     volume_ratio_50 = (volumes[-1] / avg_volume_50) if avg_volume_50 else None
 
-    adr_values = [((highs[i] - lows[i]) / closes[i]) * 100 for i in range(max(0, len(rows)-20), len(rows)) if closes[i] != 0]
+    # ADR is a DAILY metric even when the chart is weekly/monthly.
+    # TradingView-style ADR% is the 20-session average of each day's
+    # (High - Low) / Low * 100. Using the daily series avoids accidentally
+    # turning ADR into an average weekly/monthly range.
+    adr_daily_rows = daily_rows[-20:]
+    adr_values = [
+        ((float(r.high) - float(r.low)) / float(r.low)) * 100
+        for r in adr_daily_rows
+        if r.low not in (None, 0)
+    ]
     adr = sum(adr_values) / len(adr_values) if adr_values else None
 
+    # ATR uses Wilder's RMA (the same smoothing convention used by TradingView
+    # ATR), calculated on the SELECTED timeframe.
     true_ranges = []
     for i in range(len(rows)):
         prev_close = closes[i - 1] if i > 0 else closes[i]
         true_ranges.append(max(highs[i] - lows[i], abs(highs[i] - prev_close), abs(lows[i] - prev_close)))
-    atr14 = sum(true_ranges[-14:]) / 14 if len(true_ranges) >= 14 else None
+    atr14 = _rma(true_ranges, 14)
     atr_percent = (atr14 / closes[-1] * 100) if atr14 is not None and closes[-1] else None
 
     recent20 = closes[-20:]
@@ -598,7 +685,7 @@ def get_technical_summary(
             for j, r in enumerate(segment):
                 prev = float(segment[j-1].close) if j > 0 else float(r.close)
                 seg_tr.append(max(float(r.high)-float(r.low), abs(float(r.high)-prev), abs(float(r.low)-prev)))
-            seg_atr = sum(seg_tr[-14:]) / min(14, len(seg_tr)) if seg_tr else None
+            seg_atr = _rma(seg_tr, 14) if len(seg_tr) >= 14 else (sum(seg_tr) / len(seg_tr) if seg_tr else None)
             seg_atr_pct = (seg_atr / float(segment[-1].close) * 100) if seg_atr and segment[-1].close else None
             contractions.append({"depth_percent": depth, "atr_percent": seg_atr_pct, "high": seg_high, "low": seg_low})
 
@@ -685,35 +772,7 @@ def get_technical_summary(
     else:
         pattern = "None"
 
-    # Relative strength versus the requested broad-market benchmark.
-    benchmark_symbol = "^GSPC" if exchange == "US" else "^CRSLDX"
-    benchmark_name = "S&P 500" if exchange == "US" else "NIFTY 500"
-    rs_periods = {"1w": 5, "2w": 10, "3w": 15, "4w": 20, "2m": 42, "3m": 63, "6m": 126, "12m": 252}
-    rs_metrics = {}
-    rs_rating = None
-    try:
-        hist = yf.Ticker(benchmark_symbol).history(period="2y", interval="1d", auto_adjust=False)
-        benchmark_by_date = {idx.date(): float(row["Close"]) for idx, row in hist.iterrows() if row.get("Close") is not None}
-        aligned = [(r.date, float(r.close), benchmark_by_date.get(r.date)) for r in daily_rows if benchmark_by_date.get(r.date) is not None]
-        period_scores = []
-        for label, days in rs_periods.items():
-            if len(aligned) > days:
-                _, stock_now, bench_now = aligned[-1]
-                _, stock_old, bench_old = aligned[-1-days]
-                stock_return = (stock_now / stock_old) - 1 if stock_old else None
-                bench_return = (bench_now / bench_old) - 1 if bench_old else None
-                if stock_return is not None and bench_return is not None and (1 + bench_return) != 0:
-                    relative = ((1 + stock_return) / (1 + bench_return) - 1) * 100
-                    rs_metrics[label] = {
-                        "stock_return_percent": round(stock_return * 100, 2),
-                        "benchmark_return_percent": round(bench_return * 100, 2),
-                        "relative_return_percent": round(relative, 2),
-                    }
-                    period_scores.append(max(0, min(100, 50 + relative * 2)))
-        if period_scores:
-            rs_rating = round(sum(period_scores) / len(period_scores))
-    except Exception:
-        rs_metrics = {}
+    rs_rating, rs_weighted_relative_return, rs_metrics, benchmark_name = _weighted_rs_against_benchmark(daily_rows, exchange)
 
     return _json_safe({
         "symbol": symbol,
@@ -740,9 +799,10 @@ def get_technical_summary(
         "vcp_contractions": [{k: (round(v, 2) if v is not None else None) for k, v in item.items()} for item in contractions],
         "pattern": pattern,
         "rs_rating": rs_rating,
+        "rs_weighted_relative_return_percent": round(rs_weighted_relative_return, 2) if rs_weighted_relative_return is not None else None,
         "rs_benchmark": benchmark_name,
         "rs_periods": rs_metrics,
-        "rs_note": "RS compares stock returns with the broad-market benchmark over 1/2/3/4 weeks and 2/3/6/12 months. Each period is centered at 50 for benchmark-equivalent performance, then averaged and clipped to 0-100.",
+        "rs_note": "Client formula: weighted relative return = 1W×10% + 1M×30% + 2M×20% + 3M×15% + 6M×15% + 1Y×10%, where each return is stock performance relative to the broad-market benchmark. The displayed 0-100 RS rating maps benchmark-equivalent performance to 50.",
         "criteria_note": f"Metrics use the selected {timeframe} timeframe. For a detected VCP, Pivot = highest high of the final contraction; otherwise it is the recent consolidation high. Near Pivot = 95%-102% of pivot. Confirmed breakout requires close > pivot by 0.3%, volume >= 1.4x 50-period average, close > open, and close in the upper half of the period's range. VCP requires successive price-depth and ATR% contractions."
     })
 
