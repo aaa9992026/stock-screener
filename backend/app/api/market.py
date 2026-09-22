@@ -12,11 +12,30 @@ from app.models import Fundamental, Ownership, Company
 from app.services.providers.bse_provider import BSEProvider
 
 import os
+import math
 import requests
 from datetime import datetime, timedelta, date
 import yfinance as yf
 
 router = APIRouter(prefix="/market", tags=["market"])
+
+
+def _json_safe(value):
+    """Recursively replace non-finite numeric values with None for JSON responses."""
+    if isinstance(value, dict):
+        return {k: _json_safe(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_json_safe(v) for v in value]
+    if isinstance(value, float):
+        return value if math.isfinite(value) else None
+    # numpy/pandas floating scalars can reach API responses after resampling.
+    try:
+        if value.__class__.__module__.startswith(("numpy", "pandas")):
+            numeric = float(value)
+            return numeric if math.isfinite(numeric) else None
+    except Exception:
+        pass
+    return value
 
 
 def get_db():
@@ -431,7 +450,7 @@ def get_dashboard_summary(
     sector_rank = _rank_within(db, company, "sector") if company else None
     industry_rank = _rank_within(db, company, "industry") if company else None
 
-    return {
+    return _json_safe({
         "symbol": symbol,
         "exchange": exchange,
         "score": score,
@@ -444,7 +463,7 @@ def get_dashboard_summary(
         "sector_rank": sector_rank,
         "industry_rank": industry_rank,
         "method_note": "Overall score is weight-based. Change the five dashboard weights to customize the ranking score; available categories are automatically re-normalized when a metric is unavailable."
-    }
+    })
 
 
 @router.get("/ownership-details/{symbol}")
@@ -696,7 +715,7 @@ def get_technical_summary(
     except Exception:
         rs_metrics = {}
 
-    return {
+    return _json_safe({
         "symbol": symbol,
         "exchange": exchange,
         "timeframe": timeframe,
@@ -725,7 +744,7 @@ def get_technical_summary(
         "rs_periods": rs_metrics,
         "rs_note": "RS compares stock returns with the broad-market benchmark over 1/2/3/4 weeks and 2/3/6/12 months. Each period is centered at 50 for benchmark-equivalent performance, then averaged and clipped to 0-100.",
         "criteria_note": f"Metrics use the selected {timeframe} timeframe. For a detected VCP, Pivot = highest high of the final contraction; otherwise it is the recent consolidation high. Near Pivot = 95%-102% of pivot. Confirmed breakout requires close > pivot by 0.3%, volume >= 1.4x 50-period average, close > open, and close in the upper half of the period's range. VCP requires successive price-depth and ATR% contractions."
-    }
+    })
 
 
 @router.get("/benchmark/{exchange}")
@@ -851,13 +870,13 @@ def get_chart_data(
 
         result = df.to_dict(orient="records")
 
-    return {
+    return _json_safe({
         "symbol": symbol.upper(),
         "exchange": exchange.upper(),
         "timeframe": timeframe,
         "count": len(result[-limit:]),
         "data": result[-limit:]
-    }
+    })
 
 @router.post("/fundamentals/{symbol}")
 def refresh_fundamentals(
