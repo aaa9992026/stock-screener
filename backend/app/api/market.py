@@ -135,6 +135,19 @@ def _close_on_or_before(points, target_date):
     return None
 
 
+def _close_on_or_after(points, target_date):
+    """Use the first available trading close on/after a calendar lookback date.
+
+    This matches chart-style 1W/1M/3M/etc. period returns when the exact
+    calendar anchor falls on a weekend/holiday. Using the prior session can
+    unintentionally lengthen the lookback and overstate/understate returns.
+    """
+    for trade_date, close in points:
+        if trade_date >= target_date and close not in (None, 0):
+            return trade_date, float(close)
+    return None
+
+
 def _weighted_relative_return_from_points(stock_points, benchmark_points, weights):
     """Client method: period relative return = stock return % - benchmark return %."""
     if not stock_points or not benchmark_points:
@@ -152,8 +165,11 @@ def _weighted_relative_return_from_points(stock_points, benchmark_points, weight
     for label in ("1w", "2w", "1m", "2m", "3m", "6m", "1y"):
         weight = max(0.0, float(weights.get(label, 0) or 0))
         anchor = _rs_anchor_date(end_date, label)
-        stock_old = _close_on_or_before(stock_points, anchor)
-        bench_old = _close_on_or_before(benchmark_points, anchor)
+        # For lookback anchors, use the first trading session ON OR AFTER the
+        # calendar anchor. This is important when the anchor date is a weekend
+        # or market holiday and aligns the return window with chart platforms.
+        stock_old = _close_on_or_after(stock_points, anchor)
+        bench_old = _close_on_or_after(benchmark_points, anchor)
         if not stock_old or not bench_old or stock_old[1] == 0 or bench_old[1] == 0:
             continue
 
@@ -166,6 +182,8 @@ def _weighted_relative_return_from_points(stock_points, benchmark_points, weight
             "benchmark_return_percent": round(benchmark_return, 2),
             "relative_return_percent": round(relative_return, 2),
             "start_date": stock_old[0].isoformat(),
+            "benchmark_start_date": bench_old[0].isoformat(),
+            "anchor_date": anchor.isoformat(),
             "end_date": stock_end[0].isoformat(),
         }
         if weight > 0:
