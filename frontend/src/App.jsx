@@ -29,6 +29,7 @@ const formatPctChange = (value) => {
   return `${prefix}${numeric.toFixed(2)}%`;
 };
 
+const defaultScoreWeights = { technical: 35, fundamental: 35, relative_strength: 15, ownership: 10, breakout: 5 };
 const defaultRsWeights = { "1w": 10, "1m": 30, "2m": 20, "3m": 15, "6m": 15, "1y": 10 };
 const defaultRankingSubweights = {
   technical: { ema20: 20, ema50: 20, ema150: 20, ema200: 20, rsi: 20 },
@@ -74,11 +75,9 @@ function App() {
   const [chartInfo, setChartInfo] = useState(null);
   const [scoreWeights, setScoreWeights] = useState(() => {
     try {
-      return JSON.parse(localStorage.getItem("scoreWeights")) || {
-        technical: 35, fundamental: 35, relative_strength: 15, ownership: 10, breakout: 5
-      };
+      return JSON.parse(localStorage.getItem("scoreWeights")) || defaultScoreWeights;
     } catch {
-      return { technical: 35, fundamental: 35, relative_strength: 15, ownership: 10, breakout: 5 };
+      return defaultScoreWeights;
     }
   });
   const [rsWeights, setRsWeights] = useState(() => readLocalObject("rsWeights", defaultRsWeights));
@@ -723,7 +722,7 @@ function App() {
         date: String(row.date).slice(0, 10),
         rs: Number(row.rs),
       }))
-      .filter((row) => Number.isFinite(row.rs));
+      .filter((row) => Number.isFinite(row.rs) && row.rs > 0);
   })();
 
   const changeExchange = (value) => {
@@ -968,57 +967,120 @@ function App() {
 
         {dashboard && (
           exchange === "US" ? (
-            <section className="fundamental-section score-weight-section">
-              <h2>Ranking Weight Settings (US)</h2>
-              <div className="indicator-settings">
+            <section className="fundamental-section score-weight-section ranking-settings-panel">
+              <div className="ranking-settings-header">
+                <div>
+                  <h2>Ranking Weight Settings (US)</h2>
+                  <p>Customize the broad ranking categories first, then fine-tune the parameters inside each category.</p>
+                </div>
+                <div className="ranking-total-badge">
+                  <span>Entered total</span>
+                  <strong>{Object.values(scoreWeights).reduce((sum, value) => sum + (Number(value) || 0), 0)}%</strong>
+                  <small>Normalized automatically</small>
+                </div>
+              </div>
+
+              <div className="ranking-category-grid">
                 {[
-                  ["technical", "Technical"],
-                  ["fundamental", "Fundamental"],
-                  ["relative_strength", "Relative Strength"],
-                  ["ownership", "Ownership"],
-                  ["breakout", "Breakout / VCP"],
-                ].map(([key, label]) => (
-                  <div key={key}>
-                    <label>{label} %</label>
-                    <input type="number" min="0" value={scoreWeights[key]}
-                      onChange={(e) => setScoreWeights((prev) => ({ ...prev, [key]: Number(e.target.value) || 0 }))} />
-                  </div>
-                ))}
-                <button onClick={() => {
+                  ["technical", "Technical", "Trend, moving averages and RSI"],
+                  ["fundamental", "Fundamental", "Earnings, margins and returns"],
+                  ["relative_strength", "Relative Strength", "Performance vs S&P 500"],
+                  ["ownership", "Ownership", "Institutional and insider positioning"],
+                  ["breakout", "Breakout / VCP", "Pivot, volume and contraction quality"],
+                ].map(([key, label, description]) => {
+                  const value = Number(scoreWeights[key]) || 0;
+                  return (
+                    <div className={`ranking-category-card ${value === 0 ? "is-disabled" : ""}`} key={key}>
+                      <div className="ranking-category-copy">
+                        <strong>{label}</strong>
+                        <small>{description}</small>
+                      </div>
+                      <div className="weight-input-wrap">
+                        <input
+                          aria-label={`${label} weight`}
+                          type="number"
+                          min="0"
+                          step="1"
+                          value={scoreWeights[key]}
+                          onChange={(e) => setScoreWeights((prev) => ({ ...prev, [key]: Math.max(0, Number(e.target.value) || 0) }))}
+                        />
+                        <span>%</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="ranking-actions">
+                <button className="ranking-primary-button" onClick={() => {
                   localStorage.setItem("scoreWeights", JSON.stringify(scoreWeights));
                   localStorage.setItem("rankingSubweights", JSON.stringify(rankingSubweights));
                   localStorage.setItem("rsWeights", JSON.stringify(rsWeights));
                   loadDashboard();
                   loadTechnicalSummary();
                 }}>Apply Ranking</button>
-                <button type="button" className="secondary-button" onClick={() => setShowRankingDetails((v) => !v)}>
+                <button type="button" className="secondary-button ranking-secondary-button" onClick={() => setShowRankingDetails((v) => !v)}>
                   {showRankingDetails ? "Hide Parameters" : "Show Parameters"}
                 </button>
+                <button type="button" className="secondary-button ranking-secondary-button" onClick={() => {
+                  setScoreWeights({ ...defaultScoreWeights });
+                  setRankingSubweights({
+                    technical: { ...defaultRankingSubweights.technical },
+                    fundamental: { ...defaultRankingSubweights.fundamental },
+                    ownership: { ...defaultRankingSubweights.ownership },
+                    breakout: { ...defaultRankingSubweights.breakout },
+                  });
+                  localStorage.removeItem("scoreWeights");
+                  localStorage.removeItem("rankingSubweights");
+                }}>Reset Defaults</button>
               </div>
-              <div className="chart-note">
-                Broader category weights and the parameters inside each category are customizable. Zero disables a parameter. Weights are normalized automatically and saved in this browser.
+
+              <div className="ranking-help-note">
+                <strong>How weighting works:</strong> values do not need to total 100. The screener normalizes them automatically. Set any category or parameter to 0 to disable it.
               </div>
 
               {showRankingDetails && (
                 <div className="ranking-detail-grid">
                   {[
-                    ["technical", "Technical parameters", [["ema20","Price > EMA20"],["ema50","Price > EMA50"],["ema150","Price > EMA150"],["ema200","Price > EMA200"],["rsi","RSI condition"]]],
-                    ["fundamental", "Fundamental parameters", [["eps","Positive EPS"],["net_income","Positive Net Income"],["profit_margin","Profit Margin"],["roe","ROE"],["roa","ROA"]]],
-                    ["ownership", "Ownership parameters", [["institution","Institutional Ownership"],["insider","Insider Ownership"]]],
-                    ["breakout", "Breakout / VCP parameters", [["near_pivot","Near Pivot"],["above_pivot","Above Pivot"],["volume","Volume Confirmation"],["tight_range","Tight Range"]]],
-                  ].map(([group, title, fields]) => (
+                    ["technical", "Technical parameters", "Signals used to score trend quality", [["ema20","Price above EMA20","Short-term trend"],["ema50","Price above EMA50","Intermediate trend"],["ema150","Price above EMA150","Long-term trend"],["ema200","Price above EMA200","Primary long-term trend"],["rsi","RSI condition","Momentum confirmation"]]],
+                    ["fundamental", "Fundamental parameters", "Financial quality inputs used by the ranking", [["eps","Positive EPS","Profitable on a per-share basis"],["net_income","Positive Net Income","Company-level profitability"],["profit_margin","Profit Margin","Efficiency of converting sales to profit"],["roe","ROE","Return on shareholder equity"],["roa","ROA","Return generated from assets"]]],
+                    ["ownership", "Ownership parameters", "Investor-positioning inputs", [["institution","Institutional Ownership","Professional/institutional participation"],["insider","Insider Ownership","Management and insider alignment"]]],
+                    ["breakout", "Breakout / VCP parameters", "Price-action quality around the pivot", [["near_pivot","Near Pivot","Price trading close to the pivot"],["above_pivot","Above Pivot","Price has cleared the pivot"],["volume","Volume Confirmation","Breakout supported by volume"],["tight_range","Tight Range","Price contraction / consolidation quality"]]],
+                  ].map(([group, title, subtitle, fields]) => (
                     <div className="ranking-detail-card" key={group}>
-                      <h3>{title}</h3>
-                      <div className="ranking-detail-inputs">
-                        {fields.map(([key,label]) => (
-                          <label key={key}>{label}
-                            <input type="number" min="0" value={rankingSubweights[group][key]}
-                              onChange={(e) => setRankingSubweights((prev) => ({
-                                ...prev,
-                                [group]: { ...prev[group], [key]: Number(e.target.value) || 0 },
-                              }))} />
-                          </label>
-                        ))}
+                      <div className="ranking-detail-card-header">
+                        <div>
+                          <h3>{title}</h3>
+                          <p>{subtitle}</p>
+                        </div>
+                        <span>{Object.values(rankingSubweights[group]).reduce((sum, value) => sum + (Number(value) || 0), 0)} total</span>
+                      </div>
+                      <div className="ranking-parameter-list">
+                        {fields.map(([key,label,description]) => {
+                          const value = Number(rankingSubweights[group][key]) || 0;
+                          return (
+                            <div className={`ranking-parameter-row ${value === 0 ? "is-disabled" : ""}`} key={key}>
+                              <div className="ranking-parameter-copy">
+                                <strong>{label}</strong>
+                                <small>{description}</small>
+                              </div>
+                              <div className="weight-input-wrap parameter-weight-input">
+                                <input
+                                  aria-label={`${label} parameter weight`}
+                                  type="number"
+                                  min="0"
+                                  step="1"
+                                  value={rankingSubweights[group][key]}
+                                  onChange={(e) => setRankingSubweights((prev) => ({
+                                    ...prev,
+                                    [group]: { ...prev[group], [key]: Math.max(0, Number(e.target.value) || 0) },
+                                  }))}
+                                />
+                                <span>%</span>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   ))}
