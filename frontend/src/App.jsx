@@ -45,7 +45,7 @@ const defaultHandwrittenFactors = {
     bb_width: { weight: 10, threshold: 10 },
     atr5_lt20: { weight: 10 },
     atr10_lt20: { weight: 5 },
-    rsi14: { weight: 0, enabled: false, lower: 30, preferred: 50, upper: 70 },
+    rsi14: { weight: 5, enabled: true, t1: 30, t2: 40, t3: 50, p1: 2, p2: 3, p3: 4, p4: 5 },
     volume10_lt20: { weight: 10 },
     volume20_lt40: { weight: 5 },
     distance52: { weight: 10, t1: 10, t2: 17, t3: 20, p1: 10, p2: 8, p3: 6, p4: 3 },
@@ -89,7 +89,7 @@ const handwrittenFactorMeta = {
     ["bb_width", "Upper BB - Lower BB", "BB width ≤ editable threshold", ["threshold"]],
     ["atr5_lt20", "5-day ATR% average < 20-day ATR% average", "ATR contraction", []],
     ["atr10_lt20", "10-day ATR% average < 20-day ATR% average", "ATR contraction", []],
-    ["rsi14", "RSI (14)", "Handwritten RSI bands; exact point allocation is not fully legible in the supplied photo, so this factor is disabled by default until confirmed", ["lower", "preferred", "upper"]],
+    ["rsi14", "RSI (14)", "RSI > 50 = 5 points; 40-50 = 4; 30-40 = 3; below 30 = 2", ["t1", "t2", "t3", "p1", "p2", "p3", "p4"]],
     ["volume10_lt20", "10-day volume average < 20-day volume average", "Volume contraction", []],
     ["volume20_lt40", "20-day volume average < 40-day volume average", "Longer-volume comparison", []],
     ["distance52", "Distance from 52-week high", "Handwritten 10 / 17 / 20% distance bands", ["t1", "t2", "t3"]],
@@ -815,9 +815,20 @@ function App() {
       const rawPoints = d52 <= Number(cfg.t1) ? Number(cfg.p1) : d52 <= Number(cfg.t2) ? Number(cfg.p2) : d52 <= Number(cfg.t3) ? Number(cfg.p3) : Number(cfg.p4);
       distanceScore = Number(cfg.p1) > 0 ? (rawPoints / Number(cfg.p1)) * 100 : 0;
     }
-    // The handwritten RSI thresholds are visible, but the exact point allocation
-    // is not fully legible in the supplied photo.  Do not invent it.
-    const rsiScore = null;
+    const rsiValue = finite(technicalSummary?.rsi_14 ?? indicators?.rsi);
+    let rsiScore = null;
+    if (rsiValue != null) {
+      const cfg = tech.rsi14;
+      const rawPoints = rsiValue < Number(cfg.t1)
+        ? Number(cfg.p1)
+        : rsiValue < Number(cfg.t2)
+          ? Number(cfg.p2)
+          : rsiValue <= Number(cfg.t3)
+            ? Number(cfg.p3)
+            : Number(cfg.p4);
+      const maxPoints = Math.max(Number(cfg.p1) || 0, Number(cfg.p2) || 0, Number(cfg.p3) || 0, Number(cfg.p4) || 0);
+      rsiScore = maxPoints > 0 ? (rawPoints / maxPoints) * 100 : 0;
+    }
     const technicalComponent = factorScore("technical", {
       bb_width: finite(technicalSummary?.bollinger_width_percent) == null ? null : (Number(technicalSummary.bollinger_width_percent) <= Number(tech.bb_width.threshold) ? 100 : 0),
       atr5_lt20: finite(technicalSummary?.average_atr_percent_5) == null || finite(technicalSummary?.average_atr_percent_20) == null ? null : (Number(technicalSummary.average_atr_percent_5) < Number(technicalSummary.average_atr_percent_20) ? 100 : 0),

@@ -75,3 +75,5 @@ This imports/updates the available NSE and US company lists.
 - Historical OHLCV data is stored in PostgreSQL.
 - Refreshing data updates existing dates and adds new dates without deleting normal historical records.
 - API credentials should be stored in `.env`, not hard-coded in source files.
+
+- Final RSI(14) handwritten scoring: >50 = 5 points, 40-50 = 4, 30-40 = 3, below 30 = 2; thresholds and points remain editable and the factor can be enabled/disabled.
