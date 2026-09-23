@@ -80,7 +80,6 @@ const defaultHandwrittenFactors = {
     fii_rising: { weight: 10 },
     dii_mf_qoq: { weight: 10, threshold: 0.1 },
     dii_mf_rising: { weight: 10 },
-    yearly_holding_rising: { weight: 5 },
     insider_activity: { weight: 10 },
   },
 };
@@ -119,13 +118,12 @@ const handwrittenFactorMeta = {
   ownership: [
     ["promoter_qoq", "Promoter holding change (QoQ)", "Latest quarter promoter change", ["threshold"]],
     ["promoter_above", "Promoter holding", "Promoter holding above editable level", ["threshold"]],
-    ["promoter_rising", "Promoter holding rising", "Latest holding > previous holding", []],
+    ["promoter_rising", "Promoter yearly holding rising", "Latest-year promoter holding > previous-year promoter holding", []],
     ["pledge", "Promoter holding pledge", "Handwritten pledge bands: <5, 5-10, 10-15, 15-20, >20", ["t1", "t2", "t3", "t4"]],
     ["fii_qoq", "FII holding change (QoQ)", "Latest quarter FII change", ["threshold"]],
-    ["fii_rising", "FII holding rising", "Latest FII holding > previous holding", []],
+    ["fii_rising", "FII holding rising", "Latest-year FII holding > previous-year holding AND prior-quarter holding > second-prior-quarter holding", []],
     ["dii_mf_qoq", "DII / MF holding change (QoQ)", "Latest DII/MF change", ["threshold"]],
-    ["dii_mf_rising", "DII / MF holding rising", "Latest holding > previous holding", []],
-    ["yearly_holding_rising", "Yearly holding rising", "Latest yearly holding > previous year", []],
+    ["dii_mf_rising", "DII / MF holding rising", "Prior-quarter holding > second-prior-quarter holding", []],
     ["insider_activity", "Insider activity", "Repeated buy / repeated sell factor", []],
   ],
 };
@@ -868,25 +866,31 @@ function App() {
     if (exchange !== "US" && Array.isArray(indiaShareholding?.history) && indiaShareholding.history.length) {
       const h = indiaShareholding.history;
       const latestH = h[0] || {};
-      const prevH = h[1] || {};
-      const yearAgoH = h[4] || {};
+      const priorQuarterH = h[1] || {};
+      const secondPriorQuarterH = h[2] || {};
+      const previousYearH = h[4] || {};
       const ocfg = handwrittenFactors.ownership;
-      const diiMfNow = [finite(latestH.dii), finite(latestH.mutual_funds)].filter((v) => v != null);
-      const diiMfPrev = [finite(prevH.dii), finite(prevH.mutual_funds)].filter((v) => v != null);
-      const diiMfChange = [finite(latestH.dii_change), finite(latestH.mutual_funds_change)].filter((v) => v != null);
-      const nowSum = diiMfNow.length ? diiMfNow.reduce((x,y) => x+y, 0) : null;
-      const prevSum = diiMfPrev.length ? diiMfPrev.reduce((x,y) => x+y, 0) : null;
-      const changeSum = diiMfChange.length ? diiMfChange.reduce((x,y) => x+y, 0) : null;
+      const diiMf = (row) => {
+        const values = [finite(row?.dii), finite(row?.mutual_funds)].filter((v) => v != null);
+        return values.length ? values.reduce((x, y) => x + y, 0) : null;
+      };
+      const priorDiiMf = diiMf(priorQuarterH);
+      const secondPriorDiiMf = diiMf(secondPriorQuarterH);
+      const latestDiiMfChange = [finite(latestH.dii_change), finite(latestH.mutual_funds_change)].filter((v) => v != null);
+      const changeSum = latestDiiMfChange.length ? latestDiiMfChange.reduce((x, y) => x + y, 0) : null;
       ownershipComponent = factorScore("ownership", {
         promoter_qoq: finite(latestH.promoter_change) == null ? null : (Number(latestH.promoter_change) > Number(ocfg.promoter_qoq.threshold) ? 100 : 0),
         promoter_above: finite(latestH.promoter) == null ? null : (Number(latestH.promoter) > Number(ocfg.promoter_above.threshold) ? 100 : 0),
-        promoter_rising: finite(latestH.promoter) == null || finite(prevH.promoter) == null ? null : (Number(latestH.promoter) > Number(prevH.promoter) ? 100 : 0),
+        promoter_rising: finite(latestH.promoter) == null || finite(previousYearH.promoter) == null ? null : (Number(latestH.promoter) > Number(previousYearH.promoter) ? 100 : 0),
         pledge: null,
         fii_qoq: finite(latestH.fii_change) == null ? null : (Number(latestH.fii_change) > Number(ocfg.fii_qoq.threshold) ? 100 : 0),
-        fii_rising: finite(latestH.fii) == null || finite(prevH.fii) == null ? null : (Number(latestH.fii) > Number(prevH.fii) ? 100 : 0),
+        fii_rising:
+          finite(latestH.fii) == null || finite(previousYearH.fii) == null ||
+          finite(priorQuarterH.fii) == null || finite(secondPriorQuarterH.fii) == null
+            ? null
+            : (Number(latestH.fii) > Number(previousYearH.fii) && Number(priorQuarterH.fii) > Number(secondPriorQuarterH.fii) ? 100 : 0),
         dii_mf_qoq: changeSum == null ? null : (changeSum > Number(ocfg.dii_mf_qoq.threshold) ? 100 : 0),
-        dii_mf_rising: nowSum == null || prevSum == null ? null : (nowSum > prevSum ? 100 : 0),
-        yearly_holding_rising: finite(latestH.promoter) == null || finite(yearAgoH.promoter) == null ? null : (Number(latestH.promoter) > Number(yearAgoH.promoter) ? 100 : 0),
+        dii_mf_rising: priorDiiMf == null || secondPriorDiiMf == null ? null : (priorDiiMf > secondPriorDiiMf ? 100 : 0),
         insider_activity: null,
       });
     } else if (exchange === "US") {
