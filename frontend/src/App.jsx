@@ -29,13 +29,12 @@ const formatPctChange = (value) => {
   return `${prefix}${numeric.toFixed(2)}%`;
 };
 
-const defaultScoreWeights = { technical: 35, fundamental: 35, relative_strength: 15, ownership: 10, breakout: 5 };
-const defaultRsWeights = { "1w": 10, "1m": 30, "2m": 20, "3m": 15, "6m": 15, "1y": 10 };
+const defaultScoreWeights = { technical: 35, fundamental: 35, relative_strength: 15, ownership: 10 };
+const defaultRsWeights = { "1w": 10, "2w": 0, "1m": 30, "2m": 20, "3m": 15, "6m": 15, "1y": 10 };
 const defaultRankingSubweights = {
   technical: { ema20: 20, ema50: 20, ema150: 20, ema200: 20, rsi: 20 },
   fundamental: { eps: 20, net_income: 20, profit_margin: 20, roe: 20, roa: 20 },
   ownership: { institution: 70, insider: 30 },
-  breakout: { near_pivot: 30, above_pivot: 25, volume: 25, tight_range: 20 },
 };
 
 const readLocalObject = (key, fallback) => {
@@ -75,19 +74,25 @@ function App() {
   const [chartInfo, setChartInfo] = useState(null);
   const [scoreWeights, setScoreWeights] = useState(() => {
     try {
-      return JSON.parse(localStorage.getItem("scoreWeights")) || defaultScoreWeights;
+      const saved = JSON.parse(localStorage.getItem("scoreWeights")) || {};
+      return {
+        technical: Number(saved.technical ?? defaultScoreWeights.technical),
+        fundamental: Number(saved.fundamental ?? defaultScoreWeights.fundamental),
+        relative_strength: Number(saved.relative_strength ?? defaultScoreWeights.relative_strength),
+        ownership: Number(saved.ownership ?? defaultScoreWeights.ownership),
+      };
     } catch {
-      return defaultScoreWeights;
+      return { ...defaultScoreWeights };
     }
   });
   const [rsWeights, setRsWeights] = useState(() => readLocalObject("rsWeights", defaultRsWeights));
+  const [rsVisibility, setRsVisibility] = useState(() => readLocalObject("rsVisibility", { "1w": true, "2w": true, "1m": true, "2m": true, "3m": true, "6m": true, "1y": true }));
   const [rankingSubweights, setRankingSubweights] = useState(() => {
     const saved = readLocalObject("rankingSubweights", defaultRankingSubweights);
     return {
       technical: { ...defaultRankingSubweights.technical, ...(saved.technical || {}) },
       fundamental: { ...defaultRankingSubweights.fundamental, ...(saved.fundamental || {}) },
       ownership: { ...defaultRankingSubweights.ownership, ...(saved.ownership || {}) },
-      breakout: { ...defaultRankingSubweights.breakout, ...(saved.breakout || {}) },
     };
   });
   const [showRankingDetails, setShowRankingDetails] = useState(true);
@@ -128,7 +133,6 @@ function App() {
         fundamental_weight: scoreWeights.fundamental,
         relative_strength_weight: scoreWeights.relative_strength,
         ownership_weight: scoreWeights.ownership,
-        breakout_weight: scoreWeights.breakout,
         technical_ema20_weight: rankingSubweights.technical.ema20,
         technical_ema50_weight: rankingSubweights.technical.ema50,
         technical_ema150_weight: rankingSubweights.technical.ema150,
@@ -141,11 +145,8 @@ function App() {
         fundamental_roa_weight: rankingSubweights.fundamental.roa,
         ownership_institution_weight: rankingSubweights.ownership.institution,
         ownership_insider_weight: rankingSubweights.ownership.insider,
-        breakout_near_pivot_weight: rankingSubweights.breakout.near_pivot,
-        breakout_above_pivot_weight: rankingSubweights.breakout.above_pivot,
-        breakout_volume_weight: rankingSubweights.breakout.volume,
-        breakout_tight_range_weight: rankingSubweights.breakout.tight_range,
         rs_1w_weight: rsWeights["1w"],
+        rs_2w_weight: rsWeights["2w"],
         rs_1m_weight: rsWeights["1m"],
         rs_2m_weight: rsWeights["2m"],
         rs_3m_weight: rsWeights["3m"],
@@ -163,7 +164,7 @@ function App() {
     try {
       const res = await axios.get(
         `${API}/market/technical-summary/${symbol}?exchange=${exchange}&timeframe=${timeframe}` +
-        `&rs_1w_weight=${rsWeights["1w"]}&rs_1m_weight=${rsWeights["1m"]}&rs_2m_weight=${rsWeights["2m"]}` +
+        `&rs_1w_weight=${rsWeights["1w"]}&rs_2w_weight=${rsWeights["2w"]}&rs_1m_weight=${rsWeights["1m"]}&rs_2m_weight=${rsWeights["2m"]}` +
         `&rs_3m_weight=${rsWeights["3m"]}&rs_6m_weight=${rsWeights["6m"]}&rs_1y_weight=${rsWeights["1y"]}`
       );
       setTechnicalSummary(res.data);
@@ -986,7 +987,6 @@ function App() {
                   ["fundamental", "Fundamental", "Earnings, margins and returns"],
                   ["relative_strength", "Relative Strength", "Performance vs S&P 500"],
                   ["ownership", "Ownership", "Institutional and insider positioning"],
-                  ["breakout", "Breakout / VCP", "Pivot, volume and contraction quality"],
                 ].map(([key, label, description]) => {
                   const value = Number(scoreWeights[key]) || 0;
                   return (
@@ -1016,6 +1016,7 @@ function App() {
                   localStorage.setItem("scoreWeights", JSON.stringify(scoreWeights));
                   localStorage.setItem("rankingSubweights", JSON.stringify(rankingSubweights));
                   localStorage.setItem("rsWeights", JSON.stringify(rsWeights));
+                  localStorage.setItem("rsVisibility", JSON.stringify(rsVisibility));
                   loadDashboard();
                   loadTechnicalSummary();
                 }}>Apply Ranking</button>
@@ -1028,7 +1029,6 @@ function App() {
                     technical: { ...defaultRankingSubweights.technical },
                     fundamental: { ...defaultRankingSubweights.fundamental },
                     ownership: { ...defaultRankingSubweights.ownership },
-                    breakout: { ...defaultRankingSubweights.breakout },
                   });
                   localStorage.removeItem("scoreWeights");
                   localStorage.removeItem("rankingSubweights");
@@ -1036,7 +1036,7 @@ function App() {
               </div>
 
               <div className="ranking-help-note">
-                <strong>How weighting works:</strong> values do not need to total 100. The screener normalizes them automatically. Set any category or parameter to 0 to disable it.
+                <strong>How weighting works:</strong> values do not need to total 100. The screener normalizes them automatically. Set any category or parameter to 0 to disable it. Breakout/VCP remains an analysis tool and is not part of the final ranking.
               </div>
 
               {showRankingDetails && (
@@ -1045,7 +1045,6 @@ function App() {
                     ["technical", "Technical parameters", "Signals used to score trend quality", [["ema20","Price above EMA20","Short-term trend"],["ema50","Price above EMA50","Intermediate trend"],["ema150","Price above EMA150","Long-term trend"],["ema200","Price above EMA200","Primary long-term trend"],["rsi","RSI condition","Momentum confirmation"]]],
                     ["fundamental", "Fundamental parameters", "Financial quality inputs used by the ranking", [["eps","Positive EPS","Profitable on a per-share basis"],["net_income","Positive Net Income","Company-level profitability"],["profit_margin","Profit Margin","Efficiency of converting sales to profit"],["roe","ROE","Return on shareholder equity"],["roa","ROA","Return generated from assets"]]],
                     ["ownership", "Ownership parameters", "Investor-positioning inputs", [["institution","Institutional Ownership","Professional/institutional participation"],["insider","Insider Ownership","Management and insider alignment"]]],
-                    ["breakout", "Breakout / VCP parameters", "Price-action quality around the pivot", [["near_pivot","Near Pivot","Price trading close to the pivot"],["above_pivot","Above Pivot","Price has cleared the pivot"],["volume","Volume Confirmation","Breakout supported by volume"],["tight_range","Tight Range","Price contraction / consolidation quality"]]],
                   ].map(([group, title, subtitle, fields]) => (
                     <div className="ranking-detail-card" key={group}>
                       <div className="ranking-detail-card-header">
@@ -1198,22 +1197,43 @@ function App() {
 
         <section className="fundamental-section relative-strength-section">
           <h2>Relative Strength vs {benchmark?.name || (exchange === "US" ? "S&P 500" : "NIFTY 500")}</h2>
-          <div className="indicator-settings rs-weight-settings">
-            {["1w","1m","2m","3m","6m","1y"].map((key) => (
-              <div key={key}>
+          <div className="indicator-settings rs-weight-settings rs-horizon-settings">
+            {["1w","2w","1m","2m","3m","6m","1y"].map((key) => (
+              <div key={key} className={`rs-horizon-control ${rsVisibility[key] === false ? "is-hidden" : ""}`}>
                 <label>{key.toUpperCase()} %</label>
                 <input type="number" min="0" value={rsWeights[key]}
-                  onChange={(e) => setRsWeights((prev) => ({ ...prev, [key]: Number(e.target.value) || 0 }))} />
+                  onChange={(e) => setRsWeights((prev) => ({ ...prev, [key]: Math.max(0, Number(e.target.value) || 0) }))} />
+                <label className="rs-visibility-toggle">
+                  <input
+                    type="checkbox"
+                    checked={rsVisibility[key] !== false}
+                    onChange={(e) => setRsVisibility((prev) => ({ ...prev, [key]: e.target.checked }))}
+                  />
+                  Show
+                </label>
               </div>
             ))}
             <button onClick={() => {
               localStorage.setItem("rsWeights", JSON.stringify(rsWeights));
+              localStorage.setItem("rsVisibility", JSON.stringify(rsVisibility));
               loadTechnicalSummary();
               loadDashboard();
-            }}>Apply RS Weights</button>
+            }}>Apply RS Settings</button>
+          </div>
+          <div className="rs-period-grid">
+            {["1w","2w","1m","2m","3m","6m","1y"].filter((key) => rsVisibility[key] !== false).map((key) => {
+              const item = technicalSummary?.rs_periods?.[key];
+              return (
+                <div className="metric rs-period-card" key={key}>
+                  <span>{key.toUpperCase()} Relative Return</span>
+                  <strong>{item?.relative_return_percent != null ? `${Number(item.relative_return_percent).toFixed(2)}%` : "-"}</strong>
+                  <small>Weight {rsWeights[key]}%</small>
+                </div>
+              );
+            })}
           </div>
           <div className="chart-note">
-            RS line = stock price / broad-market benchmark, rebased to 100 at the first overlapping point. Rising means the stock is outperforming the benchmark; falling means underperforming. The rating uses the customizable horizon weights above.
+            RS line = stock price / broad-market benchmark, rebased to 100 at the first overlapping point. Rising means the stock is outperforming the benchmark; falling means underperforming. The rating uses the customizable 1W/2W/1M/2M/3M/6M/1Y horizon weights above. Show/hide controls affect the horizon cards only; scoring continues to use the entered weights, and a weight of 0 disables a horizon.
           </div>
           {technicalSummary?.rs_available && relativeStrengthChartData.length > 1 ? (
             <ResponsiveContainer width="100%" height={230}>
@@ -1237,7 +1257,7 @@ function App() {
               <div className="metric">
                 <span>RS Rating vs {technicalSummary.rs_benchmark || "Benchmark"}</span>
                 <strong>{technicalSummary.rs_available ? technicalSummary.rs_rating : "N/A"}</strong>
-                <small>{["1w","1m","2m","3m","6m","1y"].map((k) => `${k.toUpperCase()} ${rsWeights[k]}%`).join(" • ")}</small>
+                <small>{["1w","2w","1m","2m","3m","6m","1y"].filter((k) => rsVisibility[k] !== false).map((k) => `${k.toUpperCase()} ${rsWeights[k]}%`).join(" • ")}</small>
               </div>
               <div className="metric"><span>EMA Alignment</span><strong>{technicalSummary.ema_alignment}</strong></div>
               <div className="metric"><span>{timeframe === "daily" ? "20-Day Avg Volume" : "20-Period Avg Volume"}</span><strong>{technicalSummary.average_volume_20 != null ? Number(technicalSummary.average_volume_20).toLocaleString() : "-"}</strong></div>

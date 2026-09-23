@@ -751,7 +751,7 @@ th {
 
 .ranking-category-grid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
 }
 
@@ -997,5 +997,74 @@ th {
 
   .ranking-parameter-row {
     align-items: flex-start;
+  }
+}
+
+/* Final client RS controls */
+.rs-horizon-settings {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  align-items: end;
+}
+
+.rs-horizon-control {
+  padding: 12px;
+  border: 1px solid #dbe3ee;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.rs-horizon-control.is-hidden {
+  opacity: .58;
+  background: #f8fafc;
+}
+
+.rs-horizon-control > label:first-child {
+  display: block;
+  margin-bottom: 6px;
+  color: #475569;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.rs-horizon-control > input[type="number"] {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 40px;
+}
+
+.rs-visibility-toggle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 8px;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.rs-period-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin: 14px 0;
+}
+
+.rs-period-card {
+  min-height: 88px;
+}
+
+@media (max-width: 1000px) {
+  .rs-horizon-settings,
+  .rs-period-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  .rs-horizon-settings,
+  .rs-period-grid {
+    grid-template-columns: 1fr;
   }
 }
