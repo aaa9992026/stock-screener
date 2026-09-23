@@ -177,10 +177,22 @@ def _weighted_relative_return_from_points(stock_points, benchmark_points, weight
     return weighted_sum / available_weight, metrics
 
 
-def _rs_percentile_from_stored_universe(db: Session, exchange: str, benchmark_points, weights, target_value):
-    """Client formula: (lower + 0.5 * equal) * 100 / total scored stocks."""
-    if db is None or target_value is None:
-        return None, 0
+def _percentile_rank(values, target_value):
+    """Client percentile: (lower + 0.5 * equal) * 100 / total."""
+    values = [float(v) for v in values if v is not None and math.isfinite(float(v))]
+    if target_value is None or not values:
+        return None
+    tolerance = 1e-9
+    lower = sum(1 for value in values if value < target_value - tolerance)
+    equal = sum(1 for value in values if abs(value - target_value) <= tolerance)
+    percentile = ((lower + 0.5 * equal) * 100.0) / len(values)
+    return round(max(0.0, min(100.0, percentile)), 2)
+
+
+def _rs_universe_metrics(db: Session, exchange: str, benchmark_points):
+    """Return period relative returns for each stored symbol in the market universe."""
+    if db is None:
+        return {}, {}
 
     cutoff = date.today() - timedelta(days=430)
     rows = (
@@ -195,27 +207,30 @@ def _rs_percentile_from_stored_universe(db: Session, exchange: str, benchmark_po
             continue
         grouped.setdefault(row.symbol, []).append((row.date, float(row.close)))
 
-    values = []
-    for points in grouped.values():
-        value, _ = _weighted_relative_return_from_points(points, benchmark_points, weights)
-        if value is not None and math.isfinite(value):
-            values.append(value)
+    # The relative-return metrics themselves do not depend on scoring weights.
+    metric_weights = {key: 1.0 for key in ("1w", "2w", "1m", "2m", "3m", "6m", "1y")}
+    symbol_metrics = {}
+    for symbol, points in grouped.items():
+        _, metrics = _weighted_relative_return_from_points(points, benchmark_points, metric_weights)
+        if metrics:
+            symbol_metrics[symbol] = metrics
 
-    if not values:
-        return None, 0
-
-    tolerance = 1e-9
-    lower = sum(1 for value in values if value < target_value - tolerance)
-    equal = sum(1 for value in values if abs(value - target_value) <= tolerance)
-    percentile = ((lower + 0.5 * equal) * 100.0) / len(values)
-    return round(max(0.0, min(100.0, percentile)), 2), len(values)
+    sector_by_symbol = {
+        row.symbol: row.sector
+        for row in db.query(Company).filter(Company.exchange == exchange.upper()).all()
+        if row.sector
+    }
+    return symbol_metrics, sector_by_symbol
 
 
 def _weighted_rs_against_benchmark(daily_rows, exchange: str, period_weights=None, db: Session = None):
-    """Client RS method: weighted relative return, then market percentile."""
+    """Client RS method: period relative returns -> period percentiles -> weighted RS score."""
     benchmark_symbol = "^GSPC" if exchange.upper() == "US" else "^CRSLDX"
     benchmark_name = "S&P 500" if exchange.upper() == "US" else "NIFTY 500"
-    defaults = {"1w": 10.0, "2w": 0.0, "1m": 30.0, "2m": 20.0, "3m": 15.0, "6m": 15.0, "1y": 10.0}
+
+    # Client formula defaults:
+    # 1W*0.2 + 1M*0.2 + 3M*0.2 + 6M*0.1 + 12M*0.1 + Sector RS*0.2
+    defaults = {"1w": 20.0, "2w": 0.0, "1m": 20.0, "2m": 0.0, "3m": 20.0, "6m": 10.0, "1y": 10.0, "sector": 20.0}
     weights = defaults.copy()
     if period_weights:
         for key, value in period_weights.items():
@@ -253,18 +268,99 @@ def _weighted_rs_against_benchmark(daily_rows, exchange: str, period_weights=Non
             if base_ratio:
                 rs_chart.append({"date": trade_date.isoformat(), "rs": round((ratio / base_ratio) * 100, 4)})
 
-        weighted_relative, metrics = _weighted_relative_return_from_points(stock_points, benchmark_points, weights)
-        if weighted_relative is None:
+        metric_weights = {key: 1.0 for key in ("1w", "2w", "1m", "2m", "3m", "6m", "1y")}
+        _, metrics = _weighted_relative_return_from_points(stock_points, benchmark_points, metric_weights)
+        if not metrics:
             return None, None, metrics, benchmark_name, rs_chart
 
-        rating, universe_size = _rs_percentile_from_stored_universe(
-            db, exchange, benchmark_points, weights, weighted_relative
-        )
-        metrics["_universe_size"] = universe_size
+        universe_metrics, sector_by_symbol = _rs_universe_metrics(db, exchange, benchmark_points)
+        for label in ("1w", "2w", "1m", "2m", "3m", "6m", "1y"):
+            target_rr = (metrics.get(label) or {}).get("relative_return_percent")
+            universe_values = [
+                m[label]["relative_return_percent"]
+                for m in universe_metrics.values()
+                if label in m and m[label].get("relative_return_percent") is not None
+            ]
+            pct = _percentile_rank(universe_values, target_rr)
+            if label in metrics:
+                metrics[label]["percentile"] = pct
+                metrics[label]["universe_size"] = len(universe_values)
+                metrics[label]["score_weight_percent"] = weights.get(label, 0.0)
+
+        # First calculate each stock's period-percentile composite (without sector).
+        period_labels = ("1w", "2w", "1m", "2m", "3m", "6m", "1y")
+        period_universe_values = {
+            label: [
+                m[label]["relative_return_percent"]
+                for m in universe_metrics.values()
+                if label in m and m[label].get("relative_return_percent") is not None
+            ]
+            for label in period_labels
+        }
+
+        stock_period_scores = {}
+        for symbol, sym_metrics in universe_metrics.items():
+            score_sum = 0.0
+            score_weight = 0.0
+            for label in period_labels:
+                weight = weights.get(label, 0.0)
+                if weight <= 0 or label not in sym_metrics:
+                    continue
+                rr = sym_metrics[label].get("relative_return_percent")
+                pct = _percentile_rank(period_universe_values[label], rr)
+                if pct is None:
+                    continue
+                score_sum += pct * weight
+                score_weight += weight
+            if score_weight > 0:
+                stock_period_scores[symbol] = score_sum / score_weight
+
+        # Sector RS Score = percentile rank of the target sector's average member RS
+        # versus the average RS of all other represented sectors.
+        sector_groups = {}
+        for symbol, score in stock_period_scores.items():
+            sector = sector_by_symbol.get(symbol)
+            if sector:
+                sector_groups.setdefault(sector, []).append(score)
+        sector_scores = {sector: sum(vals) / len(vals) for sector, vals in sector_groups.items() if vals}
+
+        target_symbol = daily_rows[-1].symbol if daily_rows else None
+        target_sector = sector_by_symbol.get(target_symbol)
+        target_sector_raw = sector_scores.get(target_sector) if target_sector else None
+        sector_percentile = _percentile_rank(list(sector_scores.values()), target_sector_raw)
+        metrics["sector"] = {
+            "sector": target_sector,
+            "score": round(target_sector_raw, 2) if target_sector_raw is not None else None,
+            "percentile": sector_percentile,
+            "universe_size": len(sector_scores),
+            "score_weight_percent": weights.get("sector", 0.0),
+        }
+
+        weighted_score = 0.0
+        available_weight = 0.0
+        for label in period_labels:
+            weight = weights.get(label, 0.0)
+            pct = (metrics.get(label) or {}).get("percentile")
+            if weight > 0 and pct is not None:
+                weighted_score += pct * weight
+                available_weight += weight
+        sector_weight = weights.get("sector", 0.0)
+        if sector_weight > 0 and sector_percentile is not None:
+            weighted_score += sector_percentile * sector_weight
+            available_weight += sector_weight
+
+        if available_weight <= 0:
+            return None, None, metrics, benchmark_name, rs_chart
+
+        rating = round(weighted_score / available_weight, 2)
+        # Diagnostic weighted relative return retained for display/API compatibility only.
+        old_period_weights = {k: weights.get(k, 0.0) for k in period_labels}
+        weighted_relative, _ = _weighted_relative_return_from_points(stock_points, benchmark_points, old_period_weights)
+        metrics["_universe_size"] = len(universe_metrics)
+        metrics["_score_weight_total"] = available_weight
         return rating, weighted_relative, metrics, benchmark_name, rs_chart
     except Exception:
         return None, None, {}, benchmark_name, []
-
 
 
 def _normalize_score_weights(weights=None):
@@ -589,13 +685,14 @@ def get_dashboard_summary(
     fundamental_roa_weight: float = 20,
     ownership_institution_weight: float = 70,
     ownership_insider_weight: float = 30,
-    rs_1w_weight: float = 10,
+    rs_1w_weight: float = 20,
     rs_2w_weight: float = 0,
-    rs_1m_weight: float = 30,
-    rs_2m_weight: float = 20,
-    rs_3m_weight: float = 15,
-    rs_6m_weight: float = 15,
+    rs_1m_weight: float = 20,
+    rs_2m_weight: float = 0,
+    rs_3m_weight: float = 20,
+    rs_6m_weight: float = 10,
     rs_1y_weight: float = 10,
+    rs_sector_weight: float = 20,
     db: Session = Depends(get_db)
 ):
     symbol = symbol.upper()
@@ -618,7 +715,7 @@ def get_dashboard_summary(
         "fundamental": {"eps": fundamental_eps_weight, "net_income": fundamental_net_income_weight, "profit_margin": fundamental_profit_margin_weight, "roe": fundamental_roe_weight, "roa": fundamental_roa_weight},
         "ownership": {"institution": ownership_institution_weight, "insider": ownership_insider_weight},
     }
-    rs_period_weights = {"1w": rs_1w_weight, "2w": rs_2w_weight, "1m": rs_1m_weight, "2m": rs_2m_weight, "3m": rs_3m_weight, "6m": rs_6m_weight, "1y": rs_1y_weight}
+    rs_period_weights = {"1w": rs_1w_weight, "2w": rs_2w_weight, "1m": rs_1m_weight, "2m": rs_2m_weight, "3m": rs_3m_weight, "6m": rs_6m_weight, "1y": rs_1y_weight, "sector": rs_sector_weight}
     score, coverage, components, normalized_weights = _score_symbol(
         db, symbol, exchange, weights=requested_weights, include_components=True,
         subweights=ranking_subweights, rs_period_weights=rs_period_weights
@@ -698,13 +795,14 @@ def get_technical_summary(
     symbol: str,
     exchange: str = "US",
     timeframe: str = Query("daily", pattern="^(daily|weekly|monthly)$"),
-    rs_1w_weight: float = 10,
+    rs_1w_weight: float = 20,
     rs_2w_weight: float = 0,
-    rs_1m_weight: float = 30,
-    rs_2m_weight: float = 20,
-    rs_3m_weight: float = 15,
-    rs_6m_weight: float = 15,
+    rs_1m_weight: float = 20,
+    rs_2m_weight: float = 0,
+    rs_3m_weight: float = 20,
+    rs_6m_weight: float = 10,
     rs_1y_weight: float = 10,
+    rs_sector_weight: float = 20,
     db: Session = Depends(get_db)
 ):
     symbol = symbol.upper()
@@ -995,7 +1093,7 @@ def get_technical_summary(
     else:
         pattern = "None"
 
-    rs_period_weights = {"1w": rs_1w_weight, "2w": rs_2w_weight, "1m": rs_1m_weight, "2m": rs_2m_weight, "3m": rs_3m_weight, "6m": rs_6m_weight, "1y": rs_1y_weight}
+    rs_period_weights = {"1w": rs_1w_weight, "2w": rs_2w_weight, "1m": rs_1m_weight, "2m": rs_2m_weight, "3m": rs_3m_weight, "6m": rs_6m_weight, "1y": rs_1y_weight, "sector": rs_sector_weight}
     rs_rating, rs_weighted_relative_return, rs_metrics, benchmark_name, rs_chart = _weighted_rs_against_benchmark(daily_rows, exchange, rs_period_weights, db=db)
 
     return _json_safe({
@@ -1037,7 +1135,7 @@ def get_technical_summary(
         "rs_periods": rs_metrics,
         "rs_chart": rs_chart,
         "rs_period_weights": rs_period_weights,
-        "rs_note": "Relative Strength: each period relative return = stock return % - benchmark return %. The weighted relative return is converted to percentile using (stocks below + 0.5 x equal stocks) x 100 / total scored stocks.",
+        "rs_note": "Relative Strength: each period relative return = stock return % - benchmark return %. Each period is converted to the client percentile [(lower stocks + 0.5 x equal stocks) x 100 / total]. Final RS Score is the customizable weighted average of period percentiles plus Sector RS Score; defaults are 1W 20%, 1M 20%, 3M 20%, 6M 10%, 12M 10%, Sector 20%.",
         "criteria_note": f"Metrics use the selected {timeframe} timeframe. For a detected VCP, Pivot = highest high of the final contraction; otherwise it is the recent consolidation high. Near Pivot = 95%-102% of pivot. Confirmed breakout requires close > pivot by 0.3%, volume >= 1.4x 50-period average, close > open, and close in the upper half of the period's range. VCP requires successive price-depth and ATR% contractions."
     })
 

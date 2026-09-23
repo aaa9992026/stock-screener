@@ -30,7 +30,7 @@ const formatPctChange = (value) => {
 };
 
 const defaultScoreWeights = { technical: 35, fundamental: 35, relative_strength: 15, ownership: 10 };
-const defaultRsWeights = { "1w": 10, "2w": 0, "1m": 30, "2m": 20, "3m": 15, "6m": 15, "1y": 10 };
+const defaultRsWeights = { "1w": 20, "2w": 0, "1m": 20, "2m": 0, "3m": 20, "6m": 10, "1y": 10, "sector": 20 };
 const defaultRankingSubweights = {
   technical: { ema20: 20, ema50: 20, ema150: 20, ema200: 20, rsi: 20 },
   fundamental: { eps: 20, net_income: 20, profit_margin: 20, roe: 20, roa: 20 },
@@ -177,7 +177,7 @@ function App() {
     }
   });
   const [rsWeights, setRsWeights] = useState(() => readLocalObject("rsWeights", defaultRsWeights));
-  const [rsVisibility, setRsVisibility] = useState(() => readLocalObject("rsVisibility", { "1w": true, "2w": true, "1m": true, "2m": true, "3m": true, "6m": true, "1y": true }));
+  const [rsVisibility, setRsVisibility] = useState(() => readLocalObject("rsVisibility", { "1w": true, "2w": false, "1m": true, "2m": false, "3m": true, "6m": true, "1y": true, "sector": true }));
   const [rankingSubweights, setRankingSubweights] = useState(() => {
     const saved = readLocalObject("rankingSubweights", defaultRankingSubweights);
     return {
@@ -250,6 +250,7 @@ function App() {
         rs_3m_weight: rsWeights["3m"],
         rs_6m_weight: rsWeights["6m"],
         rs_1y_weight: rsWeights["1y"],
+        rs_sector_weight: rsWeights["sector"],
       });
       const res = await axios.get(`${API}/market/dashboard/${symbol}?${params.toString()}`);
       setDashboard(res.data);
@@ -263,7 +264,7 @@ function App() {
       const res = await axios.get(
         `${API}/market/technical-summary/${symbol}?exchange=${exchange}&timeframe=${timeframe}` +
         `&rs_1w_weight=${rsWeights["1w"]}&rs_2w_weight=${rsWeights["2w"]}&rs_1m_weight=${rsWeights["1m"]}&rs_2m_weight=${rsWeights["2m"]}` +
-        `&rs_3m_weight=${rsWeights["3m"]}&rs_6m_weight=${rsWeights["6m"]}&rs_1y_weight=${rsWeights["1y"]}`
+        `&rs_3m_weight=${rsWeights["3m"]}&rs_6m_weight=${rsWeights["6m"]}&rs_1y_weight=${rsWeights["1y"]}&rs_sector_weight=${rsWeights["sector"]}`
       );
       setTechnicalSummary(res.data);
     } catch {
@@ -1491,9 +1492,9 @@ function App() {
         <section className="fundamental-section relative-strength-section">
           <h2>Relative Strength vs {benchmark?.name || (exchange === "US" ? "S&P 500" : "NIFTY 500")}</h2>
           <div className="indicator-settings rs-weight-settings rs-horizon-settings">
-            {["1w","2w","1m","2m","3m","6m","1y"].map((key) => (
+            {["1w","2w","1m","2m","3m","6m","1y","sector"].map((key) => (
               <div key={key} className={`rs-horizon-control ${rsVisibility[key] === false ? "is-hidden" : ""}`}>
-                <label>{key.toUpperCase()} %</label>
+                <label>{key === "sector" ? "Sector RS %" : `${key.toUpperCase()} %`}</label>
                 <input type="number" min="0" value={rsWeights[key]}
                   onChange={(e) => setRsWeights((prev) => ({ ...prev, [key]: Math.max(0, Number(e.target.value) || 0) }))} />
                 <label className="rs-visibility-toggle">
@@ -1520,13 +1521,20 @@ function App() {
                 <div className="metric rs-period-card" key={key}>
                   <span>{key.toUpperCase()} Relative Return</span>
                   <strong>{item?.relative_return_percent != null ? `${Number(item.relative_return_percent).toFixed(2)}%` : "-"}</strong>
-                  <small>Weight {rsWeights[key]}%</small>
+                  <small>Percentile {item?.percentile != null ? Number(item.percentile).toFixed(2) : "-"} • Weight {rsWeights[key]}%</small>
                 </div>
               );
             })}
+            {rsVisibility.sector !== false && (
+              <div className="metric rs-period-card">
+                <span>Sector RS Score</span>
+                <strong>{technicalSummary?.rs_periods?.sector?.percentile != null ? Number(technicalSummary.rs_periods.sector.percentile).toFixed(2) : "-"}</strong>
+                <small>{technicalSummary?.rs_periods?.sector?.sector || "Sector unavailable"} • Weight {rsWeights.sector}%</small>
+              </div>
+            )}
           </div>
           <div className="chart-note">
-            RS line = stock price / broad-market benchmark, rebased to 100 for charting only. For scoring, each period Relative Return = Stock Return % - Benchmark Return %. The weighted relative return is then converted to the client percentile: [(stocks with lower weighted relative return) + 0.5 × (stocks with equal weighted relative return)] × 100 / total scored stocks. Show/hide controls affect the horizon cards only; a weight of 0 disables a horizon.
+            RS line = stock price / broad-market benchmark, rebased to 100 for charting only. For scoring, each period Relative Return = Stock Return % - Benchmark Return %. Each period is converted to a percentile using [(stocks with lower relative return) + 0.5 × (stocks with equal relative return)] × 100 / total stocks. Final RS Score uses customizable weights; defaults: 1W×0.2 + 1M×0.2 + 3M×0.2 + 6M×0.1 + 12M×0.1 + Sector RS×0.2.
           </div>
           {technicalSummary?.rs_available && relativeStrengthChartData.length > 1 ? (
             <ResponsiveContainer width="100%" height={230}>
@@ -1550,7 +1558,7 @@ function App() {
               <div className="metric">
                 <span>RS Rating vs {technicalSummary.rs_benchmark || "Benchmark"}</span>
                 <strong>{technicalSummary.rs_available ? technicalSummary.rs_rating : "N/A"}</strong>
-                <small>{["1w","2w","1m","2m","3m","6m","1y"].filter((k) => rsVisibility[k] !== false).map((k) => `${k.toUpperCase()} ${rsWeights[k]}%`).join(" • ")}</small>
+                <small>{["1w","2w","1m","2m","3m","6m","1y","sector"].filter((k) => rsVisibility[k] !== false).map((k) => `${k === "sector" ? "Sector" : k.toUpperCase()} ${rsWeights[k]}%`).join(" • ")}</small>
               </div>
               <div className="metric"><span>EMA Alignment</span><strong>{technicalSummary.ema_alignment}</strong></div>
               <div className="metric"><span>{timeframe === "daily" ? "20-Day Avg Volume" : "20-Period Avg Volume"}</span><strong>{technicalSummary.average_volume_20 != null ? Number(technicalSummary.average_volume_20).toLocaleString() : "-"}</strong></div>
