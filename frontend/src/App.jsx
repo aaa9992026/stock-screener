@@ -179,9 +179,9 @@ function App() {
   const [rsWeights, setRsWeights] = useState(() => {
     const saved = readLocalObject("rsWeights", defaultRsWeights);
     const legacy = Number(saved["1w"]) === 20 && Number(saved["1m"]) === 20 && Number(saved["3m"]) === 20 && Number(saved["6m"]) === 10 && Number(saved["1y"]) === 10 && Number(saved.sector) === 20;
-    return legacy ? { ...defaultRsWeights } : { ...defaultRsWeights, ...saved, sector: 0 };
+    return legacy ? { ...defaultRsWeights } : { ...defaultRsWeights, ...saved };
   });
-  const [rsVisibility, setRsVisibility] = useState(() => readLocalObject("rsVisibility", { "1w": true, "2w": false, "1m": true, "2m": false, "3m": true, "6m": true, "1y": true, "sector": false }));
+  const [rsVisibility, setRsVisibility] = useState(() => readLocalObject("rsVisibility", { "1w": true, "2w": false, "1m": true, "2m": false, "3m": true, "6m": true, "1y": true, "sector": true }));
   const [rankingSubweights, setRankingSubweights] = useState(() => {
     const saved = readLocalObject("rankingSubweights", defaultRankingSubweights);
     return {
@@ -1496,9 +1496,9 @@ function App() {
         <section className="fundamental-section relative-strength-section">
           <h2>Relative Strength vs {benchmark?.name || (exchange === "US" ? "S&P 500" : "NIFTY 500")}</h2>
           <div className="indicator-settings rs-weight-settings rs-horizon-settings">
-            {["1w","2w","1m","2m","3m","6m","1y"].map((key) => (
+            {["1w","2w","1m","2m","3m","6m","1y","sector"].map((key) => (
               <div key={key} className={`rs-horizon-control ${rsVisibility[key] === false ? "is-hidden" : ""}`}>
-                <label>{`${key.toUpperCase()} %`}</label>
+                <label>{key === "sector" ? "Sector RS %" : `${key.toUpperCase()} %`}</label>
                 <input type="number" min="0" value={rsWeights[key]}
                   onChange={(e) => setRsWeights((prev) => ({ ...prev, [key]: Math.max(0, Number(e.target.value) || 0) }))} />
                 <label className="rs-visibility-toggle">
@@ -1526,8 +1526,17 @@ function App() {
             </div>
           </div>
           <div className="rs-period-grid">
-            {["1w","2w","1m","2m","3m","6m","1y"].filter((key) => rsVisibility[key] !== false).map((key) => {
+            {["1w","2w","1m","2m","3m","6m","1y","sector"].filter((key) => rsVisibility[key] !== false).map((key) => {
               const item = technicalSummary?.rs_periods?.[key];
+              if (key === "sector") {
+                return (
+                  <div className="metric rs-period-card" key={key}>
+                    <span>Sector RS Score</span>
+                    <strong>{item?.percentile != null ? Number(item.percentile).toFixed(2) : "-"}</strong>
+                    <small>{item?.sector || dashboard?.sector || "Sector unavailable"} • Raw sector score {item?.score != null ? Number(item.score).toFixed(2) : "-"} • Weight {rsWeights[key]}%</small>
+                  </div>
+                );
+              }
               return (
                 <div className="metric rs-period-card" key={key}>
                   <span>{key.toUpperCase()} Relative Return</span>
@@ -1538,7 +1547,7 @@ function App() {
             })}
           </div>
           <div className="chart-note">
-            RS line = stock price / broad-market benchmark, rebased to 100 for charting only. Relative Return = Stock Return % - Benchmark Return % and is independent of the editable RS weights. The weights change only the Final RS Score. Each stock percentile uses the client-required fixed total of 5,000 stocks: [(stocks with lower relative return) + 0.5 × (stocks with equal relative return)] × 100 / 5000. Final RS Score follows the latest client reference: 1W×0.30 + 1M×0.25 + 3M×0.20 + 6M×0.15 + 12M×0.10. 2W and 2M remain optional with default weight 0.
+            RS line = stock price / broad-market benchmark, rebased to 100 for charting only. Relative Return = Stock Return % - Benchmark Return % and is independent of the editable RS weights. The weights change only the Final RS Score. Each stock percentile uses the client-required fixed total of 5,000 stocks: [(stocks with lower relative return) + 0.5 × (stocks with equal relative return)] × 100 / 5000. Final RS Score uses the enabled weighted percentile components. Default period weights remain 1W×0.30 + 1M×0.25 + 3M×0.20 + 6M×0.15 + 12M×0.10. 2W, 2M, and Sector RS are optional with default weight 0.
           </div>
           {technicalSummary?.rs_available && relativeStrengthChartData.length > 1 ? (
             <ResponsiveContainer width="100%" height={230}>
@@ -1562,7 +1571,7 @@ function App() {
               <div className="metric">
                 <span>RS Rating vs {technicalSummary.rs_benchmark || "Benchmark"}</span>
                 <strong>{technicalSummary.rs_available ? technicalSummary.rs_rating : "N/A"}</strong>
-                <small>{["1w","2w","1m","2m","3m","6m","1y"].filter((k) => rsVisibility[k] !== false).map((k) => `${k.toUpperCase()} ${rsWeights[k]}%`).join(" • ")}</small>
+                <small>{["1w","2w","1m","2m","3m","6m","1y","sector"].filter((k) => rsVisibility[k] !== false).map((k) => `${k === "sector" ? "Sector RS" : k.toUpperCase()} ${rsWeights[k]}%`).join(" • ")}</small>
               </div>
               <div className="metric"><span>EMA Alignment</span><strong>{technicalSummary.ema_alignment}</strong></div>
               <div className="metric"><span>{timeframe === "daily" ? "20-Day Avg Volume" : "20-Period Avg Volume"}</span><strong>{technicalSummary.average_volume_20 != null ? Number(technicalSummary.average_volume_20).toLocaleString() : "-"}</strong></div>

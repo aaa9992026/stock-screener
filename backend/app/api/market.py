@@ -315,7 +315,7 @@ def _weighted_rs_against_benchmark(daily_rows, exchange: str, period_weights=Non
 
     # Latest client handwritten RS reference:
     # 1W*0.30 + 1M*0.25 + 3M*0.20 + 6M*0.15 + 12M*0.10
-    # 2W/2M remain optional custom periods with zero default weight. Sector is informational only.
+    # 2W/2M and Sector RS remain optional custom components with zero default weight.
     defaults = {"1w": 30.0, "2w": 0.0, "1m": 25.0, "2m": 0.0, "3m": 20.0, "6m": 15.0, "1y": 10.0, "sector": 0.0}
     weights = defaults.copy()
     if period_weights:
@@ -432,8 +432,12 @@ def _weighted_rs_against_benchmark(daily_rows, exchange: str, period_weights=Non
             if weight > 0 and pct is not None:
                 weighted_score += pct * weight
                 available_weight += weight
-        # Latest client reference excludes Sector RS from the final RS score.
-        # Sector percentile is retained only as optional informational output.
+        # Sector RS is an optional scoring component. Its default weight is 0,
+        # so the standard period-only formula is unchanged unless the user enables it.
+        sector_weight = weights.get("sector", 0.0)
+        if sector_weight > 0 and sector_percentile is not None:
+            weighted_score += sector_percentile * sector_weight
+            available_weight += sector_weight
 
         if available_weight <= 0:
             return None, None, metrics, benchmark_name, rs_chart
@@ -1228,7 +1232,7 @@ def get_technical_summary(
         "rs_periods": rs_metrics,
         "rs_chart": rs_chart,
         "rs_period_weights": rs_period_weights,
-        "rs_note": "Relative Strength: period relative returns are raw market calculations and never change when RS score weights change. Each period uses TradingView-style current period candle return (period open to current close); relative return = stock return % - benchmark return %. Stock percentiles use the client-required fixed denominator of 5,000 stocks: [(lower stocks + 0.5 x equal stocks) x 100 / 5000]. Final RS Score follows the latest handwritten reference: 1W x 30% + 1M x 25% + 3M x 20% + 6M x 15% + 12M x 10%. 2W/2M are optional custom periods with zero default weight. Sector RS is informational and is not included in the final RS score.",
+        "rs_note": "Relative Strength: period relative returns are raw market calculations and never change when RS score weights change. Each period uses TradingView-style current period candle return (period open to current close); relative return = stock return % - benchmark return %. Stock percentiles use the client-required fixed denominator of 5,000 stocks: [(lower stocks + 0.5 x equal stocks) x 100 / 5000]. Final RS Score uses weighted percentile components. Default weights are 1W x 30% + 1M x 25% + 3M x 20% + 6M x 15% + 12M x 10%. 2W/2M and Sector RS are optional components with zero default weight; Sector RS is included only when its weight is greater than 0.",
         "criteria_note": f"Metrics use the selected {timeframe} timeframe. For a detected VCP, Pivot = highest high of the final contraction; otherwise it is the recent consolidation high. Near Pivot = 95%-102% of pivot. Confirmed breakout requires close > pivot by 0.3%, volume >= 1.4x 50-period average, close > open, and close in the upper half of the period's range. VCP requires successive price-depth and ATR% contractions."
     })
 
