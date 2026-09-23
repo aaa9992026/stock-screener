@@ -1109,3 +1109,38 @@ th {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* Final client factor enable/disable controls */
+.factor-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.factor-enable-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 9px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.factor-enable-toggle input {
+  accent-color: #2563eb;
+}
+.handwritten-factor-row.is-disabled {
+  opacity: 0.58;
+}
+@media (max-width: 700px) {
+  .factor-controls {
+    width: 100%;
+    justify-content: space-between;
+  }
+}

@@ -45,7 +45,7 @@ const defaultHandwrittenFactors = {
     bb_width: { weight: 10, threshold: 10 },
     atr5_lt20: { weight: 10 },
     atr10_lt20: { weight: 5 },
-    rsi14: { weight: 0, lower: 30, preferred: 50, upper: 70 },
+    rsi14: { weight: 0, enabled: false, lower: 30, preferred: 50, upper: 70 },
     volume10_lt20: { weight: 10 },
     volume20_lt40: { weight: 5 },
     distance52: { weight: 10, t1: 10, t2: 17, t3: 20, p1: 10, p2: 8, p3: 6, p4: 3 },
@@ -68,6 +68,8 @@ const defaultHandwrittenFactors = {
     a_pat_rising: { weight: 4 },
     a_sales_yoy: { weight: 5, threshold: 20 },
     a_sales_rising: { weight: 4 },
+    a_ocf_yoy: { weight: 4, threshold: 10 },
+    a_npm_rising: { weight: 3 },
   },
   ownership: {
     promoter_qoq: { weight: 10, threshold: 0.3 },
@@ -104,13 +106,15 @@ const handwrittenFactorMeta = {
     ["q_pat_yoy_rising", "Quarterly PAT YoY trend rising", "Latest YoY > prior YoY > second-prior YoY", []],
     ["q_npm_yoy", "Quarterly Net Profit Margin growth (YoY)", "Latest NPM vs year-ago quarter", ["threshold"]],
     ["q_sales_yoy", "Latest quarter Sales (YoY)", "Latest quarterly sales YoY growth", ["threshold"]],
-    ["q_sales_rising", "Quarterly Sales rising", "Latest sales > prior sales > second-prior sales", []],
+    ["q_sales_rising", "Quarterly Sales trend rising", "Latest sales > prior sales > second-prior sales", []],
     ["a_eps_yoy", "Latest year EPS (YoY)", "Latest annual EPS growth", ["threshold"]],
-    ["a_eps_rising", "Annual EPS rising", "Latest EPS > prior year > second-prior year", []],
+    ["a_eps_rising", "Annual EPS trend rising", "Latest EPS > prior year > second-prior year", []],
     ["a_pat_yoy", "Latest year PAT (YoY)", "Latest annual PAT growth", ["threshold"]],
-    ["a_pat_rising", "Annual PAT rising", "Latest PAT > prior year > second-prior year", []],
+    ["a_pat_rising", "Annual PAT trend rising", "Latest PAT > prior year > second-prior year", []],
     ["a_sales_yoy", "Latest year Sales (YoY)", "Latest annual sales growth", ["threshold"]],
-    ["a_sales_rising", "Annual Sales rising", "Latest sales > prior year > second-prior year", []],
+    ["a_sales_rising", "Annual Sales trend rising", "Latest sales > prior year > second-prior year", []],
+    ["a_ocf_yoy", "Cash flow from operating activities (YoY)", "Latest annual operating cash flow growth > editable value", ["threshold"]],
+    ["a_npm_rising", "Annual Net Profit Margin rising", "Latest year net profit margin > prior year net profit margin", []],
   ],
   ownership: [
     ["promoter_qoq", "Promoter holding change (QoQ)", "Latest quarter promoter change", ["threshold"]],
@@ -794,8 +798,10 @@ function App() {
       let points = 0;
       let weights = 0;
       Object.entries(rawScores).forEach(([key, score]) => {
-        const weight = Number(handwrittenFactors[group]?.[key]?.weight) || 0;
-        if (weight <= 0 || score == null || !Number.isFinite(Number(score))) return;
+        const factor = handwrittenFactors[group]?.[key] || {};
+        const weight = Number(factor.weight) || 0;
+        const enabled = factor.enabled !== false;
+        if (!enabled || weight <= 0 || score == null || !Number.isFinite(Number(score))) return;
         points += Number(score) * weight;
         weights += weight;
       });
@@ -834,6 +840,10 @@ function App() {
       qNpmGrowth = ((Number(q[0].npm) - Number(q[4].npm)) / Math.abs(Number(q[4].npm))) * 100;
     }
     const comparable = (field) => q.map((row) => finite(row?.[field])).filter((v) => v != null).slice(0, 3);
+    let annualOcfGrowth = null;
+    if (a.length >= 2 && finite(a[0]?.operating_cash_flow) != null && finite(a[1]?.operating_cash_flow) != null && Number(a[1].operating_cash_flow) !== 0) {
+      annualOcfGrowth = ((Number(a[0].operating_cash_flow) - Number(a[1].operating_cash_flow)) / Math.abs(Number(a[1].operating_cash_flow))) * 100;
+    }
     const fundamentalComponent = factorScore("fundamental", {
       q_eps_yoy: finite(q[0]?.yoy_eps) == null ? null : (Number(q[0].yoy_eps) > Number(fcfg.q_eps_yoy.threshold) ? 100 : 0),
       q_eps_rising: q.length < 3 ? null : (isRising3(q[0]?.eps, q[1]?.eps, q[2]?.eps) ? 100 : 0),
@@ -850,6 +860,8 @@ function App() {
       a_pat_rising: a.length < 3 ? null : (isRising3(a[0]?.pat, a[1]?.pat, a[2]?.pat) ? 100 : 0),
       a_sales_yoy: finite(a[0]?.yoy_sales) == null ? null : (Number(a[0].yoy_sales) > Number(fcfg.a_sales_yoy.threshold) ? 100 : 0),
       a_sales_rising: a.length < 3 ? null : (isRising3(a[0]?.sales, a[1]?.sales, a[2]?.sales) ? 100 : 0),
+      a_ocf_yoy: annualOcfGrowth == null ? null : (annualOcfGrowth > Number(fcfg.a_ocf_yoy.threshold) ? 100 : 0),
+      a_npm_rising: a.length < 2 || finite(a[0]?.npm) == null || finite(a[1]?.npm) == null ? null : (Number(a[0].npm) > Number(a[1].npm) ? 100 : 0),
     });
 
     let ownershipComponent = null;
@@ -1231,7 +1243,7 @@ function App() {
               </div>
 
               <div className="ranking-help-note">
-                <strong>How weighting works:</strong> only the factors from the client's handwritten sheets are used here. Category and factor weightages are customizable and normalized automatically. Set a factor to 0 to disable it. Breakout/VCP remains analysis-only and is not a final-ranking category.
+                <strong>How weighting works:</strong> only the factors from the client's handwritten sheets are used here. Category and factor weightages are customizable and normalized automatically. Use the Enabled/Disabled switch beside each factor to include or exclude it. Weightage and editable values remain customizable. Breakout/VCP remains analysis-only and is not a final-ranking category.
               </div>
 
               {showRankingDetails && (
@@ -1247,14 +1259,15 @@ function App() {
                           <h3>{title}</h3>
                           <p>{subtitle}</p>
                         </div>
-                        <span>{Object.values(handwrittenFactors[group]).reduce((sum, item) => sum + (Number(item.weight) || 0), 0)} weight</span>
+                        <span>{Object.values(handwrittenFactors[group]).reduce((sum, item) => sum + (item.enabled === false ? 0 : (Number(item.weight) || 0)), 0)} active weight</span>
                       </div>
                       <div className="ranking-parameter-list">
                         {handwrittenFactorMeta[group].map(([key, label, description, editableValues]) => {
                           const factor = handwrittenFactors[group][key];
                           const factorWeight = Number(factor?.weight) || 0;
+                          const factorEnabled = factor?.enabled !== false;
                           return (
-                            <div className={`ranking-parameter-row handwritten-factor-row ${factorWeight === 0 ? "is-disabled" : ""}`} key={key}>
+                            <div className={`ranking-parameter-row handwritten-factor-row ${!factorEnabled ? "is-disabled" : ""}`} key={key}>
                               <div className="ranking-parameter-copy">
                                 <strong>{label}</strong>
                                 <small>{description}</small>
@@ -1281,7 +1294,22 @@ function App() {
                                   </div>
                                 )}
                               </div>
-                              <div className="weight-input-wrap parameter-weight-input">
+                              <div className="factor-controls">
+                                <label className="factor-enable-toggle">
+                                  <input
+                                    type="checkbox"
+                                    checked={factorEnabled}
+                                    onChange={(e) => setHandwrittenFactors((prev) => ({
+                                      ...prev,
+                                      [group]: {
+                                        ...prev[group],
+                                        [key]: { ...prev[group][key], enabled: e.target.checked },
+                                      },
+                                    }))}
+                                  />
+                                  <span>{factorEnabled ? "Enabled" : "Disabled"}</span>
+                                </label>
+                                <div className="weight-input-wrap parameter-weight-input">
                                 <input
                                   aria-label={`${label} weight`}
                                   type="number"
@@ -1297,6 +1325,7 @@ function App() {
                                   }))}
                                 />
                                 <span>w</span>
+                                </div>
                               </div>
                             </div>
                           );
