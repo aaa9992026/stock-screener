@@ -2024,14 +2024,32 @@ function App() {
 
           const ownershipRows = [
             {
-              label: "Institutional",
-              values: reportDates.map((date) => sumForDate(institutionRows, date)),
-              current: institutionCurrent,
+              label: "Promoter",
+              values: reportDates.map(() => null),
+              current: null,
+              unsupported: true,
+            },
+            {
+              label: "FII",
+              values: reportDates.map(() => null),
+              current: null,
+              unsupported: true,
+            },
+            {
+              label: "DII",
+              values: reportDates.map(() => null),
+              current: null,
+              unsupported: true,
             },
             {
               label: "Mutual Funds",
               values: reportDates.map((date) => sumForDate(mutualRows, date)),
               current: null,
+            },
+            {
+              label: "Institutional",
+              values: reportDates.map((date) => sumForDate(institutionRows, date)),
+              current: institutionCurrent,
             },
             {
               label: "Insider",
@@ -2049,11 +2067,11 @@ function App() {
             <section className="fundamental-section">
               <h2>Ownership Detail</h2>
               <div className="chart-note">
-                Ownership is shown in the requested date-across-columns format. For US Yahoo data,
-                historical aggregate ownership by quarter is not provided. Historical Institutional
-                and Mutual Fund cells therefore summarize only the provider-returned top-holder rows
-                for each report date; Current uses the available aggregate ownership percentages.
-                Missing values are left blank rather than estimated.
+                Ownership is shown in the requested date-across-columns format. Promoter, FII and DII
+                are Indian-market ownership classifications and are not provided for US stocks by Yahoo,
+                so those rows are shown as N/A rather than estimated. Historical Institutional and Mutual
+                Fund cells summarize only the provider-returned top-holder rows for each report date;
+                Current uses the available aggregate ownership percentages.
               </div>
 
               {ownershipDetails.provider_note && (
@@ -2078,10 +2096,10 @@ function App() {
                         <td><strong>{row.label}</strong></td>
                         {row.values.map((value, index) => (
                           <td key={`${row.label}-${reportDates[index] || index}`}>
-                            {value != null ? `${value.toFixed(2)}%` : "-"}
+                            {row.unsupported ? "N/A" : (value != null ? `${value.toFixed(2)}%` : "-")}
                           </td>
                         ))}
-                        <td>{row.current != null ? `${row.current.toFixed(2)}%` : "-"}</td>
+                        <td>{row.unsupported ? "N/A" : (row.current != null ? `${row.current.toFixed(2)}%` : "-")}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -2089,6 +2107,7 @@ function App() {
               </div>
 
               <div className="chart-note">
+                Promoter, FII and DII are shown for layout consistency with the client requirement, but are N/A for US stocks.
                 “Institutional” and “Mutual Funds” historical cells are sums of the displayed provider holder rows for that report date,
                 not an estimated total market ownership history.
               </div>
