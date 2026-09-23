@@ -228,9 +228,10 @@ def _weighted_rs_against_benchmark(daily_rows, exchange: str, period_weights=Non
     benchmark_symbol = "^GSPC" if exchange.upper() == "US" else "^CRSLDX"
     benchmark_name = "S&P 500" if exchange.upper() == "US" else "NIFTY 500"
 
-    # Client formula defaults:
-    # 1W*0.2 + 1M*0.2 + 3M*0.2 + 6M*0.1 + 12M*0.1 + Sector RS*0.2
-    defaults = {"1w": 20.0, "2w": 0.0, "1m": 20.0, "2m": 0.0, "3m": 20.0, "6m": 10.0, "1y": 10.0, "sector": 20.0}
+    # Latest client handwritten RS reference:
+    # 1W*0.30 + 1M*0.25 + 3M*0.20 + 6M*0.15 + 12M*0.10
+    # 2W/2M remain optional custom periods with zero default weight. Sector is informational only.
+    defaults = {"1w": 30.0, "2w": 0.0, "1m": 25.0, "2m": 0.0, "3m": 20.0, "6m": 15.0, "1y": 10.0, "sector": 0.0}
     weights = defaults.copy()
     if period_weights:
         for key, value in period_weights.items():
@@ -344,10 +345,8 @@ def _weighted_rs_against_benchmark(daily_rows, exchange: str, period_weights=Non
             if weight > 0 and pct is not None:
                 weighted_score += pct * weight
                 available_weight += weight
-        sector_weight = weights.get("sector", 0.0)
-        if sector_weight > 0 and sector_percentile is not None:
-            weighted_score += sector_percentile * sector_weight
-            available_weight += sector_weight
+        # Latest client reference excludes Sector RS from the final RS score.
+        # Sector percentile is retained only as optional informational output.
 
         if available_weight <= 0:
             return None, None, metrics, benchmark_name, rs_chart
@@ -685,14 +684,14 @@ def get_dashboard_summary(
     fundamental_roa_weight: float = 20,
     ownership_institution_weight: float = 70,
     ownership_insider_weight: float = 30,
-    rs_1w_weight: float = 20,
+    rs_1w_weight: float = 30,
     rs_2w_weight: float = 0,
-    rs_1m_weight: float = 20,
+    rs_1m_weight: float = 25,
     rs_2m_weight: float = 0,
     rs_3m_weight: float = 20,
-    rs_6m_weight: float = 10,
+    rs_6m_weight: float = 15,
     rs_1y_weight: float = 10,
-    rs_sector_weight: float = 20,
+    rs_sector_weight: float = 0,
     db: Session = Depends(get_db)
 ):
     symbol = symbol.upper()
@@ -795,14 +794,14 @@ def get_technical_summary(
     symbol: str,
     exchange: str = "US",
     timeframe: str = Query("daily", pattern="^(daily|weekly|monthly)$"),
-    rs_1w_weight: float = 20,
+    rs_1w_weight: float = 30,
     rs_2w_weight: float = 0,
-    rs_1m_weight: float = 20,
+    rs_1m_weight: float = 25,
     rs_2m_weight: float = 0,
     rs_3m_weight: float = 20,
-    rs_6m_weight: float = 10,
+    rs_6m_weight: float = 15,
     rs_1y_weight: float = 10,
-    rs_sector_weight: float = 20,
+    rs_sector_weight: float = 0,
     db: Session = Depends(get_db)
 ):
     symbol = symbol.upper()
@@ -1135,7 +1134,7 @@ def get_technical_summary(
         "rs_periods": rs_metrics,
         "rs_chart": rs_chart,
         "rs_period_weights": rs_period_weights,
-        "rs_note": "Relative Strength: each period relative return = stock return % - benchmark return %. Each period is converted to the client percentile [(lower stocks + 0.5 x equal stocks) x 100 / total]. Final RS Score is the customizable weighted average of period percentiles plus Sector RS Score; defaults are 1W 20%, 1M 20%, 3M 20%, 6M 10%, 12M 10%, Sector 20%.",
+        "rs_note": "Relative Strength: each period relative return = stock return % - benchmark return %. Each period is converted to the client percentile [(lower stocks + 0.5 x equal stocks) x 100 / total]. Final RS Score follows the latest handwritten reference: 1W x 30% + 1M x 25% + 3M x 20% + 6M x 15% + 12M x 10%. 2W/2M are optional custom periods with zero default weight. Sector RS is informational and is not included in the final RS score.",
         "criteria_note": f"Metrics use the selected {timeframe} timeframe. For a detected VCP, Pivot = highest high of the final contraction; otherwise it is the recent consolidation high. Near Pivot = 95%-102% of pivot. Confirmed breakout requires close > pivot by 0.3%, volume >= 1.4x 50-period average, close > open, and close in the upper half of the period's range. VCP requires successive price-depth and ATR% contractions."
     })
 
