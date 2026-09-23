@@ -1167,3 +1167,18 @@ th {
 @media (max-width: 560px) {
   .technical-metric-value-grid { grid-template-columns: 1fr; }
 }
+
+.rs-score-summary {
+  display: flex;
+  margin: 16px 0;
+}
+
+.rs-score-card {
+  min-width: 220px;
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+}
+
+.rs-score-card strong {
+  font-size: 1.75rem;
+}

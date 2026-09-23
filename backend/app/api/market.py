@@ -128,32 +128,92 @@ def _rs_anchor_date(end_date, label):
     return end_date
 
 
+def _point_date(point):
+    return point[0]
+
+
+def _point_open(point):
+    if len(point) >= 3:
+        return float(point[1]) if point[1] not in (None, 0) else None
+    return None
+
+
+def _point_close(point):
+    value = point[2] if len(point) >= 3 else point[1]
+    return float(value) if value not in (None, 0) else None
+
+
 def _close_on_or_before(points, target_date):
-    for trade_date, close in reversed(points):
-        if trade_date <= target_date and close not in (None, 0):
-            return trade_date, float(close)
+    for point in reversed(points):
+        trade_date = _point_date(point)
+        close = _point_close(point)
+        if trade_date <= target_date and close is not None:
+            return trade_date, close
     return None
 
 
 def _close_on_or_after(points, target_date):
-    """Use the first available trading close on/after a calendar lookback date.
+    for point in points:
+        trade_date = _point_date(point)
+        close = _point_close(point)
+        if trade_date >= target_date and close is not None:
+            return trade_date, close
+    return None
 
-    This matches chart-style 1W/1M/3M/etc. period returns when the exact
-    calendar anchor falls on a weekend/holiday. Using the prior session can
-    unintentionally lengthen the lookback and overstate/understate returns.
+
+def _period_start_date(end_date, label):
+    """Start of the current TradingView-style candle for the requested period.
+
+    The client compares the percent shown on TradingView after selecting 1W/1M/etc.
+    That percentage is the current candle's open-to-current-close change, not a
+    trailing close-to-close return.
     """
-    for trade_date, close in points:
-        if trade_date >= target_date and close not in (None, 0):
-            return trade_date, float(close)
+    if label == "1w":
+        return end_date - timedelta(days=end_date.weekday())
+    if label == "2w":
+        monday = end_date - timedelta(days=end_date.weekday())
+        return monday - timedelta(days=7)
+    if label == "1m":
+        return end_date.replace(day=1)
+    if label == "2m":
+        month_index = end_date.month - 1
+        start_month = (month_index // 2) * 2 + 1
+        return end_date.replace(month=start_month, day=1)
+    if label == "3m":
+        start_month = ((end_date.month - 1) // 3) * 3 + 1
+        return end_date.replace(month=start_month, day=1)
+    if label == "6m":
+        start_month = 1 if end_date.month <= 6 else 7
+        return end_date.replace(month=start_month, day=1)
+    if label == "1y":
+        return end_date.replace(month=1, day=1)
+    return end_date
+
+
+def _open_on_or_after(points, target_date):
+    for point in points:
+        trade_date = _point_date(point)
+        if trade_date < target_date:
+            continue
+        open_value = _point_open(point)
+        if open_value is not None:
+            return trade_date, open_value
+        close_value = _point_close(point)
+        if close_value is not None:
+            return trade_date, close_value
     return None
 
 
 def _weighted_relative_return_from_points(stock_points, benchmark_points, weights):
-    """Client method: period relative return = stock return % - benchmark return %."""
+    """Client method using TradingView-style period candle returns.
+
+    Period return = (current close / current period candle open - 1) * 100.
+    Period Relative Return = Stock Return % - Benchmark Return %.
+    """
     if not stock_points or not benchmark_points:
         return None, {}
 
-    end_date = min(stock_points[-1][0], benchmark_points[-1][0])
+    end_date = min(_point_date(stock_points[-1]), _point_date(benchmark_points[-1]))
     stock_end = _close_on_or_before(stock_points, end_date)
     bench_end = _close_on_or_before(benchmark_points, end_date)
     if not stock_end or not bench_end:
@@ -164,12 +224,9 @@ def _weighted_relative_return_from_points(stock_points, benchmark_points, weight
     available_weight = 0.0
     for label in ("1w", "2w", "1m", "2m", "3m", "6m", "1y"):
         weight = max(0.0, float(weights.get(label, 0) or 0))
-        anchor = _rs_anchor_date(end_date, label)
-        # For lookback anchors, use the first trading session ON OR AFTER the
-        # calendar anchor. This is important when the anchor date is a weekend
-        # or market holiday and aligns the return window with chart platforms.
-        stock_old = _close_on_or_after(stock_points, anchor)
-        bench_old = _close_on_or_after(benchmark_points, anchor)
+        period_start = _period_start_date(end_date, label)
+        stock_old = _open_on_or_after(stock_points, period_start)
+        bench_old = _open_on_or_after(benchmark_points, period_start)
         if not stock_old or not bench_old or stock_old[1] == 0 or bench_old[1] == 0:
             continue
 
@@ -183,8 +240,9 @@ def _weighted_relative_return_from_points(stock_points, benchmark_points, weight
             "relative_return_percent": round(relative_return, 2),
             "start_date": stock_old[0].isoformat(),
             "benchmark_start_date": bench_old[0].isoformat(),
-            "anchor_date": anchor.isoformat(),
+            "period_start_date": period_start.isoformat(),
             "end_date": stock_end[0].isoformat(),
+            "return_method": "period_open_to_current_close",
         }
         if weight > 0:
             weighted_sum += relative_return * weight
@@ -193,7 +251,6 @@ def _weighted_relative_return_from_points(stock_points, benchmark_points, weight
     if available_weight <= 0:
         return None, metrics
     return weighted_sum / available_weight, metrics
-
 
 def _percentile_rank(values, target_value):
     """Client percentile: (lower + 0.5 * equal) * 100 / total."""
@@ -223,7 +280,7 @@ def _rs_universe_metrics(db: Session, exchange: str, benchmark_points):
     for row in _valid_trading_rows(rows, exchange):
         if row.close is None:
             continue
-        grouped.setdefault(row.symbol, []).append((row.date, float(row.close)))
+        grouped.setdefault(row.symbol, []).append((row.date, float(row.open) if row.open is not None else float(row.close), float(row.close)))
 
     # The relative-return metrics themselves do not depend on scoring weights.
     metric_weights = {key: 1.0 for key in ("1w", "2w", "1m", "2m", "3m", "6m", "1y")}
@@ -262,20 +319,21 @@ def _weighted_rs_against_benchmark(daily_rows, exchange: str, period_weights=Non
     try:
         hist = yf.Ticker(benchmark_symbol).history(period="5y", interval="1d", auto_adjust=False)
         benchmark_points = [
-            (idx.date(), float(row["Close"]))
+            (idx.date(), float(row["Open"]), float(row["Close"]))
             for idx, row in hist.iterrows()
-            if row.get("Close") is not None and math.isfinite(float(row["Close"]))
+            if row.get("Open") is not None and row.get("Close") is not None
+            and math.isfinite(float(row["Open"])) and math.isfinite(float(row["Close"]))
         ]
         stock_points = [
-            (r.date, float(r.close))
+            (r.date, float(r.open) if r.open is not None else float(r.close), float(r.close))
             for r in daily_rows
             if r.date is not None and r.close is not None and math.isfinite(float(r.close))
         ]
         stock_points.sort(key=lambda item: item[0])
         benchmark_points.sort(key=lambda item: item[0])
 
-        benchmark_by_date = dict(benchmark_points)
-        aligned = [(d, c, benchmark_by_date.get(d)) for d, c in stock_points if benchmark_by_date.get(d) is not None]
+        benchmark_by_date = {d: c for d, _o, c in benchmark_points}
+        aligned = [(d, c, benchmark_by_date.get(d)) for d, _o, c in stock_points if benchmark_by_date.get(d) is not None]
         rs_chart = []
         base_ratio = None
         for trade_date, stock_close, bench_close in aligned:
@@ -1152,7 +1210,7 @@ def get_technical_summary(
         "rs_periods": rs_metrics,
         "rs_chart": rs_chart,
         "rs_period_weights": rs_period_weights,
-        "rs_note": "Relative Strength: each period relative return = stock return % - benchmark return %. Each period is converted to the client percentile [(lower stocks + 0.5 x equal stocks) x 100 / total]. Final RS Score follows the latest handwritten reference: 1W x 30% + 1M x 25% + 3M x 20% + 6M x 15% + 12M x 10%. 2W/2M are optional custom periods with zero default weight. Sector RS is informational and is not included in the final RS score.",
+        "rs_note": "Relative Strength: each period uses TradingView-style current period candle return (period open to current close); relative return = stock return % - benchmark return %. Each period is converted to the client percentile [(lower stocks + 0.5 x equal stocks) x 100 / total]. Final RS Score follows the latest handwritten reference: 1W x 30% + 1M x 25% + 3M x 20% + 6M x 15% + 12M x 10%. 2W/2M are optional custom periods with zero default weight. Sector RS is informational and is not included in the final RS score.",
         "criteria_note": f"Metrics use the selected {timeframe} timeframe. For a detected VCP, Pivot = highest high of the final contraction; otherwise it is the recent consolidation high. Near Pivot = 95%-102% of pivot. Confirmed breakout requires close > pivot by 0.3%, volume >= 1.4x 50-period average, close > open, and close in the upper half of the period's range. VCP requires successive price-depth and ATR% contractions."
     })
 

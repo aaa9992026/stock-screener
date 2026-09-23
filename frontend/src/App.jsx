@@ -1518,6 +1518,13 @@ function App() {
               loadDashboard();
             }}>Apply RS Settings</button>
           </div>
+          <div className="rs-score-summary">
+            <div className="metric rs-score-card">
+              <span>Final RS Score</span>
+              <strong>{technicalSummary?.rs_available ? Number(technicalSummary.rs_rating).toFixed(2) : "N/A"}</strong>
+              <small>Percentile-weighted score from the enabled RS periods</small>
+            </div>
+          </div>
           <div className="rs-period-grid">
             {["1w","2w","1m","2m","3m","6m","1y"].filter((key) => rsVisibility[key] !== false).map((key) => {
               const item = technicalSummary?.rs_periods?.[key];
