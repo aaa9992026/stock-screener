@@ -1467,14 +1467,14 @@ function App() {
           {technicalSummary && (
             <div className="technical-metric-chart-block">
               <div className="technical-metric-value-grid">
-                <div className="metric"><span>ADR % (20D)</span><strong>{technicalSummary.adr_percent != null ? `${technicalSummary.adr_percent}%` : "-"}</strong></div>
+                <div className="metric"><span>ADR % (20D)</span><strong>{technicalSummary.adr_percent != null ? `${technicalSummary.adr_percent}%` : "-"}</strong><small>Daily ADR reference</small></div>
                 <div className="metric"><span>ATR % (14)</span><strong>{technicalSummary.atr_percent != null ? `${technicalSummary.atr_percent}%` : "-"}</strong></div>
                 <div className="metric"><span>BB Width %</span><strong>{technicalSummary.bollinger_width_percent != null ? `${technicalSummary.bollinger_width_percent}%` : "-"}</strong><small>(Upper BB - Lower BB) × 100 / Lower BB</small></div>
-                <div className="metric"><span>20-Day Price Range</span><strong>{technicalSummary.range_20d_percent != null ? `${technicalSummary.range_20d_percent}%` : "-"}</strong></div>
+                <div className="metric"><span>{`20-${timeframe === "daily" ? "Day" : timeframe === "weekly" ? "Week" : "Month"} Price Range`}</span><strong>{technicalSummary.range_20d_percent != null ? `${technicalSummary.range_20d_percent}%` : "-"}</strong></div>
               </div>
               {technicalSummary.technical_metric_series?.length > 1 && (
                 <>
-                  <h3>Technical Volatility Trends</h3>
+                  <h3>{`Technical Volatility Trends (${timeframe.charAt(0).toUpperCase() + timeframe.slice(1)})`}</h3>
                   <ResponsiveContainer width="100%" height={240}>
                     <LineChart data={technicalSummary.technical_metric_series}>
                       <CartesianGrid strokeDasharray="3 3" />
@@ -1538,7 +1538,7 @@ function App() {
             })}
           </div>
           <div className="chart-note">
-            RS line = stock price / broad-market benchmark, rebased to 100 for charting only. For scoring, each period Relative Return = Stock Return % - Benchmark Return %. Each period is converted to a percentile using [(stocks with lower relative return) + 0.5 × (stocks with equal relative return)] × 100 / total stocks. Final RS Score follows the latest client reference: 1W×0.30 + 1M×0.25 + 3M×0.20 + 6M×0.15 + 12M×0.10. 2W and 2M remain optional with default weight 0.
+            RS line = stock price / broad-market benchmark, rebased to 100 for charting only. Relative Return = Stock Return % - Benchmark Return % and is independent of the editable RS weights. The weights change only the Final RS Score. Each stock percentile uses the client-required fixed total of 5,000 stocks: [(stocks with lower relative return) + 0.5 × (stocks with equal relative return)] × 100 / 5000. Final RS Score follows the latest client reference: 1W×0.30 + 1M×0.25 + 3M×0.20 + 6M×0.15 + 12M×0.10. 2W and 2M remain optional with default weight 0.
           </div>
           {technicalSummary?.rs_available && relativeStrengthChartData.length > 1 ? (
             <ResponsiveContainer width="100%" height={230}>

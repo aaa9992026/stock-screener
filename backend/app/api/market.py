@@ -252,15 +252,25 @@ def _weighted_relative_return_from_points(stock_points, benchmark_points, weight
         return None, metrics
     return weighted_sum / available_weight, metrics
 
-def _percentile_rank(values, target_value):
-    """Client percentile: (lower + 0.5 * equal) * 100 / total."""
+RS_PERCENTILE_TOTAL_STOCKS = 5000
+
+def _percentile_rank(values, target_value, total_count=None):
+    """Client percentile: (lower + 0.5 * equal) * 100 / total.
+
+    For stock RS percentiles the client explicitly requires a fixed total-stock
+    denominator of 5,000.  Other percentile uses (for example sector-to-sector
+    comparisons) can leave ``total_count`` unset and use the actual sample size.
+    """
     values = [float(v) for v in values if v is not None and math.isfinite(float(v))]
     if target_value is None or not values:
         return None
     tolerance = 1e-9
     lower = sum(1 for value in values if value < target_value - tolerance)
     equal = sum(1 for value in values if abs(value - target_value) <= tolerance)
-    percentile = ((lower + 0.5 * equal) * 100.0) / len(values)
+    denominator = int(total_count) if total_count is not None else len(values)
+    if denominator <= 0:
+        return None
+    percentile = ((lower + 0.5 * equal) * 100.0) / denominator
     return round(max(0.0, min(100.0, percentile)), 2)
 
 
@@ -358,10 +368,11 @@ def _weighted_rs_against_benchmark(daily_rows, exchange: str, period_weights=Non
                 for m in universe_metrics.values()
                 if label in m and m[label].get("relative_return_percent") is not None
             ]
-            pct = _percentile_rank(universe_values, target_rr)
+            pct = _percentile_rank(universe_values, target_rr, RS_PERCENTILE_TOTAL_STOCKS)
             if label in metrics:
                 metrics[label]["percentile"] = pct
-                metrics[label]["universe_size"] = len(universe_values)
+                metrics[label]["universe_size"] = RS_PERCENTILE_TOTAL_STOCKS
+                metrics[label]["scored_stocks_available"] = len(universe_values)
                 metrics[label]["score_weight_percent"] = weights.get(label, 0.0)
 
         # First calculate each stock's period-percentile composite (without sector).
@@ -384,7 +395,7 @@ def _weighted_rs_against_benchmark(daily_rows, exchange: str, period_weights=Non
                 if weight <= 0 or label not in sym_metrics:
                     continue
                 rr = sym_metrics[label].get("relative_return_percent")
-                pct = _percentile_rank(period_universe_values[label], rr)
+                pct = _percentile_rank(period_universe_values[label], rr, RS_PERCENTILE_TOTAL_STOCKS)
                 if pct is None:
                     continue
                 score_sum += pct * weight
@@ -431,7 +442,8 @@ def _weighted_rs_against_benchmark(daily_rows, exchange: str, period_weights=Non
         # Diagnostic weighted relative return retained for display/API compatibility only.
         old_period_weights = {k: weights.get(k, 0.0) for k in period_labels}
         weighted_relative, _ = _weighted_relative_return_from_points(stock_points, benchmark_points, old_period_weights)
-        metrics["_universe_size"] = len(universe_metrics)
+        metrics["_universe_size"] = RS_PERCENTILE_TOTAL_STOCKS
+        metrics["_scored_stocks_available"] = len(universe_metrics)
         metrics["_score_weight_total"] = available_weight
         return rating, weighted_relative, metrics, benchmark_name, rs_chart
     except Exception:
@@ -1014,28 +1026,30 @@ def get_technical_summary(
 
     range20 = ((max(highs[-20:]) - min(lows[-20:])) / min(lows[-20:]) * 100) if min(lows[-20:]) else None
 
-    # Daily rolling metric series requested by the client so ADR%, ATR%,
-    # Bollinger width %, and 20-day price range can be drawn as trends.
-    metric_daily = daily_rows
+    # Volatility trend series follows the SELECTED chart timeframe.
+    # The top ADR(20D) value above intentionally remains a daily metric per the
+    # earlier client rule, while this trend chart converts its candles to weekly
+    # or monthly when the user changes the main chart timeframe.
+    metric_rows = rows
     metric_series = []
-    daily_trs = []
-    running_atr = None
-    for i, r in enumerate(metric_daily):
+    metric_trs = []
+    running_metric_atr = None
+    for i, r in enumerate(metric_rows):
         h = float(r.high)
         l = float(r.low)
         c = float(r.close)
-        prev_c = float(metric_daily[i - 1].close) if i > 0 else c
+        prev_c = float(metric_rows[i - 1].close) if i > 0 else c
         tr = max(h - l, abs(h - prev_c), abs(l - prev_c))
-        daily_trs.append(tr)
+        metric_trs.append(tr)
         if i == 13:
-            running_atr = sum(daily_trs[:14]) / 14
-        elif i > 13 and running_atr is not None:
-            running_atr = ((running_atr * 13) + tr) / 14
+            running_metric_atr = sum(metric_trs[:14]) / 14
+        elif i > 13 and running_metric_atr is not None:
+            running_metric_atr = ((running_metric_atr * 13) + tr) / 14
 
         if i < 19:
             continue
 
-        window = metric_daily[i - 19:i + 1]
+        window = metric_rows[i - 19:i + 1]
         closes20 = [float(x.close) for x in window]
         highs20 = [float(x.high) for x in window]
         lows20 = [float(x.low) for x in window]
@@ -1052,13 +1066,15 @@ def get_technical_summary(
         lower = mean20 - 2 * sd
         bb_pct = ((upper - lower) / lower * 100) if lower else None
         price_range_pct = ((max(highs20) - min(lows20)) / min(lows20) * 100) if min(lows20) else None
-        atr_pct_day = (running_atr / c * 100) if running_atr is not None and c else None
+        atr_pct_period = (running_metric_atr / c * 100) if running_metric_atr is not None and c else None
 
         metric_series.append({
             "date": r.date.isoformat() if hasattr(r.date, "isoformat") else str(r.date),
             "adr_percent": round(adr_pct_20, 2) if adr_pct_20 is not None else None,
-            "atr_percent": round(atr_pct_day, 2) if atr_pct_day is not None else None,
+            "atr_percent": round(atr_pct_period, 2) if atr_pct_period is not None else None,
             "bollinger_width_percent": round(bb_pct, 2) if bb_pct is not None else None,
+            # Keep the existing API key for frontend/backward compatibility;
+            # its window is 20 periods of the selected timeframe.
             "range_20d_percent": round(price_range_pct, 2) if price_range_pct is not None else None,
         })
     periods_per_52w = 252 if timeframe == "daily" else 52 if timeframe == "weekly" else 12
@@ -1194,6 +1210,8 @@ def get_technical_summary(
         "bollinger_width_percent": round(bb_width, 2) if bb_width is not None else None,
         "range_20d_percent": round(range20, 2) if range20 is not None else None,
         "technical_metric_series": metric_series[-260:],
+        "technical_metric_timeframe": timeframe,
+        "technical_metric_window_periods": 20,
         "distance_from_52w_high_percent": round(distance_52w_high, 2) if distance_52w_high is not None else None,
         "pivot": round(pivot, 2) if pivot is not None else None,
         "breakout_status": breakout_status,
@@ -1210,7 +1228,7 @@ def get_technical_summary(
         "rs_periods": rs_metrics,
         "rs_chart": rs_chart,
         "rs_period_weights": rs_period_weights,
-        "rs_note": "Relative Strength: each period uses TradingView-style current period candle return (period open to current close); relative return = stock return % - benchmark return %. Each period is converted to the client percentile [(lower stocks + 0.5 x equal stocks) x 100 / total]. Final RS Score follows the latest handwritten reference: 1W x 30% + 1M x 25% + 3M x 20% + 6M x 15% + 12M x 10%. 2W/2M are optional custom periods with zero default weight. Sector RS is informational and is not included in the final RS score.",
+        "rs_note": "Relative Strength: period relative returns are raw market calculations and never change when RS score weights change. Each period uses TradingView-style current period candle return (period open to current close); relative return = stock return % - benchmark return %. Stock percentiles use the client-required fixed denominator of 5,000 stocks: [(lower stocks + 0.5 x equal stocks) x 100 / 5000]. Final RS Score follows the latest handwritten reference: 1W x 30% + 1M x 25% + 3M x 20% + 6M x 15% + 12M x 10%. 2W/2M are optional custom periods with zero default weight. Sector RS is informational and is not included in the final RS score.",
         "criteria_note": f"Metrics use the selected {timeframe} timeframe. For a detected VCP, Pivot = highest high of the final contraction; otherwise it is the recent consolidation high. Near Pivot = 95%-102% of pivot. Confirmed breakout requires close > pivot by 0.3%, volume >= 1.4x 50-period average, close > open, and close in the upper half of the period's range. VCP requires successive price-depth and ATR% contractions."
     })
 
