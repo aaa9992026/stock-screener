@@ -122,9 +122,23 @@ def _weighted_rs_against_benchmark(daily_rows, exchange: str, period_weights=Non
                     pass
     metrics = {}
     try:
-        hist = yf.Ticker(benchmark_symbol).history(period="2y", interval="1d", auto_adjust=False)
+        hist = yf.Ticker(benchmark_symbol).history(period="5y", interval="1d", auto_adjust=False)
         benchmark_by_date = {idx.date(): float(row["Close"]) for idx, row in hist.iterrows() if row.get("Close") is not None}
         aligned = [(r.date, float(r.close), benchmark_by_date.get(r.date)) for r in daily_rows if benchmark_by_date.get(r.date) is not None]
+        rs_chart = []
+        if aligned:
+            base_ratio = None
+            for trade_date, stock_close, bench_close in aligned:
+                if not stock_close or not bench_close:
+                    continue
+                ratio = stock_close / bench_close
+                if base_ratio is None:
+                    base_ratio = ratio
+                if base_ratio:
+                    rs_chart.append({
+                        "date": trade_date.isoformat(),
+                        "rs": round((ratio / base_ratio) * 100, 4),
+                    })
         weighted_sum = 0.0
         available_weight = 0.0
         for label, days in periods.items():
@@ -150,13 +164,13 @@ def _weighted_rs_against_benchmark(daily_rows, exchange: str, period_weights=Non
             available_weight += weight
 
         if available_weight <= 0:
-            return None, None, metrics, benchmark_name
+            return None, None, metrics, benchmark_name, rs_chart
 
         weighted_relative = weighted_sum / available_weight
         rating = round(max(0, min(100, 50 + weighted_relative * 2)))
-        return rating, weighted_relative, metrics, benchmark_name
+        return rating, weighted_relative, metrics, benchmark_name, rs_chart
     except Exception:
-        return None, None, {}, benchmark_name
+        return None, None, {}, benchmark_name, []
 
 
 def _normalize_score_weights(weights=None):
@@ -230,7 +244,7 @@ def _score_symbol(db: Session, symbol: str, exchange: str, weights=None, include
             components["technical"] = round(sum(technical_metrics[k] * max(0.0, float(technical_weights.get(k, 0))) for k in technical_metrics) / tw_sum, 2)
 
         # Keep dashboard RS aligned with the customizable Technical Summary model.
-        rs_component, _, _, _ = _weighted_rs_against_benchmark(rows, exchange, rs_period_weights)
+        rs_component, _, _, _, _ = _weighted_rs_against_benchmark(rows, exchange, rs_period_weights)
         if rs_component is not None:
             components["relative_strength"] = rs_component
 
@@ -845,7 +859,7 @@ def get_technical_summary(
         pattern = "None"
 
     rs_period_weights = {"1w": rs_1w_weight, "1m": rs_1m_weight, "2m": rs_2m_weight, "3m": rs_3m_weight, "6m": rs_6m_weight, "1y": rs_1y_weight}
-    rs_rating, rs_weighted_relative_return, rs_metrics, benchmark_name = _weighted_rs_against_benchmark(daily_rows, exchange, rs_period_weights)
+    rs_rating, rs_weighted_relative_return, rs_metrics, benchmark_name, rs_chart = _weighted_rs_against_benchmark(daily_rows, exchange, rs_period_weights)
 
     return _json_safe({
         "symbol": symbol,
@@ -873,9 +887,11 @@ def get_technical_summary(
         "vcp_contractions": [{k: (round(v, 2) if v is not None else None) for k, v in item.items()} for item in contractions],
         "pattern": pattern,
         "rs_rating": rs_rating,
+        "rs_available": rs_rating is not None and len(rs_chart) > 1,
         "rs_weighted_relative_return_percent": round(rs_weighted_relative_return, 2) if rs_weighted_relative_return is not None else None,
         "rs_benchmark": benchmark_name,
         "rs_periods": rs_metrics,
+        "rs_chart": rs_chart,
         "rs_period_weights": rs_period_weights,
         "rs_note": "Relative Strength uses the client-selected 1W/1M/2M/3M/6M/1Y weights against the broad-market benchmark. The displayed 0-100 rating maps benchmark-equivalent performance to 50.",
         "criteria_note": f"Metrics use the selected {timeframe} timeframe. For a detected VCP, Pivot = highest high of the final contraction; otherwise it is the recent consolidation high. Near Pivot = 95%-102% of pivot. Confirmed breakout requires close > pivot by 0.3%, volume >= 1.4x 50-period average, close > open, and close in the upper half of the period's range. VCP requires successive price-depth and ATR% contractions."

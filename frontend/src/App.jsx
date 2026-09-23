@@ -683,32 +683,47 @@ function App() {
     : null;
   const currency = exchange === "US" ? "$" : "₹";
 
+  // Keep the visible ranking consistent with the verified RS result used by the
+  // Relative Strength panel. If benchmark overlap is unavailable, exclude the
+  // RS category instead of displaying a score that still contains an RS value.
+  const dashboardView = (() => {
+    if (!dashboard) return null;
+    if (technicalSummary?.rs_available !== false || dashboard.score == null) return dashboard;
+
+    const components = { ...(dashboard.score_components || {}) };
+    components.relative_strength = null;
+    const weights = dashboard.score_weights || {};
+    let points = 0;
+    let availableWeight = 0;
+    Object.entries(weights).forEach(([key, weightValue]) => {
+      const value = components[key];
+      const weight = Number(weightValue);
+      if (value == null || !Number.isFinite(Number(value)) || !Number.isFinite(weight) || weight <= 0) return;
+      points += Number(value) * weight;
+      availableWeight += weight;
+    });
+
+    const missingIndianRequired = exchange !== "US" && (dashboard.missing_required_score_categories || []).length > 0;
+    const score = missingIndianRequired || availableWeight <= 0 ? null : Math.max(0, Math.min(100, Math.round(points / availableWeight)));
+    const signal = score == null ? "Insufficient Data" : score >= 70 ? "Buy" : score >= 45 ? "Watch" : "Sell";
+    return {
+      ...dashboard,
+      score,
+      signal,
+      score_coverage_percent: Math.round(availableWeight),
+      score_components: components,
+    };
+  })();
 
   const relativeStrengthChartData = (() => {
-    if (!data?.length || !benchmark?.data?.length) return [];
-    const benchRows = benchmark.data
-      .map((row) => ({ date: String(row.date).slice(0, 10), close: Number(row.close) }))
-      .filter((row) => Number.isFinite(row.close));
-    const nearestBench = (dateText) => {
-      const target = new Date(`${String(dateText).slice(0, 10)}T00:00:00Z`).getTime();
-      let best = null;
-      let bestDiff = Infinity;
-      for (const row of benchRows) {
-        const diff = Math.abs(new Date(`${row.date}T00:00:00Z`).getTime() - target);
-        if (diff < bestDiff) { best = row; bestDiff = diff; }
-      }
-      const maxGap = timeframe === "monthly" ? 35 : timeframe === "weekly" ? 8 : 4;
-      return best && bestDiff <= maxGap * 86400000 ? best : null;
-    };
-    const raw = data.map((row) => {
-      const bench = nearestBench(row.date);
-      const close = Number(row.close);
-      if (!bench || !bench.close || !Number.isFinite(close)) return null;
-      return { date: String(row.date).slice(0, 10), ratio: close / bench.close };
-    }).filter(Boolean);
-    if (!raw.length) return [];
-    const base = raw[0].ratio || 1;
-    return raw.map((row) => ({ ...row, rs: (row.ratio / base) * 100 }));
+    const rows = technicalSummary?.rs_chart;
+    if (!Array.isArray(rows)) return [];
+    return rows
+      .map((row) => ({
+        date: String(row.date).slice(0, 10),
+        rs: Number(row.rs),
+      }))
+      .filter((row) => Number.isFinite(row.rs));
   })();
 
   const changeExchange = (value) => {
@@ -922,13 +937,13 @@ function App() {
           <section className="dashboard-summary">
             <div className="summary-score">
               <span>Overall Score</span>
-              <strong>{dashboard.score != null ? `${dashboard.score}/100` : "N/A"}</strong>
-              <small>{dashboard.score_coverage_percent}% metric coverage</small>
+              <strong>{dashboardView?.score != null ? `${dashboardView.score}/100` : "N/A"}</strong>
+              <small>{dashboardView?.score_coverage_percent ?? 0}% metric coverage</small>
             </div>
-            <div className={`summary-signal signal-${dashboard.signal?.toLowerCase()}`}>
+            <div className={`summary-signal signal-${dashboardView?.signal?.toLowerCase()}`}>
               <span>Rule-Based Signal</span>
-              <strong>{dashboard.signal}</strong>
-              <small>{dashboard.score == null ? `Ranking withheld: missing ${dashboard.missing_required_score_categories?.join(" + ") || "required data"}` : "Based on configured weighted data"}</small>
+              <strong>{dashboardView?.signal}</strong>
+              <small>{dashboardView?.score == null ? `Ranking withheld: missing ${(dashboard.missing_required_score_categories || []).join(" + ") || (technicalSummary?.rs_available === false ? "verified relative-strength benchmark data" : "required data")}` : (technicalSummary?.rs_available === false ? "RS excluded because benchmark overlap is unavailable" : "Based on configured weighted data")}</small>
             </div>
             <div className="summary-item">
               <span>Sector</span>
@@ -1138,7 +1153,7 @@ function App() {
           <div className="chart-note">
             RS line = stock price / broad-market benchmark, rebased to 100 at the first overlapping point. Rising means the stock is outperforming the benchmark; falling means underperforming. The rating uses the customizable horizon weights above.
           </div>
-          {relativeStrengthChartData.length > 1 ? (
+          {technicalSummary?.rs_available && relativeStrengthChartData.length > 1 ? (
             <ResponsiveContainer width="100%" height={230}>
               <LineChart data={relativeStrengthChartData}>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -1149,7 +1164,7 @@ function App() {
               </LineChart>
             </ResponsiveContainer>
           ) : (
-            <div className="provider-warning">Relative-strength chart is unavailable because benchmark overlap is insufficient.</div>
+            <div className="provider-warning">Relative Strength is unavailable because verified benchmark overlap is insufficient. RS is excluded from the ranking until benchmark data is available.</div>
           )}
         </section>
 
@@ -1159,7 +1174,7 @@ function App() {
             <div className="fundamental-grid">
               <div className="metric">
                 <span>RS Rating vs {technicalSummary.rs_benchmark || "Benchmark"}</span>
-                <strong>{technicalSummary.rs_rating ?? "Unavailable"}</strong>
+                <strong>{technicalSummary.rs_available ? technicalSummary.rs_rating : "N/A"}</strong>
                 <small>{["1w","1m","2m","3m","6m","1y"].map((k) => `${k.toUpperCase()} ${rsWeights[k]}%`).join(" • ")}</small>
               </div>
               <div className="metric"><span>EMA Alignment</span><strong>{technicalSummary.ema_alignment}</strong></div>
@@ -1419,7 +1434,7 @@ function App() {
                   <table className="history-table">
                     <thead>
                       <tr>
-                        <th>Quarter</th><th>Promoter</th><th>Change</th><th>FII</th><th>Change</th><th>DII</th><th>Change</th><th>MF</th><th>Change</th><th>Public</th><th>Change</th>
+                        <th>Quarter</th><th>Promoter</th><th>QoQ pp Change</th><th>FII</th><th>QoQ pp Change</th><th>DII</th><th>QoQ pp Change</th><th>MF</th><th>QoQ pp Change</th><th>Public</th><th>QoQ pp Change</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1452,7 +1467,7 @@ function App() {
 {exchange === "US" && ownershipDetails && (
           <section className="fundamental-section">
             <h2>Ownership Detail</h2>
-            <div className="chart-note">Holder tables now show the provider's latest reported date and reported position change when available. A full FII/DII/MF/Promoter/Public multi-quarter ownership-history table requires a provider that exposes that historical breakdown; unavailable history is not estimated.</div>
+            <div className="chart-note">Holder tables show the provider's latest reported date and provider-reported position change when available. For Yahoo holder tables, Change means proportional change in the holder's share position; it is not a quarter-over-quarter change in ownership percentage points. Unavailable history is not estimated.</div>
             {ownershipDetails.provider_note && (
               <div className="provider-warning">{ownershipDetails.provider_note}</div>
             )}
@@ -1460,7 +1475,7 @@ function App() {
             <h3>Top Institutional Holders</h3>
             <div className="history-table-wrapper">
               <table className="history-table">
-                <thead><tr><th>Holder</th><th>Report Date</th><th>Shares</th><th>Value</th><th>% Held</th><th>Change</th></tr></thead>
+                <thead><tr><th>Holder</th><th>Report Date</th><th>Shares</th><th>Value</th><th>% Held</th><th>Provider Change</th></tr></thead>
                 <tbody>
                   {(ownershipDetails.institutional_holders || []).slice(0, 5).map((row, index) => (
                     <tr key={index}>
@@ -1482,7 +1497,7 @@ function App() {
             <h3>Top Mutual Fund Holders</h3>
             <div className="history-table-wrapper">
               <table className="history-table">
-                <thead><tr><th>Holder</th><th>Report Date</th><th>Shares</th><th>Value</th><th>% Held</th><th>Change</th></tr></thead>
+                <thead><tr><th>Holder</th><th>Report Date</th><th>Shares</th><th>Value</th><th>% Held</th><th>Provider Change</th></tr></thead>
                 <tbody>
                   {(ownershipDetails.mutual_fund_holders || []).slice(0, 5).map((row, index) => (
                     <tr key={index}>

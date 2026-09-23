@@ -646,6 +646,7 @@ class YahooProvider(BaseMarketDataProvider):
         return {
             "symbol": symbol.upper(),
             "exchange": exchange.upper(),
+            "change_semantics": "For Yahoo holder tables, pctChange is the provider-reported proportional change in the holder position (shares), not a quarter-over-quarter change in ownership percentage points.",
             "institutional_holders": institutional,
             "mutual_fund_holders": mutual_funds,
             "insider_transactions": insider_transactions,
