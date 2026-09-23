@@ -19,7 +19,7 @@ import "./App.css";
 
 const API = "/api";
 
-const chartLimitForTimeframe = (timeframe) => timeframe === "daily" ? 1040 : timeframe === "weekly" ? 260 : 240;
+const chartLimitForTimeframe = (timeframe) => timeframe === "daily" ? 1040 : timeframe === "weekly" ? 260 : 300;
 
 const formatPctChange = (value) => {
   if (value === null || value === undefined || value === "") return "-";
@@ -298,7 +298,7 @@ function App() {
     }
     try {
       const res = await axios.get(
-        `${API}/market/india-shareholding/${symbol}?exchange=${exchange}&limit=8`
+        `${API}/market/india-shareholding/${symbol}?exchange=${exchange}&limit=12`
       );
       setIndiaShareholding(res.data);
     } catch {
@@ -1666,6 +1666,16 @@ function App() {
               </div>
 
               <div className="metric">
+                <span>EMA 150</span>
+                <strong>{indicators.ema_150 ?? "-"}</strong>
+              </div>
+
+              <div className="metric">
+                <span>EMA 200</span>
+                <strong>{indicators.ema_200 ?? "-"}</strong>
+              </div>
+
+              <div className="metric">
                 <span>RSI {indicators.settings?.rsi_period ?? rsiPeriod}</span>
                 <strong>{indicators.rsi ?? "-"}</strong>
               </div>
@@ -1825,7 +1835,39 @@ function App() {
                   </div>
                 )}
 
-                <h3>Quarterly Ownership Pattern & Changes</h3>
+                <h3>Quarterly Ownership Details</h3>
+                <div className="history-table-wrapper">
+                  <table className="history-table ownership-matrix-table">
+                    <thead>
+                      <tr>
+                        <th>Holder</th>
+                        {(indiaShareholding.history || []).slice(0, 4).reverse().map((row, index) => (
+                          <th key={`${row.period}-${index}`}>{row.period}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[
+                        ["FII", "fii"],
+                        ["DII", "dii"],
+                        ["MF", "mutual_funds"],
+                        ["Promoter", "promoter"],
+                        ["Others / Public", "public"],
+                      ].map(([label, key]) => (
+                        <tr key={key}>
+                          <td><strong>{label}</strong></td>
+                          {(indiaShareholding.history || []).slice(0, 4).reverse().map((row, index) => (
+                            <td key={`${key}-${row.period}-${index}`}>
+                              {row[key] != null ? `${Number(row[key]).toFixed(2)}%` : "-"}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <h3>Quarterly Ownership Changes</h3>
                 <div className="history-table-wrapper">
                   <table className="history-table">
                     <thead>
@@ -1852,7 +1894,7 @@ function App() {
                     </tbody>
                   </table>
                 </div>
-                <div className="chart-note" style={{ marginTop: "10px" }}>Source: {indiaShareholding.source}. Change columns are quarter-over-quarter percentage-point changes. Missing categories are shown as unavailable rather than estimated.</div>
+                <div className="chart-note" style={{ marginTop: "10px" }}>Source: {indiaShareholding.source}. The first table follows the client reference layout with report dates across columns. Values come from the live public provider; example handwritten percentages are not hard-coded. Change columns below are quarter-over-quarter percentage-point changes.</div>
               </>
             ) : (
               <div className="provider-warning">Indian shareholding history could not be loaded from the public provider right now. Technical and price data remain available.</div>
@@ -1938,7 +1980,7 @@ function App() {
           <section className="fundamental-section">
             <h2>Fundamental History</h2>
 
-            <h3>Quarterly History ({Math.min(fundamentalHistory.quarterly?.length || 0, 8)}/8 available)</h3>
+            <h3>Quarterly History ({Math.min(fundamentalHistory.quarterly?.length || 0, 12)}/12 available)</h3>
             <div className="history-table-wrapper">
               <table className="history-table">
                 <thead>
@@ -1960,7 +2002,7 @@ function App() {
                 </thead>
 
                 <tbody>
-                  {fundamentalHistory.quarterly?.slice(0, 8).map((row) => (
+                  {fundamentalHistory.quarterly?.slice(0, 12).map((row) => (
                     <tr key={row.period}>
                       <td>{row.period}</td>
                       <td>
@@ -2008,7 +2050,7 @@ function App() {
               <div className="fundamental-chart-card">
                 <h4>Quarterly Sales</h4>
                 <ResponsiveContainer width="100%" height={220}>
-                  <LineChart data={[...(fundamentalHistory.quarterly || [])].slice(0, 8).reverse()}>
+                  <LineChart data={[...(fundamentalHistory.quarterly || [])].slice(0, 12).reverse()}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="period" />
                     <YAxis tickFormatter={(value) => `${(value / 1e9).toFixed(0)}B`} />
@@ -2020,7 +2062,7 @@ function App() {
               <div className="fundamental-chart-card">
                 <h4>Quarterly EPS</h4>
                 <ResponsiveContainer width="100%" height={220}>
-                  <LineChart data={[...(fundamentalHistory.quarterly || [])].slice(0, 8).reverse()}>
+                  <LineChart data={[...(fundamentalHistory.quarterly || [])].slice(0, 12).reverse()}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="period" />
                     <YAxis />
@@ -2032,7 +2074,7 @@ function App() {
               <div className="fundamental-chart-card">
                 <h4>Quarterly PAT</h4>
                 <ResponsiveContainer width="100%" height={220}>
-                  <LineChart data={[...(fundamentalHistory.quarterly || [])].slice(0, 8).reverse()}>
+                  <LineChart data={[...(fundamentalHistory.quarterly || [])].slice(0, 12).reverse()}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="period" />
                     <YAxis tickFormatter={(value) => `${(value / 1e9).toFixed(0)}B`} />
@@ -2041,9 +2083,45 @@ function App() {
                   </LineChart>
                 </ResponsiveContainer>
               </div>
+                    <div className="fundamental-chart-card">
+                <h4>Quarterly EBIT</h4>
+                <ResponsiveContainer width="100%" height={220}>
+                  <LineChart data={[...(fundamentalHistory.quarterly || [])].slice(0, 12).reverse()}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="period" />
+                    <YAxis tickFormatter={(value) => `${(value / 1e9).toFixed(0)}B`} />
+                    <Tooltip formatter={(value) => value != null ? `$${(value / 1e9).toFixed(2)}B` : "-"} />
+                    <Line type="monotone" dataKey="ebit" strokeWidth={2} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="fundamental-chart-card">
+                <h4>Quarterly OPM</h4>
+                <ResponsiveContainer width="100%" height={220}>
+                  <LineChart data={[...(fundamentalHistory.quarterly || [])].slice(0, 12).reverse()}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="period" />
+                    <YAxis tickFormatter={(value) => `${value}%`} />
+                    <Tooltip formatter={(value) => value != null ? `${value}%` : "-"} />
+                    <Line type="monotone" dataKey="opm" strokeWidth={2} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="fundamental-chart-card">
+                <h4>Quarterly NPM</h4>
+                <ResponsiveContainer width="100%" height={220}>
+                  <LineChart data={[...(fundamentalHistory.quarterly || [])].slice(0, 12).reverse()}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="period" />
+                    <YAxis tickFormatter={(value) => `${value}%`} />
+                    <Tooltip formatter={(value) => value != null ? `${value}%` : "-"} />
+                    <Line type="monotone" dataKey="npm" strokeWidth={2} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
             </div>
 
-            <h3>Previous 5 Years ({Math.min(fundamentalHistory.annual?.filter((row) => row.sales != null || row.pat != null || row.eps != null).length || 0, 5)}/5 available)</h3>
+            <h3>Previous 7 Years ({Math.min(fundamentalHistory.annual?.filter((row) => row.sales != null || row.pat != null || row.eps != null).length || 0, 7)}/7 available)</h3>
             <div className="history-table-wrapper">
               <table className="history-table">
                 <thead>
@@ -2069,7 +2147,7 @@ function App() {
                 </thead>
 
                 <tbody>
-                  {fundamentalHistory.annual?.slice(0, 5).map((row) => (
+                  {fundamentalHistory.annual?.slice(0, 7).map((row) => (
                     <tr key={row.period}>
                       <td>{row.period}</td>
                       <td>

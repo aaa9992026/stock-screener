@@ -377,7 +377,7 @@ class YahooProvider(BaseMarketDataProvider):
                 2
             )
 
-        quarterly_results = build_periods(quarterly, 8)
+        quarterly_results = build_periods(quarterly, 12)
 
         for i in range(len(quarterly_results)):
             quarterly_results[i]["yoy_sales"] = None
@@ -403,7 +403,7 @@ class YahooProvider(BaseMarketDataProvider):
                 year_ago["eps"]
             )
 
-        annual_results = build_periods(annual, 6)
+        annual_results = build_periods(annual, 7)
 
         for i in range(len(annual_results) - 1):
             current = annual_results[i]
@@ -537,8 +537,8 @@ class YahooProvider(BaseMarketDataProvider):
                     rows.sort(key=lambda r: str(r.get("period") or ""), reverse=True)
                     return rows[:limit]
 
-                merged_quarters = _merge_rows(quarterly_results, sec_result.get("quarterly") or [], 8, False)
-                merged_annual = _merge_rows(annual_results, sec_result.get("annual") or [], 6, True)
+                merged_quarters = _merge_rows(quarterly_results, sec_result.get("quarterly") or [], 12, False)
+                merged_annual = _merge_rows(annual_results, sec_result.get("annual") or [], 7, True)
 
                 for i, row in enumerate(merged_quarters):
                     previous = merged_quarters[i + 1] if i + 1 < len(merged_quarters) else None

@@ -1587,6 +1587,8 @@ def get_indicators(
 
     ema_short_value = calculate_ema(closes, sma_short)
     ema_long_value = calculate_ema(closes, sma_long)
+    ema_150_value = calculate_ema(closes, 150) if len(closes) >= 150 else None
+    ema_200_value = calculate_ema(closes, 200) if len(closes) >= 200 else None
 
     # RSI
     changes = [
@@ -1628,5 +1630,7 @@ def get_indicators(
         "sma_long": round(sma_long_value, 2),
         "ema_short": round(ema_short_value, 2),
         "ema_long": round(ema_long_value, 2),
+        "ema_150": round(ema_150_value, 2) if ema_150_value is not None else None,
+        "ema_200": round(ema_200_value, 2) if ema_200_value is not None else None,
         "rsi": round(rsi_value, 2)
     }
