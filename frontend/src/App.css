@@ -1144,3 +1144,26 @@ th {
     justify-content: space-between;
   }
 }
+
+
+/* Client-requested on-chart volatility metric panel */
+.technical-metric-chart-block {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid #dbe4f0;
+}
+.technical-metric-value-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.technical-metric-chart-block h3 {
+  margin: 8px 0 12px;
+}
+@media (max-width: 900px) {
+  .technical-metric-value-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 560px) {
+  .technical-metric-value-grid { grid-template-columns: 1fr; }
+}

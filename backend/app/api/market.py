@@ -741,9 +741,59 @@ def get_technical_summary(
     sd20 = variance20 ** 0.5
     bb_upper = sma20 + 2 * sd20
     bb_lower = sma20 - 2 * sd20
-    bb_width = ((bb_upper - bb_lower) / sma20 * 100) if sma20 else None
+    # Client-specified Bollinger Band width formula:
+    # (Upper BB - Lower BB) * 100 / Lower BB
+    bb_width = ((bb_upper - bb_lower) / bb_lower * 100) if bb_lower not in (None, 0) else None
 
     range20 = ((max(highs[-20:]) - min(lows[-20:])) / min(lows[-20:]) * 100) if min(lows[-20:]) else None
+
+    # Daily rolling metric series requested by the client so ADR%, ATR%,
+    # Bollinger width %, and 20-day price range can be drawn as trends.
+    metric_daily = daily_rows
+    metric_series = []
+    daily_trs = []
+    running_atr = None
+    for i, r in enumerate(metric_daily):
+        h = float(r.high)
+        l = float(r.low)
+        c = float(r.close)
+        prev_c = float(metric_daily[i - 1].close) if i > 0 else c
+        tr = max(h - l, abs(h - prev_c), abs(l - prev_c))
+        daily_trs.append(tr)
+        if i == 13:
+            running_atr = sum(daily_trs[:14]) / 14
+        elif i > 13 and running_atr is not None:
+            running_atr = ((running_atr * 13) + tr) / 14
+
+        if i < 19:
+            continue
+
+        window = metric_daily[i - 19:i + 1]
+        closes20 = [float(x.close) for x in window]
+        highs20 = [float(x.high) for x in window]
+        lows20 = [float(x.low) for x in window]
+        adr_pct_values = [
+            ((float(x.high) - float(x.low)) / float(x.low)) * 100
+            for x in window if float(x.low) != 0
+        ]
+        adr_pct_20 = (sum(adr_pct_values) / len(adr_pct_values)) if adr_pct_values else None
+
+        mean20 = sum(closes20) / 20
+        variance = sum((v - mean20) ** 2 for v in closes20) / 20
+        sd = variance ** 0.5
+        upper = mean20 + 2 * sd
+        lower = mean20 - 2 * sd
+        bb_pct = ((upper - lower) / lower * 100) if lower else None
+        price_range_pct = ((max(highs20) - min(lows20)) / min(lows20) * 100) if min(lows20) else None
+        atr_pct_day = (running_atr / c * 100) if running_atr is not None and c else None
+
+        metric_series.append({
+            "date": r.date.isoformat() if hasattr(r.date, "isoformat") else str(r.date),
+            "adr_percent": round(adr_pct_20, 2) if adr_pct_20 is not None else None,
+            "atr_percent": round(atr_pct_day, 2) if atr_pct_day is not None else None,
+            "bollinger_width_percent": round(bb_pct, 2) if bb_pct is not None else None,
+            "range_20d_percent": round(price_range_pct, 2) if price_range_pct is not None else None,
+        })
     periods_per_52w = 252 if timeframe == "daily" else 52 if timeframe == "weekly" else 12
     lookback_52w = min(periods_per_52w, len(rows))
     high_52w = max(highs[-lookback_52w:])
@@ -876,6 +926,7 @@ def get_technical_summary(
         "rsi_14": round(rsi14, 2) if rsi14 is not None else None,
         "bollinger_width_percent": round(bb_width, 2) if bb_width is not None else None,
         "range_20d_percent": round(range20, 2) if range20 is not None else None,
+        "technical_metric_series": metric_series[-260:],
         "distance_from_52w_high_percent": round(distance_52w_high, 2) if distance_52w_high is not None else None,
         "pivot": round(pivot, 2) if pivot is not None else None,
         "breakout_status": breakout_status,

@@ -1458,6 +1458,34 @@ function App() {
               Chart overlays: EMA 20/30/50/100/150/200, Bollinger Bands, volume + 50-period average volume, quarterly EPS, and Relative Strength = Stock Price / {benchmark.name}. The RS line is visually rebased only for overlay; its direction comes from the stock/index ratio.
             </div>
           )}
+
+          {technicalSummary && (
+            <div className="technical-metric-chart-block">
+              <div className="technical-metric-value-grid">
+                <div className="metric"><span>ADR % (20D)</span><strong>{technicalSummary.adr_percent != null ? `${technicalSummary.adr_percent}%` : "-"}</strong></div>
+                <div className="metric"><span>ATR % (14)</span><strong>{technicalSummary.atr_percent != null ? `${technicalSummary.atr_percent}%` : "-"}</strong></div>
+                <div className="metric"><span>BB Width %</span><strong>{technicalSummary.bollinger_width_percent != null ? `${technicalSummary.bollinger_width_percent}%` : "-"}</strong><small>(Upper BB - Lower BB) × 100 / Lower BB</small></div>
+                <div className="metric"><span>20-Day Price Range</span><strong>{technicalSummary.range_20d_percent != null ? `${technicalSummary.range_20d_percent}%` : "-"}</strong></div>
+              </div>
+              {technicalSummary.technical_metric_series?.length > 1 && (
+                <>
+                  <h3>Technical Volatility Trends</h3>
+                  <ResponsiveContainer width="100%" height={240}>
+                    <LineChart data={technicalSummary.technical_metric_series}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="date" minTickGap={35} />
+                      <YAxis unit="%" domain={["auto", "auto"]} />
+                      <Tooltip formatter={(value, name) => [`${Number(value).toFixed(2)}%`, name]} />
+                      <Line type="monotone" dataKey="adr_percent" name="ADR %" stroke="#2563eb" strokeWidth={2} dot={false} connectNulls />
+                      <Line type="monotone" dataKey="atr_percent" name="ATR %" stroke="#f59e0b" strokeWidth={2} dot={false} connectNulls />
+                      <Line type="monotone" dataKey="bollinger_width_percent" name="BB Width %" stroke="#7c3aed" strokeWidth={2} dot={false} connectNulls />
+                      <Line type="monotone" dataKey="range_20d_percent" name="20-Day Range %" stroke="#0891b2" strokeWidth={2} dot={false} connectNulls />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </>
+              )}
+            </div>
+          )}
         </section>
 
         <section className="fundamental-section relative-strength-section">
