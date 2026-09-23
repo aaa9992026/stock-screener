@@ -101,16 +101,25 @@ def _rsi(values, period=14):
     return 100 - (100 / (1 + rs))
 
 
-def _weighted_rs_against_benchmark(daily_rows, exchange: str):
-    """Client-specified weighted relative-strength model.
+def _weighted_rs_against_benchmark(daily_rows, exchange: str, period_weights=None):
+    """Weighted relative-strength model against the broad-market benchmark.
 
-    Weights: 1W 10%, 1M 30%, 2M 20%, 3M 15%, 6M 15%, 1Y 10%.
-    Each horizon is stock return relative to S&P 500 (US) or NIFTY 500 (India).
+    Default client weights: 1W 10%, 1M 30%, 2M 20%, 3M 15%, 6M 15%, 1Y 10%.
+    All six weights are overridable so the client can tune the RS model without
+    code changes. Weights are normalized across the periods that have data.
     """
     benchmark_symbol = "^GSPC" if exchange.upper() == "US" else "^CRSLDX"
     benchmark_name = "S&P 500" if exchange.upper() == "US" else "NIFTY 500"
     periods = {"1w": 5, "1m": 21, "2m": 42, "3m": 63, "6m": 126, "1y": 252}
-    weights = {"1w": 10, "1m": 30, "2m": 20, "3m": 15, "6m": 15, "1y": 10}
+    defaults = {"1w": 10.0, "1m": 30.0, "2m": 20.0, "3m": 15.0, "6m": 15.0, "1y": 10.0}
+    weights = defaults.copy()
+    if period_weights:
+        for key, value in period_weights.items():
+            if key in weights:
+                try:
+                    weights[key] = max(0.0, float(value))
+                except Exception:
+                    pass
     metrics = {}
     try:
         hist = yf.Ticker(benchmark_symbol).history(period="2y", interval="1d", auto_adjust=False)
@@ -168,7 +177,7 @@ def _normalize_score_weights(weights=None):
     return {k: (v / total) * 100.0 for k, v in merged.items()}
 
 
-def _score_symbol(db: Session, symbol: str, exchange: str, weights=None, include_components=False):
+def _score_symbol(db: Session, symbol: str, exchange: str, weights=None, include_components=False, subweights=None, rs_period_weights=None):
     rows = (
         db.query(OHLCV)
         .filter(OHLCV.symbol == symbol, OHLCV.exchange == exchange)
@@ -202,29 +211,26 @@ def _score_symbol(db: Session, symbol: str, exchange: str, weights=None, include
 
     if closes:
         latest = closes[-1]
-        technical_points = 0.0
-        technical_possible = 0.0
-        for period in [20, 50, 150, 200]:
+        configured_subweights = subweights or {}
+        technical_weights = configured_subweights.get("technical", {
+            "ema20": 20, "ema50": 20, "ema150": 20, "ema200": 20, "rsi": 20,
+        })
+        technical_metrics = {}
+        for period, key in [(20, "ema20"), (50, "ema50"), (150, "ema150"), (200, "ema200")]:
             ema = _ema(closes, period)
             if ema is not None:
-                technical_possible += 20
-                if latest > ema:
-                    technical_points += 20
+                technical_metrics[key] = 100.0 if latest > ema else 0.0
 
         rsi = _rsi(closes, 14)
         if rsi is not None:
-            technical_possible += 20
-            if 50 <= rsi <= 70:
-                technical_points += 20
-            elif 40 <= rsi < 50 or 70 < rsi <= 80:
-                technical_points += 10
+            technical_metrics["rsi"] = 100.0 if 50 <= rsi <= 70 else 50.0 if (40 <= rsi < 50 or 70 < rsi <= 80) else 0.0
 
-        if technical_possible:
-            components["technical"] = round((technical_points / technical_possible) * 100, 2)
+        tw_sum = sum(max(0.0, float(technical_weights.get(k, 0))) for k in technical_metrics)
+        if tw_sum > 0:
+            components["technical"] = round(sum(technical_metrics[k] * max(0.0, float(technical_weights.get(k, 0))) for k in technical_metrics) / tw_sum, 2)
 
-        # Use the same client-specified weighted benchmark-relative RS model
-        # in the dashboard score so ranking and Technical Summary stay aligned.
-        rs_component, _, _, _ = _weighted_rs_against_benchmark(rows, exchange)
+        # Keep dashboard RS aligned with the customizable Technical Summary model.
+        rs_component, _, _, _ = _weighted_rs_against_benchmark(rows, exchange, rs_period_weights)
         if rs_component is not None:
             components["relative_strength"] = rs_component
 
@@ -234,49 +240,56 @@ def _score_symbol(db: Session, symbol: str, exchange: str, weights=None, include
             avg_volume_50 = sum(volumes[-50:]) / 50 if len(volumes) >= 50 else None
             volume_ratio_50 = (volumes[-1] / avg_volume_50) if avg_volume_50 else 0
             recent_range = ((max(highs[-20:]) - min(lows[-20:])) / max(highs[-20:]) * 100) if max(highs[-20:]) else None
-            breakout_points = 0
-            if pivot is not None and latest >= pivot * 0.95:
-                breakout_points += 30
-            if pivot is not None and latest > pivot:
-                breakout_points += 25
-            if volume_ratio_50 >= 1.4:
-                breakout_points += 25
-            if recent_range is not None and recent_range <= 10:
-                breakout_points += 20
-            components["breakout"] = min(100, breakout_points)
+            breakout_weights = configured_subweights.get("breakout", {
+                "near_pivot": 30, "above_pivot": 25, "volume": 25, "tight_range": 20,
+            })
+            breakout_metrics = {
+                "near_pivot": 100.0 if pivot is not None and latest >= pivot * 0.95 else 0.0,
+                "above_pivot": 100.0 if pivot is not None and latest > pivot else 0.0,
+                "volume": 100.0 if volume_ratio_50 >= 1.4 else 0.0,
+                "tight_range": 100.0 if recent_range is not None and recent_range <= 10 else 0.0,
+            }
+            bw_sum = sum(max(0.0, float(breakout_weights.get(k, 0))) for k in breakout_metrics)
+            if bw_sum > 0:
+                components["breakout"] = round(sum(breakout_metrics[k] * max(0.0, float(breakout_weights.get(k, 0))) for k in breakout_metrics) / bw_sum, 2)
 
     if fundamental:
-        values = []
-        checks = [
-            (fundamental.trailing_eps, lambda x: x > 0),
-            (fundamental.net_income, lambda x: x > 0),
-            (fundamental.profit_margin, lambda x: x > 0),
-            (fundamental.return_on_equity, lambda x: x >= 0.15),
-            (fundamental.return_on_assets, lambda x: x >= 0.05),
-        ]
-        for value, check in checks:
+        fundamental_weights = (subweights or {}).get("fundamental", {
+            "eps": 20, "net_income": 20, "profit_margin": 20, "roe": 20, "roa": 20,
+        })
+        raw_checks = {
+            "eps": (fundamental.trailing_eps, lambda x: x > 0),
+            "net_income": (fundamental.net_income, lambda x: x > 0),
+            "profit_margin": (fundamental.profit_margin, lambda x: x > 0),
+            "roe": (fundamental.return_on_equity, lambda x: x >= 0.15),
+            "roa": (fundamental.return_on_assets, lambda x: x >= 0.05),
+        }
+        fundamental_metrics = {}
+        for key, (value, check) in raw_checks.items():
             if value is None:
                 continue
             numeric = float(value)
-            values.append(100 if check(numeric) else (50 if numeric > 0 else 0))
-        if values:
-            components["fundamental"] = round(sum(values) / len(values), 2)
+            fundamental_metrics[key] = 100.0 if check(numeric) else (50.0 if numeric > 0 else 0.0)
+        fw_sum = sum(max(0.0, float(fundamental_weights.get(k, 0))) for k in fundamental_metrics)
+        if fw_sum > 0:
+            components["fundamental"] = round(sum(fundamental_metrics[k] * max(0.0, float(fundamental_weights.get(k, 0))) for k in fundamental_metrics) / fw_sum, 2)
 
     if ownership:
-        owner_scores = []
+        ownership_weights = (subweights or {}).get("ownership", {"institution": 70, "insider": 30})
+        ownership_metrics = {}
         if ownership.institution_percent is not None:
             pct = float(ownership.institution_percent)
             if pct <= 1:
                 pct *= 100
-            owner_scores.append(max(0, min(100, pct)))
+            ownership_metrics["institution"] = max(0, min(100, pct))
         if ownership.insider_percent is not None:
             pct = float(ownership.insider_percent)
             if pct <= 1:
                 pct *= 100
-            # Moderate insider ownership is treated positively without over-rewarding concentration.
-            owner_scores.append(max(0, min(100, pct * 5)))
-        if owner_scores:
-            components["ownership"] = round(sum(owner_scores) / len(owner_scores), 2)
+            ownership_metrics["insider"] = max(0, min(100, pct * 5))
+        ow_sum = sum(max(0.0, float(ownership_weights.get(k, 0))) for k in ownership_metrics)
+        if ow_sum > 0:
+            components["ownership"] = round(sum(ownership_metrics[k] * max(0.0, float(ownership_weights.get(k, 0))) for k in ownership_metrics) / ow_sum, 2)
 
     normalized_weights = _normalize_score_weights(weights)
     weighted_points = 0.0
@@ -477,6 +490,28 @@ def get_dashboard_summary(
     relative_strength_weight: float = 15,
     ownership_weight: float = 10,
     breakout_weight: float = 5,
+    technical_ema20_weight: float = 20,
+    technical_ema50_weight: float = 20,
+    technical_ema150_weight: float = 20,
+    technical_ema200_weight: float = 20,
+    technical_rsi_weight: float = 20,
+    fundamental_eps_weight: float = 20,
+    fundamental_net_income_weight: float = 20,
+    fundamental_profit_margin_weight: float = 20,
+    fundamental_roe_weight: float = 20,
+    fundamental_roa_weight: float = 20,
+    ownership_institution_weight: float = 70,
+    ownership_insider_weight: float = 30,
+    breakout_near_pivot_weight: float = 30,
+    breakout_above_pivot_weight: float = 25,
+    breakout_volume_weight: float = 25,
+    breakout_tight_range_weight: float = 20,
+    rs_1w_weight: float = 10,
+    rs_1m_weight: float = 30,
+    rs_2m_weight: float = 20,
+    rs_3m_weight: float = 15,
+    rs_6m_weight: float = 15,
+    rs_1y_weight: float = 10,
     db: Session = Depends(get_db)
 ):
     symbol = symbol.upper()
@@ -495,8 +530,16 @@ def get_dashboard_summary(
         "ownership": ownership_weight,
         "breakout": breakout_weight,
     }
+    ranking_subweights = {
+        "technical": {"ema20": technical_ema20_weight, "ema50": technical_ema50_weight, "ema150": technical_ema150_weight, "ema200": technical_ema200_weight, "rsi": technical_rsi_weight},
+        "fundamental": {"eps": fundamental_eps_weight, "net_income": fundamental_net_income_weight, "profit_margin": fundamental_profit_margin_weight, "roe": fundamental_roe_weight, "roa": fundamental_roa_weight},
+        "ownership": {"institution": ownership_institution_weight, "insider": ownership_insider_weight},
+        "breakout": {"near_pivot": breakout_near_pivot_weight, "above_pivot": breakout_above_pivot_weight, "volume": breakout_volume_weight, "tight_range": breakout_tight_range_weight},
+    }
+    rs_period_weights = {"1w": rs_1w_weight, "1m": rs_1m_weight, "2m": rs_2m_weight, "3m": rs_3m_weight, "6m": rs_6m_weight, "1y": rs_1y_weight}
     score, coverage, components, normalized_weights = _score_symbol(
-        db, symbol, exchange, weights=requested_weights, include_components=True
+        db, symbol, exchange, weights=requested_weights, include_components=True,
+        subweights=ranking_subweights, rs_period_weights=rs_period_weights
     )
     if score is None:
         raise HTTPException(status_code=404, detail="Not enough data to calculate dashboard score")
@@ -535,6 +578,8 @@ def get_dashboard_summary(
         "score_coverage_percent": coverage,
         "score_components": components,
         "score_weights": {k: round(v, 2) for k, v in normalized_weights.items()},
+        "ranking_subweights": ranking_subweights,
+        "rs_period_weights": rs_period_weights,
         "sector": company.sector if company else None,
         "industry": company.industry if company else None,
         "sector_rank": sector_rank,
@@ -571,6 +616,12 @@ def get_technical_summary(
     symbol: str,
     exchange: str = "US",
     timeframe: str = Query("daily", pattern="^(daily|weekly|monthly)$"),
+    rs_1w_weight: float = 10,
+    rs_1m_weight: float = 30,
+    rs_2m_weight: float = 20,
+    rs_3m_weight: float = 15,
+    rs_6m_weight: float = 15,
+    rs_1y_weight: float = 10,
     db: Session = Depends(get_db)
 ):
     symbol = symbol.upper()
@@ -793,7 +844,8 @@ def get_technical_summary(
     else:
         pattern = "None"
 
-    rs_rating, rs_weighted_relative_return, rs_metrics, benchmark_name = _weighted_rs_against_benchmark(daily_rows, exchange)
+    rs_period_weights = {"1w": rs_1w_weight, "1m": rs_1m_weight, "2m": rs_2m_weight, "3m": rs_3m_weight, "6m": rs_6m_weight, "1y": rs_1y_weight}
+    rs_rating, rs_weighted_relative_return, rs_metrics, benchmark_name = _weighted_rs_against_benchmark(daily_rows, exchange, rs_period_weights)
 
     return _json_safe({
         "symbol": symbol,
@@ -824,7 +876,8 @@ def get_technical_summary(
         "rs_weighted_relative_return_percent": round(rs_weighted_relative_return, 2) if rs_weighted_relative_return is not None else None,
         "rs_benchmark": benchmark_name,
         "rs_periods": rs_metrics,
-        "rs_note": "Client formula: weighted relative return = 1W×10% + 1M×30% + 2M×20% + 3M×15% + 6M×15% + 1Y×10%, where each return is stock performance relative to the broad-market benchmark. The displayed 0-100 RS rating maps benchmark-equivalent performance to 50.",
+        "rs_period_weights": rs_period_weights,
+        "rs_note": "Relative Strength uses the client-selected 1W/1M/2M/3M/6M/1Y weights against the broad-market benchmark. The displayed 0-100 rating maps benchmark-equivalent performance to 50.",
         "criteria_note": f"Metrics use the selected {timeframe} timeframe. For a detected VCP, Pivot = highest high of the final contraction; otherwise it is the recent consolidation high. Near Pivot = 95%-102% of pivot. Confirmed breakout requires close > pivot by 0.3%, volume >= 1.4x 50-period average, close > open, and close in the upper half of the period's range. VCP requires successive price-depth and ATR% contractions."
     })
 

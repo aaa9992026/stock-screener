@@ -500,26 +500,77 @@ class YahooProvider(BaseMarketDataProvider):
             },
         }
 
-        # Yahoo commonly exposes only ~5 quarterly statement columns. For US
-        # stocks, use official SEC company facts as a fallback when it provides
-        # deeper usable history. This is intentionally a fallback, not a hard
-        # dependency: if SEC is unavailable, the Yahoo result still works.
+        # Merge official SEC companyfacts into Yahoo history field-by-field.
+        # This is stronger than replacing an entire table only when it has more
+        # rows: issuers can have the same row count but different missing fields.
         try:
             sec_result = SECFundamentalsProvider().get_history(symbol.upper())
             if sec_result:
-                sec_quarters = sec_result.get("quarterly") or []
-                sec_annual = sec_result.get("annual") or []
-                if len(sec_quarters) > len(quarterly_results):
-                    yahoo_result["quarterly"] = sec_quarters
-                if len(sec_annual) > len(annual_results):
-                    yahoo_result["annual"] = sec_annual
-                    yahoo_result["cagr_3y"] = sec_result.get("cagr_3y", cagr_3y)
-                    yahoo_result["cagr_5y"] = sec_result.get("cagr_5y", cagr_5y)
-                    yahoo_result["ratio_methodology"] = sec_result.get(
-                        "ratio_methodology", yahoo_result["ratio_methodology"]
-                    )
-                if len(sec_quarters) > len(quarterly_results) or len(sec_annual) > len(annual_results):
-                    yahoo_result["source"] = "Yahoo Finance + SEC companyfacts fallback"
+                from datetime import datetime as _dt
+
+                def _bucket(period, annual=False):
+                    try:
+                        d = _dt.strptime(str(period)[:10], "%Y-%m-%d")
+                        return (d.year,) if annual else (d.year, ((d.month - 1) // 3) + 1)
+                    except Exception:
+                        return (str(period),)
+
+                def _merge_rows(primary, fallback, limit, annual=False):
+                    merged = {}
+                    # Yahoo seeds the row; official SEC companyfacts then
+                    # overrides matching non-null financial-statement fields.
+                    for source_rows, prefer in ((primary or [], False), (fallback or [], True)):
+                        for row in source_rows:
+                            key = _bucket(row.get("period"), annual=annual)
+                            current = merged.get(key, {}).copy()
+                            if not current:
+                                current = dict(row)
+                            else:
+                                for field, value in row.items():
+                                    if field == "period":
+                                        if str(value or "") > str(current.get(field) or ""):
+                                            current[field] = value
+                                    elif value is not None and (prefer or current.get(field) is None):
+                                        current[field] = value
+                            merged[key] = current
+                    rows = list(merged.values())
+                    rows.sort(key=lambda r: str(r.get("period") or ""), reverse=True)
+                    return rows[:limit]
+
+                merged_quarters = _merge_rows(quarterly_results, sec_result.get("quarterly") or [], 8, False)
+                merged_annual = _merge_rows(annual_results, sec_result.get("annual") or [], 6, True)
+
+                for i, row in enumerate(merged_quarters):
+                    previous = merged_quarters[i + 1] if i + 1 < len(merged_quarters) else None
+                    year_ago = merged_quarters[i + 4] if i + 4 < len(merged_quarters) else None
+                    row["qoq_sales"] = growth(row.get("sales"), previous.get("sales")) if previous else None
+                    row["qoq_pat"] = growth(row.get("pat"), previous.get("pat")) if previous else None
+                    row["qoq_eps"] = growth(row.get("eps"), previous.get("eps")) if previous else None
+                    row["yoy_sales"] = growth(row.get("sales"), year_ago.get("sales")) if year_ago else None
+                    row["yoy_pat"] = growth(row.get("pat"), year_ago.get("pat")) if year_ago else None
+                    row["yoy_eps"] = growth(row.get("eps"), year_ago.get("eps")) if year_ago else None
+
+                for i, row in enumerate(merged_annual):
+                    previous = merged_annual[i + 1] if i + 1 < len(merged_annual) else None
+                    row["yoy_sales"] = growth(row.get("sales"), previous.get("sales")) if previous else None
+                    row["yoy_pat"] = growth(row.get("pat"), previous.get("pat")) if previous else None
+                    row["yoy_eps"] = growth(row.get("eps"), previous.get("eps")) if previous else None
+
+                yahoo_result["quarterly"] = merged_quarters
+                yahoo_result["annual"] = merged_annual
+                if len(merged_annual) >= 4:
+                    yahoo_result["cagr_3y"] = {
+                        "sales": calculate_cagr(merged_annual[0].get("sales"), merged_annual[3].get("sales"), 3),
+                        "pat": calculate_cagr(merged_annual[0].get("pat"), merged_annual[3].get("pat"), 3),
+                        "eps": calculate_cagr(merged_annual[0].get("eps"), merged_annual[3].get("eps"), 3),
+                    }
+                if len(merged_annual) >= 6:
+                    yahoo_result["cagr_5y"] = {
+                        "sales": calculate_cagr(merged_annual[0].get("sales"), merged_annual[5].get("sales"), 5),
+                        "pat": calculate_cagr(merged_annual[0].get("pat"), merged_annual[5].get("pat"), 5),
+                        "eps": calculate_cagr(merged_annual[0].get("eps"), merged_annual[5].get("eps"), 5),
+                    }
+                yahoo_result["source"] = "SEC companyfacts + Yahoo Finance merged fallback"
         except Exception:
             pass
 

@@ -29,6 +29,23 @@ const formatPctChange = (value) => {
   return `${prefix}${numeric.toFixed(2)}%`;
 };
 
+const defaultRsWeights = { "1w": 10, "1m": 30, "2m": 20, "3m": 15, "6m": 15, "1y": 10 };
+const defaultRankingSubweights = {
+  technical: { ema20: 20, ema50: 20, ema150: 20, ema200: 20, rsi: 20 },
+  fundamental: { eps: 20, net_income: 20, profit_margin: 20, roe: 20, roa: 20 },
+  ownership: { institution: 70, insider: 30 },
+  breakout: { near_pivot: 30, above_pivot: 25, volume: 25, tight_range: 20 },
+};
+
+const readLocalObject = (key, fallback) => {
+  try {
+    const value = JSON.parse(localStorage.getItem(key));
+    return value && typeof value === "object" ? { ...fallback, ...value } : fallback;
+  } catch {
+    return fallback;
+  }
+};
+
 function App() {
   const [symbol, setSymbol] = useState("AAPL");
   const [exchange, setExchange] = useState("US");
@@ -64,6 +81,17 @@ function App() {
       return { technical: 35, fundamental: 35, relative_strength: 15, ownership: 10, breakout: 5 };
     }
   });
+  const [rsWeights, setRsWeights] = useState(() => readLocalObject("rsWeights", defaultRsWeights));
+  const [rankingSubweights, setRankingSubweights] = useState(() => {
+    const saved = readLocalObject("rankingSubweights", defaultRankingSubweights);
+    return {
+      technical: { ...defaultRankingSubweights.technical, ...(saved.technical || {}) },
+      fundamental: { ...defaultRankingSubweights.fundamental, ...(saved.fundamental || {}) },
+      ownership: { ...defaultRankingSubweights.ownership, ...(saved.ownership || {}) },
+      breakout: { ...defaultRankingSubweights.breakout, ...(saved.breakout || {}) },
+    };
+  });
+  const [showRankingDetails, setShowRankingDetails] = useState(true);
   const [chartOverlays, setChartOverlays] = useState({
     ema: true, sma: true, bollinger: true, volume: true, eps: true, rs: true
   });
@@ -102,6 +130,28 @@ function App() {
         relative_strength_weight: scoreWeights.relative_strength,
         ownership_weight: scoreWeights.ownership,
         breakout_weight: scoreWeights.breakout,
+        technical_ema20_weight: rankingSubweights.technical.ema20,
+        technical_ema50_weight: rankingSubweights.technical.ema50,
+        technical_ema150_weight: rankingSubweights.technical.ema150,
+        technical_ema200_weight: rankingSubweights.technical.ema200,
+        technical_rsi_weight: rankingSubweights.technical.rsi,
+        fundamental_eps_weight: rankingSubweights.fundamental.eps,
+        fundamental_net_income_weight: rankingSubweights.fundamental.net_income,
+        fundamental_profit_margin_weight: rankingSubweights.fundamental.profit_margin,
+        fundamental_roe_weight: rankingSubweights.fundamental.roe,
+        fundamental_roa_weight: rankingSubweights.fundamental.roa,
+        ownership_institution_weight: rankingSubweights.ownership.institution,
+        ownership_insider_weight: rankingSubweights.ownership.insider,
+        breakout_near_pivot_weight: rankingSubweights.breakout.near_pivot,
+        breakout_above_pivot_weight: rankingSubweights.breakout.above_pivot,
+        breakout_volume_weight: rankingSubweights.breakout.volume,
+        breakout_tight_range_weight: rankingSubweights.breakout.tight_range,
+        rs_1w_weight: rsWeights["1w"],
+        rs_1m_weight: rsWeights["1m"],
+        rs_2m_weight: rsWeights["2m"],
+        rs_3m_weight: rsWeights["3m"],
+        rs_6m_weight: rsWeights["6m"],
+        rs_1y_weight: rsWeights["1y"],
       });
       const res = await axios.get(`${API}/market/dashboard/${symbol}?${params.toString()}`);
       setDashboard(res.data);
@@ -113,7 +163,9 @@ function App() {
   const loadTechnicalSummary = async () => {
     try {
       const res = await axios.get(
-        `${API}/market/technical-summary/${symbol}?exchange=${exchange}&timeframe=${timeframe}`
+        `${API}/market/technical-summary/${symbol}?exchange=${exchange}&timeframe=${timeframe}` +
+        `&rs_1w_weight=${rsWeights["1w"]}&rs_1m_weight=${rsWeights["1m"]}&rs_2m_weight=${rsWeights["2m"]}` +
+        `&rs_3m_weight=${rsWeights["3m"]}&rs_6m_weight=${rsWeights["6m"]}&rs_1y_weight=${rsWeights["1y"]}`
       );
       setTechnicalSummary(res.data);
     } catch {
@@ -283,7 +335,7 @@ function App() {
   const loadBenchmark = async () => {
     try {
       const res = await axios.get(
-        `${API}/market/benchmark/${exchange}?limit=400`
+        `${API}/market/benchmark/${exchange}?limit=1400`
       );
 
       setBenchmark(res.data);
@@ -631,6 +683,34 @@ function App() {
     : null;
   const currency = exchange === "US" ? "$" : "₹";
 
+
+  const relativeStrengthChartData = (() => {
+    if (!data?.length || !benchmark?.data?.length) return [];
+    const benchRows = benchmark.data
+      .map((row) => ({ date: String(row.date).slice(0, 10), close: Number(row.close) }))
+      .filter((row) => Number.isFinite(row.close));
+    const nearestBench = (dateText) => {
+      const target = new Date(`${String(dateText).slice(0, 10)}T00:00:00Z`).getTime();
+      let best = null;
+      let bestDiff = Infinity;
+      for (const row of benchRows) {
+        const diff = Math.abs(new Date(`${row.date}T00:00:00Z`).getTime() - target);
+        if (diff < bestDiff) { best = row; bestDiff = diff; }
+      }
+      const maxGap = timeframe === "monthly" ? 35 : timeframe === "weekly" ? 8 : 4;
+      return best && bestDiff <= maxGap * 86400000 ? best : null;
+    };
+    const raw = data.map((row) => {
+      const bench = nearestBench(row.date);
+      const close = Number(row.close);
+      if (!bench || !bench.close || !Number.isFinite(close)) return null;
+      return { date: String(row.date).slice(0, 10), ratio: close / bench.close };
+    }).filter(Boolean);
+    if (!raw.length) return [];
+    const base = raw[0].ratio || 1;
+    return raw.map((row) => ({ ...row, rs: (row.ratio / base) * 100 }));
+  })();
+
   const changeExchange = (value) => {
     setShowSuggestions(false);
     setSuggestions([]);
@@ -885,22 +965,50 @@ function App() {
                 ].map(([key, label]) => (
                   <div key={key}>
                     <label>{label} %</label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="100"
-                      value={scoreWeights[key]}
-                      onChange={(e) => setScoreWeights((prev) => ({ ...prev, [key]: Number(e.target.value) || 0 }))}
-                    />
+                    <input type="number" min="0" value={scoreWeights[key]}
+                      onChange={(e) => setScoreWeights((prev) => ({ ...prev, [key]: Number(e.target.value) || 0 }))} />
                   </div>
                 ))}
-                <button onClick={() => { localStorage.setItem("scoreWeights", JSON.stringify(scoreWeights)); loadDashboard(); }}>
-                  Apply Weights
+                <button onClick={() => {
+                  localStorage.setItem("scoreWeights", JSON.stringify(scoreWeights));
+                  localStorage.setItem("rankingSubweights", JSON.stringify(rankingSubweights));
+                  localStorage.setItem("rsWeights", JSON.stringify(rsWeights));
+                  loadDashboard();
+                  loadTechnicalSummary();
+                }}>Apply Ranking</button>
+                <button type="button" className="secondary-button" onClick={() => setShowRankingDetails((v) => !v)}>
+                  {showRankingDetails ? "Hide Parameters" : "Show Parameters"}
                 </button>
               </div>
               <div className="chart-note">
-                Enter any non-negative weights and click Apply Weights. They do not need to total 100; the screener normalizes them automatically. Settings are saved in this browser. Current normalized weights: {Object.entries(dashboard.score_weights || {}).map(([k,v]) => `${k.replace("_", " ")}: ${v}%`).join(" • ")}
+                Broader category weights and the parameters inside each category are customizable. Zero disables a parameter. Weights are normalized automatically and saved in this browser.
               </div>
+
+              {showRankingDetails && (
+                <div className="ranking-detail-grid">
+                  {[
+                    ["technical", "Technical parameters", [["ema20","Price > EMA20"],["ema50","Price > EMA50"],["ema150","Price > EMA150"],["ema200","Price > EMA200"],["rsi","RSI condition"]]],
+                    ["fundamental", "Fundamental parameters", [["eps","Positive EPS"],["net_income","Positive Net Income"],["profit_margin","Profit Margin"],["roe","ROE"],["roa","ROA"]]],
+                    ["ownership", "Ownership parameters", [["institution","Institutional Ownership"],["insider","Insider Ownership"]]],
+                    ["breakout", "Breakout / VCP parameters", [["near_pivot","Near Pivot"],["above_pivot","Above Pivot"],["volume","Volume Confirmation"],["tight_range","Tight Range"]]],
+                  ].map(([group, title, fields]) => (
+                    <div className="ranking-detail-card" key={group}>
+                      <h3>{title}</h3>
+                      <div className="ranking-detail-inputs">
+                        {fields.map(([key,label]) => (
+                          <label key={key}>{label}
+                            <input type="number" min="0" value={rankingSubweights[group][key]}
+                              onChange={(e) => setRankingSubweights((prev) => ({
+                                ...prev,
+                                [group]: { ...prev[group], [key]: Number(e.target.value) || 0 },
+                              }))} />
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </section>
           ) : (
             <section className="fundamental-section score-weight-section">
@@ -1011,6 +1119,40 @@ function App() {
           )}
         </section>
 
+        <section className="fundamental-section relative-strength-section">
+          <h2>Relative Strength vs {benchmark?.name || (exchange === "US" ? "S&P 500" : "NIFTY 500")}</h2>
+          <div className="indicator-settings rs-weight-settings">
+            {["1w","1m","2m","3m","6m","1y"].map((key) => (
+              <div key={key}>
+                <label>{key.toUpperCase()} %</label>
+                <input type="number" min="0" value={rsWeights[key]}
+                  onChange={(e) => setRsWeights((prev) => ({ ...prev, [key]: Number(e.target.value) || 0 }))} />
+              </div>
+            ))}
+            <button onClick={() => {
+              localStorage.setItem("rsWeights", JSON.stringify(rsWeights));
+              loadTechnicalSummary();
+              loadDashboard();
+            }}>Apply RS Weights</button>
+          </div>
+          <div className="chart-note">
+            RS line = stock price / broad-market benchmark, rebased to 100 at the first overlapping point. Rising means the stock is outperforming the benchmark; falling means underperforming. The rating uses the customizable horizon weights above.
+          </div>
+          {relativeStrengthChartData.length > 1 ? (
+            <ResponsiveContainer width="100%" height={230}>
+              <LineChart data={relativeStrengthChartData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" minTickGap={35} />
+                <YAxis domain={["auto", "auto"]} />
+                <Tooltip formatter={(value) => [Number(value).toFixed(2), "RS"]} />
+                <Line type="monotone" dataKey="rs" strokeWidth={2} dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="provider-warning">Relative-strength chart is unavailable because benchmark overlap is insufficient.</div>
+          )}
+        </section>
+
         {technicalSummary && (
           <section className="fundamental-section">
             <h2>Technical Screening Summary</h2>
@@ -1018,7 +1160,7 @@ function App() {
               <div className="metric">
                 <span>RS Rating vs {technicalSummary.rs_benchmark || "Benchmark"}</span>
                 <strong>{technicalSummary.rs_rating ?? "Unavailable"}</strong>
-                <small>1W 10% • 1M 30% • 2M 20% • 3M 15% • 6M 15% • 1Y 10%</small>
+                <small>{["1w","1m","2m","3m","6m","1y"].map((k) => `${k.toUpperCase()} ${rsWeights[k]}%`).join(" • ")}</small>
               </div>
               <div className="metric"><span>EMA Alignment</span><strong>{technicalSummary.ema_alignment}</strong></div>
               <div className="metric"><span>{timeframe === "daily" ? "20-Day Avg Volume" : "20-Period Avg Volume"}</span><strong>{technicalSummary.average_volume_20 != null ? Number(technicalSummary.average_volume_20).toLocaleString() : "-"}</strong></div>
@@ -1272,7 +1414,7 @@ function App() {
                   </div>
                 )}
 
-                <h3>Quarterly Ownership Changes</h3>
+                <h3>Quarterly Ownership Pattern & Changes</h3>
                 <div className="history-table-wrapper">
                   <table className="history-table">
                     <thead>
@@ -1299,7 +1441,7 @@ function App() {
                     </tbody>
                   </table>
                 </div>
-                <div className="chart-note" style={{ marginTop: "10px" }}>Source: {indiaShareholding.source}. Missing categories are shown as unavailable rather than estimated.</div>
+                <div className="chart-note" style={{ marginTop: "10px" }}>Source: {indiaShareholding.source}. Change columns are quarter-over-quarter percentage-point changes. Missing categories are shown as unavailable rather than estimated.</div>
               </>
             ) : (
               <div className="provider-warning">Indian shareholding history could not be loaded from the public provider right now. Technical and price data remain available.</div>

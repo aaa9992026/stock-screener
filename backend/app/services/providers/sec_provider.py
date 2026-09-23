@@ -97,10 +97,10 @@ class SECFundamentalsProvider:
             if kind == "annual" and not (form == "10-K" and fp == "FY"):
                 continue
 
-            # Quarterly facts should be genuine quarter periods. Q4 is often
-            # supplied only through the 10-K, so allow 10-K quarter-duration facts.
-            if kind == "quarter" and fp == "FY":
-                continue
+            # Quarterly facts are selected by duration, not by fiscal-period label.
+            # Some issuers expose Q4 as a genuine ~90-day fact in the 10-K with
+            # fp=FY.  Keeping those quarter-duration facts prevents the fourth
+            # quarter from disappearing from the history table.
 
             days = self._duration_days(item)
             if days is None:

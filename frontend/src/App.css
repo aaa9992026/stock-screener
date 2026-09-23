@@ -636,3 +636,66 @@ th {
 @media (max-width: 900px) {
   .volume-legend-note { margin-left: 0; width: 100%; }
 }
+
+
+/* Customizable ranking and relative-strength controls */
+.secondary-button {
+  background: #ffffff !important;
+  color: #1e3a5f !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+.ranking-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.ranking-detail-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 14px;
+  background: #f8fafc;
+}
+
+.ranking-detail-card h3 {
+  margin: 0 0 10px;
+}
+
+.ranking-detail-inputs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.ranking-detail-inputs label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 12px;
+  color: #475569;
+  font-weight: 600;
+}
+
+.ranking-detail-inputs input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.relative-strength-section .recharts-wrapper {
+  margin-top: 12px;
+}
+
+.rs-weight-settings {
+  margin-bottom: 8px;
+}
+
+@media (max-width: 900px) {
+  .ranking-detail-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 620px) {
+  .ranking-detail-inputs { grid-template-columns: 1fr; }
+}
