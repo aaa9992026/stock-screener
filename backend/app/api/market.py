@@ -101,16 +101,120 @@ def _rsi(values, period=14):
     return 100 - (100 / (1 + rs))
 
 
-def _weighted_rs_against_benchmark(daily_rows, exchange: str, period_weights=None):
-    """Weighted relative-strength model against the broad-market benchmark.
+def _shift_months(value_date, months):
+    import calendar
+    month_index = value_date.year * 12 + (value_date.month - 1) - months
+    year = month_index // 12
+    month = (month_index % 12) + 1
+    day = min(value_date.day, calendar.monthrange(year, month)[1])
+    return date(year, month, day)
 
-    Default client weights: 1W 10%, 2W 0%, 1M 30%, 2M 20%, 3M 15%, 6M 15%, 1Y 10%.
-    All six weights are overridable so the client can tune the RS model without
-    code changes. Weights are normalized across the periods that have data.
-    """
+
+def _rs_anchor_date(end_date, label):
+    if label == "1w":
+        return end_date - timedelta(days=7)
+    if label == "2w":
+        return end_date - timedelta(days=14)
+    if label == "1m":
+        return _shift_months(end_date, 1)
+    if label == "2m":
+        return _shift_months(end_date, 2)
+    if label == "3m":
+        return _shift_months(end_date, 3)
+    if label == "6m":
+        return _shift_months(end_date, 6)
+    if label == "1y":
+        return _shift_months(end_date, 12)
+    return end_date
+
+
+def _close_on_or_before(points, target_date):
+    for trade_date, close in reversed(points):
+        if trade_date <= target_date and close not in (None, 0):
+            return trade_date, float(close)
+    return None
+
+
+def _weighted_relative_return_from_points(stock_points, benchmark_points, weights):
+    """Client method: period relative return = stock return % - benchmark return %."""
+    if not stock_points or not benchmark_points:
+        return None, {}
+
+    end_date = min(stock_points[-1][0], benchmark_points[-1][0])
+    stock_end = _close_on_or_before(stock_points, end_date)
+    bench_end = _close_on_or_before(benchmark_points, end_date)
+    if not stock_end or not bench_end:
+        return None, {}
+
+    metrics = {}
+    weighted_sum = 0.0
+    available_weight = 0.0
+    for label in ("1w", "2w", "1m", "2m", "3m", "6m", "1y"):
+        weight = max(0.0, float(weights.get(label, 0) or 0))
+        anchor = _rs_anchor_date(end_date, label)
+        stock_old = _close_on_or_before(stock_points, anchor)
+        bench_old = _close_on_or_before(benchmark_points, anchor)
+        if not stock_old or not bench_old or stock_old[1] == 0 or bench_old[1] == 0:
+            continue
+
+        stock_return = ((stock_end[1] / stock_old[1]) - 1) * 100
+        benchmark_return = ((bench_end[1] / bench_old[1]) - 1) * 100
+        relative_return = stock_return - benchmark_return
+        metrics[label] = {
+            "weight_percent": weight,
+            "stock_return_percent": round(stock_return, 2),
+            "benchmark_return_percent": round(benchmark_return, 2),
+            "relative_return_percent": round(relative_return, 2),
+            "start_date": stock_old[0].isoformat(),
+            "end_date": stock_end[0].isoformat(),
+        }
+        if weight > 0:
+            weighted_sum += relative_return * weight
+            available_weight += weight
+
+    if available_weight <= 0:
+        return None, metrics
+    return weighted_sum / available_weight, metrics
+
+
+def _rs_percentile_from_stored_universe(db: Session, exchange: str, benchmark_points, weights, target_value):
+    """Client formula: (lower + 0.5 * equal) * 100 / total scored stocks."""
+    if db is None or target_value is None:
+        return None, 0
+
+    cutoff = date.today() - timedelta(days=430)
+    rows = (
+        db.query(OHLCV)
+        .filter(OHLCV.exchange == exchange.upper(), OHLCV.date >= cutoff)
+        .order_by(OHLCV.symbol.asc(), OHLCV.date.asc())
+        .all()
+    )
+    grouped = {}
+    for row in _valid_trading_rows(rows, exchange):
+        if row.close is None:
+            continue
+        grouped.setdefault(row.symbol, []).append((row.date, float(row.close)))
+
+    values = []
+    for points in grouped.values():
+        value, _ = _weighted_relative_return_from_points(points, benchmark_points, weights)
+        if value is not None and math.isfinite(value):
+            values.append(value)
+
+    if not values:
+        return None, 0
+
+    tolerance = 1e-9
+    lower = sum(1 for value in values if value < target_value - tolerance)
+    equal = sum(1 for value in values if abs(value - target_value) <= tolerance)
+    percentile = ((lower + 0.5 * equal) * 100.0) / len(values)
+    return round(max(0.0, min(100.0, percentile)), 2), len(values)
+
+
+def _weighted_rs_against_benchmark(daily_rows, exchange: str, period_weights=None, db: Session = None):
+    """Client RS method: weighted relative return, then market percentile."""
     benchmark_symbol = "^GSPC" if exchange.upper() == "US" else "^CRSLDX"
     benchmark_name = "S&P 500" if exchange.upper() == "US" else "NIFTY 500"
-    periods = {"1w": 5, "2w": 10, "1m": 21, "2m": 42, "3m": 63, "6m": 126, "1y": 252}
     defaults = {"1w": 10.0, "2w": 0.0, "1m": 30.0, "2m": 20.0, "3m": 15.0, "6m": 15.0, "1y": 10.0}
     weights = defaults.copy()
     if period_weights:
@@ -120,57 +224,47 @@ def _weighted_rs_against_benchmark(daily_rows, exchange: str, period_weights=Non
                     weights[key] = max(0.0, float(value))
                 except Exception:
                     pass
-    metrics = {}
+
     try:
         hist = yf.Ticker(benchmark_symbol).history(period="5y", interval="1d", auto_adjust=False)
-        benchmark_by_date = {idx.date(): float(row["Close"]) for idx, row in hist.iterrows() if row.get("Close") is not None}
-        aligned = [(r.date, float(r.close), benchmark_by_date.get(r.date)) for r in daily_rows if benchmark_by_date.get(r.date) is not None]
-        rs_chart = []
-        if aligned:
-            base_ratio = None
-            for trade_date, stock_close, bench_close in aligned:
-                if not stock_close or not bench_close:
-                    continue
-                ratio = stock_close / bench_close
-                if base_ratio is None:
-                    base_ratio = ratio
-                if base_ratio:
-                    rs_chart.append({
-                        "date": trade_date.isoformat(),
-                        "rs": round((ratio / base_ratio) * 100, 4),
-                    })
-        weighted_sum = 0.0
-        available_weight = 0.0
-        for label, days in periods.items():
-            if len(aligned) <= days:
-                continue
-            _, stock_now, bench_now = aligned[-1]
-            _, stock_old, bench_old = aligned[-1-days]
-            if not stock_old or not bench_old:
-                continue
-            stock_return = (stock_now / stock_old) - 1
-            bench_return = (bench_now / bench_old) - 1
-            if (1 + bench_return) == 0:
-                continue
-            relative = ((1 + stock_return) / (1 + bench_return) - 1) * 100
-            weight = weights[label]
-            metrics[label] = {
-                "weight_percent": weight,
-                "stock_return_percent": round(stock_return * 100, 2),
-                "benchmark_return_percent": round(bench_return * 100, 2),
-                "relative_return_percent": round(relative, 2),
-            }
-            weighted_sum += relative * weight
-            available_weight += weight
+        benchmark_points = [
+            (idx.date(), float(row["Close"]))
+            for idx, row in hist.iterrows()
+            if row.get("Close") is not None and math.isfinite(float(row["Close"]))
+        ]
+        stock_points = [
+            (r.date, float(r.close))
+            for r in daily_rows
+            if r.date is not None and r.close is not None and math.isfinite(float(r.close))
+        ]
+        stock_points.sort(key=lambda item: item[0])
+        benchmark_points.sort(key=lambda item: item[0])
 
-        if available_weight <= 0:
+        benchmark_by_date = dict(benchmark_points)
+        aligned = [(d, c, benchmark_by_date.get(d)) for d, c in stock_points if benchmark_by_date.get(d) is not None]
+        rs_chart = []
+        base_ratio = None
+        for trade_date, stock_close, bench_close in aligned:
+            if not stock_close or not bench_close:
+                continue
+            ratio = stock_close / bench_close
+            if base_ratio is None:
+                base_ratio = ratio
+            if base_ratio:
+                rs_chart.append({"date": trade_date.isoformat(), "rs": round((ratio / base_ratio) * 100, 4)})
+
+        weighted_relative, metrics = _weighted_relative_return_from_points(stock_points, benchmark_points, weights)
+        if weighted_relative is None:
             return None, None, metrics, benchmark_name, rs_chart
 
-        weighted_relative = weighted_sum / available_weight
-        rating = round(max(0, min(100, 50 + weighted_relative * 2)))
+        rating, universe_size = _rs_percentile_from_stored_universe(
+            db, exchange, benchmark_points, weights, weighted_relative
+        )
+        metrics["_universe_size"] = universe_size
         return rating, weighted_relative, metrics, benchmark_name, rs_chart
     except Exception:
         return None, None, {}, benchmark_name, []
+
 
 
 def _normalize_score_weights(weights=None):
@@ -242,7 +336,7 @@ def _score_symbol(db: Session, symbol: str, exchange: str, weights=None, include
             components["technical"] = round(sum(technical_metrics[k] * max(0.0, float(technical_weights.get(k, 0))) for k in technical_metrics) / tw_sum, 2)
 
         # Keep dashboard RS aligned with the customizable Technical Summary model.
-        rs_component, _, _, _, _ = _weighted_rs_against_benchmark(rows, exchange, rs_period_weights)
+        rs_component, _, _, _, _ = _weighted_rs_against_benchmark(rows, exchange, rs_period_weights, db=db)
         if rs_component is not None:
             components["relative_strength"] = rs_component
 
@@ -902,7 +996,7 @@ def get_technical_summary(
         pattern = "None"
 
     rs_period_weights = {"1w": rs_1w_weight, "2w": rs_2w_weight, "1m": rs_1m_weight, "2m": rs_2m_weight, "3m": rs_3m_weight, "6m": rs_6m_weight, "1y": rs_1y_weight}
-    rs_rating, rs_weighted_relative_return, rs_metrics, benchmark_name, rs_chart = _weighted_rs_against_benchmark(daily_rows, exchange, rs_period_weights)
+    rs_rating, rs_weighted_relative_return, rs_metrics, benchmark_name, rs_chart = _weighted_rs_against_benchmark(daily_rows, exchange, rs_period_weights, db=db)
 
     return _json_safe({
         "symbol": symbol,
@@ -943,7 +1037,7 @@ def get_technical_summary(
         "rs_periods": rs_metrics,
         "rs_chart": rs_chart,
         "rs_period_weights": rs_period_weights,
-        "rs_note": "Relative Strength uses the client-selected 1W/2W/1M/2M/3M/6M/1Y weights against the broad-market benchmark. The displayed 0-100 rating maps benchmark-equivalent performance to 50.",
+        "rs_note": "Relative Strength: each period relative return = stock return % - benchmark return %. The weighted relative return is converted to percentile using (stocks below + 0.5 x equal stocks) x 100 / total scored stocks.",
         "criteria_note": f"Metrics use the selected {timeframe} timeframe. For a detected VCP, Pivot = highest high of the final contraction; otherwise it is the recent consolidation high. Near Pivot = 95%-102% of pivot. Confirmed breakout requires close > pivot by 0.3%, volume >= 1.4x 50-period average, close > open, and close in the upper half of the period's range. VCP requires successive price-depth and ATR% contractions."
     })
 

@@ -1526,7 +1526,7 @@ function App() {
             })}
           </div>
           <div className="chart-note">
-            RS line = stock price / broad-market benchmark, rebased to 100 at the first overlapping point. Rising means the stock is outperforming the benchmark; falling means underperforming. The rating uses the customizable 1W/2W/1M/2M/3M/6M/1Y horizon weights above. Show/hide controls affect the horizon cards only; scoring continues to use the entered weights, and a weight of 0 disables a horizon.
+            RS line = stock price / broad-market benchmark, rebased to 100 for charting only. For scoring, each period Relative Return = Stock Return % - Benchmark Return %. The weighted relative return is then converted to the client percentile: [(stocks with lower weighted relative return) + 0.5 × (stocks with equal weighted relative return)] × 100 / total scored stocks. Show/hide controls affect the horizon cards only; a weight of 0 disables a horizon.
           </div>
           {technicalSummary?.rs_available && relativeStrengthChartData.length > 1 ? (
             <ResponsiveContainer width="100%" height={230}>
