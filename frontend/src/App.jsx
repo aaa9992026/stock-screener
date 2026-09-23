@@ -37,6 +37,95 @@ const defaultRankingSubweights = {
   ownership: { institution: 70, insider: 30 },
 };
 
+// Final client revision: only the factors written in the client's handwritten
+// scoring sheets are exposed in the ranking UI.  Values and weightages remain
+// editable; unavailable source data is never estimated.
+const defaultHandwrittenFactors = {
+  technical: {
+    bb_width: { weight: 10, threshold: 10 },
+    atr5_lt20: { weight: 10 },
+    atr10_lt20: { weight: 5 },
+    rsi14: { weight: 0, lower: 30, preferred: 50, upper: 70 },
+    volume10_gt20: { weight: 10 },
+    volume20_lt40: { weight: 5 },
+    distance52: { weight: 10, t1: 10, t2: 17, t3: 20, p1: 10, p2: 8, p3: 6, p4: 3 },
+    ema20_gt50: { weight: 8 },
+    ema50_gt150: { weight: 4 },
+  },
+  fundamental: {
+    q_eps_yoy: { weight: 10, threshold: 30 },
+    q_eps_rising: { weight: 4 },
+    q_eps_yoy_rising: { weight: 6 },
+    q_pat_yoy: { weight: 6, threshold: 30 },
+    q_pat_rising: { weight: 4 },
+    q_pat_yoy_rising: { weight: 6 },
+    q_npm_yoy: { weight: 4, threshold: 20 },
+    q_sales_yoy: { weight: 7, threshold: 30 },
+    q_sales_rising: { weight: 4 },
+    a_eps_yoy: { weight: 6, threshold: 20 },
+    a_eps_rising: { weight: 4 },
+    a_pat_yoy: { weight: 5, threshold: 20 },
+    a_pat_rising: { weight: 4 },
+    a_sales_yoy: { weight: 5, threshold: 20 },
+    a_sales_rising: { weight: 4 },
+  },
+  ownership: {
+    promoter_qoq: { weight: 10, threshold: 0.3 },
+    promoter_above: { weight: 8, threshold: 50 },
+    promoter_rising: { weight: 5 },
+    pledge: { weight: 5, t1: 5, t2: 10, t3: 15, t4: 20 },
+    fii_qoq: { weight: 10, threshold: 0.3 },
+    fii_rising: { weight: 10 },
+    dii_mf_qoq: { weight: 10, threshold: 0.1 },
+    dii_mf_rising: { weight: 10 },
+    yearly_holding_rising: { weight: 5 },
+    insider_activity: { weight: 10 },
+  },
+};
+
+const handwrittenFactorMeta = {
+  technical: [
+    ["bb_width", "Upper BB - Lower BB", "BB width ≤ editable threshold", ["threshold"]],
+    ["atr5_lt20", "5-day ATR% average < 20-day ATR% average", "ATR contraction", []],
+    ["atr10_lt20", "10-day ATR% average < 20-day ATR% average", "ATR contraction", []],
+    ["rsi14", "RSI (14)", "Handwritten RSI bands; exact point allocation is not fully legible in the supplied photo, so this factor is disabled by default until confirmed", ["lower", "preferred", "upper"]],
+    ["volume10_gt20", "10-day volume average > 20-day volume average", "Volume expansion", []],
+    ["volume20_lt40", "20-day volume average < 40-day volume average", "Longer-volume comparison", []],
+    ["distance52", "Distance from 52-week high", "Handwritten 10 / 17 / 20% distance bands", ["t1", "t2", "t3"]],
+    ["ema20_gt50", "20 EMA > 50 EMA", "EMA trend factor", []],
+    ["ema50_gt150", "50 EMA > 150 EMA", "EMA trend factor", []],
+  ],
+  fundamental: [
+    ["q_eps_yoy", "Latest quarter EPS (YoY)", "Latest quarterly EPS YoY growth", ["threshold"]],
+    ["q_eps_rising", "Quarterly EPS rising", "Latest EPS > prior EPS > second-prior EPS", []],
+    ["q_eps_yoy_rising", "Quarterly EPS YoY trend rising", "Latest YoY > prior YoY > second-prior YoY", []],
+    ["q_pat_yoy", "Latest quarter PAT (YoY)", "Latest quarterly PAT YoY growth", ["threshold"]],
+    ["q_pat_rising", "Quarterly PAT rising", "Latest PAT > prior PAT > second-prior PAT", []],
+    ["q_pat_yoy_rising", "Quarterly PAT YoY trend rising", "Latest YoY > prior YoY > second-prior YoY", []],
+    ["q_npm_yoy", "Quarterly Net Profit Margin growth (YoY)", "Latest NPM vs year-ago quarter", ["threshold"]],
+    ["q_sales_yoy", "Latest quarter Sales (YoY)", "Latest quarterly sales YoY growth", ["threshold"]],
+    ["q_sales_rising", "Quarterly Sales rising", "Latest sales > prior sales > second-prior sales", []],
+    ["a_eps_yoy", "Latest year EPS (YoY)", "Latest annual EPS growth", ["threshold"]],
+    ["a_eps_rising", "Annual EPS rising", "Latest EPS > prior year > second-prior year", []],
+    ["a_pat_yoy", "Latest year PAT (YoY)", "Latest annual PAT growth", ["threshold"]],
+    ["a_pat_rising", "Annual PAT rising", "Latest PAT > prior year > second-prior year", []],
+    ["a_sales_yoy", "Latest year Sales (YoY)", "Latest annual sales growth", ["threshold"]],
+    ["a_sales_rising", "Annual Sales rising", "Latest sales > prior year > second-prior year", []],
+  ],
+  ownership: [
+    ["promoter_qoq", "Promoter holding change (QoQ)", "Latest quarter promoter change", ["threshold"]],
+    ["promoter_above", "Promoter holding", "Promoter holding above editable level", ["threshold"]],
+    ["promoter_rising", "Promoter holding rising", "Latest holding > previous holding", []],
+    ["pledge", "Promoter holding pledge", "Handwritten pledge bands: <5, 5-10, 10-15, 15-20, >20", ["t1", "t2", "t3", "t4"]],
+    ["fii_qoq", "FII holding change (QoQ)", "Latest quarter FII change", ["threshold"]],
+    ["fii_rising", "FII holding rising", "Latest FII holding > previous holding", []],
+    ["dii_mf_qoq", "DII / MF holding change (QoQ)", "Latest DII/MF change", ["threshold"]],
+    ["dii_mf_rising", "DII / MF holding rising", "Latest holding > previous holding", []],
+    ["yearly_holding_rising", "Yearly holding rising", "Latest yearly holding > previous year", []],
+    ["insider_activity", "Insider activity", "Repeated buy / repeated sell factor", []],
+  ],
+};
+
 const readLocalObject = (key, fallback) => {
   try {
     const value = JSON.parse(localStorage.getItem(key));
@@ -94,6 +183,13 @@ function App() {
       fundamental: { ...defaultRankingSubweights.fundamental, ...(saved.fundamental || {}) },
       ownership: { ...defaultRankingSubweights.ownership, ...(saved.ownership || {}) },
     };
+  });
+  const [handwrittenFactors, setHandwrittenFactors] = useState(() => {
+    const saved = readLocalObject("handwrittenFactors", {});
+    const mergeGroup = (group) => Object.fromEntries(
+      Object.entries(defaultHandwrittenFactors[group]).map(([key, defaults]) => [key, { ...defaults, ...((saved[group] || {})[key] || {}) }])
+    );
+    return { technical: mergeGroup("technical"), fundamental: mergeGroup("fundamental"), ownership: mergeGroup("ownership") };
   });
   const [showRankingDetails, setShowRankingDetails] = useState(true);
   const [chartOverlays, setChartOverlays] = useState({
@@ -683,35 +779,138 @@ function App() {
     : null;
   const currency = exchange === "US" ? "$" : "₹";
 
-  // Keep the visible ranking consistent with the verified RS result used by the
-  // Relative Strength panel. If benchmark overlap is unavailable, exclude the
-  // RS category instead of displaying a score that still contains an RS value.
+  // Final client ranking: calculate the visible score only from the factors in
+  // the handwritten sheets. Missing source fields are excluded rather than
+  // guessed; Indian fundamental data remains a required category when weighted.
   const dashboardView = (() => {
     if (!dashboard) return null;
-    if (technicalSummary?.rs_available !== false || dashboard.score == null) return dashboard;
 
-    const components = { ...(dashboard.score_components || {}) };
-    components.relative_strength = null;
-    const weights = dashboard.score_weights || {};
+    const finite = (value) => {
+      const n = Number(value);
+      return Number.isFinite(n) ? n : null;
+    };
+    const isRising3 = (a, b, c) => [a,b,c].every((v) => finite(v) != null) && Number(a) > Number(b) && Number(b) > Number(c);
+    const factorScore = (group, rawScores) => {
+      let points = 0;
+      let weights = 0;
+      Object.entries(rawScores).forEach(([key, score]) => {
+        const weight = Number(handwrittenFactors[group]?.[key]?.weight) || 0;
+        if (weight <= 0 || score == null || !Number.isFinite(Number(score))) return;
+        points += Number(score) * weight;
+        weights += weight;
+      });
+      return weights > 0 ? Math.max(0, Math.min(100, points / weights)) : null;
+    };
+
+    const tech = handwrittenFactors.technical;
+    const em = technicalSummary?.ema || {};
+    const d52 = finite(technicalSummary?.distance_from_52w_high_percent);
+    let distanceScore = null;
+    if (d52 != null) {
+      const cfg = tech.distance52;
+      const rawPoints = d52 <= Number(cfg.t1) ? Number(cfg.p1) : d52 <= Number(cfg.t2) ? Number(cfg.p2) : d52 <= Number(cfg.t3) ? Number(cfg.p3) : Number(cfg.p4);
+      distanceScore = Number(cfg.p1) > 0 ? (rawPoints / Number(cfg.p1)) * 100 : 0;
+    }
+    // The handwritten RSI thresholds are visible, but the exact point allocation
+    // is not fully legible in the supplied photo.  Do not invent it.
+    const rsiScore = null;
+    const technicalComponent = factorScore("technical", {
+      bb_width: finite(technicalSummary?.bollinger_width_percent) == null ? null : (Number(technicalSummary.bollinger_width_percent) <= Number(tech.bb_width.threshold) ? 100 : 0),
+      atr5_lt20: finite(technicalSummary?.average_atr_percent_5) == null || finite(technicalSummary?.average_atr_percent_20) == null ? null : (Number(technicalSummary.average_atr_percent_5) < Number(technicalSummary.average_atr_percent_20) ? 100 : 0),
+      atr10_lt20: finite(technicalSummary?.average_atr_percent_10) == null || finite(technicalSummary?.average_atr_percent_20) == null ? null : (Number(technicalSummary.average_atr_percent_10) < Number(technicalSummary.average_atr_percent_20) ? 100 : 0),
+      rsi14: rsiScore,
+      volume10_gt20: finite(technicalSummary?.average_volume_10) == null || finite(technicalSummary?.average_volume_20) == null ? null : (Number(technicalSummary.average_volume_10) > Number(technicalSummary.average_volume_20) ? 100 : 0),
+      volume20_lt40: finite(technicalSummary?.average_volume_20) == null || finite(technicalSummary?.average_volume_40) == null ? null : (Number(technicalSummary.average_volume_20) < Number(technicalSummary.average_volume_40) ? 100 : 0),
+      distance52: distanceScore,
+      ema20_gt50: finite(em["20"]) == null || finite(em["50"]) == null ? null : (Number(em["20"]) > Number(em["50"]) ? 100 : 0),
+      ema50_gt150: finite(em["50"]) == null || finite(em["150"]) == null ? null : (Number(em["50"]) > Number(em["150"]) ? 100 : 0),
+    });
+
+    const q = Array.isArray(fundamentalHistory?.quarterly) ? fundamentalHistory.quarterly : [];
+    const a = Array.isArray(fundamentalHistory?.annual) ? fundamentalHistory.annual : [];
+    const fcfg = handwrittenFactors.fundamental;
+    let qNpmGrowth = null;
+    if (q.length >= 5 && finite(q[0]?.npm) != null && finite(q[4]?.npm) != null && Number(q[4].npm) !== 0) {
+      qNpmGrowth = ((Number(q[0].npm) - Number(q[4].npm)) / Math.abs(Number(q[4].npm))) * 100;
+    }
+    const comparable = (field) => q.map((row) => finite(row?.[field])).filter((v) => v != null).slice(0, 3);
+    const fundamentalComponent = factorScore("fundamental", {
+      q_eps_yoy: finite(q[0]?.yoy_eps) == null ? null : (Number(q[0].yoy_eps) > Number(fcfg.q_eps_yoy.threshold) ? 100 : 0),
+      q_eps_rising: q.length < 3 ? null : (isRising3(q[0]?.eps, q[1]?.eps, q[2]?.eps) ? 100 : 0),
+      q_eps_yoy_rising: comparable("yoy_eps").length < 3 ? null : (isRising3(...comparable("yoy_eps")) ? 100 : 0),
+      q_pat_yoy: finite(q[0]?.yoy_pat) == null ? null : (Number(q[0].yoy_pat) > Number(fcfg.q_pat_yoy.threshold) ? 100 : 0),
+      q_pat_rising: q.length < 3 ? null : (isRising3(q[0]?.pat, q[1]?.pat, q[2]?.pat) ? 100 : 0),
+      q_pat_yoy_rising: comparable("yoy_pat").length < 3 ? null : (isRising3(...comparable("yoy_pat")) ? 100 : 0),
+      q_npm_yoy: qNpmGrowth == null ? null : (qNpmGrowth > Number(fcfg.q_npm_yoy.threshold) ? 100 : 0),
+      q_sales_yoy: finite(q[0]?.yoy_sales) == null ? null : (Number(q[0].yoy_sales) > Number(fcfg.q_sales_yoy.threshold) ? 100 : 0),
+      q_sales_rising: q.length < 3 ? null : (isRising3(q[0]?.sales, q[1]?.sales, q[2]?.sales) ? 100 : 0),
+      a_eps_yoy: finite(a[0]?.yoy_eps) == null ? null : (Number(a[0].yoy_eps) > Number(fcfg.a_eps_yoy.threshold) ? 100 : 0),
+      a_eps_rising: a.length < 3 ? null : (isRising3(a[0]?.eps, a[1]?.eps, a[2]?.eps) ? 100 : 0),
+      a_pat_yoy: finite(a[0]?.yoy_pat) == null ? null : (Number(a[0].yoy_pat) > Number(fcfg.a_pat_yoy.threshold) ? 100 : 0),
+      a_pat_rising: a.length < 3 ? null : (isRising3(a[0]?.pat, a[1]?.pat, a[2]?.pat) ? 100 : 0),
+      a_sales_yoy: finite(a[0]?.yoy_sales) == null ? null : (Number(a[0].yoy_sales) > Number(fcfg.a_sales_yoy.threshold) ? 100 : 0),
+      a_sales_rising: a.length < 3 ? null : (isRising3(a[0]?.sales, a[1]?.sales, a[2]?.sales) ? 100 : 0),
+    });
+
+    let ownershipComponent = null;
+    if (exchange !== "US" && Array.isArray(indiaShareholding?.history) && indiaShareholding.history.length) {
+      const h = indiaShareholding.history;
+      const latestH = h[0] || {};
+      const prevH = h[1] || {};
+      const yearAgoH = h[4] || {};
+      const ocfg = handwrittenFactors.ownership;
+      const diiMfNow = [finite(latestH.dii), finite(latestH.mutual_funds)].filter((v) => v != null);
+      const diiMfPrev = [finite(prevH.dii), finite(prevH.mutual_funds)].filter((v) => v != null);
+      const diiMfChange = [finite(latestH.dii_change), finite(latestH.mutual_funds_change)].filter((v) => v != null);
+      const nowSum = diiMfNow.length ? diiMfNow.reduce((x,y) => x+y, 0) : null;
+      const prevSum = diiMfPrev.length ? diiMfPrev.reduce((x,y) => x+y, 0) : null;
+      const changeSum = diiMfChange.length ? diiMfChange.reduce((x,y) => x+y, 0) : null;
+      ownershipComponent = factorScore("ownership", {
+        promoter_qoq: finite(latestH.promoter_change) == null ? null : (Number(latestH.promoter_change) > Number(ocfg.promoter_qoq.threshold) ? 100 : 0),
+        promoter_above: finite(latestH.promoter) == null ? null : (Number(latestH.promoter) > Number(ocfg.promoter_above.threshold) ? 100 : 0),
+        promoter_rising: finite(latestH.promoter) == null || finite(prevH.promoter) == null ? null : (Number(latestH.promoter) > Number(prevH.promoter) ? 100 : 0),
+        pledge: null,
+        fii_qoq: finite(latestH.fii_change) == null ? null : (Number(latestH.fii_change) > Number(ocfg.fii_qoq.threshold) ? 100 : 0),
+        fii_rising: finite(latestH.fii) == null || finite(prevH.fii) == null ? null : (Number(latestH.fii) > Number(prevH.fii) ? 100 : 0),
+        dii_mf_qoq: changeSum == null ? null : (changeSum > Number(ocfg.dii_mf_qoq.threshold) ? 100 : 0),
+        dii_mf_rising: nowSum == null || prevSum == null ? null : (nowSum > prevSum ? 100 : 0),
+        yearly_holding_rising: finite(latestH.promoter) == null || finite(yearAgoH.promoter) == null ? null : (Number(latestH.promoter) > Number(yearAgoH.promoter) ? 100 : 0),
+        insider_activity: null,
+      });
+    } else if (exchange === "US") {
+      // The handwritten Ownership sheet specifically uses Promoter/FII/DII-MF/
+      // pledge/history factors. Yahoo's US holder tables are not equivalent to
+      // those categories, so the ownership score is intentionally unavailable
+      // instead of mapping unlike data.
+      ownershipComponent = null;
+    }
+
+    const components = {
+      technical: technicalComponent,
+      fundamental: fundamentalComponent,
+      relative_strength: technicalSummary?.rs_available === false ? null : finite(technicalSummary?.rs_rating),
+      ownership: ownershipComponent,
+    };
+    const enteredTotal = Object.values(scoreWeights).reduce((sum, value) => sum + Math.max(0, Number(value) || 0), 0);
+    const normalizedWeights = Object.fromEntries(Object.entries(scoreWeights).map(([key,value]) => [key, enteredTotal > 0 ? Math.max(0, Number(value) || 0) / enteredTotal * 100 : 0]));
     let points = 0;
     let availableWeight = 0;
-    Object.entries(weights).forEach(([key, weightValue]) => {
+    Object.entries(normalizedWeights).forEach(([key, weight]) => {
       const value = components[key];
-      const weight = Number(weightValue);
-      if (value == null || !Number.isFinite(Number(value)) || !Number.isFinite(weight) || weight <= 0) return;
+      if (weight <= 0 || value == null || !Number.isFinite(Number(value))) return;
       points += Number(value) * weight;
       availableWeight += weight;
     });
-
-    const missingIndianRequired = exchange !== "US" && (dashboard.missing_required_score_categories || []).length > 0;
-    const score = missingIndianRequired || availableWeight <= 0 ? null : Math.max(0, Math.min(100, Math.round(points / availableWeight)));
+    const missingIndianFundamental = exchange !== "US" && normalizedWeights.fundamental > 0 && fundamentalComponent == null;
+    const score = missingIndianFundamental || availableWeight <= 0 ? null : Math.max(0, Math.min(100, Math.round(points / availableWeight)));
     const signal = score == null ? "Insufficient Data" : score >= 70 ? "Buy" : score >= 45 ? "Watch" : "Sell";
     return {
       ...dashboard,
-      score,
-      signal,
+      score, signal,
       score_coverage_percent: Math.round(availableWeight),
       score_components: components,
+      score_weights: normalizedWeights,
+      handwritten_ranking: true,
     };
   })();
 
@@ -972,7 +1171,7 @@ function App() {
               <div className="ranking-settings-header">
                 <div>
                   <h2>Ranking Weight Settings (US)</h2>
-                  <p>Customize the broad ranking categories first, then fine-tune the parameters inside each category.</p>
+                  <p>Customize the broad ranking categories, then use only the client's handwritten factors below.</p>
                 </div>
                 <div className="ranking-total-badge">
                   <span>Entered total</span>
@@ -1014,68 +1213,90 @@ function App() {
               <div className="ranking-actions">
                 <button className="ranking-primary-button" onClick={() => {
                   localStorage.setItem("scoreWeights", JSON.stringify(scoreWeights));
-                  localStorage.setItem("rankingSubweights", JSON.stringify(rankingSubweights));
+                  localStorage.setItem("handwrittenFactors", JSON.stringify(handwrittenFactors));
                   localStorage.setItem("rsWeights", JSON.stringify(rsWeights));
                   localStorage.setItem("rsVisibility", JSON.stringify(rsVisibility));
                   loadDashboard();
                   loadTechnicalSummary();
                 }}>Apply Ranking</button>
                 <button type="button" className="secondary-button ranking-secondary-button" onClick={() => setShowRankingDetails((v) => !v)}>
-                  {showRankingDetails ? "Hide Parameters" : "Show Parameters"}
+                  {showRankingDetails ? "Hide Factors" : "Show Factors"}
                 </button>
                 <button type="button" className="secondary-button ranking-secondary-button" onClick={() => {
                   setScoreWeights({ ...defaultScoreWeights });
-                  setRankingSubweights({
-                    technical: { ...defaultRankingSubweights.technical },
-                    fundamental: { ...defaultRankingSubweights.fundamental },
-                    ownership: { ...defaultRankingSubweights.ownership },
-                  });
+                  setHandwrittenFactors(JSON.parse(JSON.stringify(defaultHandwrittenFactors)));
                   localStorage.removeItem("scoreWeights");
-                  localStorage.removeItem("rankingSubweights");
+                  localStorage.removeItem("handwrittenFactors");
                 }}>Reset Defaults</button>
               </div>
 
               <div className="ranking-help-note">
-                <strong>How weighting works:</strong> values do not need to total 100. The screener normalizes them automatically. Set any category or parameter to 0 to disable it. Breakout/VCP remains an analysis tool and is not part of the final ranking.
+                <strong>How weighting works:</strong> only the factors from the client's handwritten sheets are used here. Category and factor weightages are customizable and normalized automatically. Set a factor to 0 to disable it. Breakout/VCP remains analysis-only and is not a final-ranking category.
               </div>
 
               {showRankingDetails && (
-                <div className="ranking-detail-grid">
+                <div className="ranking-detail-grid handwritten-factor-grid">
                   {[
-                    ["technical", "Technical parameters", "Signals used to score trend quality", [["ema20","Price above EMA20","Short-term trend"],["ema50","Price above EMA50","Intermediate trend"],["ema150","Price above EMA150","Long-term trend"],["ema200","Price above EMA200","Primary long-term trend"],["rsi","RSI condition","Momentum confirmation"]]],
-                    ["fundamental", "Fundamental parameters", "Financial quality inputs used by the ranking", [["eps","Positive EPS","Profitable on a per-share basis"],["net_income","Positive Net Income","Company-level profitability"],["profit_margin","Profit Margin","Efficiency of converting sales to profit"],["roe","ROE","Return on shareholder equity"],["roa","ROA","Return generated from assets"]]],
-                    ["ownership", "Ownership parameters", "Investor-positioning inputs", [["institution","Institutional Ownership","Professional/institutional participation"],["insider","Insider Ownership","Management and insider alignment"]]],
-                  ].map(([group, title, subtitle, fields]) => (
+                    ["technical", "Technical factors", "Only the technical factors from the handwritten sheet"],
+                    ["fundamental", "Fundamental factors", "Quarterly and annual growth factors from the handwritten sheet"],
+                    ["ownership", "Ownership factors", "Promoter / FII / DII-MF / pledge / insider factors from the handwritten sheet"],
+                  ].map(([group, title, subtitle]) => (
                     <div className="ranking-detail-card" key={group}>
                       <div className="ranking-detail-card-header">
                         <div>
                           <h3>{title}</h3>
                           <p>{subtitle}</p>
                         </div>
-                        <span>{Object.values(rankingSubweights[group]).reduce((sum, value) => sum + (Number(value) || 0), 0)} total</span>
+                        <span>{Object.values(handwrittenFactors[group]).reduce((sum, item) => sum + (Number(item.weight) || 0), 0)} weight</span>
                       </div>
                       <div className="ranking-parameter-list">
-                        {fields.map(([key,label,description]) => {
-                          const value = Number(rankingSubweights[group][key]) || 0;
+                        {handwrittenFactorMeta[group].map(([key, label, description, editableValues]) => {
+                          const factor = handwrittenFactors[group][key];
+                          const factorWeight = Number(factor?.weight) || 0;
                           return (
-                            <div className={`ranking-parameter-row ${value === 0 ? "is-disabled" : ""}`} key={key}>
+                            <div className={`ranking-parameter-row handwritten-factor-row ${factorWeight === 0 ? "is-disabled" : ""}`} key={key}>
                               <div className="ranking-parameter-copy">
                                 <strong>{label}</strong>
                                 <small>{description}</small>
+                                {editableValues.length > 0 && (
+                                  <div className="factor-value-grid">
+                                    {editableValues.map((valueKey) => (
+                                      <label key={valueKey}>
+                                        <span>{valueKey === "threshold" ? "Value" : valueKey.toUpperCase()}</span>
+                                        <input
+                                          aria-label={`${label} ${valueKey}`}
+                                          type="number"
+                                          step="0.1"
+                                          value={factor[valueKey]}
+                                          onChange={(e) => setHandwrittenFactors((prev) => ({
+                                            ...prev,
+                                            [group]: {
+                                              ...prev[group],
+                                              [key]: { ...prev[group][key], [valueKey]: Number(e.target.value) },
+                                            },
+                                          }))}
+                                        />
+                                      </label>
+                                    ))}
+                                  </div>
+                                )}
                               </div>
                               <div className="weight-input-wrap parameter-weight-input">
                                 <input
-                                  aria-label={`${label} parameter weight`}
+                                  aria-label={`${label} weight`}
                                   type="number"
                                   min="0"
                                   step="1"
-                                  value={rankingSubweights[group][key]}
-                                  onChange={(e) => setRankingSubweights((prev) => ({
+                                  value={factor.weight}
+                                  onChange={(e) => setHandwrittenFactors((prev) => ({
                                     ...prev,
-                                    [group]: { ...prev[group], [key]: Math.max(0, Number(e.target.value) || 0) },
+                                    [group]: {
+                                      ...prev[group],
+                                      [key]: { ...prev[group][key], weight: Math.max(0, Number(e.target.value) || 0) },
+                                    },
                                   }))}
                                 />
-                                <span>%</span>
+                                <span>w</span>
                               </div>
                             </div>
                           );

@@ -685,7 +685,9 @@ def get_technical_summary(
         bearish = all(available_emas[i] < available_emas[i + 1] for i in range(len(available_emas) - 1))
         ema_alignment = "Bullish" if bullish else "Bearish" if bearish else "Mixed"
 
+    avg_volume_10 = sum(volumes[-10:]) / 10 if len(volumes) >= 10 else None
     avg_volume_20 = sum(volumes[-20:]) / 20
+    avg_volume_40 = sum(volumes[-40:]) / 40 if len(volumes) >= 40 else None
     avg_volume_50 = sum(volumes[-50:]) / 50 if len(volumes) >= 50 else None
     volume_ratio = (volumes[-1] / avg_volume_20) if avg_volume_20 else None
     volume_ratio_50 = (volumes[-1] / avg_volume_50) if avg_volume_50 else None
@@ -716,6 +718,22 @@ def get_technical_summary(
         true_ranges.append(max(highs[i] - lows[i], abs(highs[i] - prev_close), abs(lows[i] - prev_close)))
     atr14 = _rma(true_ranges, 14)
     atr_percent = (atr14 / closes[-1] * 100) if atr14 is not None and closes[-1] else None
+
+    # Handwritten client ranking factors compare short ATR% averages with a
+    # 20-period ATR% average.  Expose the raw comparable values so the UI can
+    # score exactly those factors without inventing hidden inputs.
+    atr_percent_series = [
+        (true_ranges[i] / closes[i] * 100) if closes[i] else None
+        for i in range(len(true_ranges))
+    ]
+    def _tail_average(values, period):
+        usable = [v for v in values[-period:] if v is not None]
+        return (sum(usable) / len(usable)) if len(usable) == period else None
+
+    avg_atr_percent_5 = _tail_average(atr_percent_series, 5)
+    avg_atr_percent_10 = _tail_average(atr_percent_series, 10)
+    avg_atr_percent_20 = _tail_average(atr_percent_series, 20)
+    rsi14 = _rsi(closes, 14)
 
     recent20 = closes[-20:]
     sma20 = sum(recent20) / 20
@@ -842,7 +860,9 @@ def get_technical_summary(
         "timeframe": timeframe,
         "ema": {key: (round(value, 2) if value is not None else None) for key, value in emas.items()},
         "ema_alignment": ema_alignment,
+        "average_volume_10": round(avg_volume_10, 2) if avg_volume_10 is not None else None,
         "average_volume_20": round(avg_volume_20, 2),
+        "average_volume_40": round(avg_volume_40, 2) if avg_volume_40 is not None else None,
         "average_volume_50": round(avg_volume_50, 2) if avg_volume_50 is not None else None,
         "volume_ratio": round(volume_ratio, 2) if volume_ratio is not None else None,
         "volume_ratio_50": round(volume_ratio_50, 2) if volume_ratio_50 is not None else None,
@@ -850,6 +870,10 @@ def get_technical_summary(
         "adr_percent": round(adr_percent, 2) if adr_percent is not None else None,
         "atr_14": round(atr14, 2) if atr14 is not None else None,
         "atr_percent": round(atr_percent, 2) if atr_percent is not None else None,
+        "average_atr_percent_5": round(avg_atr_percent_5, 2) if avg_atr_percent_5 is not None else None,
+        "average_atr_percent_10": round(avg_atr_percent_10, 2) if avg_atr_percent_10 is not None else None,
+        "average_atr_percent_20": round(avg_atr_percent_20, 2) if avg_atr_percent_20 is not None else None,
+        "rsi_14": round(rsi14, 2) if rsi14 is not None else None,
         "bollinger_width_percent": round(bb_width, 2) if bb_width is not None else None,
         "range_20d_percent": round(range20, 2) if range20 is not None else None,
         "distance_from_52w_high_percent": round(distance_52w_high, 2) if distance_52w_high is not None else None,
