@@ -1981,79 +1981,120 @@ function App() {
           </section>
         )}
 
-{exchange === "US" && ownershipDetails && (
-          <section className="fundamental-section">
-            <h2>Ownership Detail</h2>
-            <div className="chart-note">Holder tables show the provider's latest reported date and provider-reported position change when available. For Yahoo holder tables, Change means proportional change in the holder's share position; it is not a quarter-over-quarter change in ownership percentage points. Unavailable history is not estimated.</div>
-            {ownershipDetails.provider_note && (
-              <div className="provider-warning">{ownershipDetails.provider_note}</div>
-            )}
+{exchange === "US" && ownershipDetails && (() => {
+          const institutionRows = ownershipDetails.institutional_holders || [];
+          const mutualRows = ownershipDetails.mutual_fund_holders || [];
 
-            <h3>Top Institutional Holders</h3>
-            <div className="history-table-wrapper">
-              <table className="history-table">
-                <thead><tr><th>Holder</th><th>Report Date</th><th>Shares</th><th>Value</th><th>% Held</th><th>Provider Change</th></tr></thead>
-                <tbody>
-                  {(ownershipDetails.institutional_holders || []).slice(0, 5).map((row, index) => (
-                    <tr key={index}>
-                      <td>{row.Holder || row.holder || "-"}</td>
-                      <td>{row["Date Reported"] ? String(row["Date Reported"]).slice(0, 10) : (row.dateReported ? String(row.dateReported).slice(0, 10) : "-")}</td>
-                      <td>{row.Shares != null ? Number(row.Shares).toLocaleString() : "-"}</td>
-                      <td>{row.Value != null ? Number(row.Value).toLocaleString() : "-"}</td>
-                      <td>{row.pctHeld != null ? `${(Number(row.pctHeld) * 100).toFixed(2)}%` : (row["% Out"] ?? "-")}</td>
-                      <td>{row.pctChange != null ? `${(Number(row.pctChange) * 100).toFixed(2)}%` : (row["% Change"] ?? "-")}</td>
-                    </tr>
-                  ))}
-                  {(!ownershipDetails.institutional_holders || ownershipDetails.institutional_holders.length === 0) && (
-                    <tr><td colSpan="6">No institutional-holder rows returned by the configured provider.</td></tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+          const rowDate = (row) => {
+            const value = row?.["Date Reported"] ?? row?.dateReported ?? row?.date ?? null;
+            return value ? String(value).slice(0, 10) : null;
+          };
 
-            <h3>Top Mutual Fund Holders</h3>
-            <div className="history-table-wrapper">
-              <table className="history-table">
-                <thead><tr><th>Holder</th><th>Report Date</th><th>Shares</th><th>Value</th><th>% Held</th><th>Provider Change</th></tr></thead>
-                <tbody>
-                  {(ownershipDetails.mutual_fund_holders || []).slice(0, 5).map((row, index) => (
-                    <tr key={index}>
-                      <td>{row.Holder || row.holder || "-"}</td>
-                      <td>{row["Date Reported"] ? String(row["Date Reported"]).slice(0, 10) : (row.dateReported ? String(row.dateReported).slice(0, 10) : "-")}</td>
-                      <td>{row.Shares != null ? Number(row.Shares).toLocaleString() : "-"}</td>
-                      <td>{row.Value != null ? Number(row.Value).toLocaleString() : "-"}</td>
-                      <td>{row.pctHeld != null ? `${(Number(row.pctHeld) * 100).toFixed(2)}%` : (row["% Out"] ?? "-")}</td>
-                      <td>{row.pctChange != null ? `${(Number(row.pctChange) * 100).toFixed(2)}%` : (row["% Change"] ?? "-")}</td>
-                    </tr>
-                  ))}
-                  {(!ownershipDetails.mutual_fund_holders || ownershipDetails.mutual_fund_holders.length === 0) && (
-                    <tr><td colSpan="6">No mutual-fund holder rows returned by the configured provider.</td></tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+          const pctHeld = (row) => {
+            if (row?.pctHeld != null) return Number(row.pctHeld) * 100;
+            const raw = row?.["% Out"];
+            if (raw == null) return null;
+            const numeric = Number(String(raw).replace("%", ""));
+            return Number.isFinite(numeric) ? numeric : null;
+          };
 
-            <h3>Recent Insider Transactions</h3>
-            <div className="history-table-wrapper">
-              <table className="history-table">
-                <thead><tr><th>Insider</th><th>Position</th><th>Transaction</th><th>Shares</th></tr></thead>
-                <tbody>
-                  {(ownershipDetails.insider_transactions || []).slice(0, 5).map((row, index) => (
-                    <tr key={index}>
-                      <td>{row.Insider || row.insider || row.Name || "-"}</td>
-                      <td>{row.Position || row.position || "-"}</td>
-                      <td>{row.Transaction || row.transaction || row.Text || "-"}</td>
-                      <td>{row.Shares != null ? Number(row.Shares).toLocaleString() : "-"}</td>
+          const reportDates = Array.from(new Set([
+            ...institutionRows.map(rowDate),
+            ...mutualRows.map(rowDate),
+          ].filter(Boolean))).sort().slice(-4);
+
+          const sumForDate = (rows, date) => {
+            const values = rows
+              .filter((row) => rowDate(row) === date)
+              .map(pctHeld)
+              .filter((value) => value != null && Number.isFinite(value));
+            if (!values.length) return null;
+            return values.reduce((sum, value) => sum + value, 0);
+          };
+
+          const institutionCurrent = fundamentals?.ownership?.institution_percent != null
+            ? Number(fundamentals.ownership.institution_percent) * 100
+            : null;
+          const insiderCurrent = fundamentals?.ownership?.insider_percent != null
+            ? Number(fundamentals.ownership.insider_percent) * 100
+            : null;
+          const otherCurrent = institutionCurrent != null && insiderCurrent != null
+            ? Math.max(0, 100 - institutionCurrent - insiderCurrent)
+            : null;
+
+          const ownershipRows = [
+            {
+              label: "Institutional",
+              values: reportDates.map((date) => sumForDate(institutionRows, date)),
+              current: institutionCurrent,
+            },
+            {
+              label: "Mutual Funds",
+              values: reportDates.map((date) => sumForDate(mutualRows, date)),
+              current: null,
+            },
+            {
+              label: "Insider",
+              values: reportDates.map(() => null),
+              current: insiderCurrent,
+            },
+            {
+              label: "Others / Public",
+              values: reportDates.map(() => null),
+              current: otherCurrent,
+            },
+          ];
+
+          return (
+            <section className="fundamental-section">
+              <h2>Ownership Detail</h2>
+              <div className="chart-note">
+                Ownership is shown in the requested date-across-columns format. For US Yahoo data,
+                historical aggregate ownership by quarter is not provided. Historical Institutional
+                and Mutual Fund cells therefore summarize only the provider-returned top-holder rows
+                for each report date; Current uses the available aggregate ownership percentages.
+                Missing values are left blank rather than estimated.
+              </div>
+
+              {ownershipDetails.provider_note && (
+                <div className="provider-warning">{ownershipDetails.provider_note}</div>
+              )}
+
+              <h3>Ownership by Report Date</h3>
+              <div className="history-table-wrapper">
+                <table className="history-table ownership-matrix-table">
+                  <thead>
+                    <tr>
+                      <th>Ownership Type</th>
+                      {reportDates.map((date) => (
+                        <th key={date}>{date}</th>
+                      ))}
+                      <th>Current</th>
                     </tr>
-                  ))}
-                  {(!ownershipDetails.insider_transactions || ownershipDetails.insider_transactions.length === 0) && (
-                    <tr><td colSpan="4">No insider transaction rows returned by the configured provider.</td></tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </section>
-        )}
+                  </thead>
+                  <tbody>
+                    {ownershipRows.map((row) => (
+                      <tr key={row.label}>
+                        <td><strong>{row.label}</strong></td>
+                        {row.values.map((value, index) => (
+                          <td key={`${row.label}-${reportDates[index] || index}`}>
+                            {value != null ? `${value.toFixed(2)}%` : "-"}
+                          </td>
+                        ))}
+                        <td>{row.current != null ? `${row.current.toFixed(2)}%` : "-"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="chart-note">
+                “Institutional” and “Mutual Funds” historical cells are sums of the displayed provider holder rows for that report date,
+                not an estimated total market ownership history.
+              </div>
+            </section>
+          );
+        })()}
 
         {exchange === "US" && fundamentalHistory && (
           <section className="fundamental-section">
