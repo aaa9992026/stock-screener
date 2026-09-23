@@ -1546,6 +1546,39 @@ function App() {
               );
             })}
           </div>
+
+          {technicalSummary?.rs_comparison?.rows?.length > 0 && (
+            <div className="table-card rs-comparison-table">
+              <h3>Relative Strength Return Comparison</h3>
+              <div className="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Relative Strength</th>
+                      {(technicalSummary.rs_comparison.periods || []).map((period) => (
+                        <th key={period}>{period.toUpperCase()}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {technicalSummary.rs_comparison.rows.map((row) => (
+                      <tr key={row.key}>
+                        <td>
+                          <strong>{row.label}</strong>
+                          {row.name ? <small style={{ display: "block" }}>{row.name}</small> : null}
+                        </td>
+                        {(technicalSummary.rs_comparison.periods || []).map((period) => (
+                          <td key={period}>{formatPctChange(row.returns?.[period])}</td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="chart-note">{technicalSummary.rs_comparison.method}</div>
+            </div>
+          )}
+
           <div className="chart-note">
             RS line = stock price / broad-market benchmark, rebased to 100 for charting only. Relative Return = Stock Return % - Benchmark Return % and is independent of the editable RS weights. The weights change only the Final RS Score. Each stock percentile uses the client-required fixed total of 5,000 stocks: [(stocks with lower relative return) + 0.5 × (stocks with equal relative return)] × 100 / 5000. Final RS Score uses the enabled weighted percentile components. Default period weights remain 1W×0.30 + 1M×0.25 + 3M×0.20 + 6M×0.15 + 12M×0.10. 2W, 2M, and Sector RS are optional with default weight 0.
           </div>
@@ -1588,8 +1621,54 @@ function App() {
               <div className="metric"><span>Breakout Strength</span><strong>{technicalSummary.breakout_strength != null ? `${technicalSummary.breakout_strength}/100` : "-"}</strong></div>
               <div className="metric"><span>Gap</span><strong>{technicalSummary.gap_percent != null ? `${technicalSummary.gap_percent}%` : "-"}</strong><small>{technicalSummary.gap_classification}</small></div>
               <div className="metric"><span>VCP Stage</span><strong>{technicalSummary.vcp_stage}</strong></div>
+              <div className="metric"><span>Std. Deviation Contraction</span><strong>{technicalSummary.vcp_standard_deviation_contraction == null ? "-" : technicalSummary.vcp_standard_deviation_contraction ? "Yes" : "No"}</strong></div>
+              <div className="metric"><span>Volume Contraction</span><strong>{technicalSummary.vcp_volume_contraction == null ? "-" : technicalSummary.vcp_volume_contraction ? "Yes" : "No"}</strong></div>
               <div className="metric"><span>Pattern</span><strong>{technicalSummary.pattern}</strong></div>
             </div>
+
+            {technicalSummary.vcp_contractions?.length > 0 && (
+              <>
+                <h3>VCP Contraction Detail</h3>
+                <div className="table-wrap">
+                  <table>
+                    <thead>
+                      <tr><th>Contraction</th><th>Price Depth</th><th>ATR %</th><th>Std Dev %</th><th>Avg Volume</th></tr>
+                    </thead>
+                    <tbody>
+                      {technicalSummary.vcp_contractions.map((item, index) => (
+                        <tr key={index}>
+                          <td>{index + 1}</td>
+                          <td>{item.depth_percent != null ? `${Number(item.depth_percent).toFixed(2)}%` : "-"}</td>
+                          <td>{item.atr_percent != null ? `${Number(item.atr_percent).toFixed(2)}%` : "-"}</td>
+                          <td>{item.standard_deviation_percent != null ? `${Number(item.standard_deviation_percent).toFixed(2)}%` : "-"}</td>
+                          <td>{item.average_volume != null ? Number(item.average_volume).toLocaleString() : "-"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+
+            <h3>Volume Delivery %</h3>
+            {technicalSummary.volume_delivery?.available ? (
+              <div className="fundamental-grid">
+                {[
+                  ["Day", technicalSummary.volume_delivery.day],
+                  ["Weekly", technicalSummary.volume_delivery.weekly],
+                  ["Monthly", technicalSummary.volume_delivery.monthly],
+                ].map(([label, item]) => (
+                  <div className="metric" key={label}>
+                    <span>{label}</span>
+                    <strong>{item?.percent != null ? `${Number(item.percent).toFixed(2)}%` : "-"}</strong>
+                    <small>Delivered {item?.delivered_quantity != null ? Number(item.delivered_quantity).toLocaleString() : "-"} / Traded {item?.traded_quantity != null ? Number(item.traded_quantity).toLocaleString() : "-"}</small>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="provider-warning">{technicalSummary.volume_delivery?.note || "Delivery percentage is unavailable from the current exchange provider."}</div>
+            )}
+
             <h3>EMA Alignment Values</h3>
             <div className="fundamental-grid">
               {[20, 30, 50, 100, 150, 200].map((period) => (

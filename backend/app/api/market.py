@@ -168,11 +168,16 @@ def _period_start_date(end_date, label):
     That percentage is the current candle's open-to-current-close change, not a
     trailing close-to-close return.
     """
+    if label == "1d":
+        return end_date
     if label == "1w":
         return end_date - timedelta(days=end_date.weekday())
     if label == "2w":
         monday = end_date - timedelta(days=end_date.weekday())
         return monday - timedelta(days=7)
+    if label == "3w":
+        monday = end_date - timedelta(days=end_date.weekday())
+        return monday - timedelta(days=14)
     if label == "1m":
         return end_date.replace(day=1)
     if label == "2m":
@@ -202,6 +207,137 @@ def _open_on_or_after(points, target_date):
         if close_value is not None:
             return trade_date, close_value
     return None
+
+
+def _period_returns_from_points(points, labels=("1d", "1w", "2w", "3w", "1m", "2m", "3m", "6m", "1y")):
+    """Return TradingView-style current-candle returns for comparison tables."""
+    if not points:
+        return {}
+    points = sorted(points, key=_point_date)
+    end_date = _point_date(points[-1])
+    end = _close_on_or_before(points, end_date)
+    if not end:
+        return {}
+    result = {}
+    for label in labels:
+        start = _open_on_or_after(points, _period_start_date(end_date, label))
+        if not start or start[1] in (None, 0):
+            result[label] = None
+            continue
+        result[label] = round(((end[1] / start[1]) - 1) * 100, 2)
+    return result
+
+
+def _yf_period_returns(ticker_symbol):
+    try:
+        hist = yf.Ticker(ticker_symbol).history(period="2y", interval="1d", auto_adjust=False)
+        points = [
+            (idx.date(), float(row["Open"]), float(row["Close"]))
+            for idx, row in hist.iterrows()
+            if row.get("Open") is not None and row.get("Close") is not None
+            and math.isfinite(float(row["Open"])) and math.isfinite(float(row["Close"]))
+        ]
+        return _period_returns_from_points(points)
+    except Exception:
+        return {}
+
+
+def _peer_group_period_returns(db, exchange, field_name, field_value):
+    """Average raw stock returns for the selected company's industry/sector peers."""
+    if db is None or not field_value or field_name not in {"sector", "industry"}:
+        return {}
+    field = getattr(Company, field_name)
+    peer_symbols = [
+        row.symbol for row in db.query(Company.symbol)
+        .filter(Company.exchange == exchange.upper(), field == field_value, Company.is_active == 1)
+        .all()
+    ]
+    if not peer_symbols:
+        return {}
+    cutoff = date.today() - timedelta(days=430)
+    rows = (
+        db.query(OHLCV)
+        .filter(OHLCV.exchange == exchange.upper(), OHLCV.symbol.in_(peer_symbols), OHLCV.date >= cutoff)
+        .order_by(OHLCV.symbol.asc(), OHLCV.date.asc())
+        .all()
+    )
+    grouped = {}
+    for row in _valid_trading_rows(rows, exchange):
+        if row.close is None:
+            continue
+        grouped.setdefault(row.symbol, []).append(
+            (row.date, float(row.open) if row.open is not None else float(row.close), float(row.close))
+        )
+    per_symbol = [_period_returns_from_points(points) for points in grouped.values()]
+    result = {}
+    for label in ("1d", "1w", "2w", "3w", "1m", "2m", "3m", "6m", "1y"):
+        vals = [item.get(label) for item in per_symbol if item.get(label) is not None]
+        result[label] = round(sum(vals) / len(vals), 2) if vals else None
+    return result
+
+
+def _nse_delivery_summary(symbol):
+    """Best-effort NSE delivery percentage; never substitutes ordinary volume for delivery data."""
+    try:
+        session = requests.Session()
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/123 Safari/537.36",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Referer": "https://www.nseindia.com/",
+        }
+        session.get("https://www.nseindia.com/", headers=headers, timeout=8)
+        end = date.today()
+        start = end - timedelta(days=45)
+        params = {
+            "symbol": symbol.upper(),
+            "series": '["EQ"]',
+            "from": start.strftime("%d-%m-%Y"),
+            "to": end.strftime("%d-%m-%Y"),
+        }
+        response = session.get("https://www.nseindia.com/api/historical/cm/equity", params=params, headers=headers, timeout=10)
+        response.raise_for_status()
+        payload = response.json()
+        data = payload.get("data") or []
+        parsed = []
+        for item in data:
+            pct = item.get("CH_DELIV_PER")
+            qty = item.get("CH_DELIV_QTY")
+            total = item.get("CH_TOT_TRADED_QTY")
+            dt = item.get("CH_TIMESTAMP") or item.get("mTIMESTAMP")
+            try:
+                pct = float(pct) if pct not in (None, "", "-") else None
+                qty = float(qty) if qty not in (None, "", "-") else None
+                total = float(total) if total not in (None, "", "-") else None
+            except Exception:
+                continue
+            parsed.append({"date": str(dt or ""), "percent": pct, "delivered": qty, "total": total})
+        if not parsed:
+            return {"available": False, "source": "NSE", "note": "NSE delivery data unavailable"}
+
+        def aggregate(items):
+            delivered = sum(x["delivered"] for x in items if x["delivered"] is not None)
+            total = sum(x["total"] for x in items if x["total"] is not None)
+            if delivered and total:
+                pct = delivered / total * 100
+            else:
+                vals = [x["percent"] for x in items if x["percent"] is not None]
+                pct = sum(vals) / len(vals) if vals else None
+            return {
+                "percent": round(pct, 2) if pct is not None else None,
+                "delivered_quantity": round(delivered, 0) if delivered else None,
+                "traded_quantity": round(total, 0) if total else None,
+            }
+
+        # NSE generally returns newest first.
+        return {
+            "available": True,
+            "source": "NSE",
+            "day": aggregate(data and parsed[:1] or []),
+            "weekly": aggregate(parsed[:5]),
+            "monthly": aggregate(parsed[:20]),
+        }
+    except Exception as exc:
+        return {"available": False, "source": "NSE", "note": f"Delivery data unavailable: {str(exc)[:120]}"}
 
 
 def _weighted_relative_return_from_points(stock_points, benchmark_points, weights):
@@ -1103,13 +1239,31 @@ def get_technical_summary(
                 seg_tr.append(max(float(r.high)-float(r.low), abs(float(r.high)-prev), abs(float(r.low)-prev)))
             seg_atr = _rma(seg_tr, 14) if len(seg_tr) >= 14 else (sum(seg_tr) / len(seg_tr) if seg_tr else None)
             seg_atr_pct = (seg_atr / float(segment[-1].close) * 100) if seg_atr and segment[-1].close else None
-            contractions.append({"depth_percent": depth, "atr_percent": seg_atr_pct, "high": seg_high, "low": seg_low})
+            seg_closes = [float(r.close) for r in segment if r.close is not None]
+            seg_mean = (sum(seg_closes) / len(seg_closes)) if seg_closes else None
+            seg_std = (sum((x - seg_mean) ** 2 for x in seg_closes) / len(seg_closes)) ** 0.5 if seg_closes and seg_mean else None
+            seg_std_pct = (seg_std / seg_mean * 100) if seg_std is not None and seg_mean else None
+            seg_avg_volume = (sum(float(r.volume or 0) for r in segment) / len(segment)) if segment else None
+            contractions.append({
+                "depth_percent": depth,
+                "atr_percent": seg_atr_pct,
+                "standard_deviation_percent": seg_std_pct,
+                "average_volume": seg_avg_volume,
+                "high": seg_high,
+                "low": seg_low,
+            })
 
     vcp_stage = "Not Detected"
     if len(contractions) == 3:
         depths = [c["depth_percent"] for c in contractions]
         atrs = [c["atr_percent"] for c in contractions]
-        if all(v is not None for v in depths + atrs) and depths[1] < depths[0] and depths[2] < depths[1] and atrs[1] < atrs[0] and atrs[2] < atrs[1]:
+        stds = [c["standard_deviation_percent"] for c in contractions]
+        vols = [c["average_volume"] for c in contractions]
+        price_contracting = all(v is not None for v in depths) and depths[1] < depths[0] and depths[2] < depths[1]
+        atr_contracting = all(v is not None for v in atrs) and atrs[1] < atrs[0] and atrs[2] < atrs[1]
+        std_contracting = all(v is not None for v in stds) and stds[1] < stds[0] and stds[2] < stds[1]
+        volume_contracting = all(v is not None for v in vols) and vols[1] < vols[0] and vols[2] < vols[1]
+        if price_contracting and atr_contracting and std_contracting and volume_contracting:
             vcp_stage = "VCP Contraction"
             final_contraction_high = contractions[-1]["high"]
 
@@ -1191,6 +1345,39 @@ def get_technical_summary(
     rs_period_weights = {"1w": rs_1w_weight, "2w": rs_2w_weight, "1m": rs_1m_weight, "2m": rs_2m_weight, "3m": rs_3m_weight, "6m": rs_6m_weight, "1y": rs_1y_weight, "sector": rs_sector_weight}
     rs_rating, rs_weighted_relative_return, rs_metrics, benchmark_name, rs_chart = _weighted_rs_against_benchmark(daily_rows, exchange, rs_period_weights, db=db)
 
+    # Client handwritten comparison table: raw returns stay separate from RS scoring weights.
+    stock_points = [
+        (r.date, float(r.open) if r.open is not None else float(r.close), float(r.close))
+        for r in daily_rows if r.date is not None and r.close is not None
+    ]
+    company = db.query(Company).filter(Company.symbol == symbol, Company.exchange == exchange).first()
+    if exchange == "US":
+        index_rows = [
+            {"key": "dow_jones", "label": "Dow Jones", "returns": _yf_period_returns("^DJI")},
+            {"key": "sp500", "label": "S&P 500", "returns": _yf_period_returns("^GSPC")},
+        ]
+    else:
+        index_rows = [
+            {"key": "nifty50", "label": "NIFTY 50", "returns": _yf_period_returns("^NSEI")},
+            {"key": "nifty500", "label": "NIFTY 500", "returns": _yf_period_returns("^CRSLDX")},
+        ]
+    rs_comparison = {
+        "periods": ["1d", "1w", "2w", "3w", "1m", "2m", "3m", "6m", "1y"],
+        "rows": [
+            {"key": "stock", "label": "Stock Return", "returns": _period_returns_from_points(stock_points)},
+            *index_rows,
+            {"key": "industry", "label": "Industry", "name": company.industry if company else None, "returns": _peer_group_period_returns(db, exchange, "industry", company.industry if company else None)},
+            {"key": "sector", "label": "Sector", "name": company.sector if company else None, "returns": _peer_group_period_returns(db, exchange, "sector", company.sector if company else None)},
+        ],
+        "method": "Current-period open to latest close; industry/sector are equal-weight averages of stored peers. These raw returns do not use RS scoring weights.",
+    }
+
+    delivery_summary = _nse_delivery_summary(symbol) if exchange == "NSE" else {
+        "available": False,
+        "source": exchange,
+        "note": "True delivery percentage requires exchange deliverable-quantity data; ordinary OHLCV volume is not substituted.",
+    }
+
     return _json_safe({
         "symbol": symbol,
         "exchange": exchange,
@@ -1223,8 +1410,12 @@ def get_technical_summary(
         "gap_percent": round(gap_percent, 2) if gap_percent is not None else None,
         "gap_classification": gap_classification,
         "vcp_stage": vcp_stage,
-        "vcp_contractions": [{k: (round(v, 2) if v is not None else None) for k, v in item.items()} for item in contractions],
+        "vcp_contractions": [{k: (round(v, 2) if isinstance(v, (int, float)) and v is not None else v) for k, v in item.items()} for item in contractions],
+        "vcp_standard_deviation_contraction": (std_contracting if len(contractions) == 3 else None),
+        "vcp_volume_contraction": (volume_contracting if len(contractions) == 3 else None),
         "pattern": pattern,
+        "rs_comparison": rs_comparison,
+        "volume_delivery": delivery_summary,
         "rs_rating": rs_rating,
         "rs_available": rs_rating is not None and len(rs_chart) > 1,
         "rs_weighted_relative_return_percent": round(rs_weighted_relative_return, 2) if rs_weighted_relative_return is not None else None,
@@ -1233,7 +1424,7 @@ def get_technical_summary(
         "rs_chart": rs_chart,
         "rs_period_weights": rs_period_weights,
         "rs_note": "Relative Strength: period relative returns are raw market calculations and never change when RS score weights change. Each period uses TradingView-style current period candle return (period open to current close); relative return = stock return % - benchmark return %. Stock percentiles use the client-required fixed denominator of 5,000 stocks: [(lower stocks + 0.5 x equal stocks) x 100 / 5000]. Final RS Score uses weighted percentile components. Default weights are 1W x 30% + 1M x 25% + 3M x 20% + 6M x 15% + 12M x 10%. 2W/2M and Sector RS are optional components with zero default weight; Sector RS is included only when its weight is greater than 0.",
-        "criteria_note": f"Metrics use the selected {timeframe} timeframe. For a detected VCP, Pivot = highest high of the final contraction; otherwise it is the recent consolidation high. Near Pivot = 95%-102% of pivot. Confirmed breakout requires close > pivot by 0.3%, volume >= 1.4x 50-period average, close > open, and close in the upper half of the period's range. VCP requires successive price-depth and ATR% contractions."
+        "criteria_note": f"Metrics use the selected {timeframe} timeframe. For a detected VCP, Pivot = highest high of the final contraction; otherwise it is the recent consolidation high. Near Pivot = 95%-102% of pivot. Confirmed breakout requires close > pivot by 0.3%, volume >= 1.4x 50-period average, close > open, and close in the upper half of the period's range. VCP requires successive price-depth, ATR%, standard-deviation, and average-volume contractions."
     })
 
 
