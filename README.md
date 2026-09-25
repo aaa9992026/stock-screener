@@ -1,56 +1,62 @@
 # Stock Screener
 
-A full-stack stock screener for US and Indian markets.
+Full-stack US / NSE / BSE stock screener built with React, FastAPI and PostgreSQL.
 
-## Milestone 1 Features
+## Current scope
 
-- US and NSE market data
-- BSE provider error/stale handling
-- Daily / Weekly / Monthly OHLCV
-- PostgreSQL historical storage
-- Automatic data refresh
-- Company search/autocomplete
-- Automatic NSE + US company-list sync
-- US fundamentals
-- US ownership data
-- Provider adapter architecture
-- Stale/error warnings
-- React dashboard
-- FastAPI backend
+This source combines the accepted Milestone 1 work with the Milestone 2 continuation for Modules 4–8 and the remaining client fixes.
 
-## Tech Stack
+Key capabilities include:
+
+- US, NSE and BSE market support.
+- Daily / Weekly / Monthly OHLCV and timeframe-aware technical calculations.
+- PostgreSQL historical storage and refresh/update behavior.
+- Candlestick chart, EMA 20/30/50/100/150/200, SMA, RSI, Bollinger, ATR/ADR, VCP/breakout analysis and volatility trends.
+- US fundamentals and extended quarterly/annual history.
+- Ownership/shareholding layouts for US and Indian markets without fabricating unavailable categories.
+- Relative Strength vs S&P 500 / NIFTY 500, Sector RS and the client-requested 5,000-stock percentile denominator.
+- Weight-independent raw Relative Return; editable weights affect only Final RS Score.
+- SEC EDGAR official US filing metadata and XBRL/companyfacts integration.
+- Configurable automatic market-data refresh without CSV uploads.
+- Provider status, stale/error handling and provider-replacement documentation.
+
+## Stack
 
 - React + Vite
 - FastAPI
-- PostgreSQL
-- SQLAlchemy
+- PostgreSQL + SQLAlchemy
 - yfinance
-- Recharts
+- Twelve Data for BSE/XBOM
+- SEC EDGAR JSON/XBRL
 - APScheduler
 
 ## Documentation
 
-See:
-
 - `docs/SETUP.md`
 - `docs/DATA_PROVIDERS.md`
 - `docs/PROVIDER_REPLACEMENT.md`
+- `docs/MILESTONE1_STATUS.md`
+- `docs/MILESTONE2_STATUS.md`
 
-## Run
+## Run locally
 
 Backend:
 
 ```bash
 cd backend
+python -m venv venv
+# Windows: venv\Scripts\Activate.ps1
 pip install -r requirements.txt
+# Copy .env.example to .env and set your own values
 uvicorn app.main:app --reload
+```
 
-## Milestone 1 dashboard additions
+Frontend:
 
-- Rule-based 0-100 dashboard score with Buy/Watch/Sell signal.
-- Sector and industry classification/ranking when peer data is populated.
-- Extended technical screening: EMA 20/30/50/100/150/200 alignment, RS percentile within the stored universe, 20-day average volume, volume ratio, ADR, breakout status, VCP heuristic and pattern status.
-- Extended fundamental history: ROA, ROCE, free cash flow and 5-year CAGR when the provider supplies enough annual periods.
-- Ownership detail panels for institutional holders, mutual funds and insider transactions where Yahoo exposes them. Verified FII/DII/promoter-change fields are intentionally not estimated when the configured provider does not expose them.
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-- Final RSI(14) handwritten scoring: >50 = 5 points, 40-50 = 4, 30-40 = 3, below 30 = 2; thresholds and points remain editable and the factor can be enabled/disabled.
+Swagger is available at `http://127.0.0.1:8000/docs` when the backend is running.

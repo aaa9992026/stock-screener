@@ -15,6 +15,7 @@ class SECFundamentalsProvider:
 
     TICKERS_URL = "https://www.sec.gov/files/company_tickers.json"
     COMPANY_FACTS_URL = "https://data.sec.gov/api/xbrl/companyfacts/CIK{cik}.json"
+    SUBMISSIONS_URL = "https://data.sec.gov/submissions/CIK{cik}.json"
 
     def __init__(self):
         self.user_agent = os.getenv(
@@ -43,6 +44,7 @@ class SECFundamentalsProvider:
                 result[ticker] = str(cik).zfill(10)
         return result
 
+    @lru_cache(maxsize=128)
     def _company_facts(self, symbol: str):
         cik = self._ticker_map().get(symbol.upper())
         if not cik:
@@ -51,6 +53,96 @@ class SECFundamentalsProvider:
         response = requests.get(url, headers=self._headers(), timeout=30)
         response.raise_for_status()
         return response.json()
+
+    @lru_cache(maxsize=128)
+    def _submissions(self, symbol: str):
+        cik = self._ticker_map().get(symbol.upper())
+        if not cik:
+            return None
+        url = self.SUBMISSIONS_URL.format(cik=cik)
+        response = requests.get(url, headers=self._headers(), timeout=30)
+        response.raise_for_status()
+        return response.json()
+
+    def get_recent_filings(self, symbol: str, limit: int = 12):
+        """Return recent official EDGAR filings for a US ticker.
+
+        This is intentionally based on SEC submissions JSON rather than HTML
+        scraping.  It is more stable, rate-limit friendly, and keeps the
+        screener independent of a personal API account.
+        """
+        symbol = symbol.upper()
+        cik = self._ticker_map().get(symbol)
+        payload = self._submissions(symbol)
+        if not cik or not payload:
+            return {
+                "symbol": symbol,
+                "cik": cik,
+                "company_name": None,
+                "filings": [],
+                "source": "SEC EDGAR submissions",
+            }
+
+        recent = ((payload.get("filings") or {}).get("recent") or {})
+        forms = recent.get("form") or []
+        accession = recent.get("accessionNumber") or []
+        filed = recent.get("filingDate") or []
+        report = recent.get("reportDate") or []
+        primary = recent.get("primaryDocument") or []
+        descriptions = recent.get("primaryDocDescription") or []
+
+        # Keep the forms most useful to the screener.  10-K/10-Q supply
+        # fundamentals, Forms 3/4/5 are insider filings, and 13D/13G variants
+        # are beneficial-ownership filings.
+        useful_prefixes = ("10-K", "10-Q", "8-K", "3", "4", "5", "SC 13D", "SC 13G")
+        filings = []
+        for i, form in enumerate(forms):
+            form = str(form or "")
+            if not form.startswith(useful_prefixes):
+                continue
+            accession_number = accession[i] if i < len(accession) else None
+            primary_document = primary[i] if i < len(primary) else None
+            archive_url = None
+            if accession_number and primary_document:
+                accession_compact = str(accession_number).replace("-", "")
+                archive_url = (
+                    f"https://www.sec.gov/Archives/edgar/data/{int(cik)}/"
+                    f"{accession_compact}/{primary_document}"
+                )
+            filings.append({
+                "form": form,
+                "filing_date": filed[i] if i < len(filed) else None,
+                "report_date": report[i] if i < len(report) else None,
+                "accession_number": accession_number,
+                "primary_document": primary_document,
+                "description": descriptions[i] if i < len(descriptions) else None,
+                "url": archive_url,
+            })
+            if len(filings) >= max(1, min(int(limit), 50)):
+                break
+
+        return {
+            "symbol": symbol,
+            "cik": cik,
+            "company_name": payload.get("name"),
+            "filings": filings,
+            "source": "SEC EDGAR submissions",
+        }
+
+    def get_snapshot(self, symbol: str, filings_limit: int = 12):
+        """One response for the Milestone-2 SEC EDGAR module."""
+        symbol = symbol.upper()
+        filing_data = self.get_recent_filings(symbol, filings_limit)
+        history = self.get_history(symbol)
+        return {
+            **filing_data,
+            "fundamental_history": history,
+            "companyfacts_source": "SEC EDGAR companyfacts" if history else None,
+            "note": (
+                "Official SEC EDGAR data is used for US filing history and XBRL fundamentals. "
+                "Price/OHLCV data remains sourced from the configured market-data provider."
+            ),
+        }
 
     @staticmethod
     def _duration_days(item):
@@ -214,7 +306,7 @@ class SECFundamentalsProvider:
         # consistently reported operating metric.
         quarter_dates = list(q_revenue.keys())
         quarterly = []
-        for date in quarter_dates[:8]:
+        for date in quarter_dates[:12]:
             sales = q_revenue.get(date)
             pat = self._nearest(q_income, date, 20)
             eps = self._nearest(q_eps, date, 20)
@@ -250,7 +342,7 @@ class SECFundamentalsProvider:
 
         annual_dates = list(a_revenue.keys())
         annual = []
-        for date in annual_dates[:6]:
+        for date in annual_dates[:7]:
             sales = a_revenue.get(date)
             pat = self._nearest(a_income, date, 45)
             eps = self._nearest(a_eps, date, 45)

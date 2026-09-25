@@ -11,6 +11,8 @@ from app.services.fundamental_sync import sync_fundamental_data
 from app.models import Fundamental, Ownership, Company
 from app.services.providers.bse_provider import BSEProvider
 from app.services.providers.india_shareholding_provider import IndiaShareholdingProvider
+from app.services.providers.sec_provider import SECFundamentalsProvider
+from app.services.scheduler import refresh_configured_market_data
 
 import os
 import math
@@ -579,12 +581,24 @@ def _weighted_rs_against_benchmark(daily_rows, exchange: str, period_weights=Non
             return None, None, metrics, benchmark_name, rs_chart
 
         rating = round(weighted_score / available_weight, 2)
-        # Diagnostic weighted relative return retained for display/API compatibility only.
-        old_period_weights = {k: weights.get(k, 0.0) for k in period_labels}
-        weighted_relative, _ = _weighted_relative_return_from_points(stock_points, benchmark_points, old_period_weights)
+
+        # IMPORTANT: raw/composite relative return is intentionally independent
+        # of the editable score weights.  The client specifically requested that
+        # changing score weightage must change only Final RS Score.  Keep this
+        # compatibility field on the fixed reference mix, while the final score
+        # above uses the editable percentile weights.
+        fixed_relative_weights = {
+            "1w": 30.0, "2w": 0.0, "1m": 25.0, "2m": 0.0,
+            "3m": 20.0, "6m": 15.0, "1y": 10.0,
+        }
+        weighted_relative, _ = _weighted_relative_return_from_points(
+            stock_points, benchmark_points, fixed_relative_weights
+        )
         metrics["_universe_size"] = RS_PERCENTILE_TOTAL_STOCKS
         metrics["_scored_stocks_available"] = len(universe_metrics)
         metrics["_score_weight_total"] = available_weight
+        metrics["_relative_return_weight_independent"] = True
+        metrics["_fixed_relative_return_reference_weights"] = fixed_relative_weights
         return rating, weighted_relative, metrics, benchmark_name, rs_chart
     except Exception:
         return None, None, {}, benchmark_name, []
@@ -1001,6 +1015,69 @@ def get_ownership_details(symbol: str, exchange: str = "US"):
         return provider.get_ownership_details(symbol.upper(), exchange.upper())
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Ownership details failed: {str(e)}")
+
+
+@router.get("/sec-edgar/{symbol}")
+def get_sec_edgar_data(
+    symbol: str,
+    exchange: str = "US",
+    filings_limit: int = Query(12, ge=1, le=50),
+):
+    """Official SEC EDGAR filings + XBRL fundamental history for US stocks."""
+    if exchange.upper() != "US":
+        raise HTTPException(
+            status_code=400,
+            detail="SEC EDGAR integration applies to US-listed companies only",
+        )
+    try:
+        data = SECFundamentalsProvider().get_snapshot(symbol.upper(), filings_limit)
+        if not data.get("cik"):
+            raise HTTPException(status_code=404, detail="Ticker was not found in the SEC EDGAR company list")
+        return _json_safe(data)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"SEC EDGAR request failed: {str(exc)}")
+
+
+@router.post("/refresh-configured")
+def refresh_configured_symbols_now():
+    """Run the configured automatic-refresh list immediately for demonstration/testing."""
+    return _json_safe(refresh_configured_market_data())
+
+
+@router.get("/provider-status")
+def get_provider_status():
+    """Configuration-only provider status; no third-party network call is made."""
+    sec_agent = os.getenv("SEC_USER_AGENT", "").strip()
+    twelve_key = os.getenv("TWELVE_DATA_API_KEY", "").strip()
+    auto_symbols = os.getenv("AUTO_REFRESH_SYMBOLS", "").strip()
+    return {
+        "providers": {
+            "yahoo_finance": {
+                "configured": True,
+                "uses_personal_api_key": False,
+                "purpose": "US/NSE OHLCV, quotes, provider fallback fundamentals/ownership",
+            },
+            "sec_edgar": {
+                "configured": bool(sec_agent),
+                "uses_personal_api_key": False,
+                "purpose": "Official US XBRL fundamentals and filing metadata",
+                "required_env": "SEC_USER_AGENT",
+            },
+            "twelve_data_bse": {
+                "configured": bool(twelve_key),
+                "uses_personal_api_key": True,
+                "purpose": "BSE/XBOM daily OHLCV",
+                "required_env": "TWELVE_DATA_API_KEY",
+            },
+        },
+        "automatic_refresh": {
+            "configured_symbols": [item.strip() for item in auto_symbols.split(",") if item.strip()],
+            "enabled": bool(auto_symbols),
+            "note": "Configure AUTO_REFRESH_SYMBOLS as EXCHANGE:SYMBOL entries; no CSV upload is required.",
+        },
+    }
 
 
 @router.get("/india-shareholding/{symbol}")
@@ -1423,6 +1500,15 @@ def get_technical_summary(
         "rs_periods": rs_metrics,
         "rs_chart": rs_chart,
         "rs_period_weights": rs_period_weights,
+        "rs_formula": {
+            "period_return": "((current close / current period candle open) - 1) * 100",
+            "relative_return": "stock return % - benchmark return %",
+            "relative_return_uses_editable_weights": False,
+            "stock_percentile": "((lower stocks + 0.5 * equal stocks) * 100) / 5000",
+            "stock_percentile_denominator": RS_PERCENTILE_TOTAL_STOCKS,
+            "final_rs_score": "sum(period percentile * enabled weight) / sum(enabled weights)",
+            "default_weights": {"1w": 30, "1m": 25, "3m": 20, "6m": 15, "1y": 10, "2w": 0, "2m": 0, "sector": 0},
+        },
         "rs_note": "Relative Strength: period relative returns are raw market calculations and never change when RS score weights change. Each period uses TradingView-style current period candle return (period open to current close); relative return = stock return % - benchmark return %. Stock percentiles use the client-required fixed denominator of 5,000 stocks: [(lower stocks + 0.5 x equal stocks) x 100 / 5000]. Final RS Score uses weighted percentile components. Default weights are 1W x 30% + 1M x 25% + 3M x 20% + 6M x 15% + 12M x 10%. 2W/2M and Sector RS are optional components with zero default weight; Sector RS is included only when its weight is greater than 0.",
         "criteria_note": f"Metrics use the selected {timeframe} timeframe. For a detected VCP, Pivot = highest high of the final contraction; otherwise it is the recent consolidation high. Near Pivot = 95%-102% of pivot. Confirmed breakout requires close > pivot by 0.3%, volume >= 1.4x 50-period average, close > open, and close in the upper half of the period's range. VCP requires successive price-depth, ATR%, standard-deviation, and average-volume contractions."
     })

@@ -1,72 +1,46 @@
 # Replacing a Data Provider
 
-The screener uses a provider-based architecture so another developer can replace a market-data source without rebuilding the entire application.
+The screener separates provider-specific retrieval from database synchronization and UI logic. A future provider can therefore be replaced without rebuilding the whole application.
 
-## Provider Interface
+## Provider location
 
-Market-data providers are located under:
+`backend/app/services/providers/`
 
-backend/app/services/providers/
+Current adapters include Yahoo Finance, Twelve Data/BSE, SEC EDGAR, and Indian shareholding support.
 
-The base provider interface is:
+## OHLCV contract
 
-backend/app/services/base_provider.py
+A replacement OHLCV provider should return a list of dictionaries with:
 
-A replacement provider should implement the required methods, such as:
+- `date`
+- `open`
+- `high`
+- `low`
+- `close`
+- `volume`
 
-- get_companies()
-- get_ohlcv()
-- get_fundamentals() where required
+Pass those rows to `sync_ohlcv(...)`; the existing PostgreSQL storage and chart endpoints can remain unchanged.
 
-## Replacing OHLCV Provider
+## Fundamental contract
 
-1. Create a new provider file in:
+A replacement snapshot provider should map available fields to the existing `sync_fundamental_data(...)` format, including market cap, EPS, revenue, net income, margins, ROE/ROA, ownership percentages, shares and company classification when available.
 
-   backend/app/services/providers/
+For US historical fundamentals, `sec_provider.py` demonstrates the official SEC EDGAR/XBRL implementation.
 
-2. Implement the same output format:
+## Steps to replace a provider
 
-   date
-   open
-   high
-   low
-   close
-   volume
+1. Add a provider adapter in `backend/app/services/providers/`.
+2. Keep its normalized output compatible with the existing sync service.
+3. Replace the provider selection in `backend/app/api/market.py` and, if automatic refresh is required, `backend/app/services/scheduler.py`.
+4. Put credentials in `.env`; never hard-code them.
+5. Test one symbol with `POST /market/refresh/{symbol}`.
+6. Test scheduled configuration with `POST /market/refresh-configured`.
+7. Confirm `GET /market/provider-status` and the live chart/dashboard.
 
-3. Update the API/service layer to instantiate the new provider.
+## Provider changes / pricing
 
-4. Add required API credentials to `.env`.
+Third-party API terms, prices, authentication and schemas are outside the application owner's control. Source-code ownership does not make third-party compatibility maintenance unlimited or free. If a provider later changes, this adapter layer is the intended place to perform the compatibility update.
 
-5. Test refresh using:
+## Database independence
 
-   POST /market/refresh/{symbol}
-
-## API Keys
-
-API keys should be stored in `.env`.
-
-Do not hard-code API keys in source code.
-
-Example:
-
-MARKET_API_KEY=your_key_here
-
-## Failure Handling
-
-If a provider:
-- stops responding
-- changes its endpoint
-- changes authentication
-- returns incomplete data
-
-the application should return an error/stale-data warning instead of silently treating old or incomplete data as current.
-
-## Database Independence
-
-Changing the provider does not require replacing the PostgreSQL database.
-
-The new provider only needs to return data in the expected internal format, and the existing sync services can continue storing and updating records.
-
-## Future Paid API
-
-A future paid Indian or US market API can be integrated by creating a new provider adapter and replacing the provider used by the API routes.
+Changing providers does not require replacing the PostgreSQL database. Existing stored history remains available, and a new adapter can continue appending/updating the same normalized records.

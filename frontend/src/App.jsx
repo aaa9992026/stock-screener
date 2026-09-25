@@ -150,6 +150,7 @@ function App() {
   const [dataStatus, setDataStatus] = useState("connected");
   const [indicators, setIndicators] = useState(null);
   const [fundamentalHistory, setFundamentalHistory] = useState(null);
+  const [secEdgar, setSecEdgar] = useState(null);
   const [smaShort, setSmaShort] = useState(20);
   const [smaLong, setSmaLong] = useState(50);
   const [rsiPeriod, setRsiPeriod] = useState(14);
@@ -397,6 +398,21 @@ function App() {
     }
   };
 
+  const loadSecEdgar = async () => {
+    if (exchange !== "US") {
+      setSecEdgar(null);
+      return;
+    }
+    try {
+      const res = await axios.get(
+        `${API}/market/sec-edgar/${symbol}?exchange=US&filings_limit=12`
+      );
+      setSecEdgar(res.data);
+    } catch {
+      setSecEdgar(null);
+    }
+  };
+
   const loadChart = async () => {
     try {
       setLoading(true);
@@ -499,9 +515,11 @@ function App() {
     if (exchange === "US") {
       loadFundamentals();
       loadFundamentalHistory();
+      loadSecEdgar();
     } else {
       setFundamentals(null);
       setFundamentalHistory(null);
+      setSecEdgar(null);
     }
   }, [symbol, timeframe, exchange]);
 
@@ -1579,6 +1597,25 @@ function App() {
             </div>
           )}
 
+          {technicalSummary?.rs_formula && (
+            <div className="table-card rs-formula-audit">
+              <h3>RS Formula Audit</h3>
+              <div className="table-wrap">
+                <table>
+                  <tbody>
+                    <tr><td><strong>Period Return</strong></td><td>{technicalSummary.rs_formula.period_return}</td></tr>
+                    <tr><td><strong>Relative Return</strong></td><td>{technicalSummary.rs_formula.relative_return}</td></tr>
+                    <tr><td><strong>Editable weights affect Relative Return?</strong></td><td>{technicalSummary.rs_formula.relative_return_uses_editable_weights ? "Yes" : "No"}</td></tr>
+                    <tr><td><strong>Stock Percentile</strong></td><td>{technicalSummary.rs_formula.stock_percentile}</td></tr>
+                    <tr><td><strong>Percentile Denominator</strong></td><td>{Number(technicalSummary.rs_formula.stock_percentile_denominator || 5000).toLocaleString()} stocks</td></tr>
+                    <tr><td><strong>Final RS Score</strong></td><td>{technicalSummary.rs_formula.final_rs_score}</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div className="chart-note">Changing RS weightage changes only the Final RS Score contribution. Raw stock return, benchmark return and Relative Return remain unchanged.</div>
+            </div>
+          )}
+
           <div className="chart-note">
             RS line = stock price / broad-market benchmark, rebased to 100 for charting only. Relative Return = Stock Return % - Benchmark Return % and is independent of the editable RS weights. The weights change only the Final RS Score. Each stock percentile uses the client-required fixed total of 5,000 stocks: [(stocks with lower relative return) + 0.5 × (stocks with equal relative return)] × 100 / 5000. Final RS Score uses the enabled weighted percentile components. Default period weights remain 1W×0.30 + 1M×0.25 + 3M×0.20 + 6M×0.15 + 12M×0.10. 2W, 2M, and Sector RS are optional with default weight 0.
           </div>
@@ -2114,6 +2151,45 @@ function App() {
             </section>
           );
         })()}
+
+        {exchange === "US" && secEdgar && (
+          <section className="fundamental-section">
+            <h2>SEC EDGAR — Official US Filings</h2>
+            <div className="chart-note">
+              {secEdgar.note || "Official SEC EDGAR filing metadata and XBRL company facts."}
+            </div>
+            <div className="fundamental-grid">
+              <div className="metric"><span>Company</span><strong>{secEdgar.company_name || symbol}</strong></div>
+              <div className="metric"><span>CIK</span><strong>{secEdgar.cik || "-"}</strong></div>
+              <div className="metric"><span>Filings Source</span><strong>{secEdgar.source || "SEC EDGAR"}</strong></div>
+              <div className="metric"><span>Fundamentals Source</span><strong>{secEdgar.companyfacts_source || "-"}</strong></div>
+            </div>
+
+            <h3>Recent SEC Filings</h3>
+            <div className="history-table-wrapper">
+              <table className="history-table">
+                <thead>
+                  <tr><th>Form</th><th>Filing Date</th><th>Report Date</th><th>Description</th><th>EDGAR</th></tr>
+                </thead>
+                <tbody>
+                  {(secEdgar.filings || []).map((filing, index) => (
+                    <tr key={`${filing.accession_number || filing.form}-${index}`}>
+                      <td><strong>{filing.form || "-"}</strong></td>
+                      <td>{filing.filing_date || "-"}</td>
+                      <td>{filing.report_date || "-"}</td>
+                      <td>{filing.description || filing.primary_document || "-"}</td>
+                      <td>{filing.url ? <a href={filing.url} target="_blank" rel="noreferrer">Open filing</a> : "-"}</td>
+                    </tr>
+                  ))}
+                  {!(secEdgar.filings || []).length && (
+                    <tr><td colSpan="5">No recent supported SEC filing types were returned.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+            <div className="chart-note">SEC EDGAR is used for official US filing/XBRL data. It does not replace OHLCV price data, and unavailable ownership classifications are not fabricated.</div>
+          </section>
+        )}
 
         {exchange === "US" && fundamentalHistory && (
           <section className="fundamental-section">

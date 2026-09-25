@@ -1,73 +1,50 @@
 # Data Providers
 
-## US Market
+## Provider map
 
-### Company List
-Source:
-Nasdaq Trader Symbol Directory
+| Data | Primary source | Authentication | Notes |
+|---|---|---|---|
+| US/NSE OHLCV | Yahoo Finance via yfinance | No project API key | Stored in PostgreSQL |
+| BSE OHLCV | Twelve Data | `TWELVE_DATA_API_KEY` | Uses BSE MIC `XBOM` |
+| US official filings/XBRL fundamentals | SEC EDGAR | No API key; identifying `SEC_USER_AGENT` required | Companyfacts + submissions JSON |
+| US company universe | Nasdaq Trader Symbol Directory | None | Search/company sync |
+| NSE company universe | NSE public equity list | None | Search/company sync |
+| Indian shareholding history | Configured public shareholding provider | Provider-dependent | Missing categories are never estimated |
 
-Purpose:
-- US stock/company universe
-- Symbol search
-- Newly listed stock updates
+## SEC EDGAR
 
-Type:
-Public downloadable data files
+The backend uses official SEC JSON endpoints instead of scraping rendered HTML:
 
-## NSE India
+- SEC company ticker/CIK mapping
+- SEC XBRL companyfacts
+- SEC submissions metadata for recent filings
 
-### Company List
-Source:
-NSE Equity Securities List
+Endpoint in this project:
 
-Purpose:
-- NSE company universe
-- Symbol search
-- Newly listed company updates
+`GET /market/sec-edgar/{symbol}?exchange=US&filings_limit=12`
 
-Type:
-Official public downloadable exchange data
+The SEC requires an identifying User-Agent containing a contact email:
 
-## OHLCV Market Data
+`SEC_USER_AGENT=StockScreener/2.0 your-email@example.com`
 
-Provider:
-Yahoo Finance through yfinance
+No personal developer API key or server is required for SEC EDGAR.
 
-Purpose:
-- Historical OHLCV
-- Latest available prices
-- US, NSE and supported BSE symbols
+## Automatic updates
 
-Notes:
-- NSE symbols use `.NS`
-- BSE symbols use `.BO`
-- If a provider returns incomplete data, the screener shows a warning instead of silently using it.
+Manual CSV uploads are not required. Configure symbols in the deployment owner's `.env`:
 
-## US Fundamental Data
+`AUTO_REFRESH_SYMBOLS=US:AAPL,NSE:RELIANCE,BSE:INFY`
 
-Provider:
-Yahoo Finance through yfinance
+`AUTO_REFRESH_HOURS=6`
 
-Data currently used:
-- Market cap
-- EPS
-- Revenue
-- Net income
-- Profit margin
-- ROE
-- ROA
-- Insider ownership
-- Institutional ownership
-- Shares outstanding
-- Float shares
+The background scheduler refreshes those symbols automatically. For a final-milestone demonstration, the same job can be triggered immediately with:
 
-## Database Storage
+`POST /market/refresh-configured`
 
-Historical OHLCV is stored in PostgreSQL.
+Provider configuration can be inspected without making third-party network calls:
 
-Each record is identified by:
-- symbol
-- exchange
-- date
+`GET /market/provider-status`
 
-Refreshing data updates an existing date or inserts a new date. Existing historical records are not deleted during a normal refresh.
+## Failure behavior
+
+If a provider changes its endpoint, authentication, response format, pricing, or stops providing data, the adapter must be updated/replaced. The application should show a provider error/stale state rather than fabricate data. The PostgreSQL data model and frontend do not need to be replaced when a compatible provider adapter is changed.

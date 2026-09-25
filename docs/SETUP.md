@@ -6,74 +6,55 @@
 - Node.js / npm
 - PostgreSQL
 
-## Backend Setup
+## Backend
 
-1. Open the backend folder:
+1. `cd backend`
+2. `python -m venv venv`
+3. Windows: `venv\Scripts\Activate.ps1`
+4. `pip install -r requirements.txt`
+5. Create PostgreSQL database `stock_screener`.
+6. Copy `.env.example` to `.env` and set your own values.
+7. `uvicorn app.main:app --reload`
 
-   cd backend
+Backend API: `http://127.0.0.1:8000`
+Swagger: `http://127.0.0.1:8000/docs`
 
-2. Create a virtual environment:
+### Required / optional environment variables
 
-   python -m venv venv
+- `DATABASE_URL` — required.
+- `TWELVE_DATA_API_KEY` — required for the Twelve Data BSE provider.
+- `SEC_USER_AGENT` — required for SEC EDGAR requests; use your own contact email. SEC does not require an API key.
+- `AUTO_REFRESH_SYMBOLS` — optional automatic refresh list, e.g. `US:AAPL,NSE:RELIANCE,BSE:INFY`.
+- `AUTO_REFRESH_HOURS` — refresh interval, minimum 1 hour; default 6.
 
-3. Activate it:
+## Frontend
 
-   venv\Scripts\Activate.ps1
+1. `cd frontend`
+2. `npm install`
+3. `npm run dev`
 
-4. Install dependencies:
+Frontend: `http://localhost:5173`
 
-   pip install -r requirements.txt
+## Initial company sync
 
-5. Create a PostgreSQL database named:
+Use Swagger:
 
-   stock_screener
+`POST /companies/sync/all`
 
-6. Create a `.env` file inside the backend folder:
+## Automatic-update demonstration
 
-   DATABASE_URL=postgresql://postgres:YOUR_PASSWORD@localhost:5432/stock_screener
+Configure at least one symbol in `AUTO_REFRESH_SYMBOLS`, restart the backend, then run:
 
-7. Start the backend:
+`POST /market/refresh-configured`
 
-   uvicorn app.main:app --reload
+The response reports records received/added/updated. No CSV upload is involved. Verify the same stock with:
 
-Backend:
+`GET /market/chart/{symbol}?exchange=US&timeframe=daily`
 
-http://127.0.0.1:8000
+## SEC EDGAR demonstration
 
-API docs:
+For a US ticker such as AAPL:
 
-http://127.0.0.1:8000/docs
+`GET /market/sec-edgar/AAPL?exchange=US&filings_limit=12`
 
-## Frontend Setup
-
-1. Open the frontend folder:
-
-   cd frontend
-
-2. Install dependencies:
-
-   npm install
-
-3. Start the frontend:
-
-   npm run dev
-
-Frontend:
-
-http://localhost:5173
-
-## Initial Company Sync
-
-After starting the backend, open the API docs and run:
-
-POST /companies/sync/all
-
-This imports/updates the available NSE and US company lists.
-
-## Notes
-
-- Historical OHLCV data is stored in PostgreSQL.
-- Refreshing data updates existing dates and adds new dates without deleting normal historical records.
-- API credentials should be stored in `.env`, not hard-coded in source files.
-
-- Final RSI(14) handwritten scoring: >50 = 5 points, 40-50 = 4, 30-40 = 3, below 30 = 2; thresholds and points remain editable and the factor can be enabled/disabled.
+The response contains the SEC CIK, recent filing metadata, EDGAR filing links and SEC companyfacts-based fundamental history where available.
