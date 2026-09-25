@@ -9,7 +9,7 @@
 | US official filings/XBRL fundamentals | SEC EDGAR | No API key; identifying `SEC_USER_AGENT` required | Companyfacts + submissions JSON |
 | US company universe | Nasdaq Trader Symbol Directory | None | Search/company sync |
 | NSE company universe | NSE public equity list | None | Search/company sync |
-| Indian shareholding history | Configured public shareholding provider | Provider-dependent | Missing categories are never estimated |
+| Indian shareholding history | Screener.in public Shareholding Pattern table | No project API key | Missing categories are never estimated |
 
 ## SEC EDGAR
 

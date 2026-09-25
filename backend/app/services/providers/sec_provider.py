@@ -18,10 +18,12 @@ class SECFundamentalsProvider:
     SUBMISSIONS_URL = "https://data.sec.gov/submissions/CIK{cik}.json"
 
     def __init__(self):
-        self.user_agent = os.getenv(
-            "SEC_USER_AGENT",
-            "StockScreener/1.0 contact: admin@example.com",
-        )
+        self.user_agent = os.getenv("SEC_USER_AGENT", "").strip()
+        if not self.user_agent:
+            raise RuntimeError(
+                "SEC_USER_AGENT is not configured. Set it to a project/app name "
+                "and a real contact email before using SEC EDGAR."
+            )
 
     def _headers(self):
         return {
