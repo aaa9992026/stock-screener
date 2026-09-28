@@ -39,3 +39,12 @@ This is the cumulative Milestone 2 continuation build. It preserves all accepted
 - Excel Power Query feed and editable workbook export added.
 - Kotak Neo is registered as the planned Indian-stock-only provider; credentials remain external to source control.
 - Ambiguous handwritten point values are not guessed.
+
+## Deployment recheck fixes
+
+- Migrates stale browser-saved ranking weights to the current 100% Milestone 2 default: Fundamental 30%, Technical 25%, RS 25%, Ownership 15%, Sector 5%.
+- Migrates stale RS period weights to the current client default and removes old Sector-RS 20% carry-over.
+- Fixes the Participation panel so delivery data never renders as `[object Object]`; true NSE delivery percentages are formatted as Day/Week/Month, otherwise N/A.
+- Industry/Sector return rows now exclude the selected stock and require at least five real stored peers. If peer history is insufficient, N/A is shown instead of repeating the stock's own return.
+- RS output now exposes the number of actually scored stocks against the client-required 5,000 denominator and labels incomplete-universe results as provisional.
+- SEC EDGAR failures are now visible in the UI instead of being silently hidden; missing `SEC_USER_AGENT` is reported explicitly and no substitute SEC values are invented.

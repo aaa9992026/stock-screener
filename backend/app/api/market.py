@@ -325,8 +325,13 @@ def _yf_period_returns(ticker_symbol):
         return {}
 
 
-def _peer_group_period_returns(db, exchange, field_name, field_value):
-    """Average raw stock returns for the selected company's industry/sector peers."""
+def _peer_group_period_returns(db, exchange, field_name, field_value, exclude_symbol=None, minimum_peers=5):
+    """Average raw returns for real stored peers only.
+
+    The selected stock is excluded. If the database does not contain enough
+    peer histories, return no values so the UI shows N/A instead of repeating
+    the selected stock's own return as an apparent sector/industry return.
+    """
     if db is None or not field_value or field_name not in {"sector", "industry"}:
         return {}
     field = getattr(Company, field_name)
@@ -335,8 +340,11 @@ def _peer_group_period_returns(db, exchange, field_name, field_value):
         .filter(Company.exchange == exchange.upper(), field == field_value, Company.is_active == 1)
         .all()
     ]
-    if not peer_symbols:
+    if exclude_symbol:
+        peer_symbols = [s for s in peer_symbols if s != exclude_symbol.upper()]
+    if len(peer_symbols) < minimum_peers:
         return {}
+
     cutoff = date.today() - timedelta(days=430)
     rows = (
         db.query(OHLCV)
@@ -351,7 +359,15 @@ def _peer_group_period_returns(db, exchange, field_name, field_value):
         grouped.setdefault(row.symbol, []).append(
             (row.date, float(row.open) if row.open is not None else float(row.close), float(row.close))
         )
-    per_symbol = [_period_returns_from_points(points) for points in grouped.values()]
+
+    per_symbol = [
+        _period_returns_from_points(points)
+        for points in grouped.values()
+        if len(points) >= 2
+    ]
+    if len(per_symbol) < minimum_peers:
+        return {}
+
     result = {}
     for label in ("1d", "1w", "2w", "3w", "1m", "2m", "3m", "6m", "1y"):
         vals = [item.get(label) for item in per_symbol if item.get(label) is not None]
@@ -1727,15 +1743,33 @@ def get_technical_summary(
             {"key": "nifty50", "label": "NIFTY 50", "returns": _yf_period_returns("^NSEI")},
             {"key": "nifty500", "label": "NIFTY 500", "returns": _yf_period_returns("^CRSLDX")},
         ]
+    industry_returns = _peer_group_period_returns(
+        db, exchange, "industry", company.industry if company else None,
+        exclude_symbol=symbol, minimum_peers=5
+    )
+    sector_returns = _peer_group_period_returns(
+        db, exchange, "sector", company.sector if company else None,
+        exclude_symbol=symbol, minimum_peers=5
+    )
     rs_comparison = {
         "periods": ["1d", "1w", "2w", "3w", "1m", "2m", "3m", "6m", "1y"],
         "rows": [
             {"key": "stock", "label": "Stock Return", "returns": _period_returns_from_points(stock_points)},
             *index_rows,
-            {"key": "industry", "label": "Industry", "name": company.industry if company else None, "returns": _peer_group_period_returns(db, exchange, "industry", company.industry if company else None)},
-            {"key": "sector", "label": "Sector", "name": company.sector if company else None, "returns": _peer_group_period_returns(db, exchange, "sector", company.sector if company else None)},
+            {
+                "key": "industry", "label": "Industry",
+                "name": company.industry if company else None,
+                "returns": industry_returns,
+                "note": None if industry_returns else "Insufficient stored peer history; N/A shown.",
+            },
+            {
+                "key": "sector", "label": "Sector",
+                "name": company.sector if company else None,
+                "returns": sector_returns,
+                "note": None if sector_returns else "Insufficient stored peer history; N/A shown.",
+            },
         ],
-        "method": "Current-period open to latest close; industry/sector are equal-weight averages of stored peers. These raw returns do not use RS scoring weights.",
+        "method": "Current-period open to latest close; industry/sector are equal-weight averages of at least 5 stored peers, excluding the selected stock. If fewer peers are available, N/A is shown. These raw returns do not use RS scoring weights.",
     }
 
     delivery_summary = _nse_delivery_summary(symbol) if exchange == "NSE" else {
@@ -1841,6 +1875,20 @@ def get_technical_summary(
         "volume_delivery": delivery_summary,
         "rs_rating": rs_rating,
         "rs_available": rs_rating is not None and len(rs_chart) > 1,
+        "rs_universe": {
+            "target_size": RS_PERCENTILE_TOTAL_STOCKS,
+            "scored_stocks_available": int(rs_metrics.get("_scored_stocks_available", 0) or 0),
+            "coverage_percent": round(
+                min(100.0, (float(rs_metrics.get("_scored_stocks_available", 0) or 0) / RS_PERCENTILE_TOTAL_STOCKS) * 100.0),
+                2,
+            ),
+            "complete": int(rs_metrics.get("_scored_stocks_available", 0) or 0) >= RS_PERCENTILE_TOTAL_STOCKS,
+            "note": (
+                "Client percentile denominator is fixed at 5,000. The RS score is provisional until 5,000 stored stocks have usable comparison history."
+                if int(rs_metrics.get("_scored_stocks_available", 0) or 0) < RS_PERCENTILE_TOTAL_STOCKS
+                else "The stored RS comparison universe meets the client-required 5,000-stock denominator."
+            ),
+        },
         "rs_weighted_relative_return_percent": round(rs_weighted_relative_return, 2) if rs_weighted_relative_return is not None else None,
         "rs_benchmark": benchmark_name,
         "rs_periods": rs_metrics,

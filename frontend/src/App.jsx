@@ -31,6 +31,28 @@ const formatPctChange = (value) => {
 
 const defaultScoreWeights = { fundamental: 30, technical: 25, relative_strength: 25, ownership: 15, sector: 5 };
 const defaultRsWeights = { "1w": 30, "2w": 0, "1m": 25, "2m": 0, "3m": 20, "6m": 15, "1y": 10, "sector": 0 };
+const SCORE_WEIGHTS_STORAGE_VERSION = "m2-client-composite-100-v1";
+const RS_WEIGHTS_STORAGE_VERSION = "m2-rs-fixed-5000-v1";
+
+const formatClientFilterValue = (key, value) => {
+  if (key === "delivery_percent" && value && typeof value === "object") {
+    if (!value.available) return "N/A";
+    const day = value.day?.percent;
+    const week = value.weekly?.percent;
+    const month = value.monthly?.percent;
+    const parts = [
+      day != null ? `Day ${Number(day).toFixed(2)}%` : null,
+      week != null ? `Week ${Number(week).toFixed(2)}%` : null,
+      month != null ? `Month ${Number(month).toFixed(2)}%` : null,
+    ].filter(Boolean);
+    return parts.length ? parts.join(" • ") : "N/A";
+  }
+  if (typeof value === "boolean") return value ? "Yes" : "No";
+  if (value === null || value === undefined) return "N/A";
+  if (typeof value === "number") return Number(value).toFixed(2);
+  if (typeof value === "object") return "N/A";
+  return String(value);
+};
 const defaultRankingSubweights = {
   technical: { ema20: 20, ema50: 20, ema150: 20, ema200: 20, rsi: 20 },
   fundamental: { eps: 20, net_income: 20, profit_margin: 20, roe: 20, roa: 20 },
@@ -151,6 +173,7 @@ function App() {
   const [indicators, setIndicators] = useState(null);
   const [fundamentalHistory, setFundamentalHistory] = useState(null);
   const [secEdgar, setSecEdgar] = useState(null);
+  const [secEdgarError, setSecEdgarError] = useState("");
   const [smaShort, setSmaShort] = useState(20);
   const [smaLong, setSmaLong] = useState(50);
   const [rsiPeriod, setRsiPeriod] = useState(14);
@@ -166,9 +189,10 @@ function App() {
   const [chartInfo, setChartInfo] = useState(null);
   const [scoreWeights, setScoreWeights] = useState(() => {
     try {
+      if (localStorage.getItem("scoreWeightsVersion") !== SCORE_WEIGHTS_STORAGE_VERSION) {
+        return { ...defaultScoreWeights };
+      }
       const saved = JSON.parse(localStorage.getItem("scoreWeights")) || {};
-      const legacyMilestone1 = Number(saved.technical) === 35 && Number(saved.fundamental) === 35 && Number(saved.relative_strength) === 15 && Number(saved.ownership) === 10 && saved.sector == null;
-      if (legacyMilestone1) return { ...defaultScoreWeights };
       return {
         technical: Number(saved.technical ?? defaultScoreWeights.technical),
         fundamental: Number(saved.fundamental ?? defaultScoreWeights.fundamental),
@@ -181,9 +205,11 @@ function App() {
     }
   });
   const [rsWeights, setRsWeights] = useState(() => {
+    if (localStorage.getItem("rsWeightsVersion") !== RS_WEIGHTS_STORAGE_VERSION) {
+      return { ...defaultRsWeights };
+    }
     const saved = readLocalObject("rsWeights", defaultRsWeights);
-    const legacy = Number(saved["1w"]) === 20 && Number(saved["1m"]) === 20 && Number(saved["3m"]) === 20 && Number(saved["6m"]) === 10 && Number(saved["1y"]) === 10 && Number(saved.sector) === 20;
-    return legacy ? { ...defaultRsWeights } : { ...defaultRsWeights, ...saved };
+    return { ...defaultRsWeights, ...saved };
   });
   const [rsVisibility, setRsVisibility] = useState(() => readLocalObject("rsVisibility", { "1w": true, "2w": false, "1m": true, "2m": false, "3m": true, "6m": true, "1y": true, "sector": true }));
   const [rankingSubweights, setRankingSubweights] = useState(() => {
@@ -403,15 +429,21 @@ function App() {
   const loadSecEdgar = async () => {
     if (exchange !== "US") {
       setSecEdgar(null);
+      setSecEdgarError("");
       return;
     }
     try {
+      setSecEdgarError("");
       const res = await axios.get(
         `${API}/market/sec-edgar/${symbol}?exchange=US&filings_limit=12`
       );
       setSecEdgar(res.data);
-    } catch {
+    } catch (error) {
       setSecEdgar(null);
+      setSecEdgarError(
+        error?.response?.data?.detail ||
+        "SEC EDGAR data is currently unavailable. Verify SEC_USER_AGENT in the backend environment and try again."
+      );
     }
   };
 
@@ -1264,8 +1296,10 @@ function App() {
               <div className="ranking-actions">
                 <button className="ranking-primary-button" onClick={() => {
                   localStorage.setItem("scoreWeights", JSON.stringify(scoreWeights));
+                  localStorage.setItem("scoreWeightsVersion", SCORE_WEIGHTS_STORAGE_VERSION);
                   localStorage.setItem("handwrittenFactors", JSON.stringify(handwrittenFactors));
                   localStorage.setItem("rsWeights", JSON.stringify(rsWeights));
+                  localStorage.setItem("rsWeightsVersion", RS_WEIGHTS_STORAGE_VERSION);
                   localStorage.setItem("rsVisibility", JSON.stringify(rsVisibility));
                   loadDashboard();
                   loadTechnicalSummary();
@@ -1279,7 +1313,8 @@ function App() {
                 <button type="button" className="secondary-button ranking-secondary-button" onClick={() => {
                   setScoreWeights({ ...defaultScoreWeights });
                   setHandwrittenFactors(JSON.parse(JSON.stringify(defaultHandwrittenFactors)));
-                  localStorage.removeItem("scoreWeights");
+                  localStorage.setItem("scoreWeights", JSON.stringify(defaultScoreWeights));
+                  localStorage.setItem("scoreWeightsVersion", SCORE_WEIGHTS_STORAGE_VERSION);
                   localStorage.removeItem("handwrittenFactors");
                 }}>Reset Defaults</button>
               </div>
@@ -1418,7 +1453,7 @@ function App() {
                           <div className="ranking-parameter-copy">
                             <strong>{key.replaceAll("_", " ")}</strong>
                           </div>
-                          <span>{typeof value === "boolean" ? (value ? "Yes" : "No") : value == null ? "N/A" : typeof value === "number" ? Number(value).toFixed(2) : String(value)}</span>
+                          <span>{formatClientFilterValue(key, value)}</span>
                         </div>
                       ))}
                     </div>
@@ -1569,6 +1604,7 @@ function App() {
             ))}
             <button onClick={() => {
               localStorage.setItem("rsWeights", JSON.stringify(rsWeights));
+              localStorage.setItem("rsWeightsVersion", RS_WEIGHTS_STORAGE_VERSION);
               localStorage.setItem("rsVisibility", JSON.stringify(rsVisibility));
               loadTechnicalSummary();
               loadDashboard();
@@ -1576,9 +1612,13 @@ function App() {
           </div>
           <div className="rs-score-summary">
             <div className="metric rs-score-card">
-              <span>Final RS Score</span>
+              <span>{technicalSummary?.rs_universe?.complete ? "Final RS Score" : "RS Score (Provisional)"}</span>
               <strong>{technicalSummary?.rs_available ? Number(technicalSummary.rs_rating).toFixed(2) : "N/A"}</strong>
-              <small>Percentile-weighted score from the enabled RS periods</small>
+              <small>
+                {technicalSummary?.rs_universe
+                  ? `${Number(technicalSummary.rs_universe.scored_stocks_available || 0).toLocaleString()}/${Number(technicalSummary.rs_universe.target_size || 5000).toLocaleString()} scored stocks available`
+                  : "Percentile-weighted score from the enabled RS periods"}
+              </small>
             </div>
           </div>
           <div className="rs-period-grid">
@@ -1622,6 +1662,7 @@ function App() {
                         <td>
                           <strong>{row.label}</strong>
                           {row.name ? <small style={{ display: "block" }}>{row.name}</small> : null}
+                          {row.note ? <small style={{ display: "block" }}>{row.note}</small> : null}
                         </td>
                         {(technicalSummary.rs_comparison.periods || []).map((period) => (
                           <td key={period}>{formatPctChange(row.returns?.[period])}</td>
@@ -1651,6 +1692,12 @@ function App() {
                 </table>
               </div>
               <div className="chart-note">Changing RS weightage changes only the Final RS Score contribution. Raw stock return, benchmark return and Relative Return remain unchanged.</div>
+              {technicalSummary?.rs_universe && !technicalSummary.rs_universe.complete && (
+                <div className="provider-warning" style={{ marginTop: 10 }}>
+                  RS universe coverage: {Number(technicalSummary.rs_universe.scored_stocks_available || 0).toLocaleString()} / {Number(technicalSummary.rs_universe.target_size || 5000).toLocaleString()} scored stocks.
+                  The client-required percentile denominator remains fixed at 5,000, so the displayed RS score is provisional until the stored comparison universe is populated.
+                </div>
+              )}
             </div>
           )}
 
@@ -2226,6 +2273,16 @@ function App() {
               </table>
             </div>
             <div className="chart-note">SEC EDGAR is used for official US filing/XBRL data. It does not replace OHLCV price data, and unavailable ownership classifications are not fabricated.</div>
+          </section>
+        )}
+
+        {exchange === "US" && !secEdgar && secEdgarError && (
+          <section className="fundamental-section">
+            <h2>SEC EDGAR — Official US Filings</h2>
+            <div className="provider-warning">{secEdgarError}</div>
+            <div className="chart-note">
+              SEC EDGAR requires a backend SEC_USER_AGENT containing the application name and a real contact email. No SEC values are substituted when the official source is unavailable.
+            </div>
           </section>
         )}
 
