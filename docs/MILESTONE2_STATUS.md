@@ -30,3 +30,12 @@ This is the cumulative Milestone 2 continuation build. It preserves all accepted
 - SEC EDGAR is used for official US filings/XBRL fundamentals, not stock-price OHLCV.
 - US Promoter/FII/DII rows remain N/A because those are Indian-market classifications.
 - API/provider failures return explicit error/stale states rather than silently presenting old data as current.
+
+## Latest handwritten ranking update
+
+- Overall client composite updated to Fundamental 30% + Technical 25% + RS 25% + Ownership 15% + Sector 5%.
+- Sector-ranking formula captured: EPS 30%, PAT 25%, Sales 20%, Growth Acceleration 15%, Growth Breadth 5%, Acceleration Breadth 5%.
+- Technical Summary now exposes the additional trend/strength/momentum/participation/volatility/base-formation filter inputs from the latest notes.
+- Excel Power Query feed and editable workbook export added.
+- Kotak Neo is registered as the planned Indian-stock-only provider; credentials remain external to source control.
+- Ambiguous handwritten point values are not guessed.

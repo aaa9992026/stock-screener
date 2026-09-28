@@ -29,7 +29,7 @@ const formatPctChange = (value) => {
   return `${prefix}${numeric.toFixed(2)}%`;
 };
 
-const defaultScoreWeights = { technical: 35, fundamental: 35, relative_strength: 15, ownership: 10 };
+const defaultScoreWeights = { fundamental: 30, technical: 25, relative_strength: 25, ownership: 15, sector: 5 };
 const defaultRsWeights = { "1w": 30, "2w": 0, "1m": 25, "2m": 0, "3m": 20, "6m": 15, "1y": 10, "sector": 0 };
 const defaultRankingSubweights = {
   technical: { ema20: 20, ema50: 20, ema150: 20, ema200: 20, rsi: 20 },
@@ -167,11 +167,14 @@ function App() {
   const [scoreWeights, setScoreWeights] = useState(() => {
     try {
       const saved = JSON.parse(localStorage.getItem("scoreWeights")) || {};
+      const legacyMilestone1 = Number(saved.technical) === 35 && Number(saved.fundamental) === 35 && Number(saved.relative_strength) === 15 && Number(saved.ownership) === 10 && saved.sector == null;
+      if (legacyMilestone1) return { ...defaultScoreWeights };
       return {
         technical: Number(saved.technical ?? defaultScoreWeights.technical),
         fundamental: Number(saved.fundamental ?? defaultScoreWeights.fundamental),
         relative_strength: Number(saved.relative_strength ?? defaultScoreWeights.relative_strength),
         ownership: Number(saved.ownership ?? defaultScoreWeights.ownership),
+        sector: Number(saved.sector ?? defaultScoreWeights.sector),
       };
     } catch {
       return { ...defaultScoreWeights };
@@ -236,6 +239,7 @@ function App() {
         fundamental_weight: scoreWeights.fundamental,
         relative_strength_weight: scoreWeights.relative_strength,
         ownership_weight: scoreWeights.ownership,
+        sector_weight: scoreWeights.sector,
         technical_ema20_weight: rankingSubweights.technical.ema20,
         technical_ema50_weight: rankingSubweights.technical.ema50,
         technical_ema150_weight: rankingSubweights.technical.ema150,
@@ -342,16 +346,12 @@ function App() {
   };
 
   const loadFundamentals = async () => {
-    if (exchange !== "US") {
-      setFundamentals(null);
-      return;
-    }
-
     try {
-      // Refresh first so an older empty DB row (for example BA) does not keep
-      // rendering dashes after provider data has become available.
+      // Refresh from the configured provider. For NSE/BSE this uses the Yahoo
+      // statement fallback until the client's Kotak Neo credentials are wired
+      // into the live Indian market-data adapter.
       const res = await axios.post(
-        `${API}/market/fundamentals/${symbol}?exchange=US`
+        `${API}/market/fundamentals/${symbol}?exchange=${exchange}`
       );
 
       setFundamentals({
@@ -374,12 +374,14 @@ function App() {
           float_shares: res.data.fundamentals.float_shares,
         }
       });
+      loadDashboard();
     } catch {
       try {
         const res = await axios.get(
-          `${API}/market/fundamentals/${symbol}?exchange=US`
+          `${API}/market/fundamentals/${symbol}?exchange=${exchange}`
         );
         setFundamentals(res.data);
+        loadDashboard();
       } catch {
         setFundamentals(null);
       }
@@ -512,13 +514,11 @@ function App() {
     loadOwnershipDetails();
     loadIndiaShareholding();
 
+    loadFundamentals();
+    loadFundamentalHistory();
     if (exchange === "US") {
-      loadFundamentals();
-      loadFundamentalHistory();
       loadSecEdgar();
     } else {
-      setFundamentals(null);
-      setFundamentalHistory(null);
       setSecEdgar(null);
     }
   }, [symbol, timeframe, exchange]);
@@ -940,6 +940,7 @@ function App() {
       fundamental: fundamentalComponent,
       relative_strength: technicalSummary?.rs_available === false ? null : finite(technicalSummary?.rs_rating),
       ownership: ownershipComponent,
+      sector: finite(dashboard?.score_components?.sector),
     };
     const enteredTotal = Object.values(scoreWeights).reduce((sum, value) => sum + Math.max(0, Number(value) || 0), 0);
     const normalizedWeights = Object.fromEntries(Object.entries(scoreWeights).map(([key,value]) => [key, enteredTotal > 0 ? Math.max(0, Number(value) || 0) / enteredTotal * 100 : 0]));
@@ -1216,12 +1217,11 @@ function App() {
         )}
 
         {dashboard && (
-          exchange === "US" ? (
             <section className="fundamental-section score-weight-section ranking-settings-panel">
               <div className="ranking-settings-header">
                 <div>
-                  <h2>Ranking Weight Settings (US)</h2>
-                  <p>Customize the broad ranking categories, then use only the client's handwritten factors below.</p>
+                  <h2>Milestone 2 Ranking Weight Settings ({exchange})</h2>
+                  <p>Client composite: Fundamental 30% + Technical 25% + RS 25% + Ownership 15% + Sector 5%. Editable weights remain normalized automatically.</p>
                 </div>
                 <div className="ranking-total-badge">
                   <span>Entered total</span>
@@ -1234,8 +1234,9 @@ function App() {
                 {[
                   ["technical", "Technical", "Trend, moving averages and RSI"],
                   ["fundamental", "Fundamental", "Earnings, margins and returns"],
-                  ["relative_strength", "Relative Strength", "Performance vs S&P 500"],
-                  ["ownership", "Ownership", "Institutional and insider positioning"],
+                  ["relative_strength", "Relative Strength", `Performance vs ${exchange === "US" ? "S&P 500" : "NIFTY 500"}`],
+                  ["ownership", "Ownership", exchange === "US" ? "Institutional and insider positioning" : "Promoter / FII / DII-MF positioning"],
+                  ["sector", "Sector", "Sector growth ranking from EPS/PAT/Sales breadth and acceleration"],
                 ].map(([key, label, description]) => {
                   const value = Number(scoreWeights[key]) || 0;
                   return (
@@ -1269,6 +1270,9 @@ function App() {
                   loadDashboard();
                   loadTechnicalSummary();
                 }}>Apply Ranking</button>
+                <button type="button" className="secondary-button ranking-secondary-button" onClick={() => {
+                  window.open(`${API}/market/excel-export/${symbol}?exchange=${exchange}`, "_blank", "noopener,noreferrer");
+                }}>Export / Connect Excel</button>
                 <button type="button" className="secondary-button ranking-secondary-button" onClick={() => setShowRankingDetails((v) => !v)}>
                   {showRankingDetails ? "Hide Factors" : "Show Factors"}
                 </button>
@@ -1281,7 +1285,7 @@ function App() {
               </div>
 
               <div className="ranking-help-note">
-                <strong>How weighting works:</strong> only the factors from the client's handwritten sheets are used here. Category and factor weightages are customizable and normalized automatically. Use the Enabled/Disabled switch beside each factor to include or exclude it. Weightage and editable values remain customizable. Breakout/VCP remains analysis-only and is not a final-ranking category.
+                <strong>How weighting works:</strong> the Milestone 2 default follows the latest handwritten composite formula: Fundamental 30%, Technical 25%, RS 25%, Ownership 15%, Sector 5%. Missing provider values remain N/A and are never invented. Ambiguous handwritten point allocations remain editable until confirmed.
               </div>
 
               {showRankingDetails && (
@@ -1374,24 +1378,58 @@ function App() {
                 </div>
               )}
             </section>
-          ) : (
-            <section className="fundamental-section score-weight-section">
-              <h2>Indian Market Ranking</h2>
-              <div
-                style={{
-                  padding: "18px",
-                  border: "1px solid #f0c36d",
-                  borderRadius: "10px",
-                  background: "#fffaf0",
-                }}
-              >
-                <strong>Ranking unavailable</strong>
-                <p style={{ margin: "8px 0 0" }}>
-                  Fundamental and ownership data are required before an Indian-market ranking can be calculated. Technical analysis and RS vs NIFTY 500 remain available.
-                </p>
+        )}
+
+        {dashboard && (
+          <section className="fundamental-section">
+            <div className="ranking-settings-header">
+              <div>
+                <h2>Latest Client Ranking Formula</h2>
+                <p>Captured from the newest handwritten Milestone 2 notes.</p>
               </div>
-            </section>
-          )
+              <button type="button" className="secondary-button" onClick={() => {
+                window.open(`${API}/market/excel-feed/${symbol}?exchange=${exchange}`, "_blank", "noopener,noreferrer");
+              }}>Open Excel Feed</button>
+            </div>
+            <div className="chart-note">
+              Composite = Fundamental × 30% + Technical × 25% + RS × 25% + Ownership × 15% + Sector × 5%
+            </div>
+            <div className="chart-note" style={{ marginTop: 8 }}>
+              Sector = EPS RS × 30% + PAT RS × 25% + Sales RS × 20% + Growth Acceleration RS × 15% + Growth Breadth × 5% + Acceleration Breadth × 5%
+            </div>
+            <div className="chart-note" style={{ marginTop: 8 }}>
+              Sector Growth Breadth = (Sales breadth + PAT breadth + EPS breadth) / 3. Acceleration Breadth = 35% EPS + 35% PAT + 30% Sales. Sector growth aggregation uses the median stock growth from the client note.
+            </div>
+            {technicalSummary?.client_technical_filters && (
+              <div className="ranking-detail-grid" style={{ marginTop: 16 }}>
+                {[
+                  ["Trend", technicalSummary.client_technical_filters.trend],
+                  ["Strength", technicalSummary.client_technical_filters.strength],
+                  ["Momentum", technicalSummary.client_technical_filters.momentum],
+                  ["Participation", technicalSummary.client_technical_filters.participation],
+                  ["Volatility", technicalSummary.client_technical_filters.volatility],
+                  ["Base Formation", technicalSummary.client_technical_filters.base_formation],
+                ].map(([title, values]) => (
+                  <div className="ranking-detail-card" key={title}>
+                    <div className="ranking-detail-card-header"><div><h3>{title}</h3></div></div>
+                    <div className="ranking-parameter-list">
+                      {Object.entries(values || {}).slice(0, 8).map(([key, value]) => (
+                        <div className="ranking-parameter-row" key={key}>
+                          <div className="ranking-parameter-copy">
+                            <strong>{key.replaceAll("_", " ")}</strong>
+                          </div>
+                          <span>{typeof value === "boolean" ? (value ? "Yes" : "No") : value == null ? "N/A" : typeof value === "number" ? Number(value).toFixed(2) : String(value)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="ranking-help-note" style={{ marginTop: 14 }}>
+              Unclear handwritten point allocations are intentionally not guessed. They remain editable until the client confirms the exact values.
+            </div>
+          </section>
         )}
 
         <section className="chart-card">

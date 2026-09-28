@@ -60,3 +60,17 @@ npm run dev
 ```
 
 Swagger is available at `http://127.0.0.1:8000/docs` when the backend is running.
+
+
+## Milestone 2 ranking + Excel
+
+Latest client handwritten formulas are documented in `docs/MILESTONE2_HANDWRITTEN_RANKING_SYSTEM.md`.
+
+Useful endpoints:
+
+- `GET /market/ranking-spec` — machine-readable client composite/sector formulas.
+- `GET /market/excel-feed/{symbol}?exchange=NSE` — refreshable JSON feed for Excel Power Query.
+- `GET /market/excel-export/{symbol}?exchange=NSE` — editable Excel workbook snapshot.
+- `GET /market/provider-status` — configured provider status, including SEC/Twelve Data/Kotak Neo readiness.
+
+Kotak Neo is kept separate as an Indian-market source. Do not commit client API keys/tokens to Git.

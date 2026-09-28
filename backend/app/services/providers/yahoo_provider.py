@@ -68,8 +68,9 @@ class YahooProvider(BaseMarketDataProvider):
 
         return results
 
-    def get_fundamentals(self, symbol: str):
-        ticker = yf.Ticker(symbol)
+    def get_fundamentals(self, symbol: str, exchange: str = "US"):
+        provider_symbol = self.format_symbol(symbol, exchange)
+        ticker = yf.Ticker(provider_symbol)
         info = ticker.info
 
         return {
@@ -89,8 +90,9 @@ class YahooProvider(BaseMarketDataProvider):
             "industry": info.get("industry"),
         }
 
-    def get_fundamental_history(self, symbol: str):
-        ticker = yf.Ticker(symbol)
+    def get_fundamental_history(self, symbol: str, exchange: str = "US"):
+        provider_symbol = self.format_symbol(symbol, exchange)
+        ticker = yf.Ticker(provider_symbol)
 
         quarterly = ticker.quarterly_financials
         annual = ticker.financials
@@ -488,6 +490,7 @@ class YahooProvider(BaseMarketDataProvider):
 
         yahoo_result = {
             "symbol": symbol.upper(),
+            "exchange": exchange.upper(),
             "quarterly": quarterly_results,
             "annual": annual_results,
             "cagr_3y": cagr_3y,
@@ -504,7 +507,7 @@ class YahooProvider(BaseMarketDataProvider):
         # This is stronger than replacing an entire table only when it has more
         # rows: issuers can have the same row count but different missing fields.
         try:
-            sec_result = SECFundamentalsProvider().get_history(symbol.upper())
+            sec_result = SECFundamentalsProvider().get_history(symbol.upper()) if exchange.upper() == "US" else None
             if sec_result:
                 from datetime import datetime as _dt
 

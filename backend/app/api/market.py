@@ -2,6 +2,7 @@ from app.models import OHLCV
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi import Query
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.database import SessionLocal
@@ -17,6 +18,7 @@ from app.services.scheduler import refresh_configured_market_data
 import os
 import math
 import requests
+from io import BytesIO
 from datetime import datetime, timedelta, date
 import yfinance as yf
 
@@ -101,6 +103,85 @@ def _rsi(values, period=14):
         return 100.0
     rs = avg_gain / avg_loss
     return 100 - (100 / (1 + rs))
+
+
+CLIENT_COMPOSITE_WEIGHTS = {
+    "fundamental": 30.0,
+    "technical": 25.0,
+    "relative_strength": 25.0,
+    "ownership": 15.0,
+    "sector": 5.0,
+}
+
+CLIENT_SECTOR_WEIGHTS = {
+    "eps_growth_rs": 30.0,
+    "pat_growth_rs": 25.0,
+    "sales_growth_rs": 20.0,
+    "growth_acceleration_rs": 15.0,
+    "growth_breadth": 5.0,
+    "acceleration_breadth": 5.0,
+}
+
+
+def _roc(values, periods):
+    if periods <= 0 or len(values) <= periods:
+        return None
+    base = values[-1 - periods]
+    if base in (None, 0):
+        return None
+    return ((values[-1] / base) - 1) * 100
+
+
+def _wilder_series(values, period):
+    if len(values) < period:
+        return []
+    out = [None] * len(values)
+    value = sum(values[:period]) / period
+    out[period - 1] = value
+    for i in range(period, len(values)):
+        value = ((value * (period - 1)) + values[i]) / period
+        out[i] = value
+    return out
+
+
+def _adx_di(highs, lows, closes, period=14):
+    """Return latest ADX, +DI, -DI and DI spread using Wilder smoothing."""
+    if len(closes) < (period * 2 + 1):
+        return None, None, None, None
+    trs, plus_dm, minus_dm = [], [], []
+    for i in range(1, len(closes)):
+        up = highs[i] - highs[i - 1]
+        down = lows[i - 1] - lows[i]
+        plus_dm.append(up if up > down and up > 0 else 0.0)
+        minus_dm.append(down if down > up and down > 0 else 0.0)
+        trs.append(max(
+            highs[i] - lows[i],
+            abs(highs[i] - closes[i - 1]),
+            abs(lows[i] - closes[i - 1]),
+        ))
+    atr_s = _wilder_series(trs, period)
+    plus_s = _wilder_series(plus_dm, period)
+    minus_s = _wilder_series(minus_dm, period)
+    dx = []
+    di_pairs = []
+    for tr, pdm, mdm in zip(atr_s, plus_s, minus_s):
+        if tr in (None, 0) or pdm is None or mdm is None:
+            dx.append(None)
+            di_pairs.append((None, None))
+            continue
+        pdi = 100 * pdm / tr
+        mdi = 100 * mdm / tr
+        denom = pdi + mdi
+        dx.append((100 * abs(pdi - mdi) / denom) if denom else 0.0)
+        di_pairs.append((pdi, mdi))
+    usable_dx = [v for v in dx if v is not None]
+    if len(usable_dx) < period:
+        return None, None, None, None
+    adx_series = _wilder_series(usable_dx, period)
+    adx = next((v for v in reversed(adx_series) if v is not None), None)
+    plus_di, minus_di = next(((p, m) for p, m in reversed(di_pairs) if p is not None and m is not None), (None, None))
+    spread = (plus_di - minus_di) if plus_di is not None and minus_di is not None else None
+    return adx, plus_di, minus_di, spread
 
 
 def _shift_months(value_date, months):
@@ -605,12 +686,7 @@ def _weighted_rs_against_benchmark(daily_rows, exchange: str, period_weights=Non
 
 
 def _normalize_score_weights(weights=None):
-    defaults = {
-        "technical": 35.0,
-        "fundamental": 35.0,
-        "relative_strength": 15.0,
-        "ownership": 10.0,
-    }
+    defaults = dict(CLIENT_COMPOSITE_WEIGHTS)
     if not weights:
         return defaults
 
@@ -645,6 +721,10 @@ def _score_symbol(db: Session, symbol: str, exchange: str, weights=None, include
         "fundamental": None,
         "relative_strength": None,
         "ownership": None,
+        # Sector growth score is a separate Milestone-2 component. It remains
+        # unavailable until the peer fundamental-growth universe has enough
+        # real observations; it is never replaced with a price-RS proxy.
+        "sector": None,
     }
 
     closes = [float(row.close) for row in rows if row.close is not None]
@@ -910,10 +990,11 @@ def get_history(
 def get_dashboard_summary(
     symbol: str,
     exchange: str = "US",
-    technical_weight: float = 35,
-    fundamental_weight: float = 35,
-    relative_strength_weight: float = 15,
-    ownership_weight: float = 10,
+    technical_weight: float = 25,
+    fundamental_weight: float = 30,
+    relative_strength_weight: float = 25,
+    ownership_weight: float = 15,
+    sector_weight: float = 5,
     technical_ema20_weight: float = 20,
     technical_ema50_weight: float = 20,
     technical_ema150_weight: float = 20,
@@ -950,6 +1031,7 @@ def get_dashboard_summary(
         "fundamental": fundamental_weight,
         "relative_strength": relative_strength_weight,
         "ownership": ownership_weight,
+        "sector": sector_weight,
     }
     ranking_subweights = {
         "technical": {"ema20": technical_ema20_weight, "ema50": technical_ema50_weight, "ema150": technical_ema150_weight, "ema200": technical_ema200_weight, "rsi": technical_rsi_weight},
@@ -1004,7 +1086,7 @@ def get_dashboard_summary(
         "industry": company.industry if company else None,
         "sector_rank": sector_rank,
         "industry_rank": industry_rank,
-        "method_note": "Overall score combines Technical, Fundamental, Ownership, and Relative Strength categories. Breakout/VCP remains available as technical analysis but is not a separate final-ranking category. For NSE/BSE, a score is withheld when a positively weighted fundamental or ownership category is unavailable, rather than producing a misleading partial ranking."
+        "method_note": "Milestone-2 composite follows the client note: Fundamental 30% + Technical 25% + RS 25% + Ownership 15% + Sector 5%. Sector is included only when its real growth-ranking component is available; it is never substituted with price RS. For NSE/BSE, a score is withheld when a positively weighted fundamental or ownership category is unavailable, rather than producing a misleading partial ranking."
     })
 
 
@@ -1046,6 +1128,168 @@ def refresh_configured_symbols_now():
     return _json_safe(refresh_configured_market_data())
 
 
+@router.get("/ranking-spec")
+def get_client_ranking_spec():
+    """Machine-readable Milestone-2 formulas transcribed from the client's notes."""
+    return {
+        "overall_composite": {
+            "formula": "Fundamental*0.30 + Technical*0.25 + RS*0.25 + Ownership*0.15 + Sector*0.05",
+            "weights_percent": CLIENT_COMPOSITE_WEIGHTS,
+        },
+        "sector_ranking": {
+            "formula": "EPS_RS*0.30 + PAT_RS*0.25 + Sales_RS*0.20 + GrowthAcceleration_RS*0.15 + GrowthBreadth*0.05 + AccelerationBreadth*0.05",
+            "weights_percent": CLIENT_SECTOR_WEIGHTS,
+            "aggregation": "Use median stock growth for sector growth metrics rather than average.",
+            "growth_breadth": "(Sales breadth + PAT breadth + EPS breadth) / 3",
+            "acceleration_breadth": "EPS acceleration breadth*0.35 + PAT acceleration breadth*0.35 + Sales acceleration breadth*0.30",
+        },
+        "data_integrity": {
+            "missing_values": "N/A; never fabricate a value to complete a score.",
+            "ambiguous_handwritten_weights": "Remain editable/unconfirmed until the client confirms them.",
+        },
+    }
+
+
+@router.get("/excel-feed/{symbol}")
+def get_excel_feed(symbol: str, exchange: str = "US", limit: int = Query(260, ge=20, le=2000), db: Session = Depends(get_db)):
+    """Refreshable JSON feed for Excel Power Query; no CSV upload is required."""
+    symbol = symbol.upper()
+    exchange = exchange.upper()
+    company = db.query(Company).filter(Company.symbol == symbol, Company.exchange == exchange).first()
+    rows = (
+        db.query(OHLCV)
+        .filter(OHLCV.symbol == symbol, OHLCV.exchange == exchange)
+        .order_by(OHLCV.date.desc())
+        .limit(limit)
+        .all()
+    )
+    rows = list(reversed(_valid_trading_rows(rows, exchange)))
+    fundamental = db.query(Fundamental).filter(Fundamental.symbol == symbol, Fundamental.exchange == exchange).first()
+    ownership = db.query(Ownership).filter(Ownership.symbol == symbol, Ownership.exchange == exchange).first()
+    return _json_safe({
+        "symbol": symbol,
+        "exchange": exchange,
+        "generated_at": datetime.utcnow().isoformat() + "Z",
+        "company": {
+            "name": company.name if company else None,
+            "sector": company.sector if company else None,
+            "industry": company.industry if company else None,
+        },
+        "fundamental_snapshot": {
+            "market_cap": fundamental.market_cap if fundamental else None,
+            "trailing_eps": fundamental.trailing_eps if fundamental else None,
+            "forward_eps": fundamental.forward_eps if fundamental else None,
+            "revenue": fundamental.revenue if fundamental else None,
+            "net_income": fundamental.net_income if fundamental else None,
+            "profit_margin": fundamental.profit_margin if fundamental else None,
+            "return_on_equity": fundamental.return_on_equity if fundamental else None,
+            "return_on_assets": fundamental.return_on_assets if fundamental else None,
+        },
+        "ownership_snapshot": {
+            "insider_percent": ownership.insider_percent if ownership else None,
+            "institution_percent": ownership.institution_percent if ownership else None,
+            "shares_outstanding": ownership.shares_outstanding if ownership else None,
+            "float_shares": ownership.float_shares if ownership else None,
+        },
+        "ohlcv": [
+            {"date": r.date.isoformat(), "open": r.open, "high": r.high, "low": r.low, "close": r.close, "volume": r.volume}
+            for r in rows
+        ],
+        "ranking_spec": get_client_ranking_spec(),
+        "excel_note": "Use Excel > Data > Get Data > From Web with this endpoint. Refresh in Excel re-requests current stored provider data.",
+    })
+
+
+@router.get("/excel-export/{symbol}")
+def export_excel_snapshot(symbol: str, exchange: str = "US", limit: int = Query(500, ge=20, le=5000), db: Session = Depends(get_db)):
+    """Download an editable workbook containing real stored data + client ranking formula sheets."""
+    try:
+        from openpyxl import Workbook
+        from openpyxl.styles import Font
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Excel export dependency is unavailable: {exc}")
+
+    symbol = symbol.upper()
+    exchange = exchange.upper()
+    feed = get_excel_feed(symbol, exchange, limit, db)
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Summary"
+    summary_rows = [
+        ("Symbol", symbol), ("Exchange", exchange),
+        ("Company", feed["company"].get("name")),
+        ("Sector", feed["company"].get("sector")),
+        ("Industry", feed["company"].get("industry")),
+        ("Generated At", feed.get("generated_at")),
+    ]
+    for row in summary_rows:
+        ws.append(row)
+    ws["A1"].font = Font(bold=True)
+
+    raw = wb.create_sheet("OHLCV")
+    raw.append(["Date", "Open", "High", "Low", "Close", "Volume"])
+    for cell in raw[1]: cell.font = Font(bold=True)
+    for row in feed["ohlcv"]:
+        raw.append([row["date"], row["open"], row["high"], row["low"], row["close"], row["volume"]])
+
+    snap = wb.create_sheet("Fundamental_Ownership")
+    snap.append(["Field", "Value"])
+    for cell in snap[1]: cell.font = Font(bold=True)
+    for key, value in feed["fundamental_snapshot"].items(): snap.append([f"fundamental.{key}", value])
+    for key, value in feed["ownership_snapshot"].items(): snap.append([f"ownership.{key}", value])
+
+    cfg = wb.create_sheet("Ranking_Config")
+    cfg.append(["Component", "Score (0-100)", "Weight %", "Weighted Points"])
+    for cell in cfg[1]: cell.font = Font(bold=True)
+    order = ["fundamental", "technical", "relative_strength", "ownership", "sector"]
+    for idx, key in enumerate(order, start=2):
+        cfg.cell(idx, 1, key)
+        cfg.cell(idx, 2, None)
+        cfg.cell(idx, 3, CLIENT_COMPOSITE_WEIGHTS[key])
+        cfg.cell(idx, 4, f"=IF(ISNUMBER(B{idx}),B{idx}*C{idx}/100,0)")
+    cfg["A8"] = "Composite Score"
+    cfg["B8"] = "=IF(COUNT(B2:B6)=0,\"\",SUM(D2:D6)/SUMPRODUCT(--ISNUMBER(B2:B6),C2:C6)*100)"
+    cfg["A10"] = "Client formula"
+    cfg["B10"] = "Fundamental*0.30 + Technical*0.25 + RS*0.25 + Ownership*0.15 + Sector*0.05"
+
+    sector = wb.create_sheet("Sector_Ranking_Config")
+    sector.append(["Sector Component", "Score (0-100)", "Weight %", "Weighted Points"])
+    for cell in sector[1]: cell.font = Font(bold=True)
+    for idx, (key, weight) in enumerate(CLIENT_SECTOR_WEIGHTS.items(), start=2):
+        sector.cell(idx, 1, key)
+        sector.cell(idx, 2, None)
+        sector.cell(idx, 3, weight)
+        sector.cell(idx, 4, f"=IF(ISNUMBER(B{idx}),B{idx}*C{idx}/100,0)")
+    sector["A9"] = "Sector Score"
+    sector["B9"] = "=IF(COUNT(B2:B7)=0,\"\",SUM(D2:D7)/SUMPRODUCT(--ISNUMBER(B2:B7),C2:C7)*100)"
+    sector["A11"] = "Growth Breadth"
+    sector["B11"] = "=(Sales breadth + PAT breadth + EPS breadth) / 3"
+    sector["A12"] = "Acceleration Breadth"
+    sector["B12"] = "=35% EPS + 35% PAT + 30% Sales acceleration breadth"
+
+    notes = wb.create_sheet("Notes")
+    notes.append(["Milestone 2 handwritten ranking notes"])
+    notes["A1"].font = Font(bold=True)
+    notes.append(["All market/fundamental values must come from configured providers or stored DB data; missing values stay N/A."])
+    notes.append(["Ambiguous handwritten thresholds/point allocations remain editable and must not be guessed."])
+    notes.append(["For a live Excel connection, use the /market/excel-feed/{symbol}?exchange=... endpoint through Power Query."])
+
+    for sheet in wb.worksheets:
+        for col in sheet.columns:
+            width = min(60, max(12, max(len(str(c.value)) if c.value is not None else 0 for c in col) + 2))
+            sheet.column_dimensions[col[0].column_letter].width = width
+
+    stream = BytesIO()
+    wb.save(stream)
+    stream.seek(0)
+    filename = f"{symbol}_{exchange}_screener.xlsx"
+    return StreamingResponse(
+        stream,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
 @router.get("/provider-status")
 def get_provider_status():
     """Configuration-only provider status; no third-party network call is made."""
@@ -1070,6 +1314,14 @@ def get_provider_status():
                 "uses_personal_api_key": True,
                 "purpose": "BSE/XBOM daily OHLCV",
                 "required_env": "TWELVE_DATA_API_KEY",
+            },
+            "kotak_neo_india": {
+                "configured": bool(os.getenv("KOTAK_NEO_API_KEY", "").strip() or os.getenv("KOTAK_NEO_ACCESS_TOKEN", "").strip()),
+                "ready_for_live_quotes": bool(os.getenv("KOTAK_NEO_BASE_URL", "").strip() and os.getenv("KOTAK_NEO_ACCESS_TOKEN", "").strip()),
+                "uses_personal_api_key": True,
+                "purpose": "Indian-stock market data only; kept separate from US sources",
+                "required_env": "KOTAK_NEO_API_KEY / KOTAK_NEO_ACCESS_TOKEN / KOTAK_NEO_BASE_URL",
+                "note": "Credential/auth flow will be validated with the client's Kotak Neo account before enabling it as the live Indian provider.",
             },
         },
         "automatic_refresh": {
@@ -1231,6 +1483,31 @@ def get_technical_summary(
     avg_atr_percent_20 = _tail_average(atr_percent_series, 20)
     rsi14 = _rsi(closes, 14)
 
+    # Additional Milestone-2 technical filters from the client's handwritten notes.
+    latest_price = closes[-1]
+    ema20_previous = _ema(closes[:-1], 20) if len(closes) > 20 else None
+    ema50_previous = _ema(closes[:-1], 50) if len(closes) > 50 else None
+    ema200_previous = _ema(closes[:-1], 200) if len(closes) > 200 else None
+    adx14, plus_di14, minus_di14, di_spread14 = _adx_di(highs, lows, closes, 14)
+    roc_1m = _roc(closes, 21)
+    roc_3m = _roc(closes, 63)
+    roc_6m = _roc(closes, 126)
+    roc_12m = _roc(closes, 252)
+    roc_1m_two_weeks_ago = None
+    if len(closes) > 31:
+        historic = closes[:-10]
+        roc_1m_two_weeks_ago = _roc(historic, 21)
+    roc_acceleration_1m = (
+        roc_1m - roc_1m_two_weeks_ago
+        if roc_1m is not None and roc_1m_two_weeks_ago is not None else None
+    )
+
+    range90 = None
+    if len(rows) >= 90:
+        low90 = min(lows[-90:])
+        high90 = max(highs[-90:])
+        range90 = ((high90 - low90) / low90 * 100) if low90 else None
+
     recent20 = closes[-20:]
     sma20 = sum(recent20) / 20
     variance20 = sum((x - sma20) ** 2 for x in recent20) / 20
@@ -1240,6 +1517,15 @@ def get_technical_summary(
     # Client-specified Bollinger Band width formula:
     # (Upper BB - Lower BB) * 100 / Lower BB
     bb_width = ((bb_upper - bb_lower) / bb_lower * 100) if bb_lower not in (None, 0) else None
+    bb_width_20_periods_ago = None
+    if len(closes) >= 40:
+        old_window = closes[-40:-20]
+        old_mean = sum(old_window) / 20
+        old_var = sum((x - old_mean) ** 2 for x in old_window) / 20
+        old_sd = old_var ** 0.5
+        old_upper = old_mean + 2 * old_sd
+        old_lower = old_mean - 2 * old_sd
+        bb_width_20_periods_ago = ((old_upper - old_lower) / old_lower * 100) if old_lower else None
 
     range20 = ((max(highs[-20:]) - min(lows[-20:])) / min(lows[-20:]) * 100) if min(lows[-20:]) else None
 
@@ -1298,6 +1584,9 @@ def get_technical_summary(
     lookback_52w = min(periods_per_52w, len(rows))
     high_52w = max(highs[-lookback_52w:])
     distance_52w_high = ((high_52w - closes[-1]) / high_52w * 100) if high_52w else None
+    high_52w_slice = highs[-lookback_52w:]
+    high_52w_index = max(range(len(high_52w_slice)), key=lambda i: high_52w_slice[i]) if high_52w_slice else None
+    periods_since_52w_high = (len(high_52w_slice) - 1 - high_52w_index) if high_52w_index is not None else None
 
     # VCP/consolidation detection. Three successive 20-period windows are used
     # as transparent contractions. When both price depth and ATR% contract in
@@ -1455,6 +1744,62 @@ def get_technical_summary(
         "note": "True delivery percentage requires exchange deliverable-quantity data; ordinary OHLCV volume is not substituted.",
     }
 
+    client_technical_filters = {
+        "trend": {
+            "price": latest_price,
+            "price_gt_ema20": (latest_price > emas.get("20")) if emas.get("20") is not None else None,
+            "ema20_slope_positive": (emas.get("20") > ema20_previous) if emas.get("20") is not None and ema20_previous is not None else None,
+            "price_gt_ema50": (latest_price > emas.get("50")) if emas.get("50") is not None else None,
+            "ema50_slope_positive": (emas.get("50") > ema50_previous) if emas.get("50") is not None and ema50_previous is not None else None,
+            "price_gt_ema200": (latest_price > emas.get("200")) if emas.get("200") is not None else None,
+            "ema200_slope_positive": (emas.get("200") > ema200_previous) if emas.get("200") is not None and ema200_previous is not None else None,
+        },
+        "strength": {
+            "rs_score": rs_rating,
+            "distance_from_52w_high_percent": distance_52w_high,
+            "periods_since_52w_high": periods_since_52w_high,
+            "new_52w_high_within_30_periods": (periods_since_52w_high <= 30) if periods_since_52w_high is not None else None,
+            "adx_14": adx14,
+            "plus_di_14": plus_di14,
+            "minus_di_14": minus_di14,
+            "di_spread": di_spread14,
+            "di_spread_gt_10": (di_spread14 > 10) if di_spread14 is not None else None,
+        },
+        "momentum": {
+            "roc_1m_percent": roc_1m,
+            "roc_3m_percent": roc_3m,
+            "roc_6m_percent": roc_6m,
+            "roc_12m_percent": roc_12m,
+            "roc_1m_two_weeks_ago_percent": roc_1m_two_weeks_ago,
+            "roc_1m_acceleration_points": roc_acceleration_1m,
+        },
+        "participation": {
+            "average_volume_10": avg_volume_10,
+            "average_volume_20": avg_volume_20,
+            "average_volume_40": avg_volume_40,
+            "average_volume_50": avg_volume_50,
+            "delivery_percent": delivery_summary,
+        },
+        "volatility": {
+            "atr_percent": atr_percent,
+            "average_atr_percent_5": avg_atr_percent_5,
+            "average_atr_percent_10": avg_atr_percent_10,
+            "average_atr_percent_20": avg_atr_percent_20,
+            "bollinger_width_percent": bb_width,
+            "bollinger_width_20_periods_ago_percent": bb_width_20_periods_ago,
+            "bb_width_contracting": (bb_width < bb_width_20_periods_ago) if bb_width is not None and bb_width_20_periods_ago is not None else None,
+        },
+        "base_formation": {
+            "range_20_period_percent": range20,
+            "range_90_period_percent": range90,
+            "range_90_le_20_percent": (range90 <= 20) if range90 is not None else None,
+            "vcp_stage": vcp_stage,
+            "standard_deviation_contracting": std_contracting if len(contractions) == 3 else None,
+            "volume_contracting": volume_contracting if len(contractions) == 3 else None,
+        },
+        "note": "These are real-data filter inputs from the client handwritten technical sheet. Ambiguous handwritten point allocations remain configurable rather than guessed.",
+    }
+
     return _json_safe({
         "symbol": symbol,
         "exchange": exchange,
@@ -1491,6 +1836,7 @@ def get_technical_summary(
         "vcp_standard_deviation_contraction": (std_contracting if len(contractions) == 3 else None),
         "vcp_volume_contraction": (volume_contracting if len(contractions) == 3 else None),
         "pattern": pattern,
+        "client_technical_filters": client_technical_filters,
         "rs_comparison": rs_comparison,
         "volume_delivery": delivery_summary,
         "rs_rating": rs_rating,
@@ -1652,20 +1998,18 @@ def refresh_fundamentals(
     db: Session = Depends(get_db)
 ):
     try:
-        if exchange.upper() != "US":
-            raise HTTPException(
-                status_code=400,
-                detail="Fundamental refresh currently supports US stocks only"
-            )
+        exchange = exchange.upper()
+        if exchange not in {"US", "NSE", "BSE"}:
+            raise HTTPException(status_code=400, detail="Unsupported exchange")
 
         provider = YahooProvider()
-        data = provider.get_fundamentals(symbol.upper())
+        data = provider.get_fundamentals(symbol.upper(), exchange)
 
         # Use statement-derived ratios for ROE/ROA when available. This keeps
         # the snapshot consistent with the annual table and uses average balance
         # sheet denominators instead of an opaque provider summary ratio.
         try:
-            history = provider.get_fundamental_history(symbol.upper())
+            history = provider.get_fundamental_history(symbol.upper(), exchange)
             latest_annual = (history.get("annual") or [None])[0]
             if latest_annual:
                 if latest_annual.get("roe") is not None:
@@ -1678,7 +2022,7 @@ def refresh_fundamentals(
         result = sync_fundamental_data(
             db=db,
             symbol=symbol.upper(),
-            exchange="US",
+            exchange=exchange,
             data=data
         )
 
@@ -1753,16 +2097,14 @@ def get_fundamentals_history(
     exchange: str = "US"
 ):
     try:
-        if exchange.upper() != "US":
-            raise HTTPException(
-                status_code=400,
-                detail="Fundamental history currently supports US stocks only"
-            )
+        exchange = exchange.upper()
+        if exchange not in {"US", "NSE", "BSE"}:
+            raise HTTPException(status_code=400, detail="Unsupported exchange")
 
         provider = YahooProvider()
 
         data = provider.get_fundamental_history(
-            symbol.upper()
+            symbol.upper(), exchange
         )
 
         return data
