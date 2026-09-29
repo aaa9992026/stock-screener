@@ -43,7 +43,7 @@ const formatMarketMoney = (value, exchange) => {
 const defaultScoreWeights = { fundamental: 30, technical: 25, relative_strength: 25, ownership: 15, sector: 5 };
 const defaultRsWeights = { "1w": 30, "2w": 0, "1m": 25, "2m": 0, "3m": 20, "6m": 15, "1y": 10, "sector": 0 };
 const SCORE_WEIGHTS_STORAGE_VERSION = "m2-client-composite-100-v1";
-const RS_WEIGHTS_STORAGE_VERSION = "m2-rs-fixed-5000-v1";
+const RS_WEIGHTS_STORAGE_VERSION = "m2-rs-market-universe-v2";
 
 const formatClientFilterValue = (key, value) => {
   if (key === "delivery_percent" && value && typeof value === "object") {
@@ -1645,7 +1645,7 @@ function App() {
               <strong>{technicalSummary?.rs_available ? Number(technicalSummary.rs_rating).toFixed(2) : "N/A"}</strong>
               <small>
                 {technicalSummary?.rs_universe
-                  ? `${Number(technicalSummary.rs_universe.scored_stocks_available || 0).toLocaleString()}/${Number(technicalSummary.rs_universe.target_size || 5000).toLocaleString()} scored stocks available`
+                  ? `${Number(technicalSummary.rs_universe.scored_stocks_available || 0).toLocaleString()}/${Number(technicalSummary.rs_universe.target_size || (exchange === "US" ? 6000 : 5500)).toLocaleString()} scored stocks available`
                   : "Percentile-weighted score from the enabled RS periods"}
               </small>
             </div>
@@ -1715,7 +1715,7 @@ function App() {
                     <tr><td><strong>Relative Return</strong></td><td>{technicalSummary.rs_formula.relative_return}</td></tr>
                     <tr><td><strong>Editable weights affect Relative Return?</strong></td><td>{technicalSummary.rs_formula.relative_return_uses_editable_weights ? "Yes" : "No"}</td></tr>
                     <tr><td><strong>Stock Percentile</strong></td><td>{technicalSummary.rs_formula.stock_percentile}</td></tr>
-                    <tr><td><strong>Percentile Denominator</strong></td><td>{Number(technicalSummary.rs_formula.stock_percentile_denominator || 5000).toLocaleString()} stocks</td></tr>
+                    <tr><td><strong>Percentile Denominator</strong></td><td>{Number(technicalSummary.rs_formula.stock_percentile_denominator || (exchange === "US" ? 6000 : 5500)).toLocaleString()} stocks</td></tr>
                     <tr><td><strong>Final RS Score</strong></td><td>{technicalSummary.rs_formula.final_rs_score}</td></tr>
                   </tbody>
                 </table>
@@ -1723,15 +1723,15 @@ function App() {
               <div className="chart-note">Changing RS weightage changes only the Final RS Score contribution. Raw stock return, benchmark return and Relative Return remain unchanged.</div>
               {technicalSummary?.rs_universe && !technicalSummary.rs_universe.complete && (
                 <div className="provider-warning" style={{ marginTop: 10 }}>
-                  RS universe coverage: {Number(technicalSummary.rs_universe.scored_stocks_available || 0).toLocaleString()} / {Number(technicalSummary.rs_universe.target_size || 5000).toLocaleString()} scored stocks.
-                  The client-required percentile denominator remains fixed at 5,000, so the displayed RS score is provisional until the stored comparison universe is populated.
+                  RS universe coverage: {Number(technicalSummary.rs_universe.scored_stocks_available || 0).toLocaleString()} / {Number(technicalSummary.rs_universe.target_size || (exchange === "US" ? 6000 : 5500)).toLocaleString()} scored stocks.
+                  The client-required percentile denominator remains fixed at {exchange === "US" ? "6,000 for US" : "5,500 for the Indian NSE/BSE universe"}, so the displayed RS score is provisional until the stored comparison universe is populated.
                 </div>
               )}
             </div>
           )}
 
           <div className="chart-note">
-            RS line = stock price / broad-market benchmark, rebased to 100 for charting only. Relative Return = Stock Return % - Benchmark Return % and is independent of the editable RS weights. The weights change only the Final RS Score. Each stock percentile uses the client-required fixed total of 5,000 stocks: [(stocks with lower relative return) + 0.5 × (stocks with equal relative return)] × 100 / 5000. Final RS Score uses the enabled weighted percentile components. Default period weights remain 1W×0.30 + 1M×0.25 + 3M×0.20 + 6M×0.15 + 12M×0.10. 2W, 2M, and Sector RS are optional with default weight 0.
+            RS line = stock price / broad-market benchmark, rebased to 100 for charting only. Relative Return = Stock Return % - Benchmark Return % and is independent of the editable RS weights. The weights change only the Final RS Score. Each stock percentile uses the client-required market universe: {exchange === "US" ? "6,000 US stocks" : "5,500 Indian stocks (NSE + BSE)"}. Formula: [(stocks with lower relative return) + 0.5 × (stocks with equal relative return)] × 100 / {exchange === "US" ? "6000" : "5500"}. Final RS Score uses the enabled weighted percentile components. Default period weights remain 1W×0.30 + 1M×0.25 + 3M×0.20 + 6M×0.15 + 12M×0.10. 2W, 2M, and Sector RS are optional with default weight 0.
           </div>
           {technicalSummary?.rs_available && relativeStrengthChartData.length > 1 ? (
             <ResponsiveContainer width="100%" height={230}>

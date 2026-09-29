@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 
 from app.database import SessionLocal
 from app.models import Company
@@ -105,4 +106,41 @@ def sync_all():
     return {
         "status": "success",
         "markets": result
+    }
+
+@router.get("/universe-status")
+def universe_status(db: Session = Depends(get_db)):
+    """Show active symbol-master coverage for the client-defined RS markets."""
+    grouped = (
+        db.query(Company.exchange, Company.is_active, func.count(Company.id))
+        .group_by(Company.exchange, Company.is_active)
+        .all()
+    )
+    counts = {}
+    for exchange, is_active, count in grouped:
+        counts.setdefault(exchange, {"active": 0, "inactive": 0})
+        key = "active" if int(is_active or 0) == 1 else "inactive"
+        counts[exchange][key] = int(count or 0)
+
+    india_active = int((counts.get("NSE") or {}).get("active", 0)) + int((counts.get("BSE") or {}).get("active", 0))
+    us_active = int((counts.get("US") or {}).get("active", 0))
+    return {
+        "US": {
+            "target_rs_universe": 6000,
+            "active_symbols": us_active,
+            "exchanges": ["US"],
+            "symbol_master": "Nasdaq Trader listed-security files",
+        },
+        "INDIA": {
+            "target_rs_universe": 5500,
+            "active_symbols": india_active,
+            "exchanges": ["NSE", "BSE"],
+            "symbol_master": "NSE official equity list; BSE remains limited until a BSE symbol-master feed is configured",
+        },
+        "by_exchange": counts,
+        "automatic_sync": {
+            "interval_hours": 24,
+            "new_listings": "added/reactivated on provider sync",
+            "delistings": "marked inactive on a trustworthy provider snapshot; historical rows are retained",
+        },
     }

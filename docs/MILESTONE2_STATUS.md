@@ -7,7 +7,7 @@ This is the cumulative Milestone 2 continuation build. It preserves all accepted
 - Existing Modules 4–8 screener functionality is preserved in one cumulative codebase rather than separate patches.
 - Relative Strength formula audit and correction:
   - raw Stock Return, Benchmark Return and Relative Return do not depend on editable score weights;
-  - stock percentile denominator is fixed at 5,000 as requested;
+  - stock percentile denominator is market-specific: 6,000 for US and 5,500 for the combined Indian NSE/BSE universe;
   - editable weights affect only Final RS Score;
   - default score mix is 1W 30%, 1M 25%, 3M 20%, 6M 15%, 1Y 10%; 2W/2M/Sector default to 0%;
   - the frontend displays the exact active formula for review.
@@ -46,7 +46,7 @@ This is the cumulative Milestone 2 continuation build. It preserves all accepted
 - Migrates stale RS period weights to the current client default and removes old Sector-RS 20% carry-over.
 - Fixes the Participation panel so delivery data never renders as `[object Object]`; true NSE delivery percentages are formatted as Day/Week/Month, otherwise N/A.
 - Industry/Sector return rows now exclude the selected stock and require at least five real stored peers. If peer history is insufficient, N/A is shown instead of repeating the stock's own return.
-- RS output now exposes the number of actually scored stocks against the client-required 5,000 denominator and labels incomplete-universe results as provisional.
+- RS output now exposes the number of actually scored stocks against the client-required market denominator (US 6,000; India 5,500) and labels incomplete-universe results as provisional.
 - SEC EDGAR failures are now visible in the UI instead of being silently hidden; missing `SEC_USER_AGENT` is reported explicitly and no substitute SEC values are invented.
 
 ## Indian fundamental-filter update
@@ -64,3 +64,13 @@ This is the cumulative Milestone 2 continuation build. It preserves all accepted
 - Indian quarterly/annual money values now use INR formatting instead of hard-coded USD labels.
 - Missing/null component values are no longer coerced to numeric zero in the client ranking, so score coverage reflects only real available components.
 - NSE delivery endpoint parser failures are shown as a clean unavailable message rather than exposing an internal JSON parsing exception.
+
+## Separate RS universes + automatic listing maintenance
+
+- US RS percentile universe is fixed at 6,000 stocks.
+- Indian RS percentile universe is fixed at 5,500 stocks and combines stored NSE + BSE histories.
+- US and Indian stocks are never mixed into one RS percentile universe.
+- Daily company-master synchronization automatically adds/reactivates newly listed symbols and marks missing symbols inactive when the provider snapshot passes safety checks. Historical rows are retained after a delisting.
+- Provider-snapshot safety prevents a partial/upstream-failure response from mass-deactivating the current company universe.
+- `GET /companies/universe-status` reports active/inactive symbol-master counts and the two client-defined RS targets.
+- Current automatic company-master sources are Nasdaq Trader for US and the official NSE equity list for NSE. BSE remains the existing limited market until a BSE symbol-master feed is configured.
