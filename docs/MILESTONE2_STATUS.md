@@ -58,3 +58,9 @@ This is the cumulative Milestone 2 continuation build. It preserves all accepted
 - Indian ownership remains sourced from the Indian shareholding provider (Promoter/FII/DII/MF/Public) rather than mapping US insider/institution categories onto Indian stocks.
 - If a required Indian fundamental or ownership category is unavailable, the overall ranking is withheld instead of silently re-normalizing around missing data.
 - Missing provider fields remain N/A and are never fabricated.
+
+## Live INFY video recheck fixes
+
+- Indian quarterly/annual money values now use INR formatting instead of hard-coded USD labels.
+- Missing/null component values are no longer coerced to numeric zero in the client ranking, so score coverage reflects only real available components.
+- NSE delivery endpoint parser failures are shown as a clean unavailable message rather than exposing an internal JSON parsing exception.

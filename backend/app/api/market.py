@@ -435,8 +435,14 @@ def _nse_delivery_summary(symbol):
             "weekly": aggregate(parsed[:5]),
             "monthly": aggregate(parsed[:20]),
         }
-    except Exception as exc:
-        return {"available": False, "source": "NSE", "note": f"Delivery data unavailable: {str(exc)[:120]}"}
+    except Exception:
+        # NSE may return an HTML/block page instead of JSON from cloud-hosted
+        # servers. Do not surface parser/internal exception text to the user.
+        return {
+            "available": False,
+            "source": "NSE",
+            "note": "Delivery percentage is currently unavailable from the live NSE delivery-data endpoint.",
+        }
 
 
 def _weighted_relative_return_from_points(stock_points, benchmark_points, weights):

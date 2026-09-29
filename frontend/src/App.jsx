@@ -858,6 +858,7 @@ function App() {
     if (!dashboard) return null;
 
     const finite = (value) => {
+      if (value === null || value === undefined || value === "") return null;
       const n = Number(value);
       return Number.isFinite(n) ? n : null;
     };
@@ -2349,7 +2350,7 @@ function App() {
                       <td>{row.period}</td>
                       <td>
                         {row.sales != null
-                          ? `$${(row.sales / 1e9).toFixed(2)}B`
+                          ? formatMarketMoney(row.sales, exchange)
                           : "-"}
                       </td>
                       <td>
@@ -2358,7 +2359,7 @@ function App() {
                       <td>{row.yoy_sales != null ? `${row.yoy_sales}%` : "-"}</td>
                       <td>
                         {row.pat != null
-                          ? `$${(row.pat / 1e9).toFixed(2)}B`
+                          ? formatMarketMoney(row.pat, exchange)
                           : "-"}
                       </td>
                       <td>
@@ -2372,7 +2373,7 @@ function App() {
                       <td>{row.yoy_eps != null ? `${row.yoy_eps}%` : "-"}</td>
                       <td>
                         {row.ebit != null
-                          ? `$${(row.ebit / 1e9).toFixed(2)}B`
+                          ? formatMarketMoney(row.ebit, exchange)
                           : "-"}
                       </td>
                       <td>
@@ -2395,8 +2396,8 @@ function App() {
                   <LineChart data={[...(fundamentalHistory.quarterly || [])].slice(0, 12).reverse()}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="period" />
-                    <YAxis tickFormatter={(value) => `${(value / 1e9).toFixed(0)}B`} />
-                    <Tooltip formatter={(value) => value != null ? `$${(value / 1e9).toFixed(2)}B` : "-"} />
+                    <YAxis tickFormatter={(value) => formatMarketMoney(value, exchange)} />
+                    <Tooltip formatter={(value) => value != null ? formatMarketMoney(value, exchange) : "-"} />
                     <Line type="monotone" dataKey="sales" strokeWidth={2} />
                   </LineChart>
                 </ResponsiveContainer>
@@ -2419,8 +2420,8 @@ function App() {
                   <LineChart data={[...(fundamentalHistory.quarterly || [])].slice(0, 12).reverse()}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="period" />
-                    <YAxis tickFormatter={(value) => `${(value / 1e9).toFixed(0)}B`} />
-                    <Tooltip formatter={(value) => value != null ? `$${(value / 1e9).toFixed(2)}B` : "-"} />
+                    <YAxis tickFormatter={(value) => formatMarketMoney(value, exchange)} />
+                    <Tooltip formatter={(value) => value != null ? formatMarketMoney(value, exchange) : "-"} />
                     <Line type="monotone" dataKey="pat" strokeWidth={2} />
                   </LineChart>
                 </ResponsiveContainer>
@@ -2431,8 +2432,8 @@ function App() {
                   <LineChart data={[...(fundamentalHistory.quarterly || [])].slice(0, 12).reverse()}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="period" />
-                    <YAxis tickFormatter={(value) => `${(value / 1e9).toFixed(0)}B`} />
-                    <Tooltip formatter={(value) => value != null ? `$${(value / 1e9).toFixed(2)}B` : "-"} />
+                    <YAxis tickFormatter={(value) => formatMarketMoney(value, exchange)} />
+                    <Tooltip formatter={(value) => value != null ? formatMarketMoney(value, exchange) : "-"} />
                     <Line type="monotone" dataKey="ebit" strokeWidth={2} />
                   </LineChart>
                 </ResponsiveContainer>
@@ -2494,13 +2495,13 @@ function App() {
                       <td>{row.period}</td>
                       <td>
                         {row.sales != null
-                          ? `$${(row.sales / 1e9).toFixed(2)}B`
+                          ? formatMarketMoney(row.sales, exchange)
                           : "-"}
                       </td>
                       <td>{row.yoy_sales != null ? `${row.yoy_sales}%` : "-"}</td>
                       <td>
                         {row.pat != null
-                          ? `$${(row.pat / 1e9).toFixed(2)}B`
+                          ? formatMarketMoney(row.pat, exchange)
                           : "-"}
                       </td>
                       <td>{row.yoy_pat != null ? `${row.yoy_pat}%` : "-"}</td>
@@ -2508,7 +2509,7 @@ function App() {
                       <td>{row.yoy_eps != null ? `${row.yoy_eps}%` : "-"}</td>
                       <td>
                         {row.ebit != null
-                          ? `$${(row.ebit / 1e9).toFixed(2)}B`
+                          ? formatMarketMoney(row.ebit, exchange)
                           : "-"}
                       </td>
                       <td>
@@ -2525,12 +2526,12 @@ function App() {
 
                       <td>
                         {row.operating_cash_flow != null
-                          ? `$${(row.operating_cash_flow / 1e9).toFixed(2)}B`
+                          ? formatMarketMoney(row.operating_cash_flow, exchange)
                           : "-"}
                       </td>
                       <td>
                         {row.free_cash_flow != null
-                          ? `$${(row.free_cash_flow / 1e9).toFixed(2)}B`
+                          ? formatMarketMoney(row.free_cash_flow, exchange)
                           : "-"}
                       </td>
                       <td>
@@ -2545,7 +2546,7 @@ function App() {
 
                       <td>
                         {row.cash_flow_per_share != null
-                          ? `$${row.cash_flow_per_share.toFixed(2)}`
+                          ? formatMarketMoney(row.cash_flow_per_share, exchange)
                           : "-"}
                       </td>
                     </tr>
