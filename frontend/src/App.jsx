@@ -45,6 +45,21 @@ const defaultRsWeights = { "1w": 30, "2w": 0, "1m": 25, "2m": 0, "3m": 20, "6m":
 const SCORE_WEIGHTS_STORAGE_VERSION = "m2-client-composite-100-v1";
 const RS_WEIGHTS_STORAGE_VERSION = "m2-rs-market-universe-v2";
 
+const compareNumeric = (left, comparator, right) => {
+  const a = Number(left);
+  const b = Number(right);
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
+  if (comparator === ">=") return a >= b;
+  if (comparator === "<=") return a <= b;
+  if (comparator === "<") return a < b;
+  return a > b;
+};
+
+const filterScoreText = (score) => {
+  if (score === null || score === undefined || !Number.isFinite(Number(score))) return "N/A";
+  return `${Number(score).toFixed(0)}/100`;
+};
+
 const formatClientFilterValue = (key, value) => {
   if (key === "delivery_percent" && value && typeof value === "object") {
     if (!value.available) return "N/A";
@@ -75,44 +90,49 @@ const defaultRankingSubweights = {
 // editable; unavailable source data is never estimated.
 const defaultHandwrittenFactors = {
   technical: {
-    bb_width: { weight: 10, threshold: 10 },
-    atr5_lt20: { weight: 10 },
-    atr10_lt20: { weight: 5 },
+    bb_width: { weight: 10, threshold: 10, comparator: "<=" },
+    atr5_lt20: { weight: 10, comparator: "<" },
+    atr10_lt20: { weight: 5, comparator: "<" },
     rsi14: { weight: 5, enabled: true, t1: 30, t2: 40, t3: 50, p1: 2, p2: 3, p3: 4, p4: 5 },
-    volume10_lt20: { weight: 10 },
-    volume20_lt40: { weight: 5 },
+    volume10_lt20: { weight: 10, comparator: "<" },
+    volume20_lt40: { weight: 5, comparator: "<" },
     distance52: { weight: 10, t1: 10, t2: 17, t3: 20, p1: 10, p2: 8, p3: 6, p4: 3 },
-    ema20_gt50: { weight: 8 },
-    ema50_gt150: { weight: 4 },
+    ema20_gt50: { weight: 8, comparator: ">" },
+    ema50_gt150: { weight: 4, comparator: ">" },
   },
   fundamental: {
-    q_eps_yoy: { weight: 10, threshold: 30 },
-    q_eps_rising: { weight: 4 },
-    q_eps_yoy_rising: { weight: 6 },
-    q_pat_yoy: { weight: 6, threshold: 30 },
-    q_pat_rising: { weight: 4 },
-    q_pat_yoy_rising: { weight: 6 },
-    q_npm_yoy: { weight: 4, threshold: 20 },
-    q_sales_yoy: { weight: 7, threshold: 30 },
-    q_sales_rising: { weight: 4 },
-    a_eps_yoy: { weight: 6, threshold: 20 },
-    a_eps_rising: { weight: 4 },
-    a_pat_yoy: { weight: 5, threshold: 20 },
-    a_pat_rising: { weight: 4 },
-    a_sales_yoy: { weight: 5, threshold: 20 },
-    a_sales_rising: { weight: 4 },
-    a_ocf_yoy: { weight: 4, threshold: 10 },
-    a_npm_rising: { weight: 3 },
+    q_eps_yoy: { weight: 10, threshold: 30, comparator: ">" },
+    q_eps_rising: { weight: 4, comparator: ">" },
+    q_eps_yoy_rising: { weight: 6, comparator: ">" },
+    q_pat_yoy: { weight: 6, threshold: 30, comparator: ">" },
+    q_pat_rising: { weight: 4, comparator: ">" },
+    q_pat_yoy_rising: { weight: 6, comparator: ">" },
+    q_npm_yoy: { weight: 4, threshold: 20, comparator: ">" },
+    q_sales_yoy: { weight: 7, threshold: 30, comparator: ">" },
+    q_sales_rising: { weight: 4, comparator: ">" },
+    a_eps_yoy: { weight: 6, threshold: 20, comparator: ">" },
+    a_eps_rising: { weight: 4, comparator: ">" },
+    a_pat_yoy: { weight: 5, threshold: 20, comparator: ">" },
+    a_pat_rising: { weight: 4, comparator: ">" },
+    a_sales_yoy: { weight: 5, threshold: 20, comparator: ">" },
+    a_sales_rising: { weight: 4, comparator: ">" },
+    a_ocf_yoy: { weight: 4, threshold: 10, comparator: ">" },
+    a_npm_rising: { weight: 3, comparator: ">" },
+    roe_above: { weight: 0, threshold: 20, comparator: ">", enabled: true },
+    roce_above: { weight: 0, threshold: 30, comparator: ">", enabled: true },
+    cashflow_per_share: { weight: 0, threshold: 0, comparator: ">", enabled: false },
+    shares_outstanding: { weight: 0, threshold: 0, comparator: "<", enabled: false },
+    float_shares: { weight: 0, threshold: 0, comparator: "<", enabled: false },
   },
   ownership: {
-    promoter_qoq: { weight: 10, threshold: 0.3 },
-    promoter_above: { weight: 8, threshold: 50 },
-    promoter_rising: { weight: 5 },
+    promoter_qoq: { weight: 10, threshold: 0.3, comparator: ">" },
+    promoter_above: { weight: 8, threshold: 50, comparator: ">" },
+    promoter_rising: { weight: 5, comparator: ">" },
     pledge: { weight: 5, t1: 5, t2: 10, t3: 15, t4: 20 },
-    fii_qoq: { weight: 10, threshold: 0.3 },
-    fii_rising: { weight: 10 },
-    dii_mf_qoq: { weight: 10, threshold: 0.1 },
-    dii_mf_rising: { weight: 10 },
+    fii_qoq: { weight: 10, threshold: 0.3, comparator: ">" },
+    fii_rising: { weight: 10, comparator: ">" },
+    dii_mf_qoq: { weight: 10, threshold: 0.1, comparator: ">" },
+    dii_mf_rising: { weight: 10, comparator: ">" },
     insider_activity: { weight: 10 },
   },
 };
@@ -130,23 +150,28 @@ const handwrittenFactorMeta = {
     ["ema50_gt150", "50 EMA > 150 EMA", "EMA trend factor", []],
   ],
   fundamental: [
-    ["q_eps_yoy", "Latest quarter EPS (YoY)", "Latest quarterly EPS YoY growth", ["threshold"]],
-    ["q_eps_rising", "Quarterly EPS rising", "Latest EPS > prior EPS > second-prior EPS", []],
-    ["q_eps_yoy_rising", "Quarterly EPS YoY trend rising", "Latest YoY > prior YoY > second-prior YoY", []],
-    ["q_pat_yoy", "Latest quarter PAT (YoY)", "Latest quarterly PAT YoY growth", ["threshold"]],
-    ["q_pat_rising", "Quarterly PAT rising", "Latest PAT > prior PAT > second-prior PAT", []],
-    ["q_pat_yoy_rising", "Quarterly PAT YoY trend rising", "Latest YoY > prior YoY > second-prior YoY", []],
-    ["q_npm_yoy", "Quarterly Net Profit Margin growth (YoY)", "Latest NPM vs year-ago quarter", ["threshold"]],
-    ["q_sales_yoy", "Latest quarter Sales (YoY)", "Latest quarterly sales YoY growth", ["threshold"]],
-    ["q_sales_rising", "Quarterly Sales trend rising", "Latest sales > prior sales > second-prior sales", []],
-    ["a_eps_yoy", "Latest year EPS (YoY)", "Latest annual EPS growth", ["threshold"]],
-    ["a_eps_rising", "Annual EPS trend rising", "Latest EPS > prior year > second-prior year", []],
-    ["a_pat_yoy", "Latest year PAT (YoY)", "Latest annual PAT growth", ["threshold"]],
-    ["a_pat_rising", "Annual PAT trend rising", "Latest PAT > prior year > second-prior year", []],
-    ["a_sales_yoy", "Latest year Sales (YoY)", "Latest annual sales growth", ["threshold"]],
-    ["a_sales_rising", "Annual Sales trend rising", "Latest sales > prior year > second-prior year", []],
-    ["a_ocf_yoy", "Cash flow from operating activities (YoY)", "Latest annual operating cash flow growth > editable value", ["threshold"]],
-    ["a_npm_rising", "Annual Net Profit Margin rising", "Latest year net profit margin > prior year net profit margin", []],
+    ["q_eps_yoy", "Latest quarter EPS (YoY)", "Latest quarterly EPS YoY growth", ["threshold"], "EPS"],
+    ["q_eps_rising", "Quarterly EPS rising", "Latest EPS > prior EPS > second-prior EPS", [], "EPS"],
+    ["q_eps_yoy_rising", "Quarterly EPS YoY trend rising", "Latest YoY > prior YoY > second-prior YoY", [], "EPS"],
+    ["a_eps_yoy", "Latest year EPS (YoY)", "Latest annual EPS growth", ["threshold"], "EPS"],
+    ["a_eps_rising", "Annual EPS trend rising", "Latest EPS > prior year > second-prior year", [], "EPS"],
+    ["q_pat_yoy", "Latest quarter PAT (YoY)", "Latest quarterly PAT YoY growth", ["threshold"], "PAT"],
+    ["q_pat_rising", "Quarterly PAT rising", "Latest PAT > prior PAT > second-prior PAT", [], "PAT"],
+    ["q_pat_yoy_rising", "Quarterly PAT YoY trend rising", "Latest YoY > prior YoY > second-prior YoY", [], "PAT"],
+    ["a_pat_yoy", "Latest year PAT (YoY)", "Latest annual PAT growth", ["threshold"], "PAT"],
+    ["a_pat_rising", "Annual PAT trend rising", "Latest PAT > prior year > second-prior year", [], "PAT"],
+    ["q_sales_yoy", "Latest quarter Sales (YoY)", "Latest quarterly sales YoY growth", ["threshold"], "Sales"],
+    ["q_sales_rising", "Quarterly Sales trend rising", "Latest sales > prior sales > second-prior sales", [], "Sales"],
+    ["a_sales_yoy", "Latest year Sales (YoY)", "Latest annual sales growth", ["threshold"], "Sales"],
+    ["a_sales_rising", "Annual Sales trend rising", "Latest sales > prior year > second-prior year", [], "Sales"],
+    ["q_npm_yoy", "Quarterly NPM growth (YoY)", "Latest NPM vs year-ago quarter", ["threshold"], "NPM"],
+    ["a_npm_rising", "Annual NPM rising", "Latest year NPM > prior year NPM", [], "NPM"],
+    ["a_ocf_yoy", "Cash flow from operating activities (YoY)", "Latest annual operating cash flow growth", ["threshold"], "CFO"],
+    ["cashflow_per_share", "Cash flow per share", "Editable threshold; disabled until client confirms the exact rule", ["threshold"], "CFO"],
+    ["roe_above", "ROE", "Client note: ROE > 20; weight remains editable", ["threshold"], "Other"],
+    ["roce_above", "ROCE", "Client note: ROCE > 30; weight remains editable", ["threshold"], "Other"],
+    ["shares_outstanding", "Outstanding shares", "Editable threshold; disabled until client confirms the exact rule", ["threshold"], "Other"],
+    ["float_shares", "Float shares", "Editable threshold; disabled until client confirms the exact rule", ["threshold"], "Other"],
   ],
   ownership: [
     ["promoter_qoq", "Promoter holding change (QoQ)", "Latest quarter promoter change", ["threshold"]],
@@ -243,6 +268,8 @@ function App() {
     return { technical: mergeGroup("technical"), fundamental: mergeGroup("fundamental"), ownership: mergeGroup("ownership") };
   });
   const [showRankingDetails, setShowRankingDetails] = useState(true);
+  const [showExcelHelp, setShowExcelHelp] = useState(false);
+  const [excelCopyMessage, setExcelCopyMessage] = useState("");
   const [chartOverlays, setChartOverlays] = useState({
     ema: true, sma: true, bollinger: true, volume: true, eps: true, rs: true
   });
@@ -968,7 +995,7 @@ function App() {
       rsiScore = maxPoints > 0 ? (rawPoints / maxPoints) * 100 : 0;
     }
     const technicalComponent = factorScore("technical", {
-      bb_width: finite(technicalSummary?.bollinger_width_percent) == null ? null : (Number(technicalSummary.bollinger_width_percent) <= Number(tech.bb_width.threshold) ? 100 : 0),
+      bb_width: finite(technicalSummary?.bollinger_width_percent) == null ? null : (compareNumeric(technicalSummary.bollinger_width_percent, tech.bb_width.comparator || "<=", tech.bb_width.threshold) ? 100 : 0),
       atr5_lt20: finite(technicalSummary?.average_atr_percent_5) == null || finite(technicalSummary?.average_atr_percent_20) == null ? null : (Number(technicalSummary.average_atr_percent_5) < Number(technicalSummary.average_atr_percent_20) ? 100 : 0),
       atr10_lt20: finite(technicalSummary?.average_atr_percent_10) == null || finite(technicalSummary?.average_atr_percent_20) == null ? null : (Number(technicalSummary.average_atr_percent_10) < Number(technicalSummary.average_atr_percent_20) ? 100 : 0),
       rsi14: rsiScore,
@@ -991,24 +1018,37 @@ function App() {
     if (a.length >= 2 && finite(a[0]?.operating_cash_flow) != null && finite(a[1]?.operating_cash_flow) != null && Number(a[1].operating_cash_flow) !== 0) {
       annualOcfGrowth = ((Number(a[0].operating_cash_flow) - Number(a[1].operating_cash_flow)) / Math.abs(Number(a[1].operating_cash_flow))) * 100;
     }
+    const roeFilterValue = finite(a[0]?.roe) ?? (finite(fundamentals?.fundamentals?.return_on_equity) != null ? Number(fundamentals.fundamentals.return_on_equity) * 100 : null);
+    const roceFilterValue = finite(a[0]?.roce);
+    const sharesOutstandingFilterValue = finite(fundamentals?.ownership?.shares_outstanding);
+    const floatSharesFilterValue = finite(fundamentals?.ownership?.float_shares);
+    const latestOcfFilterValue = finite(a[0]?.operating_cash_flow);
+    const cashflowPerShareFilterValue = latestOcfFilterValue != null && sharesOutstandingFilterValue != null && sharesOutstandingFilterValue !== 0
+      ? latestOcfFilterValue / sharesOutstandingFilterValue
+      : null;
     const fundamentalComponent = factorScore("fundamental", {
-      q_eps_yoy: finite(q[0]?.yoy_eps) == null ? null : (Number(q[0].yoy_eps) > Number(fcfg.q_eps_yoy.threshold) ? 100 : 0),
+      q_eps_yoy: finite(q[0]?.yoy_eps) == null ? null : (compareNumeric(q[0]?.yoy_eps, fcfg.q_eps_yoy.comparator || ">", fcfg.q_eps_yoy.threshold) ? 100 : 0),
       q_eps_rising: q.length < 3 ? null : (isRising3(q[0]?.eps, q[1]?.eps, q[2]?.eps) ? 100 : 0),
       q_eps_yoy_rising: comparable("yoy_eps").length < 3 ? null : (isRising3(...comparable("yoy_eps")) ? 100 : 0),
-      q_pat_yoy: finite(q[0]?.yoy_pat) == null ? null : (Number(q[0].yoy_pat) > Number(fcfg.q_pat_yoy.threshold) ? 100 : 0),
+      q_pat_yoy: finite(q[0]?.yoy_pat) == null ? null : (compareNumeric(q[0]?.yoy_pat, fcfg.q_pat_yoy.comparator || ">", fcfg.q_pat_yoy.threshold) ? 100 : 0),
       q_pat_rising: q.length < 3 ? null : (isRising3(q[0]?.pat, q[1]?.pat, q[2]?.pat) ? 100 : 0),
       q_pat_yoy_rising: comparable("yoy_pat").length < 3 ? null : (isRising3(...comparable("yoy_pat")) ? 100 : 0),
-      q_npm_yoy: qNpmGrowth == null ? null : (qNpmGrowth > Number(fcfg.q_npm_yoy.threshold) ? 100 : 0),
-      q_sales_yoy: finite(q[0]?.yoy_sales) == null ? null : (Number(q[0].yoy_sales) > Number(fcfg.q_sales_yoy.threshold) ? 100 : 0),
+      q_npm_yoy: qNpmGrowth == null ? null : (compareNumeric(qNpmGrowth, fcfg.q_npm_yoy.comparator || ">", fcfg.q_npm_yoy.threshold) ? 100 : 0),
+      q_sales_yoy: finite(q[0]?.yoy_sales) == null ? null : (compareNumeric(q[0]?.yoy_sales, fcfg.q_sales_yoy.comparator || ">", fcfg.q_sales_yoy.threshold) ? 100 : 0),
       q_sales_rising: q.length < 3 ? null : (isRising3(q[0]?.sales, q[1]?.sales, q[2]?.sales) ? 100 : 0),
-      a_eps_yoy: finite(a[0]?.yoy_eps) == null ? null : (Number(a[0].yoy_eps) > Number(fcfg.a_eps_yoy.threshold) ? 100 : 0),
+      a_eps_yoy: finite(a[0]?.yoy_eps) == null ? null : (compareNumeric(a[0]?.yoy_eps, fcfg.a_eps_yoy.comparator || ">", fcfg.a_eps_yoy.threshold) ? 100 : 0),
       a_eps_rising: a.length < 3 ? null : (isRising3(a[0]?.eps, a[1]?.eps, a[2]?.eps) ? 100 : 0),
-      a_pat_yoy: finite(a[0]?.yoy_pat) == null ? null : (Number(a[0].yoy_pat) > Number(fcfg.a_pat_yoy.threshold) ? 100 : 0),
+      a_pat_yoy: finite(a[0]?.yoy_pat) == null ? null : (compareNumeric(a[0]?.yoy_pat, fcfg.a_pat_yoy.comparator || ">", fcfg.a_pat_yoy.threshold) ? 100 : 0),
       a_pat_rising: a.length < 3 ? null : (isRising3(a[0]?.pat, a[1]?.pat, a[2]?.pat) ? 100 : 0),
-      a_sales_yoy: finite(a[0]?.yoy_sales) == null ? null : (Number(a[0].yoy_sales) > Number(fcfg.a_sales_yoy.threshold) ? 100 : 0),
+      a_sales_yoy: finite(a[0]?.yoy_sales) == null ? null : (compareNumeric(a[0]?.yoy_sales, fcfg.a_sales_yoy.comparator || ">", fcfg.a_sales_yoy.threshold) ? 100 : 0),
       a_sales_rising: a.length < 3 ? null : (isRising3(a[0]?.sales, a[1]?.sales, a[2]?.sales) ? 100 : 0),
-      a_ocf_yoy: annualOcfGrowth == null ? null : (annualOcfGrowth > Number(fcfg.a_ocf_yoy.threshold) ? 100 : 0),
+      a_ocf_yoy: annualOcfGrowth == null ? null : (compareNumeric(annualOcfGrowth, fcfg.a_ocf_yoy.comparator || ">", fcfg.a_ocf_yoy.threshold) ? 100 : 0),
       a_npm_rising: a.length < 2 || finite(a[0]?.npm) == null || finite(a[1]?.npm) == null ? null : (Number(a[0].npm) > Number(a[1].npm) ? 100 : 0),
+      roe_above: roeFilterValue == null ? null : (compareNumeric(roeFilterValue, fcfg.roe_above.comparator || ">", fcfg.roe_above.threshold) ? 100 : 0),
+      roce_above: roceFilterValue == null ? null : (compareNumeric(roceFilterValue, fcfg.roce_above.comparator || ">", fcfg.roce_above.threshold) ? 100 : 0),
+      cashflow_per_share: fcfg.cashflow_per_share?.enabled === false || cashflowPerShareFilterValue == null ? null : (compareNumeric(cashflowPerShareFilterValue, fcfg.cashflow_per_share.comparator || ">", fcfg.cashflow_per_share.threshold) ? 100 : 0),
+      shares_outstanding: fcfg.shares_outstanding?.enabled === false || sharesOutstandingFilterValue == null ? null : (compareNumeric(sharesOutstandingFilterValue, fcfg.shares_outstanding.comparator || "<", fcfg.shares_outstanding.threshold) ? 100 : 0),
+      float_shares: fcfg.float_shares?.enabled === false || floatSharesFilterValue == null ? null : (compareNumeric(floatSharesFilterValue, fcfg.float_shares.comparator || "<", fcfg.float_shares.threshold) ? 100 : 0),
     });
 
     let ownershipComponent = null;
@@ -1028,17 +1068,17 @@ function App() {
       const latestDiiMfChange = [finite(latestH.dii_change), finite(latestH.mutual_funds_change)].filter((v) => v != null);
       const changeSum = latestDiiMfChange.length ? latestDiiMfChange.reduce((x, y) => x + y, 0) : null;
       ownershipComponent = factorScore("ownership", {
-        promoter_qoq: finite(latestH.promoter_change) == null ? null : (Number(latestH.promoter_change) > Number(ocfg.promoter_qoq.threshold) ? 100 : 0),
-        promoter_above: finite(latestH.promoter) == null ? null : (Number(latestH.promoter) > Number(ocfg.promoter_above.threshold) ? 100 : 0),
+        promoter_qoq: finite(latestH.promoter_change) == null ? null : (compareNumeric(latestH.promoter_change, ocfg.promoter_qoq.comparator || ">", ocfg.promoter_qoq.threshold) ? 100 : 0),
+        promoter_above: finite(latestH.promoter) == null ? null : (compareNumeric(latestH.promoter, ocfg.promoter_above.comparator || ">", ocfg.promoter_above.threshold) ? 100 : 0),
         promoter_rising: finite(latestH.promoter) == null || finite(previousYearH.promoter) == null ? null : (Number(latestH.promoter) > Number(previousYearH.promoter) ? 100 : 0),
         pledge: null,
-        fii_qoq: finite(latestH.fii_change) == null ? null : (Number(latestH.fii_change) > Number(ocfg.fii_qoq.threshold) ? 100 : 0),
+        fii_qoq: finite(latestH.fii_change) == null ? null : (compareNumeric(latestH.fii_change, ocfg.fii_qoq.comparator || ">", ocfg.fii_qoq.threshold) ? 100 : 0),
         fii_rising:
           finite(latestH.fii) == null || finite(previousYearH.fii) == null ||
           finite(priorQuarterH.fii) == null || finite(secondPriorQuarterH.fii) == null
             ? null
             : (Number(latestH.fii) > Number(previousYearH.fii) && Number(priorQuarterH.fii) > Number(secondPriorQuarterH.fii) ? 100 : 0),
-        dii_mf_qoq: changeSum == null ? null : (changeSum > Number(ocfg.dii_mf_qoq.threshold) ? 100 : 0),
+        dii_mf_qoq: changeSum == null ? null : (compareNumeric(changeSum, ocfg.dii_mf_qoq.comparator || ">", ocfg.dii_mf_qoq.threshold) ? 100 : 0),
         dii_mf_rising: priorDiiMf == null || secondPriorDiiMf == null ? null : (priorDiiMf > secondPriorDiiMf ? 100 : 0),
         insider_activity: null,
       });
@@ -1083,6 +1123,191 @@ function App() {
     };
   })();
 
+  const factorEvaluationRows = (() => {
+    const finite = (value) => {
+      if (value === null || value === undefined || value === "") return null;
+      const n = Number(value);
+      return Number.isFinite(n) ? n : null;
+    };
+    const trend3 = (x, y, z) => [x, y, z].every((v) => finite(v) != null) ? (Number(x) > Number(y) && Number(y) > Number(z)) : null;
+    const passScore = (value, factor) => {
+      const result = compareNumeric(value, factor?.comparator || ">", factor?.threshold);
+      return result == null ? null : (result ? 100 : 0);
+    };
+    const resultRow = (currentValue, score, targetText = null) => ({ currentValue, score, targetText });
+
+    const tech = handwrittenFactors.technical;
+    const em = technicalSummary?.ema || {};
+    const d52 = finite(technicalSummary?.distance_from_52w_high_percent);
+    const rsiValue = finite(technicalSummary?.rsi_14 ?? indicators?.rsi);
+    let distanceScore = null;
+    if (d52 != null) {
+      const cfg = tech.distance52;
+      const rawPoints = d52 <= Number(cfg.t1) ? Number(cfg.p1) : d52 <= Number(cfg.t2) ? Number(cfg.p2) : d52 <= Number(cfg.t3) ? Number(cfg.p3) : Number(cfg.p4);
+      const maxPoints = Math.max(Number(cfg.p1) || 0, Number(cfg.p2) || 0, Number(cfg.p3) || 0, Number(cfg.p4) || 0);
+      distanceScore = maxPoints > 0 ? (rawPoints / maxPoints) * 100 : null;
+    }
+    let rsiScore = null;
+    if (rsiValue != null) {
+      const cfg = tech.rsi14;
+      const rawPoints = rsiValue < Number(cfg.t1) ? Number(cfg.p1) : rsiValue < Number(cfg.t2) ? Number(cfg.p2) : rsiValue <= Number(cfg.t3) ? Number(cfg.p3) : Number(cfg.p4);
+      const maxPoints = Math.max(Number(cfg.p1) || 0, Number(cfg.p2) || 0, Number(cfg.p3) || 0, Number(cfg.p4) || 0);
+      rsiScore = maxPoints > 0 ? (rawPoints / maxPoints) * 100 : null;
+    }
+    const technical = {
+      bb_width: resultRow(finite(technicalSummary?.bollinger_width_percent), passScore(technicalSummary?.bollinger_width_percent, tech.bb_width)),
+      atr5_lt20: resultRow(finite(technicalSummary?.average_atr_percent_5), finite(technicalSummary?.average_atr_percent_5) == null || finite(technicalSummary?.average_atr_percent_20) == null ? null : (Number(technicalSummary.average_atr_percent_5) < Number(technicalSummary.average_atr_percent_20) ? 100 : 0), finite(technicalSummary?.average_atr_percent_20)),
+      atr10_lt20: resultRow(finite(technicalSummary?.average_atr_percent_10), finite(technicalSummary?.average_atr_percent_10) == null || finite(technicalSummary?.average_atr_percent_20) == null ? null : (Number(technicalSummary.average_atr_percent_10) < Number(technicalSummary.average_atr_percent_20) ? 100 : 0), finite(technicalSummary?.average_atr_percent_20)),
+      rsi14: resultRow(rsiValue, rsiScore, "Bands"),
+      volume10_lt20: resultRow(finite(technicalSummary?.average_volume_10), finite(technicalSummary?.average_volume_10) == null || finite(technicalSummary?.average_volume_20) == null ? null : (Number(technicalSummary.average_volume_10) < Number(technicalSummary.average_volume_20) ? 100 : 0), finite(technicalSummary?.average_volume_20)),
+      volume20_lt40: resultRow(finite(technicalSummary?.average_volume_20), finite(technicalSummary?.average_volume_20) == null || finite(technicalSummary?.average_volume_40) == null ? null : (Number(technicalSummary.average_volume_20) < Number(technicalSummary.average_volume_40) ? 100 : 0), finite(technicalSummary?.average_volume_40)),
+      distance52: resultRow(d52, distanceScore, "Bands"),
+      ema20_gt50: resultRow(finite(em["20"]), finite(em["20"]) == null || finite(em["50"]) == null ? null : (Number(em["20"]) > Number(em["50"]) ? 100 : 0), finite(em["50"])),
+      ema50_gt150: resultRow(finite(em["50"]), finite(em["50"]) == null || finite(em["150"]) == null ? null : (Number(em["50"]) > Number(em["150"]) ? 100 : 0), finite(em["150"])),
+    };
+
+    const q = Array.isArray(fundamentalHistory?.quarterly) ? fundamentalHistory.quarterly : [];
+    const a = Array.isArray(fundamentalHistory?.annual) ? fundamentalHistory.annual : [];
+    const fcfg = handwrittenFactors.fundamental;
+    const comparable = (field) => q.map((row) => finite(row?.[field])).filter((v) => v != null).slice(0, 3);
+    let qNpmGrowth = null;
+    if (q.length >= 5 && finite(q[0]?.npm) != null && finite(q[4]?.npm) != null && Number(q[4].npm) !== 0) {
+      qNpmGrowth = ((Number(q[0].npm) - Number(q[4].npm)) / Math.abs(Number(q[4].npm))) * 100;
+    }
+    let annualOcfGrowth = null;
+    if (a.length >= 2 && finite(a[0]?.operating_cash_flow) != null && finite(a[1]?.operating_cash_flow) != null && Number(a[1].operating_cash_flow) !== 0) {
+      annualOcfGrowth = ((Number(a[0].operating_cash_flow) - Number(a[1].operating_cash_flow)) / Math.abs(Number(a[1].operating_cash_flow))) * 100;
+    }
+    const roeValue = finite(a[0]?.roe) ?? (finite(fundamentals?.fundamentals?.return_on_equity) != null ? Number(fundamentals.fundamentals.return_on_equity) * 100 : null);
+    const roceValue = finite(a[0]?.roce);
+    const sharesOutstanding = finite(fundamentals?.ownership?.shares_outstanding);
+    const floatShares = finite(fundamentals?.ownership?.float_shares);
+    const latestOcf = finite(a[0]?.operating_cash_flow);
+    const cashflowPerShare = latestOcf != null && sharesOutstanding != null && sharesOutstanding !== 0 ? latestOcf / sharesOutstanding : null;
+
+    const fundamental = {
+      q_eps_yoy: resultRow(finite(q[0]?.yoy_eps), passScore(q[0]?.yoy_eps, fcfg.q_eps_yoy)),
+      q_eps_rising: resultRow(finite(q[0]?.eps), q.length < 3 ? null : (trend3(q[0]?.eps, q[1]?.eps, q[2]?.eps) ? 100 : 0), "Prior 2 quarters"),
+      q_eps_yoy_rising: resultRow(finite(q[0]?.yoy_eps), comparable("yoy_eps").length < 3 ? null : (trend3(...comparable("yoy_eps")) ? 100 : 0), "Prior 2 YoY values"),
+      a_eps_yoy: resultRow(finite(a[0]?.yoy_eps), passScore(a[0]?.yoy_eps, fcfg.a_eps_yoy)),
+      a_eps_rising: resultRow(finite(a[0]?.eps), a.length < 3 ? null : (trend3(a[0]?.eps, a[1]?.eps, a[2]?.eps) ? 100 : 0), "Prior 2 years"),
+      q_pat_yoy: resultRow(finite(q[0]?.yoy_pat), passScore(q[0]?.yoy_pat, fcfg.q_pat_yoy)),
+      q_pat_rising: resultRow(finite(q[0]?.pat), q.length < 3 ? null : (trend3(q[0]?.pat, q[1]?.pat, q[2]?.pat) ? 100 : 0), "Prior 2 quarters"),
+      q_pat_yoy_rising: resultRow(finite(q[0]?.yoy_pat), comparable("yoy_pat").length < 3 ? null : (trend3(...comparable("yoy_pat")) ? 100 : 0), "Prior 2 YoY values"),
+      a_pat_yoy: resultRow(finite(a[0]?.yoy_pat), passScore(a[0]?.yoy_pat, fcfg.a_pat_yoy)),
+      a_pat_rising: resultRow(finite(a[0]?.pat), a.length < 3 ? null : (trend3(a[0]?.pat, a[1]?.pat, a[2]?.pat) ? 100 : 0), "Prior 2 years"),
+      q_sales_yoy: resultRow(finite(q[0]?.yoy_sales), passScore(q[0]?.yoy_sales, fcfg.q_sales_yoy)),
+      q_sales_rising: resultRow(finite(q[0]?.sales), q.length < 3 ? null : (trend3(q[0]?.sales, q[1]?.sales, q[2]?.sales) ? 100 : 0), "Prior 2 quarters"),
+      a_sales_yoy: resultRow(finite(a[0]?.yoy_sales), passScore(a[0]?.yoy_sales, fcfg.a_sales_yoy)),
+      a_sales_rising: resultRow(finite(a[0]?.sales), a.length < 3 ? null : (trend3(a[0]?.sales, a[1]?.sales, a[2]?.sales) ? 100 : 0), "Prior 2 years"),
+      q_npm_yoy: resultRow(qNpmGrowth, passScore(qNpmGrowth, fcfg.q_npm_yoy)),
+      a_npm_rising: resultRow(finite(a[0]?.npm), a.length < 2 || finite(a[0]?.npm) == null || finite(a[1]?.npm) == null ? null : (Number(a[0].npm) > Number(a[1].npm) ? 100 : 0), finite(a[1]?.npm)),
+      a_ocf_yoy: resultRow(annualOcfGrowth, passScore(annualOcfGrowth, fcfg.a_ocf_yoy)),
+      cashflow_per_share: resultRow(cashflowPerShare, fcfg.cashflow_per_share?.enabled === false ? null : passScore(cashflowPerShare, fcfg.cashflow_per_share)),
+      roe_above: resultRow(roeValue, passScore(roeValue, fcfg.roe_above)),
+      roce_above: resultRow(roceValue, passScore(roceValue, fcfg.roce_above)),
+      shares_outstanding: resultRow(sharesOutstanding, fcfg.shares_outstanding?.enabled === false ? null : passScore(sharesOutstanding, fcfg.shares_outstanding)),
+      float_shares: resultRow(floatShares, fcfg.float_shares?.enabled === false ? null : passScore(floatShares, fcfg.float_shares)),
+    };
+
+    const ownership = {};
+    if (exchange !== "US" && Array.isArray(indiaShareholding?.history) && indiaShareholding.history.length) {
+      const h = indiaShareholding.history;
+      const latestH = h[0] || {};
+      const priorH = h[1] || {};
+      const secondPriorH = h[2] || {};
+      const previousYearH = h[4] || {};
+      const ocfg = handwrittenFactors.ownership;
+      const diiMf = (row) => {
+        const values = [finite(row?.dii), finite(row?.mutual_funds)].filter((v) => v != null);
+        return values.length ? values.reduce((sum, v) => sum + v, 0) : null;
+      };
+      const latestDiiMfChangeVals = [finite(latestH.dii_change), finite(latestH.mutual_funds_change)].filter((v) => v != null);
+      const latestDiiMfChange = latestDiiMfChangeVals.length ? latestDiiMfChangeVals.reduce((sum, v) => sum + v, 0) : null;
+      const priorDiiMf = diiMf(priorH);
+      const secondPriorDiiMf = diiMf(secondPriorH);
+      ownership.promoter_qoq = resultRow(finite(latestH.promoter_change), passScore(latestH.promoter_change, ocfg.promoter_qoq));
+      ownership.promoter_above = resultRow(finite(latestH.promoter), passScore(latestH.promoter, ocfg.promoter_above));
+      ownership.promoter_rising = resultRow(finite(latestH.promoter), finite(latestH.promoter) == null || finite(previousYearH.promoter) == null ? null : (Number(latestH.promoter) > Number(previousYearH.promoter) ? 100 : 0), finite(previousYearH.promoter));
+      ownership.pledge = resultRow(null, null, "Bands");
+      ownership.fii_qoq = resultRow(finite(latestH.fii_change), passScore(latestH.fii_change, ocfg.fii_qoq));
+      ownership.fii_rising = resultRow(finite(latestH.fii), finite(latestH.fii) == null || finite(previousYearH.fii) == null || finite(priorH.fii) == null || finite(secondPriorH.fii) == null ? null : (Number(latestH.fii) > Number(previousYearH.fii) && Number(priorH.fii) > Number(secondPriorH.fii) ? 100 : 0), "Year + quarter trend");
+      ownership.dii_mf_qoq = resultRow(latestDiiMfChange, passScore(latestDiiMfChange, ocfg.dii_mf_qoq));
+      ownership.dii_mf_rising = resultRow(priorDiiMf, priorDiiMf == null || secondPriorDiiMf == null ? null : (priorDiiMf > secondPriorDiiMf ? 100 : 0), secondPriorDiiMf);
+      ownership.insider_activity = resultRow(null, null, "Requires provider event history");
+    }
+
+    const scoreGroup = (group, rows) => {
+      let weighted = 0;
+      let weights = 0;
+      Object.entries(rows).forEach(([key, row]) => {
+        const cfg = handwrittenFactors[group]?.[key];
+        const weight = Number(cfg?.weight) || 0;
+        if (cfg?.enabled === false || weight <= 0 || row?.score == null || !Number.isFinite(Number(row.score))) return;
+        weighted += Number(row.score) * weight;
+        weights += weight;
+      });
+      return weights > 0 ? weighted / weights : null;
+    };
+
+    const fundamentalGroups = {};
+    for (const [, , , , category = "Other"] of handwrittenFactorMeta.fundamental) {
+      if (!(category in fundamentalGroups)) fundamentalGroups[category] = { weighted: 0, weight: 0 };
+    }
+    for (const [key, , , , category = "Other"] of handwrittenFactorMeta.fundamental) {
+      const row = fundamental[key];
+      const cfg = handwrittenFactors.fundamental[key];
+      const weight = Number(cfg?.weight) || 0;
+      if (cfg?.enabled === false || weight <= 0 || row?.score == null || !Number.isFinite(Number(row.score))) continue;
+      fundamentalGroups[category].weighted += Number(row.score) * weight;
+      fundamentalGroups[category].weight += weight;
+    }
+    const groupedFundamentalScores = Object.fromEntries(Object.entries(fundamentalGroups).map(([name, value]) => [name, value.weight > 0 ? value.weighted / value.weight : null]));
+
+    return {
+      technical,
+      fundamental,
+      ownership,
+      groupScores: {
+        technical: scoreGroup("technical", technical),
+        fundamental: scoreGroup("fundamental", fundamental),
+        ownership: scoreGroup("ownership", ownership),
+      },
+      fundamentalGroupScores: groupedFundamentalScores,
+    };
+  })();
+
+  const selectedFundamentalQualification = (() => {
+    const rows = factorEvaluationRows.fundamental || {};
+    let considered = 0;
+    let passed = 0;
+    let missing = 0;
+    Object.entries(rows).forEach(([key, row]) => {
+      const cfg = handwrittenFactors.fundamental[key];
+      if (!cfg || cfg.enabled === false || (Number(cfg.weight) || 0) <= 0) return;
+      considered += 1;
+      if (row.score == null) missing += 1;
+      else if (Number(row.score) > 0) passed += 1;
+    });
+    return {
+      considered,
+      passed,
+      missing,
+      status: considered === 0 ? "No active filters" : missing > 0 ? "Insufficient Data" : passed === considered ? "Qualified" : "Not Qualified",
+    };
+  })();
+
+  const excelFeedUrl = `${window.location.origin}${API}/market/excel-feed/${symbol}?exchange=${exchange}`;
+  const copyExcelFeedUrl = async () => {
+    try {
+      await navigator.clipboard.writeText(excelFeedUrl);
+      setExcelCopyMessage("Excel feed URL copied");
+    } catch {
+      setExcelCopyMessage(excelFeedUrl);
+    }
+    window.setTimeout(() => setExcelCopyMessage(""), 3500);
+  };
+
   const relativeStrengthChartData = (() => {
     const rows = technicalSummary?.rs_chart;
     if (!Array.isArray(rows)) return [];
@@ -1120,6 +1345,156 @@ function App() {
       setSymbol("INFY");
       setSymbolInput("INFY");
     }
+  };
+
+  const updateHandwrittenFactor = (group, key, field, value) => {
+    setHandwrittenFactors((prev) => ({
+      ...prev,
+      [group]: {
+        ...prev[group],
+        [key]: { ...prev[group][key], [field]: value },
+      },
+    }));
+  };
+
+  const formatFilterCurrent = (key, value) => {
+    if (value === null || value === undefined || !Number.isFinite(Number(value))) return "N/A";
+    const n = Number(value);
+    if (["shares_outstanding", "float_shares", "volume10_lt20", "volume20_lt40", "ema20_gt50", "ema50_gt150"].includes(key) && Math.abs(n) >= 1000000) {
+      return new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 2 }).format(n);
+    }
+    if (Math.abs(n) >= 1000000) return new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 2 }).format(n);
+    return Number(n.toFixed(2)).toLocaleString();
+  };
+
+  const renderFilterTable = (group, title, subtitle) => {
+    const rows = handwrittenFactorMeta[group] || [];
+    const evalRows = factorEvaluationRows[group] || {};
+    return (
+      <div className="compact-filter-card" key={group}>
+        <div className="compact-filter-header">
+          <div>
+            <h3>{title}</h3>
+            <p>{subtitle}</p>
+          </div>
+          <div className="compact-filter-score">
+            <span>Group score</span>
+            <strong>{filterScoreText(factorEvaluationRows.groupScores?.[group])}</strong>
+          </div>
+        </div>
+        <div className="compact-table-scroll">
+          <table className="filter-config-table">
+            <thead>
+              <tr>
+                {group === "fundamental" && <th>Group</th>}
+                <th>Filter name</th>
+                <th>Compare</th>
+                <th>Value / target</th>
+                <th>Current</th>
+                <th>Weight</th>
+                <th>Filter score</th>
+                <th>Use</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map(([key, label, description, editableValues, category]) => {
+                const cfg = handwrittenFactors[group][key] || {};
+                const evalRow = evalRows[key] || {};
+                const enabled = cfg.enabled !== false;
+                const hasThreshold = editableValues.includes("threshold");
+                const bandFields = editableValues.filter((field) => field !== "threshold");
+                const score = evalRow.score;
+                return (
+                  <tr key={key} className={!enabled ? "filter-row-disabled" : ""}>
+                    {group === "fundamental" && <td><span className="factor-group-pill">{category || "Other"}</span></td>}
+                    <td className="filter-name-cell">
+                      <strong>{label}</strong>
+                      <small>{description}</small>
+                    </td>
+                    <td>
+                      {hasThreshold ? (
+                        <select
+                          className="filter-compare-select"
+                          value={cfg.comparator || ">"}
+                          onChange={(e) => updateHandwrittenFactor(group, key, "comparator", e.target.value)}
+                        >
+                          <option value=">">&gt;</option>
+                          <option value=">=">&gt;=</option>
+                          <option value="<">&lt;</option>
+                          <option value="<=">&lt;=</option>
+                        </select>
+                      ) : (
+                        <span className="fixed-compare">{cfg.comparator || (evalRow.targetText ? "vs" : "—")}</span>
+                      )}
+                    </td>
+                    <td>
+                      {hasThreshold ? (
+                        <input
+                          className="filter-value-input"
+                          type="number"
+                          step="0.1"
+                          value={cfg.threshold ?? 0}
+                          onChange={(e) => updateHandwrittenFactor(group, key, "threshold", Number(e.target.value))}
+                        />
+                      ) : bandFields.length ? (
+                        <div className="filter-band-values">
+                          {bandFields.map((field) => (
+                            <label key={field}>
+                              <span>{field.toUpperCase()}</span>
+                              <input
+                                type="number"
+                                step="0.1"
+                                value={cfg[field] ?? 0}
+                                onChange={(e) => updateHandwrittenFactor(group, key, field, Number(e.target.value))}
+                              />
+                            </label>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="filter-target-text">{evalRow.targetText != null ? (typeof evalRow.targetText === "number" ? formatFilterCurrent(key, evalRow.targetText) : String(evalRow.targetText)) : "Dynamic"}</span>
+                      )}
+                    </td>
+                    <td className="filter-current-cell">{formatFilterCurrent(key, evalRow.currentValue)}</td>
+                    <td>
+                      <input
+                        className="filter-weight-input"
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={cfg.weight ?? 0}
+                        onChange={(e) => updateHandwrittenFactor(group, key, "weight", Math.max(0, Number(e.target.value) || 0))}
+                      />
+                    </td>
+                    <td>
+                      <span className={`filter-score-badge ${score == null ? "is-na" : Number(score) > 0 ? "is-pass" : "is-fail"}`}>
+                        {filterScoreText(score)}
+                      </span>
+                    </td>
+                    <td>
+                      <label className="compact-enable-toggle">
+                        <input
+                          type="checkbox"
+                          checked={enabled}
+                          onChange={(e) => updateHandwrittenFactor(group, key, "enabled", e.target.checked)}
+                        />
+                        <span>{enabled ? "On" : "Off"}</span>
+                      </label>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        {group === "fundamental" && (
+          <div className="fundamental-score-strip">
+            {Object.entries(factorEvaluationRows.fundamentalGroupScores || {}).map(([name, score]) => (
+              <div key={name}><span>{name} score</span><strong>{filterScoreText(score)}</strong></div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -1389,6 +1764,49 @@ function App() {
                 })}
               </div>
 
+              <div className="compact-ranking-result">
+                <div className="compact-ranking-result-header">
+                  <div>
+                    <h3>Composite Ranking</h3>
+                    <p>Arranged from the client note: component score × editable weight.</p>
+                  </div>
+                  <div className="composite-score-box">
+                    <span>Final score</span>
+                    <strong>{dashboardView?.score != null ? dashboardView.score.toFixed ? dashboardView.score.toFixed(0) : dashboardView.score : "N/A"}</strong>
+                    <small>{dashboardView?.score_coverage_percent ?? 0}% data coverage</small>
+                  </div>
+                </div>
+                <div className="compact-table-scroll">
+                  <table className="component-score-table">
+                    <thead><tr><th>Component</th><th>Score</th><th>Weight</th><th>Weighted contribution</th><th>Status</th></tr></thead>
+                    <tbody>
+                      {[
+                        ["fundamental", "Fundamental"],
+                        ["technical", "Technical"],
+                        ["relative_strength", "RS"],
+                        ["ownership", "Ownership"],
+                        ["sector", "Sector"],
+                      ].map(([key, label]) => {
+                        const score = dashboardView?.score_components?.[key];
+                        const weight = Number(scoreWeights[key]) || 0;
+                        const totalWeight = Object.values(scoreWeights).reduce((sum, value) => sum + Math.max(0, Number(value) || 0), 0);
+                        const normalizedWeight = totalWeight > 0 ? (weight / totalWeight) * 100 : 0;
+                        const contribution = score == null ? null : (Number(score) * normalizedWeight) / 100;
+                        return (
+                          <tr key={key}>
+                            <td><strong>{label}</strong></td>
+                            <td>{score == null ? "N/A" : Number(score).toFixed(2)}</td>
+                            <td>{weight}%</td>
+                            <td>{contribution == null ? "N/A" : contribution.toFixed(2)}</td>
+                            <td><span className={`component-status ${score == null ? "is-na" : "is-ready"}`}>{score == null ? "N/A" : "Ready"}</span></td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
               <div className="ranking-actions">
                 <button className="ranking-primary-button" onClick={() => {
                   localStorage.setItem("scoreWeights", JSON.stringify(scoreWeights));
@@ -1402,7 +1820,11 @@ function App() {
                 }}>Apply Ranking</button>
                 <button type="button" className="secondary-button ranking-secondary-button" onClick={() => {
                   window.open(`${API}/market/excel-export/${symbol}?exchange=${exchange}`, "_blank", "noopener,noreferrer");
-                }}>Export / Connect Excel</button>
+                }}>Download Excel</button>
+                <button type="button" className="secondary-button ranking-secondary-button" onClick={copyExcelFeedUrl}>Copy Excel Feed URL</button>
+                <button type="button" className="secondary-button ranking-secondary-button" onClick={() => setShowExcelHelp((v) => !v)}>
+                  {showExcelHelp ? "Hide Excel Steps" : "Excel Setup"}
+                </button>
                 <button type="button" className="secondary-button ranking-secondary-button" onClick={() => setShowRankingDetails((v) => !v)}>
                   {showRankingDetails ? "Hide Factors" : "Show Factors"}
                 </button>
@@ -1415,97 +1837,48 @@ function App() {
                 }}>Reset Defaults</button>
               </div>
 
+              {(showExcelHelp || excelCopyMessage) && (
+                <div className="excel-connect-panel">
+                  {excelCopyMessage && <div className="excel-copy-message">{excelCopyMessage}</div>}
+                  {showExcelHelp && (
+                    <>
+                      <strong>Connect this screener to Excel</strong>
+                      <ol>
+                        <li>In Excel open <b>Data → Get Data → From Web</b>.</li>
+                        <li>Click <b>Copy Excel Feed URL</b> above and paste that URL into Excel.</li>
+                        <li>Choose <b>Load</b>. Later use <b>Data → Refresh All</b> to fetch the latest stored provider data.</li>
+                        <li>Keep your own formulas in separate Excel columns/sheets so refresh does not overwrite them.</li>
+                      </ol>
+                      <code>{excelFeedUrl}</code>
+                    </>
+                  )}
+                </div>
+              )}
+
               <div className="ranking-help-note">
                 <strong>How weighting works:</strong> the Milestone 2 default follows the latest handwritten composite formula: Fundamental 30%, Technical 25%, RS 25%, Ownership 15%, Sector 5%. Missing provider values remain N/A and are never invented. Ambiguous handwritten point allocations remain editable until confirmed.
               </div>
 
               {showRankingDetails && (
-                <div className="ranking-detail-grid handwritten-factor-grid">
-                  {[
-                    ["technical", "Technical factors", "Only the technical factors from the handwritten sheet"],
-                    ["fundamental", "Fundamental factors", "Quarterly and annual growth factors from the handwritten sheet"],
-                    ["ownership", "Ownership factors", "Promoter / FII / DII-MF / pledge / insider factors from the handwritten sheet"],
-                  ].map(([group, title, subtitle]) => (
-                    <div className="ranking-detail-card" key={group}>
-                      <div className="ranking-detail-card-header">
-                        <div>
-                          <h3>{title}</h3>
-                          <p>{subtitle}</p>
-                        </div>
-                        <span>{Object.values(handwrittenFactors[group]).reduce((sum, item) => sum + (item.enabled === false ? 0 : (Number(item.weight) || 0)), 0)} active weight</span>
-                      </div>
-                      <div className="ranking-parameter-list">
-                        {handwrittenFactorMeta[group].map(([key, label, description, editableValues]) => {
-                          const factor = handwrittenFactors[group][key];
-                          const factorWeight = Number(factor?.weight) || 0;
-                          const factorEnabled = factor?.enabled !== false;
-                          return (
-                            <div className={`ranking-parameter-row handwritten-factor-row ${!factorEnabled ? "is-disabled" : ""}`} key={key}>
-                              <div className="ranking-parameter-copy">
-                                <strong>{label}</strong>
-                                <small>{description}</small>
-                                {editableValues.length > 0 && (
-                                  <div className="factor-value-grid">
-                                    {editableValues.map((valueKey) => (
-                                      <label key={valueKey}>
-                                        <span>{valueKey === "threshold" ? "Value" : valueKey.toUpperCase()}</span>
-                                        <input
-                                          aria-label={`${label} ${valueKey}`}
-                                          type="number"
-                                          step="0.1"
-                                          value={factor[valueKey]}
-                                          onChange={(e) => setHandwrittenFactors((prev) => ({
-                                            ...prev,
-                                            [group]: {
-                                              ...prev[group],
-                                              [key]: { ...prev[group][key], [valueKey]: Number(e.target.value) },
-                                            },
-                                          }))}
-                                        />
-                                      </label>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                              <div className="factor-controls">
-                                <label className="factor-enable-toggle">
-                                  <input
-                                    type="checkbox"
-                                    checked={factorEnabled}
-                                    onChange={(e) => setHandwrittenFactors((prev) => ({
-                                      ...prev,
-                                      [group]: {
-                                        ...prev[group],
-                                        [key]: { ...prev[group][key], enabled: e.target.checked },
-                                      },
-                                    }))}
-                                  />
-                                  <span>{factorEnabled ? "Enabled" : "Disabled"}</span>
-                                </label>
-                                <div className="weight-input-wrap parameter-weight-input">
-                                <input
-                                  aria-label={`${label} weight`}
-                                  type="number"
-                                  min="0"
-                                  step="1"
-                                  value={factor.weight}
-                                  onChange={(e) => setHandwrittenFactors((prev) => ({
-                                    ...prev,
-                                    [group]: {
-                                      ...prev[group],
-                                      [key]: { ...prev[group][key], weight: Math.max(0, Number(e.target.value) || 0) },
-                                    },
-                                  }))}
-                                />
-                                <span>w</span>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
+                <div className="compact-filter-stack">
+                  {renderFilterTable("technical", "Technical Filters", "Client handwritten technical ranking filters in compact editable format")}
+                  {renderFilterTable("fundamental", "Fundamental Filters", "EPS / PAT / Sales / NPM / CFO and additional client filters")}
+                  {renderFilterTable("ownership", "Ownership Filters", "Promoter / FII / DII-MF / pledge / insider filters")}
+
+                  <div className="qualification-panel">
+                    <div>
+                      <h3>Fundamental Qualification</h3>
+                      <p>Current selected stock against the enabled weighted fundamental filters. Missing provider values remain N/A.</p>
                     </div>
-                  ))}
+                    <div className={`qualification-status status-${selectedFundamentalQualification.status.toLowerCase().replaceAll(" ", "-")}`}>
+                      <strong>{symbol}</strong>
+                      <span>{selectedFundamentalQualification.status}</span>
+                      <small>{selectedFundamentalQualification.passed}/{selectedFundamentalQualification.considered} passed{selectedFundamentalQualification.missing ? ` • ${selectedFundamentalQualification.missing} missing` : ""}</small>
+                    </div>
+                    <div className="qualification-note">
+                      The universe-wide qualifying-stock list will use the same filter configuration as complete stored fundamental history becomes available for each company; the screener does not invent missing history to force qualification.
+                    </div>
+                  </div>
                 </div>
               )}
             </section>
@@ -1518,9 +1891,12 @@ function App() {
                 <h2>Latest Client Ranking Formula</h2>
                 <p>Captured from the newest handwritten Milestone 2 notes.</p>
               </div>
-              <button type="button" className="secondary-button" onClick={() => {
-                window.open(`${API}/market/excel-feed/${symbol}?exchange=${exchange}`, "_blank", "noopener,noreferrer");
-              }}>Open Excel Feed</button>
+              <div className="formula-excel-actions">
+                <button type="button" className="secondary-button" onClick={() => {
+                  window.open(`${API}/market/excel-export/${symbol}?exchange=${exchange}`, "_blank", "noopener,noreferrer");
+                }}>Download Excel</button>
+                <button type="button" className="secondary-button" onClick={copyExcelFeedUrl}>Copy Feed URL</button>
+              </div>
             </div>
             <div className="chart-note">
               Composite = Fundamental × 30% + Technical × 25% + RS × 25% + Ownership × 15% + Sector × 5%

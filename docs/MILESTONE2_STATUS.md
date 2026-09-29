@@ -125,3 +125,14 @@ Current provider note: the history backfill uses real Yahoo Finance/yfinance OHL
   filtered from API output/calculations and rejected during future sync/backfill.
 - Listing-master sync no longer erases existing sector/industry enrichment when
   the upstream symbol list omits those fields.
+
+## 2026-09-29 client handwritten layout update
+
+- Ranking controls are now arranged as compact tables matching the latest client note: Filter name, compare sign, value/target, current value, weight, filter score and enable/disable.
+- Fundamental filters are grouped into EPS, PAT, Sales, NPM, CFO and Other.
+- ROE > 20 and ROCE > 30 are exposed from the latest note. Their weights remain 0 until the client confirms the exact point allocation.
+- Cash-flow-per-share, outstanding-shares and float-shares rows are included but disabled/zero-weight by default because the handwritten note did not define an unambiguous threshold/weight.
+- The top Composite Ranking table shows each component score, weight and weighted contribution.
+- The selected stock gets a transparent Fundamental Qualification status; missing provider values remain N/A and prevent false qualification.
+- Excel actions are split into Download Excel, Copy Excel Feed URL and an in-app Excel setup guide.
+- Excel exports now contain `Technical_Filter_Config` and `Fundamental_Filter_Config` sheets with editable comparison/threshold/weight/enable columns and formula-driven score cells.

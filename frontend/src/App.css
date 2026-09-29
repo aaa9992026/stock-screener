@@ -1182,3 +1182,283 @@ th {
 .rs-score-card strong {
   font-size: 1.75rem;
 }
+
+/* Milestone 2 compact client-note ranking tables */
+.compact-ranking-result {
+  margin-top: 18px;
+  border: 1px solid #dbe4f0;
+  border-radius: 14px;
+  background: #fff;
+  overflow: hidden;
+}
+.compact-ranking-result-header,
+.compact-filter-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 16px 18px;
+  background: #f8fafc;
+  border-bottom: 1px solid #dbe4f0;
+}
+.compact-ranking-result-header h3,
+.compact-filter-header h3,
+.qualification-panel h3 {
+  margin: 0;
+}
+.compact-ranking-result-header p,
+.compact-filter-header p,
+.qualification-panel p {
+  margin: 4px 0 0;
+  color: #64748b;
+  font-size: 13px;
+}
+.composite-score-box,
+.compact-filter-score {
+  min-width: 126px;
+  text-align: center;
+  padding: 9px 12px;
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  border-radius: 10px;
+}
+.composite-score-box span,
+.composite-score-box small,
+.compact-filter-score span {
+  display: block;
+  color: #64748b;
+  font-size: 11px;
+}
+.composite-score-box strong,
+.compact-filter-score strong {
+  display: block;
+  color: #0f172a;
+  font-size: 22px;
+  line-height: 1.1;
+  margin: 3px 0;
+}
+.compact-table-scroll {
+  width: 100%;
+  overflow-x: auto;
+}
+.component-score-table,
+.filter-config-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 860px;
+}
+.component-score-table th,
+.component-score-table td,
+.filter-config-table th,
+.filter-config-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: left;
+  vertical-align: middle;
+  font-size: 13px;
+}
+.component-score-table th,
+.filter-config-table th {
+  background: #f8fafc;
+  color: #475569;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .035em;
+  white-space: nowrap;
+}
+.component-status,
+.filter-score-badge,
+.factor-group-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.component-status.is-ready,
+.filter-score-badge.is-pass {
+  background: #ecfdf5;
+  color: #047857;
+}
+.component-status.is-na,
+.filter-score-badge.is-na {
+  background: #f1f5f9;
+  color: #64748b;
+}
+.filter-score-badge.is-fail {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+.factor-group-pill {
+  background: #eef2ff;
+  color: #4338ca;
+}
+.compact-filter-stack {
+  display: grid;
+  gap: 18px;
+  margin-top: 18px;
+}
+.compact-filter-card {
+  border: 1px solid #dbe4f0;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #fff;
+}
+.filter-name-cell {
+  min-width: 250px;
+}
+.filter-name-cell strong,
+.filter-name-cell small {
+  display: block;
+}
+.filter-name-cell small {
+  color: #64748b;
+  margin-top: 3px;
+  max-width: 360px;
+}
+.filter-compare-select,
+.filter-value-input,
+.filter-weight-input,
+.filter-band-values input {
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+  background: #fff;
+  padding: 7px 8px;
+  font: inherit;
+}
+.filter-compare-select { min-width: 68px; }
+.filter-value-input { width: 90px; }
+.filter-weight-input { width: 72px; }
+.filter-band-values {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 220px;
+}
+.filter-band-values label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.filter-band-values label span {
+  font-size: 10px;
+  color: #64748b;
+  font-weight: 700;
+}
+.filter-band-values input { width: 64px; }
+.fixed-compare,
+.filter-target-text,
+.filter-current-cell {
+  color: #334155;
+  font-variant-numeric: tabular-nums;
+}
+.filter-row-disabled {
+  opacity: .52;
+}
+.compact-enable-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 700;
+  color: #334155;
+  white-space: nowrap;
+}
+.compact-enable-toggle input { accent-color: #2563eb; }
+.fundamental-score-strip {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+  padding: 12px;
+  background: #f8fafc;
+  border-top: 1px solid #dbe4f0;
+}
+.fundamental-score-strip > div {
+  padding: 9px 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  background: #fff;
+}
+.fundamental-score-strip span,
+.fundamental-score-strip strong {
+  display: block;
+}
+.fundamental-score-strip span {
+  color: #64748b;
+  font-size: 11px;
+}
+.fundamental-score-strip strong { margin-top: 3px; }
+.qualification-panel {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 14px;
+  align-items: center;
+  border: 1px solid #dbe4f0;
+  border-radius: 14px;
+  background: #fff;
+  padding: 16px 18px;
+}
+.qualification-status {
+  min-width: 180px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 10px 12px;
+  text-align: right;
+}
+.qualification-status strong,
+.qualification-status span,
+.qualification-status small { display: block; }
+.qualification-status span { font-weight: 800; margin: 2px 0; }
+.qualification-status small { color: #64748b; }
+.qualification-note {
+  grid-column: 1 / -1;
+  color: #64748b;
+  font-size: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed #dbe4f0;
+}
+.excel-connect-panel {
+  margin-top: 12px;
+  padding: 14px 16px;
+  border: 1px solid #bfdbfe;
+  border-radius: 12px;
+  background: #eff6ff;
+  color: #1e3a8a;
+}
+.excel-connect-panel ol {
+  margin: 8px 0 10px 20px;
+  padding: 0;
+}
+.excel-connect-panel li { margin: 5px 0; }
+.excel-connect-panel code {
+  display: block;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #fff;
+  border: 1px solid #dbeafe;
+  color: #1e293b;
+  overflow-wrap: anywhere;
+}
+.excel-copy-message {
+  margin-bottom: 8px;
+  font-weight: 800;
+}
+.formula-excel-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+@media (max-width: 900px) {
+  .fundamental-score-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .qualification-panel { grid-template-columns: 1fr; }
+  .qualification-status { text-align: left; }
+}
+@media (max-width: 600px) {
+  .fundamental-score-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .compact-ranking-result-header,
+  .compact-filter-header { flex-direction: column; }
+  .composite-score-box,
+  .compact-filter-score { width: 100%; }
+}

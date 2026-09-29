@@ -137,6 +137,47 @@ CLIENT_SECTOR_WEIGHTS = {
 }
 
 
+# Compact filter-table defaults from the client's latest handwritten layout.
+# Thresholds/weights that were not legible or not explicitly defined remain
+# zero/disabled so the screener never invents a ranking rule.
+CLIENT_TECHNICAL_FILTER_CONFIG = [
+    {"name": "Upper BB - Lower BB", "compare": "<=", "value": 10.0, "weight": 10.0, "enabled": True},
+    {"name": "5-day ATR% average vs 20-day ATR% average", "compare": "<", "value": "20-day ATR%", "weight": 10.0, "enabled": True},
+    {"name": "10-day ATR% average vs 20-day ATR% average", "compare": "<", "value": "20-day ATR%", "weight": 5.0, "enabled": True},
+    {"name": "RSI (14)", "compare": "bands", "value": "30 / 40 / 50", "weight": 5.0, "enabled": True},
+    {"name": "10-day volume average vs 20-day volume average", "compare": "<", "value": "20-day volume", "weight": 10.0, "enabled": True},
+    {"name": "20-day volume average vs 40-day volume average", "compare": "<", "value": "40-day volume", "weight": 5.0, "enabled": True},
+    {"name": "Distance from 52-week high", "compare": "bands", "value": "10 / 17 / 20%", "weight": 10.0, "enabled": True},
+    {"name": "20 EMA vs 50 EMA", "compare": ">", "value": "50 EMA", "weight": 8.0, "enabled": True},
+    {"name": "50 EMA vs 150 EMA", "compare": ">", "value": "150 EMA", "weight": 4.0, "enabled": True},
+]
+
+CLIENT_FUNDAMENTAL_FILTER_CONFIG = [
+    {"group": "EPS", "name": "Latest quarter EPS YoY", "compare": ">", "value": 30.0, "weight": 10.0, "enabled": True},
+    {"group": "EPS", "name": "Quarterly EPS rising", "compare": ">", "value": "previous 2 quarters", "weight": 4.0, "enabled": True},
+    {"group": "EPS", "name": "Quarterly EPS YoY trend rising", "compare": ">", "value": "previous 2 YoY values", "weight": 6.0, "enabled": True},
+    {"group": "EPS", "name": "Latest year EPS YoY", "compare": ">", "value": 20.0, "weight": 6.0, "enabled": True},
+    {"group": "EPS", "name": "Annual EPS trend rising", "compare": ">", "value": "previous 2 years", "weight": 4.0, "enabled": True},
+    {"group": "PAT", "name": "Latest quarter PAT YoY", "compare": ">", "value": 30.0, "weight": 6.0, "enabled": True},
+    {"group": "PAT", "name": "Quarterly PAT rising", "compare": ">", "value": "previous 2 quarters", "weight": 4.0, "enabled": True},
+    {"group": "PAT", "name": "Quarterly PAT YoY trend rising", "compare": ">", "value": "previous 2 YoY values", "weight": 6.0, "enabled": True},
+    {"group": "PAT", "name": "Latest year PAT YoY", "compare": ">", "value": 20.0, "weight": 5.0, "enabled": True},
+    {"group": "PAT", "name": "Annual PAT trend rising", "compare": ">", "value": "previous 2 years", "weight": 4.0, "enabled": True},
+    {"group": "Sales", "name": "Latest quarter Sales YoY", "compare": ">", "value": 30.0, "weight": 7.0, "enabled": True},
+    {"group": "Sales", "name": "Quarterly Sales trend rising", "compare": ">", "value": "previous 2 quarters", "weight": 4.0, "enabled": True},
+    {"group": "Sales", "name": "Latest year Sales YoY", "compare": ">", "value": 20.0, "weight": 5.0, "enabled": True},
+    {"group": "Sales", "name": "Annual Sales trend rising", "compare": ">", "value": "previous 2 years", "weight": 4.0, "enabled": True},
+    {"group": "NPM", "name": "Quarterly NPM growth YoY", "compare": ">", "value": 20.0, "weight": 4.0, "enabled": True},
+    {"group": "NPM", "name": "Annual NPM rising", "compare": ">", "value": "previous year", "weight": 3.0, "enabled": True},
+    {"group": "CFO", "name": "Operating cash flow YoY", "compare": ">", "value": 10.0, "weight": 4.0, "enabled": True},
+    {"group": "CFO", "name": "Cash flow per share", "compare": ">", "value": 0.0, "weight": 0.0, "enabled": False},
+    {"group": "Other", "name": "ROE", "compare": ">", "value": 20.0, "weight": 0.0, "enabled": True},
+    {"group": "Other", "name": "ROCE", "compare": ">", "value": 30.0, "weight": 0.0, "enabled": True},
+    {"group": "Other", "name": "Outstanding shares", "compare": "<", "value": 0.0, "weight": 0.0, "enabled": False},
+    {"group": "Other", "name": "Float shares", "compare": "<", "value": 0.0, "weight": 0.0, "enabled": False},
+]
+
+
 def _roc(values, periods):
     if periods <= 0 or len(values) <= periods:
         return None
@@ -1226,6 +1267,12 @@ def get_client_ranking_spec():
             "growth_breadth": "(Sales breadth + PAT breadth + EPS breadth) / 3",
             "acceleration_breadth": "EPS acceleration breadth*0.35 + PAT acceleration breadth*0.35 + Sales acceleration breadth*0.30",
         },
+        "filter_layout": {
+            "columns": ["Filter name", "Compare", "Value / target", "Weight", "Filter score", "Enable / disable"],
+            "technical": CLIENT_TECHNICAL_FILTER_CONFIG,
+            "fundamental": CLIENT_FUNDAMENTAL_FILTER_CONFIG,
+            "fundamental_groups": ["EPS", "PAT", "Sales", "NPM", "CFO", "Other"],
+        },
         "data_integrity": {
             "missing_values": "N/A; never fabricate a value to complete a score.",
             "ambiguous_handwritten_weights": "Remain editable/unconfirmed until the client confirms them.",
@@ -1334,6 +1381,33 @@ def export_excel_snapshot(symbol: str, exchange: str = "US", limit: int = Query(
     cfg["B8"] = "=IF(COUNT(B2:B6)=0,\"\",SUM(D2:D6)/SUMPRODUCT(--ISNUMBER(B2:B6),C2:C6)*100)"
     cfg["A10"] = "Client formula"
     cfg["B10"] = "Fundamental*0.30 + Technical*0.25 + RS*0.25 + Ownership*0.15 + Sector*0.05"
+
+    tech_filters = wb.create_sheet("Technical_Filter_Config")
+    tech_filters.append(["Filter Name", "Compare", "Value / Target", "Weight", "Enabled", "Filter Score (0-100)", "Weighted Points"])
+    for cell in tech_filters[1]: cell.font = Font(bold=True)
+    for idx, item in enumerate(CLIENT_TECHNICAL_FILTER_CONFIG, start=2):
+        tech_filters.append([item["name"], item["compare"], item["value"], item["weight"], "Yes" if item["enabled"] else "No", None, f'=IF(AND(E{idx}="Yes",ISNUMBER(F{idx})),F{idx}*D{idx},0)'])
+    tech_total_row = len(CLIENT_TECHNICAL_FILTER_CONFIG) + 3
+    tech_filters.cell(tech_total_row, 1, "Technical Filter Score")
+    tech_filters.cell(tech_total_row, 2, f'=IFERROR(SUM(G2:G{tech_total_row-2})/SUMPRODUCT((E2:E{tech_total_row-2}="Yes")*D2:D{tech_total_row-2}),"")')
+
+    fundamental_filters = wb.create_sheet("Fundamental_Filter_Config")
+    fundamental_filters.append(["Group", "Filter Name", "Compare", "Value / Target", "Weight", "Enabled", "Filter Score (0-100)", "Weighted Points"])
+    for cell in fundamental_filters[1]: cell.font = Font(bold=True)
+    for idx, item in enumerate(CLIENT_FUNDAMENTAL_FILTER_CONFIG, start=2):
+        fundamental_filters.append([item["group"], item["name"], item["compare"], item["value"], item["weight"], "Yes" if item["enabled"] else "No", None, f'=IF(AND(F{idx}="Yes",ISNUMBER(G{idx})),G{idx}*E{idx},0)'])
+    row_cursor = len(CLIENT_FUNDAMENTAL_FILTER_CONFIG) + 3
+    fundamental_filters.cell(row_cursor, 1, "Overall Fundamental Filter Score")
+    fundamental_filters.cell(row_cursor, 2, f'=IFERROR(SUM(H2:H{row_cursor-2})/SUMPRODUCT((F2:F{row_cursor-2}="Yes")*E2:E{row_cursor-2}),"")')
+    row_cursor += 2
+    fundamental_filters.cell(row_cursor, 1, "Group Scores")
+    fundamental_filters.cell(row_cursor, 1).font = Font(bold=True)
+    row_cursor += 1
+    for group_name in ["EPS", "PAT", "Sales", "NPM", "CFO", "Other"]:
+        fundamental_filters.cell(row_cursor, 1, group_name)
+        # SUMIFS keeps the workbook editable even when the client changes weights/scores.
+        fundamental_filters.cell(row_cursor, 2, f'=IFERROR(SUMIFS(H$2:H${len(CLIENT_FUNDAMENTAL_FILTER_CONFIG)+1},A$2:A${len(CLIENT_FUNDAMENTAL_FILTER_CONFIG)+1},A{row_cursor})/SUMIFS(E$2:E${len(CLIENT_FUNDAMENTAL_FILTER_CONFIG)+1},A$2:A${len(CLIENT_FUNDAMENTAL_FILTER_CONFIG)+1},A{row_cursor},F$2:F${len(CLIENT_FUNDAMENTAL_FILTER_CONFIG)+1},"Yes"),"")')
+        row_cursor += 1
 
     sector = wb.create_sheet("Sector_Ranking_Config")
     sector.append(["Sector Component", "Score (0-100)", "Weight %", "Weighted Points"])
