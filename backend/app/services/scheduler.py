@@ -1,5 +1,6 @@
 import logging
 import os
+from datetime import datetime, timedelta
 
 from apscheduler.schedulers.background import BackgroundScheduler
 
@@ -9,6 +10,7 @@ from app.services.fundamental_sync import sync_fundamental_data
 from app.services.ohlcv_sync import sync_ohlcv
 from app.services.providers.bse_provider import BSEProvider
 from app.services.providers.yahoo_provider import YahooProvider
+from app.services.rs_universe_backfill import backfill_all_markets_once
 
 
 logger = logging.getLogger(__name__)
@@ -108,6 +110,25 @@ def refresh_configured_market_data():
     }
 
 
+
+def _env_flag(name: str, default: bool = False) -> bool:
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    return str(raw).strip().lower() in {"1", "true", "yes", "on"}
+
+
+def refresh_rs_universe_history():
+    """Run a small resumable batch for each client-defined RS market."""
+    batch_size = max(1, min(100, int(os.getenv("RS_BACKFILL_BATCH_SIZE", "10") or 10)))
+    try:
+        result = backfill_all_markets_once(batch_size=batch_size)
+        logger.info("RS universe backfill batch completed: %s", result)
+        return result
+    except Exception:
+        logger.exception("RS universe backfill scheduler job failed")
+        return {"status": "error"}
+
 def start_scheduler():
     if scheduler.running:
         return
@@ -130,6 +151,19 @@ def start_scheduler():
             replace_existing=True,
             max_instances=1,
             coalesce=True,
+        )
+
+    if _env_flag("RS_BACKFILL_ENABLED", True):
+        interval_minutes = max(5, int(os.getenv("RS_BACKFILL_INTERVAL_MINUTES", "10") or 10))
+        scheduler.add_job(
+            refresh_rs_universe_history,
+            "interval",
+            minutes=interval_minutes,
+            id="rs_universe_backfill",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+            next_run_time=datetime.now() + timedelta(minutes=2),
         )
 
     scheduler.start()

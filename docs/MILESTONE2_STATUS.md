@@ -74,3 +74,41 @@ This is the cumulative Milestone 2 continuation build. It preserves all accepted
 - Provider-snapshot safety prevents a partial/upstream-failure response from mass-deactivating the current company universe.
 - `GET /companies/universe-status` reports active/inactive symbol-master counts and the two client-defined RS targets.
 - Current automatic company-master sources are Nasdaq Trader for US and the official NSE equity list for NSE. BSE remains the existing limited market until a BSE symbol-master feed is configured.
+
+## RS universe automatic history backfill
+
+Client-confirmed market universes are now separate:
+
+- US percentile denominator / target: **6,000 active US stocks**.
+- India percentile denominator / target: **5,500 active Indian stocks (NSE + BSE)**.
+
+The backend now includes an incremental real-data OHLCV backfill service. It runs in small resumable batches so Railway/provider restarts or rate limits do not require restarting the whole process. Symbols that already have sufficient recent history are skipped. Empty/error responses remain pending and are retried later; no synthetic market bars are generated.
+
+Automatic behavior:
+
+- Company master sync runs every 24 hours.
+- New listings are added/reactivated by the symbol-master sync.
+- Missing/delisted symbols are marked inactive only when the incoming provider snapshot passes safety checks.
+- RS history backfill then picks active stocks that do not yet have enough recent history.
+- The backfill stops once the client target is met for that market and resumes automatically if the ready count later drops below the target (for example after a delisting/new listing change).
+
+Environment controls:
+
+```env
+RS_BACKFILL_ENABLED=true
+RS_BACKFILL_BATCH_SIZE=10
+RS_BACKFILL_INTERVAL_MINUTES=10
+```
+
+Operational endpoints:
+
+- `GET /companies/rs-backfill/status`
+- `GET /companies/rs-backfill/status?market=INDIA`
+- `GET /companies/rs-backfill/status?market=US`
+- `POST /companies/rs-backfill/run?market=INDIA&batch_size=25`
+- `POST /companies/rs-backfill/run?market=US&batch_size=25`
+- `POST /companies/rs-backfill/run-all?batch_size=25`
+
+The RS calculation itself now uses only **active** company rows from the selected market universe. The displayed `scored_stocks_available` count requires usable values for all default RS periods (1W, 1M, 3M, 6M and 1Y), rather than counting a stock that only has a short fragment of history.
+
+Current provider note: the history backfill uses real Yahoo Finance/yfinance OHLCV for US/NSE/BSE symbols already present in the active company master. NSE and US symbol masters are automatically synchronized. BSE symbol-master completeness still depends on the future BSE/Kotak symbol-master integration; the system does not invent BSE listings to force the India count to 5,500.

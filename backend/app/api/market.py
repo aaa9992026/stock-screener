@@ -546,7 +546,15 @@ def _rs_universe_metrics(db: Session, exchange: str, benchmark_points):
     cutoff = date.today() - timedelta(days=430)
     rows = (
         db.query(OHLCV)
-        .filter(OHLCV.exchange.in_(market_exchanges), OHLCV.date >= cutoff)
+        .join(
+            Company,
+            (Company.symbol == OHLCV.symbol) & (Company.exchange == OHLCV.exchange),
+        )
+        .filter(
+            OHLCV.exchange.in_(market_exchanges),
+            OHLCV.date >= cutoff,
+            Company.is_active == 1,
+        )
         .order_by(OHLCV.exchange.asc(), OHLCV.symbol.asc(), OHLCV.date.asc())
         .all()
     )
@@ -728,7 +736,16 @@ def _weighted_rs_against_benchmark(daily_rows, exchange: str, period_weights=Non
             stock_points, benchmark_points, fixed_relative_weights
         )
         metrics["_universe_size"] = target_size
-        metrics["_scored_stocks_available"] = len(universe_metrics)
+        required_default_periods = ("1w", "1m", "3m", "6m", "1y")
+        metrics["_scored_stocks_available"] = sum(
+            1
+            for symbol_metrics in universe_metrics.values()
+            if all(
+                label in symbol_metrics
+                and symbol_metrics[label].get("relative_return_percent") is not None
+                for label in required_default_periods
+            )
+        )
         metrics["_score_weight_total"] = available_weight
         metrics["_relative_return_weight_independent"] = True
         metrics["_fixed_relative_return_reference_weights"] = fixed_relative_weights

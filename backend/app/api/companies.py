@@ -8,6 +8,12 @@ from app.services.company_sync import sync_companies
 from app.services.nse_company_provider import NSECompanyProvider
 from app.services.us_company_provider import USCompanyProvider
 from app.services.company_auto_sync import sync_all_companies
+from app.services.rs_universe_backfill import (
+    backfill_all_markets_once,
+    backfill_market_batch,
+    normalize_market,
+    universe_backfill_status,
+)
 
 
 router = APIRouter(prefix="/companies", tags=["companies"])
@@ -144,3 +150,42 @@ def universe_status(db: Session = Depends(get_db)):
             "delistings": "marked inactive on a trustworthy provider snapshot; historical rows are retained",
         },
     }
+
+
+@router.get("/rs-backfill/status")
+def rs_backfill_status(
+    market: str | None = None,
+    db: Session = Depends(get_db),
+):
+    """Show real-history readiness for the client-defined RS universes."""
+    if market:
+        try:
+            return universe_backfill_status(db, normalize_market(market))
+        except ValueError as exc:
+            from fastapi import HTTPException
+            raise HTTPException(status_code=400, detail=str(exc))
+    return {
+        "US": universe_backfill_status(db, "US"),
+        "INDIA": universe_backfill_status(db, "INDIA"),
+    }
+
+
+@router.post("/rs-backfill/run")
+def run_rs_backfill(
+    market: str = Query(..., description="US or INDIA"),
+    batch_size: int = Query(25, ge=1, le=100),
+):
+    """Run one bounded/resumable RS-history backfill batch."""
+    try:
+        return backfill_market_batch(normalize_market(market), batch_size=batch_size)
+    except ValueError as exc:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
+@router.post("/rs-backfill/run-all")
+def run_all_rs_backfill(
+    batch_size: int = Query(25, ge=1, le=100),
+):
+    """Run one bounded batch for both US and India."""
+    return backfill_all_markets_once(batch_size=batch_size)
