@@ -29,6 +29,17 @@ const formatPctChange = (value) => {
   return `${prefix}${numeric.toFixed(2)}%`;
 };
 
+const formatMarketMoney = (value, exchange) => {
+  if (value === null || value === undefined || !Number.isFinite(Number(value))) return "-";
+  const currency = exchange === "US" ? "USD" : "INR";
+  return new Intl.NumberFormat(exchange === "US" ? "en-US" : "en-IN", {
+    style: "currency",
+    currency,
+    notation: "compact",
+    maximumFractionDigits: 2,
+  }).format(Number(value));
+};
+
 const defaultScoreWeights = { fundamental: 30, technical: 25, relative_strength: 25, ownership: 15, sector: 5 };
 const defaultRsWeights = { "1w": 30, "2w": 0, "1m": 25, "2m": 0, "3m": 20, "6m": 15, "1y": 10, "sector": 0 };
 const SCORE_WEIGHTS_STORAGE_VERSION = "m2-client-composite-100-v1";
@@ -518,8 +529,12 @@ function App() {
 
       await loadChart();
       await loadIndicators();
+      await loadFundamentals();
+      await loadFundamentalHistory();
       await loadDashboard();
       await loadTechnicalSummary();
+      if (exchange !== "US") await loadIndiaShareholding();
+      if (exchange === "US") await loadSecEdgar();
 
     } catch (err) {
       console.error("Refresh error:", err);
@@ -985,7 +1000,10 @@ function App() {
       availableWeight += weight;
     });
     const missingIndianFundamental = exchange !== "US" && normalizedWeights.fundamental > 0 && fundamentalComponent == null;
-    const score = missingIndianFundamental || availableWeight <= 0 ? null : Math.max(0, Math.min(100, Math.round(points / availableWeight)));
+    const missingIndianOwnership = exchange !== "US" && normalizedWeights.ownership > 0 && ownershipComponent == null;
+    const score = missingIndianFundamental || missingIndianOwnership || availableWeight <= 0
+      ? null
+      : Math.max(0, Math.min(100, Math.round(points / availableWeight)));
     const signal = score == null ? "Insufficient Data" : score >= 70 ? "Buy" : score >= 45 ? "Watch" : "Sell";
     return {
       ...dashboard,
@@ -1015,6 +1033,14 @@ function App() {
     setData([]);
     setMessage("");
     setIndicators(null);
+    setFundamentals(null);
+    setFundamentalHistory(null);
+    setDashboard(null);
+    setTechnicalSummary(null);
+    setOwnershipDetails(null);
+    setIndiaShareholding(null);
+    setSecEdgar(null);
+    setSecEdgarError("");
 
     if (value === "US") {
       setSymbol("AAPL");
@@ -1118,9 +1144,10 @@ function App() {
 
                   await loadIndicators();
 
-                  if (exchange === "US") {
-                    await loadFundamentals();
-                  }
+                  await loadFundamentals();
+                  await loadFundamentalHistory();
+                  if (exchange !== "US") await loadIndiaShareholding();
+                  if (exchange === "US") await loadSecEdgar();
 
                   return;
                 }
@@ -1133,9 +1160,10 @@ function App() {
                 await loadChart();
                 await loadIndicators();
 
-                if (exchange === "US") {
-                  await loadFundamentals();
-                }
+                await loadFundamentals();
+                await loadFundamentalHistory();
+                if (exchange !== "US") await loadIndiaShareholding();
+                if (exchange === "US") await loadSecEdgar();
 
               } catch (err) {
                 console.error("Search error:", err);
@@ -1884,19 +1912,20 @@ function App() {
           </section>
         )}
 
-        {exchange === "US" &&
-          fundamentals?.fundamentals &&
-          fundamentals?.ownership && (
+        {fundamentals?.fundamentals && (
           <section className="fundamental-section">
-            <h2>Fundamentals & Ownership</h2>
+            <h2>{exchange === "US" ? "Fundamentals & Ownership" : "Fundamentals"}</h2>
+            <div className="chart-note">
+              {exchange === "US"
+                ? "US fundamentals are refreshed automatically from the configured provider, with SEC EDGAR shown separately when available."
+                : `Indian fundamentals for ${exchange} are refreshed automatically from the configured provider. The same fundamental ranking filters are applied to Indian and US stocks; unavailable fields remain N/A.`}
+            </div>
 
             <div className="fundamental-grid">
               <div className="metric">
                 <span>Market Cap</span>
                 <strong>
-                  {fundamentals.fundamentals.market_cap != null
-                    ? `$${(fundamentals.fundamentals.market_cap / 1e9).toFixed(2)}B`
-                    : "-"}
+                  {formatMarketMoney(fundamentals.fundamentals.market_cap, exchange)}
                 </strong>
               </div>
 
@@ -1917,18 +1946,14 @@ function App() {
               <div className="metric">
                 <span>Revenue</span>
                 <strong>
-                  {fundamentals.fundamentals.revenue != null
-                    ? `$${(fundamentals.fundamentals.revenue / 1e9).toFixed(2)}B`
-                    : "-"}
+                  {formatMarketMoney(fundamentals.fundamentals.revenue, exchange)}
                 </strong>
               </div>
 
               <div className="metric">
                 <span>Net Income</span>
                 <strong>
-                  {fundamentals.fundamentals.net_income != null
-                    ? `$${(fundamentals.fundamentals.net_income / 1e9).toFixed(2)}B`
-                    : "-"}
+                  {formatMarketMoney(fundamentals.fundamentals.net_income, exchange)}
                 </strong>
               </div>
 
@@ -1972,6 +1997,7 @@ function App() {
                 </strong>
               </div>
 
+              {exchange === "US" && <>
               <div className="metric">
                 <span>Insider Ownership</span>
                 <strong>
@@ -2007,6 +2033,7 @@ function App() {
                     : "-"}
                 </strong>
               </div>
+              </>}
             </div>
           </section>
         )}
@@ -2286,9 +2313,14 @@ function App() {
           </section>
         )}
 
-        {exchange === "US" && fundamentalHistory && (
+        {fundamentalHistory && (
           <section className="fundamental-section">
-            <h2>Fundamental History</h2>
+            <h2>Fundamental History ({exchange})</h2>
+            {exchange !== "US" && (
+              <div className="chart-note">
+                The same quarterly and annual fundamental fields/filters used for US stocks are enabled for Indian stocks. Values come from the configured provider and missing values are not estimated.
+              </div>
+            )}
 
             <h3>Quarterly History ({Math.min(fundamentalHistory.quarterly?.length || 0, 12)}/12 available)</h3>
             <div className="history-table-wrapper">

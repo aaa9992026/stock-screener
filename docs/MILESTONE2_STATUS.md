@@ -48,3 +48,13 @@ This is the cumulative Milestone 2 continuation build. It preserves all accepted
 - Industry/Sector return rows now exclude the selected stock and require at least five real stored peers. If peer history is insufficient, N/A is shown instead of repeating the stock's own return.
 - RS output now exposes the number of actually scored stocks against the client-required 5,000 denominator and labels incomplete-universe results as provisional.
 - SEC EDGAR failures are now visible in the UI instead of being silently hidden; missing `SEC_USER_AGENT` is reported explicitly and no substitute SEC values are invented.
+
+## Indian fundamental-filter update
+
+- NSE/BSE now load the same fundamental snapshot and fundamental-history UI used for US stocks.
+- Search and Refresh Data both refresh Indian fundamentals automatically; no CSV/manual entry is required.
+- The handwritten quarterly/annual fundamental ranking factors use the same evaluation logic for US, NSE and BSE.
+- Indian market-cap/revenue/net-income values are displayed with INR formatting; US values remain USD.
+- Indian ownership remains sourced from the Indian shareholding provider (Promoter/FII/DII/MF/Public) rather than mapping US insider/institution categories onto Indian stocks.
+- If a required Indian fundamental or ownership category is unavailable, the overall ranking is withheld instead of silently re-normalizing around missing data.
+- Missing provider fields remain N/A and are never fabricated.
