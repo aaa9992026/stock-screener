@@ -172,6 +172,7 @@ const readLocalObject = (key, fallback) => {
 
 function App() {
   const [symbol, setSymbol] = useState("AAPL");
+  const [symbolInput, setSymbolInput] = useState("AAPL");
   const [exchange, setExchange] = useState("US");
   const [timeframe, setTimeframe] = useState("daily");
   const [data, setData] = useState([]);
@@ -190,6 +191,9 @@ function App() {
   const [rsiPeriod, setRsiPeriod] = useState(14);
   const chartContainerRef = useRef(null);
   const symbolSearchRef = useRef(null);
+  const suggestionRequestRef = useRef(0);
+  const activeSelectionRef = useRef("");
+  activeSelectionRef.current = `${exchange}:${symbol}:${timeframe}`;
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [benchmark, setBenchmark] = useState(null);
@@ -269,6 +273,7 @@ function App() {
   }, []);
 
   const loadDashboard = async () => {
+    const requestKey = `${exchange}:${symbol}:${timeframe}`;
     try {
       const params = new URLSearchParams({
         exchange,
@@ -299,26 +304,32 @@ function App() {
         rs_sector_weight: rsWeights["sector"],
       });
       const res = await axios.get(`${API}/market/dashboard/${symbol}?${params.toString()}`);
+      if (activeSelectionRef.current !== requestKey) return;
       setDashboard(res.data);
     } catch {
+      if (activeSelectionRef.current !== requestKey) return;
       setDashboard(null);
     }
   };
 
   const loadTechnicalSummary = async () => {
+    const requestKey = `${exchange}:${symbol}:${timeframe}`;
     try {
       const res = await axios.get(
         `${API}/market/technical-summary/${symbol}?exchange=${exchange}&timeframe=${timeframe}` +
         `&rs_1w_weight=${rsWeights["1w"]}&rs_2w_weight=${rsWeights["2w"]}&rs_1m_weight=${rsWeights["1m"]}&rs_2m_weight=${rsWeights["2m"]}` +
         `&rs_3m_weight=${rsWeights["3m"]}&rs_6m_weight=${rsWeights["6m"]}&rs_1y_weight=${rsWeights["1y"]}&rs_sector_weight=${rsWeights["sector"]}`
       );
+      if (activeSelectionRef.current !== requestKey) return;
       setTechnicalSummary(res.data);
     } catch {
+      if (activeSelectionRef.current !== requestKey) return;
       setTechnicalSummary(null);
     }
   };
 
   const loadOwnershipDetails = async () => {
+    const requestKey = `${exchange}:${symbol}:${timeframe}`;
     if (exchange !== "US") {
       setOwnershipDetails(null);
       return;
@@ -327,13 +338,16 @@ function App() {
       const res = await axios.get(
         `${API}/market/ownership-details/${symbol}?exchange=${exchange}`
       );
+      if (activeSelectionRef.current !== requestKey) return;
       setOwnershipDetails(res.data);
     } catch {
+      if (activeSelectionRef.current !== requestKey) return;
       setOwnershipDetails(null);
     }
   };
 
   const loadIndiaShareholding = async () => {
+    const requestKey = `${exchange}:${symbol}:${timeframe}`;
     if (exchange === "US") {
       setIndiaShareholding(null);
       return;
@@ -342,26 +356,33 @@ function App() {
       const res = await axios.get(
         `${API}/market/india-shareholding/${symbol}?exchange=${exchange}&limit=12`
       );
+      if (activeSelectionRef.current !== requestKey) return;
       setIndiaShareholding(res.data);
     } catch {
+      if (activeSelectionRef.current !== requestKey) return;
       setIndiaShareholding(null);
     }
   };
 
   const loadIndicators = async () => {
+    const requestKey = `${exchange}:${symbol}:${timeframe}`;
     try {
       const res = await axios.get(
         `${API}/market/indicators/${symbol}?exchange=${exchange}&timeframe=${timeframe}&sma_short=${smaShort}&sma_long=${smaLong}&rsi_period=${rsiPeriod}`
       );
 
+      if (activeSelectionRef.current !== requestKey) return;
       setIndicators(res.data);
     } catch {
+      if (activeSelectionRef.current !== requestKey) return;
       setIndicators(null);
     }
   };
 
   const searchCompanies = async (value) => {
-    setSymbol(value.toUpperCase());
+    const normalized = value.toUpperCase();
+    setSymbolInput(normalized);
+    const requestId = ++suggestionRequestRef.current;
 
     if (value.trim().length < 2) {
       setSuggestions([]);
@@ -374,15 +395,18 @@ function App() {
         `${API}/companies/search?q=${encodeURIComponent(value)}&exchange=${exchange}&limit=10`
       );
 
+      if (requestId !== suggestionRequestRef.current) return;
       setSuggestions(res.data);
       setShowSuggestions(true);
     } catch {
+      if (requestId !== suggestionRequestRef.current) return;
       setSuggestions([]);
       setShowSuggestions(false);
     }
   };
 
   const loadFundamentals = async () => {
+    const requestKey = `${exchange}:${symbol}:${timeframe}`;
     try {
       // Refresh from the configured provider. For NSE/BSE this uses the Yahoo
       // statement fallback until the client's Kotak Neo credentials are wired
@@ -391,6 +415,7 @@ function App() {
         `${API}/market/fundamentals/${symbol}?exchange=${exchange}`
       );
 
+      if (activeSelectionRef.current !== requestKey) return;
       setFundamentals({
         symbol: res.data.symbol,
         exchange: res.data.exchange,
@@ -417,27 +442,33 @@ function App() {
         const res = await axios.get(
           `${API}/market/fundamentals/${symbol}?exchange=${exchange}`
         );
+        if (activeSelectionRef.current !== requestKey) return;
         setFundamentals(res.data);
         loadDashboard();
       } catch {
+        if (activeSelectionRef.current !== requestKey) return;
         setFundamentals(null);
       }
     }
   };
 
   const loadFundamentalHistory = async () => {
+    const requestKey = `${exchange}:${symbol}:${timeframe}`;
     try {
       const res = await axios.get(
         `${API}/market/fundamentals-history/${symbol}?exchange=${exchange}`
       );
 
+      if (activeSelectionRef.current !== requestKey) return;
       setFundamentalHistory(res.data);
     } catch {
+      if (activeSelectionRef.current !== requestKey) return;
       setFundamentalHistory(null);
     }
   };
 
   const loadSecEdgar = async () => {
+    const requestKey = `${exchange}:${symbol}:${timeframe}`;
     if (exchange !== "US") {
       setSecEdgar(null);
       setSecEdgarError("");
@@ -448,8 +479,10 @@ function App() {
       const res = await axios.get(
         `${API}/market/sec-edgar/${symbol}?exchange=US&filings_limit=12`
       );
+      if (activeSelectionRef.current !== requestKey) return;
       setSecEdgar(res.data);
     } catch (error) {
+      if (activeSelectionRef.current !== requestKey) return;
       setSecEdgar(null);
       setSecEdgarError(
         error?.response?.data?.detail ||
@@ -459,6 +492,7 @@ function App() {
   };
 
   const loadChart = async () => {
+    const requestKey = `${exchange}:${symbol}:${timeframe}`;
     try {
       setLoading(true);
 
@@ -466,8 +500,14 @@ function App() {
         `${API}/market/chart/${symbol}?exchange=${exchange}&timeframe=${timeframe}&limit=${chartLimitForTimeframe(timeframe)}`
       );
 
-      const rows = res.data.data || [];
+      const rows = (res.data.data || []).filter((row) => (
+        Number(row.open) > 0 &&
+        Number(row.high) > 0 &&
+        Number(row.low) > 0 &&
+        Number(row.close) > 0
+      ));
 
+      if (activeSelectionRef.current !== requestKey) return;
       setData(rows);
 
       if (rows.length > 0) {
@@ -483,6 +523,7 @@ function App() {
     } catch (err) {
       console.error("Chart load error:", err);
 
+      if (activeSelectionRef.current !== requestKey) return;
       setData([]);
       setDataStale(true);
       setDataStatus("stale");
@@ -492,18 +533,23 @@ function App() {
         "Market data could not be loaded."
       );
     } finally {
-      setLoading(false);
+      if (activeSelectionRef.current === requestKey) {
+        setLoading(false);
+      }
     }
   };
 
   const loadBenchmark = async () => {
+    const requestKey = `${exchange}:${symbol}:${timeframe}`;
     try {
       const res = await axios.get(
         `${API}/market/benchmark/${exchange}?limit=1400`
       );
 
+      if (activeSelectionRef.current !== requestKey) return;
       setBenchmark(res.data);
     } catch {
+      if (activeSelectionRef.current !== requestKey) return;
       setBenchmark(null);
     }
   };
@@ -511,11 +557,30 @@ function App() {
   const refreshData = async () => {
     setShowSuggestions(false);
     setSuggestions([]);
+    suggestionRequestRef.current += 1;
+
+    const requestedSymbol = symbolInput.trim().toUpperCase() || symbol;
+    const requestExchange = exchange;
+    const selectionChanged = requestedSymbol !== symbol;
+
+    if (selectionChanged) {
+      setData([]);
+      setDashboard(null);
+      setFundamentals(null);
+      setFundamentalHistory(null);
+      setTechnicalSummary(null);
+      setIndicators(null);
+      setOwnershipDetails(null);
+      setIndiaShareholding(null);
+      setSecEdgar(null);
+      setSymbol(requestedSymbol);
+    }
+
     setLoading(true);
 
     try {
       const res = await axios.post(
-        `${API}/market/refresh/${symbol}?exchange=${exchange}`
+        `${API}/market/refresh/${requestedSymbol}?exchange=${requestExchange}`
       );
 
       setDataStale(false);
@@ -527,14 +592,16 @@ function App() {
         `Updated successfully: ${res.data.added} added, ${res.data.updated} updated`
       );
 
-      await loadChart();
-      await loadIndicators();
-      await loadFundamentals();
-      await loadFundamentalHistory();
-      await loadDashboard();
-      await loadTechnicalSummary();
-      if (exchange !== "US") await loadIndiaShareholding();
-      if (exchange === "US") await loadSecEdgar();
+      if (!selectionChanged) {
+        await loadChart();
+        await loadIndicators();
+        await loadFundamentals();
+        await loadFundamentalHistory();
+        await loadDashboard();
+        await loadTechnicalSummary();
+        if (exchange !== "US") await loadIndiaShareholding();
+        if (exchange === "US") await loadSecEdgar();
+      }
 
     } catch (err) {
       console.error("Refresh error:", err);
@@ -1045,10 +1112,13 @@ function App() {
 
     if (value === "US") {
       setSymbol("AAPL");
+      setSymbolInput("AAPL");
     } else if (value === "NSE") {
       setSymbol("RELIANCE");
+      setSymbolInput("RELIANCE");
     } else {
       setSymbol("INFY");
+      setSymbolInput("INFY");
     }
   };
 
@@ -1094,7 +1164,7 @@ function App() {
 
           <div className="symbol-search" ref={symbolSearchRef}>
             <input
-              value={symbol}
+              value={symbolInput}
               onChange={(e) => searchCompanies(e.target.value)}
               onFocus={() => {
                 if (suggestions.length) setShowSuggestions(true);
@@ -1109,7 +1179,18 @@ function App() {
                     key={`${item.exchange}-${item.symbol}`}
                     type="button"
                     onClick={() => {
+                      suggestionRequestRef.current += 1;
+                      setSymbolInput(item.symbol);
                       setSymbol(item.symbol);
+                      setData([]);
+                      setDashboard(null);
+                      setFundamentals(null);
+                      setFundamentalHistory(null);
+                      setTechnicalSummary(null);
+                      setIndicators(null);
+                      setOwnershipDetails(null);
+                      setIndiaShareholding(null);
+                      setSecEdgar(null);
                       setShowSuggestions(false);
                       setSuggestions([]);
                     }}
@@ -1124,62 +1205,48 @@ function App() {
 
           <button
             onClick={async () => {
+              const nextSymbol = symbolInput.trim().toUpperCase();
+              if (!nextSymbol) {
+                setMessage("Enter a stock symbol first.");
+                return;
+              }
+
               setShowSuggestions(false);
               setSuggestions([]);
+              suggestionRequestRef.current += 1;
 
-              try {
-                setLoading(true);
-
-                // First try to load existing stored data
-                const res = await axios.get(
-                  `${API}/market/chart/${symbol}?exchange=${exchange}&timeframe=${timeframe}&limit=${chartLimitForTimeframe(timeframe)}`
-                );
-
-                const rows = res.data.data || [];
-
-                if (rows.length > 0) {
-                  setData(rows);
-                  setDataStale(false);
-                  setDataStatus("fresh");
-                  setMessage("");
-
-                  await loadIndicators();
-
-                  await loadFundamentals();
-                  await loadFundamentalHistory();
-                  if (exchange !== "US") await loadIndiaShareholding();
-                  if (exchange === "US") await loadSecEdgar();
-
-                  return;
-                }
-
-                // If no stored data exists, fetch it automatically
-                await axios.post(
-                  `${API}/market/refresh/${symbol}?exchange=${exchange}`
-                );
-
-                await loadChart();
-                await loadIndicators();
-
-                await loadFundamentals();
-                await loadFundamentalHistory();
-                if (exchange !== "US") await loadIndiaShareholding();
-                if (exchange === "US") await loadSecEdgar();
-
-              } catch (err) {
-                console.error("Search error:", err);
-
-                const detail =
-                  err.response?.data?.detail ||
-                  "Unable to load data for this symbol.";
-
-                setDataStale(true);
-                setDataStatus("stale");
-                setMessage(detail);
-
-              } finally {
-                setLoading(false);
+              if (nextSymbol !== symbol) {
+                // Commit the typed symbol only when the user explicitly
+                // searches/selects it. This prevents requests for partial
+                // keystrokes such as I -> IN -> INF -> INFY from racing and
+                // overwriting the final stock with stale data.
+                setData([]);
+                setDashboard(null);
+                setFundamentals(null);
+                setFundamentalHistory(null);
+                setTechnicalSummary(null);
+                setIndicators(null);
+                setOwnershipDetails(null);
+                setIndiaShareholding(null);
+                setSecEdgar(null);
+                setMessage("");
+                setSymbol(nextSymbol);
+                return;
               }
+
+              // Re-load the currently selected symbol without forcing a full
+              // historical provider refresh.
+              await Promise.allSettled([
+                loadChart(),
+                loadIndicators(),
+                loadBenchmark(),
+                loadDashboard(),
+                loadTechnicalSummary(),
+                loadOwnershipDetails(),
+                loadFundamentals(),
+                loadFundamentalHistory(),
+                exchange === "US" ? loadSecEdgar() : loadIndiaShareholding(),
+              ]);
             }}
           >
             Search

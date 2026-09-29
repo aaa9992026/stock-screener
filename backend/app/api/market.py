@@ -52,14 +52,28 @@ def get_db():
 
 
 def _valid_trading_rows(rows, exchange: str):
-    """Exclude weekend-dated stock bars from all calculations and API output.
+    """Exclude invalid stock bars from calculations and API output.
 
-    The DB cleanup path also removes these rows on refresh, but filtering here
-    protects the UI/calculations from any legacy or provider-misaligned rows.
+    Normal US/NSE/BSE equity candles must be weekday-dated and have finite,
+    strictly positive OHLC values.  Filtering here protects the UI and ranking
+    calculations from legacy/provider rows such as a zero close.
     """
+    rows = list(rows)
     if exchange.upper() not in {"US", "NSE", "BSE"}:
-        return list(rows)
-    return [row for row in rows if row.date is not None and row.date.weekday() < 5]
+        return rows
+
+    valid = []
+    for row in rows:
+        if row.date is None or row.date.weekday() >= 5:
+            continue
+        try:
+            ohlc = [float(row.open), float(row.high), float(row.low), float(row.close)]
+        except (TypeError, ValueError):
+            continue
+        if any((not math.isfinite(value)) or value <= 0 for value in ohlc):
+            continue
+        valid.append(row)
+    return valid
 
 
 def _ema(values, period):

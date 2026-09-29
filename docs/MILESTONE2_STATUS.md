@@ -112,3 +112,16 @@ Operational endpoints:
 The RS calculation itself now uses only **active** company rows from the selected market universe. The displayed `scored_stocks_available` count requires usable values for all default RS periods (1W, 1M, 3M, 6M and 1Y), rather than counting a stock that only has a short fragment of history.
 
 Current provider note: the history backfill uses real Yahoo Finance/yfinance OHLCV for US/NSE/BSE symbols already present in the active company master. NSE and US symbol masters are automatically synchronized. BSE symbol-master completeness still depends on the future BSE/Kotak symbol-master integration; the system does not invent BSE listings to force the India count to 5,500.
+
+
+## Symbol search / live-video correction
+
+- The symbol input is now separate from the active selected stock. Typing a partial
+  symbol no longer launches dashboard/fundamental/RS requests for each keystroke.
+- Stale dashboard/fundamental/technical requests are ignored when the active
+  symbol/timeframe changes, preventing an older partial-symbol response from
+  overwriting the final selected stock.
+- Invalid US/NSE/BSE OHLCV rows with non-finite or zero/negative OHLC values are
+  filtered from API output/calculations and rejected during future sync/backfill.
+- Listing-master sync no longer erases existing sector/industry enrichment when
+  the upstream symbol list omits those fields.

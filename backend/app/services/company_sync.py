@@ -71,8 +71,18 @@ def sync_companies(db: Session, companies: list[dict], deactivate_missing: bool 
             if company.is_active != 1:
                 reactivated += 1
             company.name = item["name"]
-            company.sector = item.get("sector")
-            company.industry = item.get("industry")
+
+            # Symbol-master snapshots (for example NSE EQUITY_L.csv and the
+            # Nasdaq Trader symbol files) do not always contain sector/industry.
+            # Do not erase metadata that was already enriched from a real
+            # fundamentals provider simply because a listing snapshot omits it.
+            incoming_sector = item.get("sector")
+            incoming_industry = item.get("industry")
+            if incoming_sector not in (None, "", "nan", "NaN"):
+                company.sector = incoming_sector
+            if incoming_industry not in (None, "", "nan", "NaN"):
+                company.industry = incoming_industry
+
             company.is_active = 1
             updated += 1
         else:

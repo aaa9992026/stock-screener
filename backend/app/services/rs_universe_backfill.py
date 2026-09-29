@@ -241,7 +241,12 @@ def _frame_to_rows(frame: pd.DataFrame | None) -> list[dict]:
             close_value = row.get("Close")
             volume_value = row.get("Volume")
             values = (open_value, high_value, low_value, close_value)
-            if any(v is None or not math.isfinite(float(v)) for v in values):
+            if any(
+                v is None
+                or not math.isfinite(float(v))
+                or float(v) <= 0
+                for v in values
+            ):
                 continue
             dt = idx.date() if hasattr(idx, "date") else idx
             if dt is None or dt.weekday() >= 5:

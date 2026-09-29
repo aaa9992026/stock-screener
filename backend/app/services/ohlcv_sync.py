@@ -1,9 +1,27 @@
+import math
+
 from sqlalchemy.orm import Session
 from app.models import OHLCV
 
 
-def _remove_weekend_rows(db: Session, symbol: str, exchange: str) -> int:
-    """Delete legacy weekend bars for normal stock exchanges."""
+def _bar_has_valid_ohlc(row) -> bool:
+    try:
+        values = [float(row.open), float(row.high), float(row.low), float(row.close)]
+    except (TypeError, ValueError):
+        return False
+    return all(math.isfinite(value) and value > 0 for value in values)
+
+
+def _incoming_bar_is_valid(row: dict) -> bool:
+    try:
+        values = [float(row.get("open")), float(row.get("high")), float(row.get("low")), float(row.get("close"))]
+    except (TypeError, ValueError):
+        return False
+    return all(math.isfinite(value) and value > 0 for value in values)
+
+
+def _remove_invalid_rows(db: Session, symbol: str, exchange: str) -> int:
+    """Delete legacy weekend/zero/non-finite bars for normal stock exchanges."""
     if exchange.upper() not in {"US", "NSE", "BSE"}:
         return 0
 
@@ -12,7 +30,12 @@ def _remove_weekend_rows(db: Session, symbol: str, exchange: str) -> int:
         .filter(OHLCV.symbol == symbol.upper(), OHLCV.exchange == exchange.upper())
         .all()
     )
-    invalid = [row for row in existing if row.date is not None and row.date.weekday() >= 5]
+    invalid = [
+        row for row in existing
+        if row.date is None
+        or row.date.weekday() >= 5
+        or not _bar_has_valid_ohlc(row)
+    ]
     for row in invalid:
         db.delete(row)
     return len(invalid)
@@ -31,13 +54,15 @@ def sync_ohlcv(
     exchange = exchange.upper()
 
     # Always clean old invalid rows, even if the provider returns no new rows.
-    removed_invalid_dates = _remove_weekend_rows(db, symbol, exchange)
+    removed_invalid_dates = _remove_invalid_rows(db, symbol, exchange)
 
     rows = rows or []
     if exchange in {"US", "NSE", "BSE"}:
         rows = [
             row for row in rows
-            if row.get("date") is not None and row["date"].weekday() < 5
+            if row.get("date") is not None
+            and row["date"].weekday() < 5
+            and _incoming_bar_is_valid(row)
         ]
 
     if not rows:

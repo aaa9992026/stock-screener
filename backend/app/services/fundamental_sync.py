@@ -65,8 +65,14 @@ def sync_fundamental_data(
     )
 
     if company:
-        company.sector = data.get("sector")
-        company.industry = data.get("industry")
+        # Keep previously enriched classification when a provider temporarily
+        # omits sector/industry instead of erasing it with None.
+        sector = data.get("sector")
+        industry = data.get("industry")
+        if sector not in (None, "", "nan", "NaN"):
+            company.sector = sector
+        if industry not in (None, "", "nan", "NaN"):
+            company.industry = industry
 
     db.commit()
 
