@@ -217,3 +217,9 @@ This does not invent unavailable growth, delivery, or ownership data. More filte
 - Official NSE rows are parsed from `EOD_*` fields, validated as positive OHLC values, de-duplicated, freshness-checked, and cached in PostgreSQL.
 - The current NSE loader/parser and fallback routing were unit-checked with a 260-trading-day NIFTY 500 response; the RS overlap calculation was checked across 1W/1M/3M/6M/1Y periods.
 - US Yahoo class-share mapping and failed-symbol retry cooldown remain included in this cumulative build.
+
+## Final live-video verification hardening
+
+- NSE company identity is revalidated from the official NSE equity symbol master for exact ticker requests, repairing stale/mismatched name and ISIN metadata (for example INFY must resolve to Infosys Limited / INE009A01021).
+- Indian RS keeps the exact NIFTY 500 benchmark. In addition to Yahoo and official NSE/Nifty Indices paths, the configured Twelve Data account is now used as an independent exact-index fallback discovered dynamically through provider symbol search; no proxy index is substituted.
+- Existing benchmark cache behavior remains unchanged: only verified exact NIFTY 500 history is stored/reused.

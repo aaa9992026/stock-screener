@@ -160,3 +160,50 @@ def sync_companies(db: Session, companies: list[dict], deactivate_missing: bool 
         "legacy_non_equity_deactivated": legacy_non_equity_deactivated,
         "deactivation_skipped": deactivation_skipped,
     }
+
+
+def repair_company_identity(db: Session, symbol: str, exchange: str):
+    """Repair exact symbol identity from an authoritative market symbol master.
+
+    Currently NSE identity is verified against NSE's official EQUITY_L.csv. The
+    function updates only identity fields (name/ISIN/active status) and does not
+    alter historical market/fundamental data. Provider failures are intentionally
+    non-fatal so a temporary NSE outage cannot break the dashboard.
+    """
+    symbol = str(symbol or "").strip().upper()
+    exchange = str(exchange or "").strip().upper()
+    if not symbol or exchange != "NSE":
+        return None
+
+    try:
+        from app.services.nse_company_provider import NSECompanyProvider
+        official = NSECompanyProvider().get_company(symbol)
+    except Exception:
+        return None
+
+    if not official:
+        return None
+
+    company = (
+        db.query(Company)
+        .filter(Company.symbol == symbol, Company.exchange == exchange)
+        .first()
+    )
+    if company is None:
+        company = Company(
+            symbol=symbol,
+            exchange=exchange,
+            name=official.get("name") or symbol,
+            isin=official.get("isin"),
+            is_active=1,
+        )
+        db.add(company)
+    else:
+        company.name = official.get("name") or company.name or symbol
+        if official.get("isin"):
+            company.isin = official.get("isin")
+        company.is_active = 1
+
+    db.commit()
+    db.refresh(company)
+    return company

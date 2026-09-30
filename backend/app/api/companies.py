@@ -4,7 +4,7 @@ from sqlalchemy import func
 
 from app.database import SessionLocal
 from app.models import Company
-from app.services.company_sync import sync_companies
+from app.services.company_sync import sync_companies, repair_company_identity
 from app.services.nse_company_provider import NSECompanyProvider
 from app.services.us_company_provider import USCompanyProvider
 from app.services.company_auto_sync import sync_all_companies
@@ -41,6 +41,16 @@ def search_companies(
     limit: int = 20,
     db: Session = Depends(get_db)
 ):
+    # When the user searches an exact NSE ticker, repair stale/mismatched
+    # identity metadata from NSE's authoritative equity symbol master before
+    # returning suggestions. This prevents a valid ticker such as INFY from
+    # ever being paired with another company's name/ISIN in the UI.
+    if exchange and exchange.upper() == "NSE" and q and q.strip() and " " not in q.strip():
+        try:
+            repair_company_identity(db, q.strip().upper(), "NSE")
+        except Exception:
+            pass
+
     query = db.query(Company)
 
     if exchange:

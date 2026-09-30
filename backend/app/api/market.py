@@ -17,6 +17,7 @@ from app.services.providers.sec_provider import SECFundamentalsProvider
 from app.services.scheduler import refresh_configured_market_data
 from app.services.equity_filters import apply_eligible_equity_filter
 from app.services.universe_data_backfill import universe_data_status
+from app.services.company_sync import repair_company_identity
 
 import os
 import math
@@ -162,6 +163,111 @@ def _benchmark_points_from_yahoo_chart(ticker_symbol: str, range_value: str = "5
                 return cleaned
         except Exception:
             continue
+    return []
+
+
+def _benchmark_points_from_twelvedata_nifty500(years: int = 5):
+    """Exact NIFTY 500 fallback through the configured Twelve Data account.
+
+    The provider symbol is discovered dynamically with ``symbol_search`` and is
+    accepted only when the returned instrument name/symbol identifies NIFTY 500.
+    This avoids guessing a proxy ticker while giving Railway a provider path
+    independent of Yahoo/NSE web anti-bot behavior.
+    """
+    api_key = os.getenv("TWELVE_DATA_API_KEY", "").strip()
+    if not api_key:
+        return []
+
+    headers = {
+        "User-Agent": "StockScreener/2.0",
+        "Accept": "application/json",
+    }
+
+    def norm(value):
+        return "".join(ch for ch in str(value or "").upper() if ch.isalnum())
+
+    try:
+        search_response = requests.get(
+            "https://api.twelvedata.com/symbol_search",
+            params={
+                "symbol": "NIFTY 500",
+                "outputsize": 20,
+                "apikey": api_key,
+            },
+            headers=headers,
+            timeout=20,
+        )
+        search_response.raise_for_status()
+        payload = search_response.json() or {}
+        rows = payload.get("data") or payload.get("values") or []
+        if not isinstance(rows, list):
+            rows = []
+    except Exception:
+        return []
+
+    exact_candidates = []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        symbol = row.get("symbol")
+        instrument_name = row.get("instrument_name") or row.get("name")
+        instrument_type = str(row.get("instrument_type") or row.get("type") or "").upper()
+        symbol_norm = norm(symbol)
+        name_norm = norm(instrument_name)
+        if "NIFTY500" not in {symbol_norm, name_norm} and not name_norm.startswith("NIFTY500"):
+            continue
+        # Prefer index-like instruments, but exact NIFTY 500 naming is still
+        # required even when the provider omits instrument_type.
+        if instrument_type and "INDEX" not in instrument_type:
+            continue
+        exact_candidates.append(row)
+
+    for candidate in exact_candidates:
+        symbol = candidate.get("symbol")
+        if not symbol:
+            continue
+        params = {
+            "symbol": symbol,
+            "interval": "1day",
+            "outputsize": min(5000, max(400, int(years) * 300)),
+            "apikey": api_key,
+        }
+        exchange = candidate.get("exchange")
+        mic_code = candidate.get("mic_code")
+        if exchange:
+            params["exchange"] = exchange
+        elif mic_code:
+            params["mic_code"] = mic_code
+        try:
+            response = requests.get(
+                "https://api.twelvedata.com/time_series",
+                params=params,
+                headers=headers,
+                timeout=30,
+            )
+            response.raise_for_status()
+            data = response.json() or {}
+            if data.get("status") == "error":
+                continue
+            values = data.get("values") or []
+            points = []
+            for item in values:
+                try:
+                    raw_date = str(item.get("datetime") or "").split(" ")[0]
+                    trade_date = datetime.strptime(raw_date, "%Y-%m-%d").date()
+                    close_value = float(item.get("close"))
+                    open_value = float(item.get("open") or close_value)
+                    high_value = float(item.get("high") or max(open_value, close_value))
+                    low_value = float(item.get("low") or min(open_value, close_value))
+                    points.append((trade_date, open_value, high_value, low_value, close_value))
+                except Exception:
+                    continue
+            cleaned = _clean_benchmark_points(points)
+            if cleaned:
+                return cleaned
+        except Exception:
+            continue
+
     return []
 
 
@@ -488,6 +594,8 @@ def _load_benchmark_points(exchange: str, db: Session = None, minimum_points: in
     # 500 index; neither substitutes a proxy instrument.
     if str(exchange or "").upper() in {"NSE", "BSE"} and benchmark_name == "NIFTY 500":
         loaders.extend([
+            (lambda _symbol: _benchmark_points_from_twelvedata_nifty500(years=5),
+             "Twelve Data exact NIFTY 500 fallback"),
             (lambda _symbol: _benchmark_points_from_nseindia("NIFTY 500", years=5),
              "Official NSE India historical index API"),
             (lambda _symbol: _benchmark_points_from_niftyindices("NIFTY 500", years=5),
@@ -1655,6 +1763,14 @@ def get_dashboard_summary(
 ):
     symbol = symbol.upper()
     exchange = exchange.upper()
+
+    # Repair exact NSE identity before reading the dashboard record. This fixes
+    # stale database metadata without touching OHLC/fundamental history.
+    if exchange == "NSE":
+        try:
+            repair_company_identity(db, symbol, exchange)
+        except Exception:
+            pass
 
     company = (
         db.query(Company)
