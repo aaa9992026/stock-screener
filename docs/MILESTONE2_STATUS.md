@@ -201,3 +201,11 @@ This does not invent unavailable growth, delivery, or ownership data. More filte
 - SEC EDGAR CIK resolution now falls back to provider metadata when the official ticker-association file is temporarily unavailable; filings/company facts still come from official SEC endpoints.
 - SEC temporary CIK/ticker-map failures return a structured provider-warning payload rather than breaking the entire stock dashboard.
 - Missing SEC data is never fabricated or substituted.
+
+## NIFTY 500 benchmark reliability (final pass)
+
+- Indian Relative Strength continues to use the exact NIFTY 500 benchmark (`^CRSLDX`); it is not silently replaced by another index or ETF.
+- Benchmark loading now has two live Yahoo paths (yfinance and the direct Yahoo chart endpoint) plus a persistent PostgreSQL OHLCV benchmark cache.
+- A successful live benchmark download is cached under exchange `BENCHMARK`, so temporary upstream failures do not remove verified NIFTY 500/S&P 500 overlap from RS calculations.
+- The `/market/benchmark/{exchange}` endpoint and the RS scoring engine now use the same benchmark loader, preventing chart/RS disagreement.
+- Missing benchmark data remains unavailable rather than being estimated.

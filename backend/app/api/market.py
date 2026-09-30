@@ -23,6 +23,7 @@ import math
 import requests
 from io import BytesIO
 from datetime import datetime, timedelta, date
+from urllib.parse import quote
 import yfinance as yf
 
 router = APIRouter(prefix="/market", tags=["market"])
@@ -52,6 +53,200 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+BENCHMARK_INDEX_EXCHANGE = "BENCHMARK"
+BENCHMARK_SPECS = {
+    "US": ("^GSPC", "S&P 500"),
+    "NSE": ("^CRSLDX", "NIFTY 500"),
+    "BSE": ("^CRSLDX", "NIFTY 500"),
+}
+
+
+def _benchmark_spec(exchange: str):
+    return BENCHMARK_SPECS.get(str(exchange or "").upper())
+
+
+def _clean_benchmark_points(points):
+    """Normalize, de-duplicate and validate benchmark OHLC points."""
+    cleaned = {}
+    for item in points or []:
+        try:
+            trade_date, open_value, high_value, low_value, close_value = item
+            if hasattr(trade_date, "date") and not isinstance(trade_date, date):
+                trade_date = trade_date.date()
+            if not isinstance(trade_date, date) or trade_date.weekday() >= 5:
+                continue
+            close_value = float(close_value)
+            open_value = float(open_value if open_value is not None else close_value)
+            high_value = float(high_value if high_value is not None else max(open_value, close_value))
+            low_value = float(low_value if low_value is not None else min(open_value, close_value))
+            values = (open_value, high_value, low_value, close_value)
+            if any((not math.isfinite(v)) or v <= 0 for v in values):
+                continue
+            cleaned[trade_date] = (trade_date, *values)
+        except (TypeError, ValueError, OverflowError):
+            continue
+    return [cleaned[key] for key in sorted(cleaned)]
+
+
+def _benchmark_points_from_yfinance(ticker_symbol: str, period: str = "5y"):
+    try:
+        hist = yf.Ticker(ticker_symbol).history(period=period, interval="1d", auto_adjust=False)
+        if hist is None or hist.empty:
+            return []
+        return _clean_benchmark_points([
+            (
+                idx.date(),
+                row.get("Open"),
+                row.get("High"),
+                row.get("Low"),
+                row.get("Close"),
+            )
+            for idx, row in hist.iterrows()
+        ])
+    except Exception:
+        return []
+
+
+def _benchmark_points_from_yahoo_chart(ticker_symbol: str, range_value: str = "5y"):
+    """Direct Yahoo chart fallback, independent of yfinance parsing/cookies."""
+    try:
+        encoded = quote(ticker_symbol, safe="")
+        response = requests.get(
+            f"https://query1.finance.yahoo.com/v8/finance/chart/{encoded}",
+            params={
+                "range": range_value,
+                "interval": "1d",
+                "events": "history",
+                "includeAdjustedClose": "true",
+            },
+            headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36",
+                "Accept": "application/json,text/plain,*/*",
+            },
+            timeout=20,
+        )
+        response.raise_for_status()
+        payload = response.json()
+        result = ((payload.get("chart") or {}).get("result") or [None])[0]
+        if not result:
+            return []
+        timestamps = result.get("timestamp") or []
+        quote_rows = (((result.get("indicators") or {}).get("quote") or [{}])[0])
+        opens = quote_rows.get("open") or []
+        highs = quote_rows.get("high") or []
+        lows = quote_rows.get("low") or []
+        closes = quote_rows.get("close") or []
+        points = []
+        for index, timestamp in enumerate(timestamps):
+            if index >= len(closes) or closes[index] is None:
+                continue
+            trade_date = datetime.utcfromtimestamp(int(timestamp)).date()
+            points.append((
+                trade_date,
+                opens[index] if index < len(opens) else closes[index],
+                highs[index] if index < len(highs) else closes[index],
+                lows[index] if index < len(lows) else closes[index],
+                closes[index],
+            ))
+        return _clean_benchmark_points(points)
+    except Exception:
+        return []
+
+
+def _cached_benchmark_points(db: Session, ticker_symbol: str):
+    if db is None:
+        return []
+    try:
+        rows = (
+            db.query(OHLCV)
+            .filter(
+                OHLCV.exchange == BENCHMARK_INDEX_EXCHANGE,
+                OHLCV.symbol == ticker_symbol,
+            )
+            .order_by(OHLCV.date.asc())
+            .all()
+        )
+        return _clean_benchmark_points([
+            (row.date, row.open, row.high, row.low, row.close) for row in rows
+        ])
+    except Exception:
+        return []
+
+
+def _cache_benchmark_points(db: Session, ticker_symbol: str, points):
+    if db is None or not points:
+        return
+    try:
+        normalized = _clean_benchmark_points(points)
+        existing_rows = (
+            db.query(OHLCV)
+            .filter(
+                OHLCV.exchange == BENCHMARK_INDEX_EXCHANGE,
+                OHLCV.symbol == ticker_symbol,
+            )
+            .all()
+        )
+        existing = {row.date: row for row in existing_rows}
+        for trade_date, open_value, high_value, low_value, close_value in normalized:
+            row = existing.get(trade_date)
+            if row is None:
+                row = OHLCV(
+                    symbol=ticker_symbol,
+                    exchange=BENCHMARK_INDEX_EXCHANGE,
+                    date=trade_date,
+                )
+                db.add(row)
+            row.open = open_value
+            row.high = high_value
+            row.low = low_value
+            row.close = close_value
+            row.volume = 0.0
+        db.commit()
+    except Exception:
+        try:
+            db.rollback()
+        except Exception:
+            pass
+
+
+def _load_benchmark_points(exchange: str, db: Session = None, minimum_points: int = 200):
+    """Return a resilient exact broad-market benchmark series.
+
+    Priority is a recent database cache, then yfinance, then Yahoo's direct chart
+    endpoint, then any older valid cache. This avoids replacing NIFTY 500 with a
+    different instrument merely because one upstream request temporarily fails.
+    """
+    spec = _benchmark_spec(exchange)
+    if not spec:
+        return [], None, None, "Unsupported exchange"
+    ticker_symbol, benchmark_name = spec
+
+    cached = _cached_benchmark_points(db, ticker_symbol)
+    if len(cached) >= minimum_points:
+        latest_date = cached[-1][0]
+        # A five-calendar-day freshness window safely spans weekends/holidays.
+        if latest_date >= date.today() - timedelta(days=5):
+            return cached, ticker_symbol, benchmark_name, "Database benchmark cache"
+
+    for loader, method in (
+        (_benchmark_points_from_yfinance, "Yahoo Finance via yfinance"),
+        (_benchmark_points_from_yahoo_chart, "Yahoo Finance direct chart fallback"),
+    ):
+        points = loader(ticker_symbol)
+        if len(points) >= minimum_points:
+            _cache_benchmark_points(db, ticker_symbol, points)
+            return points, ticker_symbol, benchmark_name, method
+
+    if len(cached) >= minimum_points:
+        return cached, ticker_symbol, benchmark_name, "Stored benchmark fallback"
+    return [], ticker_symbol, benchmark_name, "Benchmark unavailable"
+
+
+def _benchmark_close_points(exchange: str, db: Session = None):
+    points, symbol, name, method = _load_benchmark_points(exchange, db=db)
+    return [(d, o, c) for d, o, _h, _l, c in points], symbol, name, method
 
 
 def _valid_trading_rows(rows, exchange: str):
@@ -370,17 +565,13 @@ def _period_returns_from_points(points, labels=("1d", "1w", "2w", "3w", "1m", "2
 
 
 def _yf_period_returns(ticker_symbol):
-    try:
-        hist = yf.Ticker(ticker_symbol).history(period="2y", interval="1d", auto_adjust=False)
-        points = [
-            (idx.date(), float(row["Open"]), float(row["Close"]))
-            for idx, row in hist.iterrows()
-            if row.get("Open") is not None and row.get("Close") is not None
-            and math.isfinite(float(row["Open"])) and math.isfinite(float(row["Close"]))
-        ]
-        return _period_returns_from_points(points)
-    except Exception:
-        return {}
+    # Use the same resilient dual Yahoo path for the broad-market benchmarks so
+    # the comparison table and RS engine do not disagree during provider hiccups.
+    points = _benchmark_points_from_yfinance(ticker_symbol, period="2y")
+    if not points:
+        points = _benchmark_points_from_yahoo_chart(ticker_symbol, range_value="2y")
+    compact = [(d, o, c) for d, o, _h, _l, c in points]
+    return _period_returns_from_points(compact) if compact else {}
 
 
 def _peer_group_period_returns(db, exchange, field_name, field_value, exclude_symbol=None, minimum_peers=5):
@@ -645,8 +836,9 @@ def _rs_universe_metrics(db: Session, exchange: str, benchmark_points):
 
 def _weighted_rs_against_benchmark(daily_rows, exchange: str, period_weights=None, db: Session = None):
     """Client RS method: period relative returns -> period percentiles -> weighted RS score."""
-    benchmark_symbol = "^GSPC" if exchange.upper() == "US" else "^CRSLDX"
-    benchmark_name = "S&P 500" if exchange.upper() == "US" else "NIFTY 500"
+    spec = _benchmark_spec(exchange)
+    benchmark_symbol = spec[0] if spec else None
+    benchmark_name = spec[1] if spec else "Benchmark"
 
     # Latest client handwritten RS reference:
     # 1W*0.30 + 1M*0.25 + 3M*0.20 + 6M*0.15 + 12M*0.10
@@ -662,13 +854,9 @@ def _weighted_rs_against_benchmark(daily_rows, exchange: str, period_weights=Non
                     pass
 
     try:
-        hist = yf.Ticker(benchmark_symbol).history(period="5y", interval="1d", auto_adjust=False)
-        benchmark_points = [
-            (idx.date(), float(row["Open"]), float(row["Close"]))
-            for idx, row in hist.iterrows()
-            if row.get("Open") is not None and row.get("Close") is not None
-            and math.isfinite(float(row["Open"])) and math.isfinite(float(row["Close"]))
-        ]
+        benchmark_points, _benchmark_symbol, _benchmark_name, _benchmark_method = _benchmark_close_points(exchange, db=db)
+        if not benchmark_points:
+            return None, None, {}, benchmark_name, []
         stock_points = [
             (r.date, float(r.open) if r.open is not None else float(r.close), float(r.close))
             for r in daily_rows
@@ -2131,62 +2319,32 @@ def get_technical_summary(
 
 
 @router.get("/benchmark/{exchange}")
-def get_benchmark(exchange: str, limit: int = 400):
+def get_benchmark(exchange: str, limit: int = 400, db: Session = Depends(get_db)):
     exchange = exchange.upper()
-    if exchange == "US":
-        ticker_symbol = "^GSPC"
-        benchmark_name = "S&P 500"
-    elif exchange in ["NSE", "BSE"]:
-        ticker_symbol = "^CRSLDX"
-        benchmark_name = "NIFTY 500"
-    else:
+    if exchange not in {"US", "NSE", "BSE"}:
         raise HTTPException(status_code=400, detail="Unsupported exchange")
 
-    # Yahoo is used first because it exposes both requested index series.
-    try:
-        data = yf.Ticker(ticker_symbol).history(period="5y", interval="1d", auto_adjust=False)
-        if data is not None and not data.empty:
-            values = [
-                {"date": idx.date().isoformat(), "close": float(row["Close"])}
-                for idx, row in data.iterrows()
-                if row.get("Close") is not None
-            ]
-            return {
-                "name": benchmark_name,
-                "symbol": ticker_symbol,
-                "data": values[-limit:],
-                "method": "Broad-market index history from Yahoo Finance",
-            }
-    except Exception:
-        pass
-
-    # US fallback for deployments where Yahoo index history is temporarily unavailable.
-    if exchange == "US":
-        api_key = os.getenv("TWELVE_DATA_API_KEY")
-        if api_key:
-            try:
-                response = requests.get(
-                    "https://api.twelvedata.com/time_series",
-                    params={"symbol": "SPY", "interval": "1day", "outputsize": limit, "apikey": api_key},
-                    timeout=20,
-                )
-                payload = response.json()
-                if payload.get("status") != "error":
-                    values = payload.get("values", [])
-                    return {
-                        "name": "S&P 500 (SPY fallback)",
-                        "symbol": "SPY",
-                        "data": [{"date": item["datetime"], "close": float(item["close"])} for item in reversed(values)],
-                        "warning": "Using SPY ETF as fallback because the S&P 500 index feed was unavailable.",
-                    }
-            except Exception:
-                pass
+    points, ticker_symbol, benchmark_name, method = _load_benchmark_points(exchange, db=db)
+    if points:
+        values = [
+            {"date": trade_date.isoformat(), "close": close_value}
+            for trade_date, _open, _high, _low, close_value in points[-max(1, limit):]
+        ]
+        payload = {
+            "name": benchmark_name,
+            "symbol": ticker_symbol,
+            "data": values,
+            "method": method,
+        }
+        if method == "Stored benchmark fallback":
+            payload["warning"] = f"Using stored {benchmark_name} history because the live benchmark feed is temporarily unavailable."
+        return payload
 
     return {
         "name": benchmark_name,
         "symbol": ticker_symbol,
         "data": [],
-        "warning": f"{benchmark_name} data is temporarily unavailable from the configured providers.",
+        "warning": f"{benchmark_name} data is temporarily unavailable from both Yahoo benchmark paths and no stored benchmark cache is available yet.",
     }
 
 
