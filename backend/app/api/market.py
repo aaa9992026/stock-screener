@@ -1032,54 +1032,114 @@ def _stored_rs_rating(db: Session, symbol: str, exchange: str, minimum_universe:
     return max(1, min(99, percentile)), len(returns)
 
 
+def _cached_symbol_summary(db: Session, symbol: str, exchange: str):
+    rows = (
+        db.query(OHLCV)
+        .filter(
+            OHLCV.symbol == symbol.upper(),
+            OHLCV.exchange == exchange.upper(),
+        )
+        .order_by(OHLCV.date.desc())
+        .limit(5000)
+        .all()
+    )
+    valid = _valid_trading_rows(rows, exchange)
+    if not valid:
+        return None
+    latest = valid[0]
+    return {
+        "cached_records": len(valid),
+        "latest_date": latest.date.isoformat() if latest.date else None,
+        "latest_close": float(latest.close) if latest.close is not None else None,
+    }
+
+
 @router.post("/refresh/{symbol}")
 def refresh_symbol(
     symbol: str,
     exchange: str = "US",
     db: Session = Depends(get_db)
 ):
-    try:
-        provider = YahooProvider()
+    symbol = symbol.upper().strip()
+    exchange = exchange.upper().strip()
 
-        if exchange.upper() == "BSE":
-            provider = BSEProvider()
-            rows = provider.get_ohlcv(symbol)
+    def cached_response(reason: str):
+        cached = _cached_symbol_summary(db, symbol, exchange)
+        if not cached:
+            return None
+        return {
+            "status": "cached",
+            "provider_refresh_ok": False,
+            "symbol": symbol,
+            "exchange": exchange,
+            "records_received": 0,
+            "added": 0,
+            "updated": 0,
+            "removed_invalid_dates": 0,
+            "warning": reason,
+            **cached,
+        }
+
+    try:
+        if exchange == "BSE":
+            try:
+                rows = BSEProvider().get_ohlcv(symbol)
+            except Exception as primary_exc:
+                # BSE has a second configured provider path through Yahoo.
+                # If the paid/feed provider is temporarily unavailable, try the
+                # alternate real-data source before falling back to stored bars.
+                try:
+                    rows = YahooProvider().get_ohlcv(
+                        symbol=symbol,
+                        exchange=exchange,
+                        start_date="2000-01-01",
+                    )
+                except Exception:
+                    cached = cached_response(f"Live BSE refresh unavailable: {primary_exc}")
+                    if cached:
+                        return cached
+                    raise
         else:
-            provider = YahooProvider()
-            rows = provider.get_ohlcv(
+            rows = YahooProvider().get_ohlcv(
                 symbol=symbol,
                 exchange=exchange,
                 start_date="2000-01-01"
             )
 
         if not rows:
-            raise HTTPException(
-                status_code=404,
-                detail="No market data returned"
-            )
+            cached = cached_response("The live provider returned no new rows; verified stored market data is being shown.")
+            if cached:
+                return cached
+            raise HTTPException(status_code=404, detail="No market data returned and no stored market data is available")
 
         result = sync_ohlcv(
             db=db,
-            symbol=symbol.upper(),
-            exchange=exchange.upper(),
+            symbol=symbol,
+            exchange=exchange,
             rows=rows
         )
 
+        cached = _cached_symbol_summary(db, symbol, exchange) or {}
         return {
             "status": "success",
-            "symbol": symbol.upper(),
-            "exchange": exchange.upper(),
+            "provider_refresh_ok": True,
+            "symbol": symbol,
+            "exchange": exchange,
             "records_received": len(rows),
-            **result
+            **result,
+            **cached,
         }
 
     except HTTPException:
         raise
 
-    except Exception as e:
+    except Exception as exc:
+        cached = cached_response(f"Live provider refresh failed temporarily: {exc}")
+        if cached:
+            return cached
         raise HTTPException(
-            status_code=500,
-            detail=f"Market data refresh failed: {str(e)}"
+            status_code=503,
+            detail=f"Market data refresh failed and no verified stored data is available: {str(exc)}"
         )
 
 @router.get("/history/{symbol}")
@@ -1242,8 +1302,11 @@ def get_sec_edgar_data(
         )
     try:
         data = SECFundamentalsProvider().get_snapshot(symbol.upper(), filings_limit)
-        if not data.get("cik"):
+        if not data.get("cik") and data.get("status") == "not_found":
             raise HTTPException(status_code=404, detail="Ticker was not found in the SEC EDGAR company list")
+        # Temporary SEC/ticker-map outages return a structured 200 payload so
+        # the dashboard can explain the provider problem without treating the
+        # rest of the stock data as failed.
         return _json_safe(data)
     except HTTPException:
         raise

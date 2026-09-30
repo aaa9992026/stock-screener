@@ -192,3 +192,12 @@ This does not invent unavailable growth, delivery, or ownership data. More filte
 - Indian ownership keeps Promoter/FII/DII/MF/Public categories from the Indian shareholding source.
 - ISIN is stored beside the company record when a real provider/listing source supplies it (official NSE list for NSE; Yahoo lookup when available for selected/enriched US/BSE symbols).
 - Selected-timeframe technical calculations already use resampled daily/weekly/monthly candles; UI labels now follow the selected period for day-based client rules.
+
+## 2026-09-30 — Refresh/SEC reliability pass
+- Manual market refresh no longer marks valid stored candles as stale when a live provider is temporarily unavailable.
+- `/market/refresh/{symbol}` returns a structured `cached` result when verified stored OHLCV is available.
+- BSE manual refresh tries the alternate Yahoo BSE history path before falling back to stored data.
+- Frontend shows `Stored Data` instead of a red stale state when the provider refresh fails but verified history exists.
+- SEC EDGAR CIK resolution now falls back to provider metadata when the official ticker-association file is temporarily unavailable; filings/company facts still come from official SEC endpoints.
+- SEC temporary CIK/ticker-map failures return a structured provider-warning payload rather than breaking the entire stock dashboard.
+- Missing SEC data is never fabricated or substituted.

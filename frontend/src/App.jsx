@@ -688,7 +688,7 @@ function App() {
       setSecEdgar(null);
       setSecEdgarError(
         error?.response?.data?.detail ||
-        "SEC EDGAR data is currently unavailable. Verify SEC_USER_AGENT in the backend environment and try again."
+        "SEC EDGAR is temporarily unavailable. Stored market and fundamental data remain available; no SEC values are substituted."
       );
     }
   };
@@ -788,13 +788,15 @@ function App() {
         `${API}/market/refresh/${requestedSymbol}?exchange=${requestExchange}`
       );
 
+      const usedCachedData = res.data?.status === "cached" || res.data?.provider_refresh_ok === false;
       setDataStale(false);
-
-      setDataStatus("fresh");
-      setLastUpdated(new Date());
+      setDataStatus(usedCachedData ? "cached" : "fresh");
+      if (!usedCachedData) setLastUpdated(new Date());
 
       setMessage(
-        `Updated successfully: ${res.data.added} added, ${res.data.updated} updated`
+        usedCachedData
+          ? `${res.data?.warning || "Live refresh is temporarily unavailable."} Showing verified stored data${res.data?.latest_date ? ` through ${res.data.latest_date}` : ""}.`
+          : `Updated successfully: ${res.data.added} added, ${res.data.updated} updated`
       );
 
       if (!selectionChanged) {
@@ -813,11 +815,36 @@ function App() {
 
       const detail =
         err.response?.data?.detail ??
-        "Refresh failed. Data may be unavailable or stale.";
+        "Live refresh is temporarily unavailable.";
 
-      setDataStale(true);
-      setDataStatus("stale");
-      setMessage(detail);
+      // A provider refresh failure must not discard or label already verified
+      // stored candles as stale. Check the chart endpoint before showing an
+      // error state; this also covers temporary Railway/provider network errors.
+      try {
+        const cachedRes = await axios.get(
+          `${API}/market/chart/${requestedSymbol}?exchange=${requestExchange}&timeframe=${timeframe}&limit=${chartLimitForTimeframe(timeframe)}`
+        );
+        const cachedRows = (cachedRes.data?.data || []).filter((row) => (
+          Number(row.open) > 0 &&
+          Number(row.high) > 0 &&
+          Number(row.low) > 0 &&
+          Number(row.close) > 0
+        ));
+        if (cachedRows.length > 0) {
+          setData(cachedRows);
+          setDataStale(false);
+          setDataStatus("cached");
+          setMessage(`${detail} Showing verified stored market data instead.`);
+        } else {
+          setDataStale(true);
+          setDataStatus("stale");
+          setMessage(detail);
+        }
+      } catch {
+        setDataStale(true);
+        setDataStatus("stale");
+        setMessage(detail);
+      }
 
     } finally {
       setLoading(false);
@@ -1783,6 +1810,8 @@ function App() {
             <strong>
               {dataStatus === "fresh"
                 ? "Data Fresh"
+                : dataStatus === "cached"
+                ? "Stored Data"
                 : dataStatus === "stale"
                 ? "Data Stale"
                 : dataStatus === "loading"

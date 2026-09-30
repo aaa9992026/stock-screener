@@ -408,6 +408,15 @@ th {
   background: #edf9f1;
 }
 
+.status.cached {
+  background: #fff7ed;
+  color: #9a3412;
+}
+
+.status.cached .dot {
+  background: #f59e0b;
+}
+
 .status.stale {
   background: #fef2f2;
   color: #991b1b;

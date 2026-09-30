@@ -1,8 +1,10 @@
 import os
+import re
 from datetime import datetime
 from functools import lru_cache
 
 import requests
+import yfinance as yf
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
@@ -47,7 +49,114 @@ class SECFundamentalsProvider:
             "User-Agent": self.user_agent,
             "Accept-Encoding": "gzip, deflate",
             "Accept": "application/json,text/plain,*/*",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Connection": "close",
         }
+
+    @staticmethod
+    def _normalize_cik(value):
+        if value is None:
+            return None
+        match = re.search(r"(\d{6,10})", str(value))
+        return match.group(1).zfill(10) if match else None
+
+    @classmethod
+    def _extract_cik_from_object(cls, value):
+        """Best-effort CIK extraction from provider metadata/SEC URLs."""
+        if value is None:
+            return None
+        if isinstance(value, dict):
+            for key in ("cik", "cik_str", "cikNumber", "cik_number"):
+                cik = cls._normalize_cik(value.get(key))
+                if cik:
+                    return cik
+            for item in value.values():
+                cik = cls._extract_cik_from_object(item)
+                if cik:
+                    return cik
+            return None
+        if isinstance(value, (list, tuple)):
+            for item in value:
+                cik = cls._extract_cik_from_object(item)
+                if cik:
+                    return cik
+            return None
+        text = str(value)
+        for pattern in (r"/edgar/data/(\d{6,10})/", r"CIK[=: ]+(\d{6,10})"):
+            match = re.search(pattern, text, flags=re.IGNORECASE)
+            if match:
+                return match.group(1).zfill(10)
+        return None
+
+    @lru_cache(maxsize=512)
+    def _fallback_cik_from_yahoo(self, symbol: str):
+        """Resolve only the identifier when SEC's ticker-map file is unavailable.
+
+        SEC submissions/companyfacts remain the authoritative data source. Yahoo
+        is used only as a resilient ticker -> CIK resolver when its metadata
+        exposes an SEC archive URL or CIK value.
+        """
+        symbol = symbol.upper()
+        try:
+            ticker = yf.Ticker(symbol)
+            try:
+                info = ticker.info or {}
+                cik = self._extract_cik_from_object(info)
+                if cik:
+                    return cik
+            except Exception:
+                pass
+
+            candidates = []
+            for attr in ("sec_filings", "get_sec_filings"):
+                try:
+                    value = getattr(ticker, attr, None)
+                    if callable(value):
+                        value = value()
+                    if value is not None:
+                        candidates.append(value)
+                except Exception:
+                    continue
+            for candidate in candidates:
+                cik = self._extract_cik_from_object(candidate)
+                if cik:
+                    return cik
+        except Exception:
+            return None
+        return None
+
+    @lru_cache(maxsize=512)
+    def _resolve_cik(self, symbol: str):
+        symbol = symbol.upper().strip()
+
+        # Optional operator override for an edge-case ticker; format:
+        # SEC_CIK_OVERRIDES=AAPL:0000320193,BRK-B:0001067983
+        raw_overrides = os.getenv("SEC_CIK_OVERRIDES", "").strip()
+        if raw_overrides:
+            for item in raw_overrides.split(","):
+                if ":" not in item:
+                    continue
+                ticker, raw_cik = item.split(":", 1)
+                if ticker.strip().upper() == symbol:
+                    cik = self._normalize_cik(raw_cik)
+                    if cik:
+                        return cik, "operator override"
+
+        ticker_map_error = None
+        try:
+            cik = self._ticker_map().get(symbol)
+            if cik:
+                return cik, "SEC ticker association"
+        except Exception as exc:
+            ticker_map_error = str(exc)
+
+        cik = self._fallback_cik_from_yahoo(symbol)
+        if cik:
+            return cik, "provider metadata fallback"
+
+        if ticker_map_error:
+            raise RuntimeError(f"Could not resolve SEC CIK for {symbol}: {ticker_map_error}")
+        return None, None
 
     @staticmethod
     def _safe_http_error(response):
@@ -120,14 +229,14 @@ class SECFundamentalsProvider:
 
     @lru_cache(maxsize=256)
     def _company_facts(self, symbol: str):
-        cik = self._ticker_map().get(symbol.upper())
+        cik, _ = self._resolve_cik(symbol)
         if not cik:
             return None
         return self._request_json(self.COMPANY_FACTS_URL.format(cik=cik), timeout=30)
 
     @lru_cache(maxsize=256)
     def _submissions(self, symbol: str):
-        cik = self._ticker_map().get(symbol.upper())
+        cik, _ = self._resolve_cik(symbol)
         if not cik:
             return None
         return self._request_json(self.SUBMISSIONS_URL.format(cik=cik), timeout=30)
@@ -135,7 +244,7 @@ class SECFundamentalsProvider:
     def get_recent_filings(self, symbol: str, limit: int = 12):
         """Return recent official EDGAR filings for a US ticker."""
         symbol = symbol.upper()
-        cik = self._ticker_map().get(symbol)
+        cik, _ = self._resolve_cik(symbol)
         if not cik:
             return {
                 "symbol": symbol, "cik": None, "company_name": None,
@@ -196,18 +305,33 @@ class SECFundamentalsProvider:
         values are fabricated.
         """
         symbol = symbol.upper()
-        cik = self._ticker_map().get(symbol)
+        warnings = []
+        try:
+            cik, cik_source = self._resolve_cik(symbol)
+        except Exception as exc:
+            return {
+                "symbol": symbol, "cik": None, "company_name": None,
+                "filings": [], "fundamental_history": None,
+                "source": "SEC EDGAR", "companyfacts_source": None,
+                "available": False, "status": "temporarily_unavailable",
+                "warnings": [f"CIK resolution temporarily unavailable: {exc}"],
+                "note": "No SEC values were substituted. Stored market/fundamental data remains available independently.",
+            }
+
         if not cik:
             return {
                 "symbol": symbol, "cik": None, "company_name": None,
                 "filings": [], "fundamental_history": None,
                 "source": "SEC EDGAR", "companyfacts_source": None,
                 "available": False, "status": "not_found",
-                "warnings": ["Ticker was not found in the official SEC ticker/CIK association file."],
+                "warnings": ["Ticker could not be associated with an SEC CIK."],
                 "note": "No SEC values were substituted.",
             }
 
-        warnings = []
+        if cik_source and cik_source != "SEC ticker association":
+            warnings.append(
+                f"CIK was resolved using {cik_source}; filings/company facts still come directly from official SEC EDGAR endpoints."
+            )
         try:
             filing_data = self.get_recent_filings(symbol, filings_limit)
         except Exception as exc:
