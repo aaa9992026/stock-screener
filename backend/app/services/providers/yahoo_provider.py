@@ -91,6 +91,7 @@ class YahooProvider(BaseMarketDataProvider):
                 isin = None
 
         return {
+            "name": info.get("longName") or info.get("shortName"),
             "isin": isin,
             "market_cap": info.get("marketCap"),
             "trailing_eps": info.get("trailingEps"),

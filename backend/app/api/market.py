@@ -2810,6 +2810,15 @@ def refresh_fundamentals(
         if exchange not in {"US", "NSE", "BSE"}:
             raise HTTPException(status_code=400, detail="Unsupported exchange")
 
+        # Repair exact NSE company identity before refreshing any related data.
+        # This prevents stale name/ISIN metadata from surviving when the user
+        # switches symbols and the provider response omits identity fields.
+        if exchange == "NSE":
+            try:
+                repair_company_identity(db, symbol.upper(), exchange)
+            except Exception:
+                pass
+
         provider = YahooProvider()
         data = provider.get_fundamentals(symbol.upper(), exchange)
 
@@ -2854,6 +2863,14 @@ def get_fundamentals(
     exchange: str = "US",
     db: Session = Depends(get_db)
 ):
+    exchange = exchange.upper()
+    symbol = symbol.upper()
+    if exchange == "NSE":
+        try:
+            repair_company_identity(db, symbol, exchange)
+        except Exception:
+            pass
+
     fundamental = (
         db.query(Fundamental)
         .filter(

@@ -459,9 +459,17 @@ function App() {
       const res = await axios.get(`${API}/companies/search?q=${encodeURIComponent(symbol)}&exchange=${exchange}&limit=10`);
       if (activeSelectionRef.current !== requestKey) return;
       const exact = (res.data || []).find((item) => String(item.symbol).toUpperCase() === String(symbol).toUpperCase());
-      if (exact) setSelectedCompany({ name: exact.name || symbol, isin: exact.isin || null });
+      if (exact) {
+        setSelectedCompany({ name: exact.name || symbol, isin: exact.isin || null });
+      } else if (activeSelectionRef.current === requestKey) {
+        // Correctness over stale display: never leave another ticker's identity
+        // visible when the current symbol has no exact profile match.
+        setSelectedCompany({ name: symbol, isin: null });
+      }
     } catch {
-      // Company profile is auxiliary; keep the last known name/ISIN on a transient provider failure.
+      if (activeSelectionRef.current === requestKey) {
+        setSelectedCompany({ name: symbol, isin: null });
+      }
     }
   };
 
@@ -500,7 +508,7 @@ function App() {
       if (activeSelectionRef.current !== requestKey) return;
       setDashboard(res.data);
       if (res.data?.name || res.data?.isin) {
-        setSelectedCompany((prev) => ({ name: res.data?.name || prev.name || symbol, isin: res.data?.isin || prev.isin || null }));
+        setSelectedCompany({ name: res.data?.name || symbol, isin: res.data?.isin || null });
       }
     } catch {
       if (activeSelectionRef.current !== requestKey) return;
@@ -612,8 +620,11 @@ function App() {
       );
 
       if (activeSelectionRef.current !== requestKey) return;
-      if (res.data?.fundamentals?.isin) {
-        setSelectedCompany((prev) => ({ ...prev, isin: res.data.fundamentals.isin }));
+      if (res.data?.fundamentals?.name || res.data?.fundamentals?.isin) {
+        setSelectedCompany({
+          name: res.data?.fundamentals?.name || symbol,
+          isin: res.data?.fundamentals?.isin || null,
+        });
       }
       setFundamentals({
         symbol: res.data.symbol,
@@ -644,7 +655,7 @@ function App() {
         if (activeSelectionRef.current !== requestKey) return;
         setFundamentals(res.data);
         if (res.data?.name || res.data?.isin) {
-          setSelectedCompany((prev) => ({ name: res.data?.name || prev.name || symbol, isin: res.data?.isin || prev.isin || null }));
+          setSelectedCompany({ name: res.data?.name || symbol, isin: res.data?.isin || null });
         }
         loadDashboard();
       } catch {
@@ -778,6 +789,10 @@ function App() {
       setOwnershipDetails(null);
       setIndiaShareholding(null);
       setSecEdgar(null);
+      // Never carry a previous ticker's company identity into a new selection.
+      // Until the exact profile/dashboard response arrives, show only the new
+      // ticker itself rather than a stale company name or ISIN.
+      setSelectedCompany({ name: requestedSymbol, isin: null });
       setSymbol(requestedSymbol);
     }
 
@@ -1590,12 +1605,15 @@ function App() {
     setSecEdgarError("");
 
     if (value === "US") {
+      setSelectedCompany({ name: "AAPL", isin: null });
       setSymbol("AAPL");
       setSymbolInput("AAPL");
     } else if (value === "NSE") {
+      setSelectedCompany({ name: "RELIANCE", isin: null });
       setSymbol("RELIANCE");
       setSymbolInput("RELIANCE");
     } else {
+      setSelectedCompany({ name: "INFY", isin: null });
       setSymbol("INFY");
       setSymbolInput("INFY");
     }
