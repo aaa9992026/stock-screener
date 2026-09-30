@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 
 from app.models import Company
+from app.services.us_company_provider import is_supported_us_equity
 
 
 # Provider snapshots are treated as authoritative only when they look complete.
@@ -14,13 +15,19 @@ SNAPSHOT_MINIMUMS = {
 
 
 def _safe_to_deactivate(exchange: str, incoming_count: int, previous_active_count: int) -> bool:
-    minimum = SNAPSHOT_MINIMUMS.get(exchange.upper(), 50)
+    exchange = exchange.upper()
+    minimum = SNAPSHOT_MINIMUMS.get(exchange, 50)
     if incoming_count < minimum:
         return False
     if previous_active_count <= 0:
         return True
-    # Accept normal listing/delisting churn, but reject suspiciously small
-    # snapshots (for example a provider returning only a partial file).
+    # US sync is built from both Nasdaq Trader files and get_companies() fails
+    # if either file cannot be fetched.  A filtered snapshot with 4,000+
+    # ordinary equities is therefore sufficiently complete to clean legacy
+    # warrants/units/ETFs from an older broader universe.
+    if exchange == "US" and incoming_count >= 4000:
+        return True
+    # Other markets keep the conservative partial-snapshot guard.
     return incoming_count >= max(minimum, int(previous_active_count * 0.50))
 
 
@@ -38,6 +45,8 @@ def sync_companies(db: Session, companies: list[dict], deactivate_missing: bool 
         exchange = str(item.get("exchange") or "").strip().upper()
         name = str(item.get("name") or "").strip()
         if not symbol or not exchange or not name:
+            continue
+        if exchange == "US" and not is_supported_us_equity(symbol, name):
             continue
         normalized.append({
             "symbol": symbol,
@@ -99,6 +108,21 @@ def sync_companies(db: Session, companies: list[dict], deactivate_missing: bool 
     # Flush inserts/reactivations so the active-count check sees the new snapshot.
     db.flush()
 
+    # Clean legacy US non-equity rows that may have been inserted before the
+    # symbol-master filter existed.  Historical rows are retained; only current
+    # screener/RS eligibility is disabled.
+    legacy_non_equity_deactivated = 0
+    us_active_rows = (
+        db.query(Company)
+        .filter(Company.exchange == "US", Company.is_active == 1)
+        .all()
+    )
+    for company in us_active_rows:
+        if not is_supported_us_equity(company.symbol, company.name):
+            company.is_active = 0
+            legacy_non_equity_deactivated += 1
+            deactivated += 1
+
     if deactivate_missing:
         for exchange, incoming_symbols in incoming_by_exchange.items():
             active_rows = (
@@ -128,5 +152,6 @@ def sync_companies(db: Session, companies: list[dict], deactivate_missing: bool 
         "updated": updated,
         "reactivated": reactivated,
         "deactivated": deactivated,
+        "legacy_non_equity_deactivated": legacy_non_equity_deactivated,
         "deactivation_skipped": deactivation_skipped,
     }

@@ -653,6 +653,9 @@ function App() {
     const requestKey = `${exchange}:${symbol}:${timeframe}`;
     try {
       setLoading(true);
+      if (activeSelectionRef.current === requestKey) {
+        setDataStatus("loading");
+      }
 
       const res = await axios.get(
         `${API}/market/chart/${symbol}?exchange=${exchange}&timeframe=${timeframe}&limit=${chartLimitForTimeframe(timeframe)}`
@@ -1694,6 +1697,8 @@ function App() {
                 ? "Data Fresh"
                 : dataStatus === "stale"
                 ? "Data Stale"
+                : dataStatus === "loading"
+                ? "Loading Data"
                 : "Data Connected"}
             </strong>
 
@@ -2348,7 +2353,15 @@ function App() {
             </div>
           )}
 
-          {!dataStale ? (
+          {loading ? (
+            <div className="chart-loading-panel" role="status" aria-live="polite">
+              <span className="chart-loading-spinner" aria-hidden="true" />
+              <div>
+                <strong>Loading market data…</strong>
+                <small>Fetching the selected stock and recalculating indicators.</small>
+              </div>
+            </div>
+          ) : !dataStale ? (
             <div
               ref={chartContainerRef}
               style={{

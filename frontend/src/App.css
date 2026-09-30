@@ -337,6 +337,56 @@ th {
   font-weight: 600;
 }
 
+.chart-loading-panel {
+  min-height: 280px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  border: 1px solid #bfdbfe;
+  border-radius: 12px;
+  background: #eff6ff;
+  color: #1e3a8a;
+}
+
+.chart-loading-panel div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.chart-loading-panel small {
+  color: #64748b;
+}
+
+.chart-loading-spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid #bfdbfe;
+  border-top-color: #2563eb;
+  border-radius: 50%;
+  animation: chart-loading-spin 0.8s linear infinite;
+}
+
+@keyframes chart-loading-spin {
+  to { transform: rotate(360deg); }
+}
+
+.status.loading {
+  background: #eff6ff;
+  color: #1e3a8a;
+}
+
+.status.loading .dot {
+  background: #3b82f6;
+  animation: status-loading-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes status-loading-pulse {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 1; }
+}
+
 .status {
   display: flex;
   align-items: center;

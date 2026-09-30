@@ -139,6 +139,9 @@ def start_scheduler():
         hours=24,
         id="company_sync",
         replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+        next_run_time=datetime.now() + timedelta(seconds=30),
     )
 
     refresh_hours = max(1, int(os.getenv("AUTO_REFRESH_HOURS", "6") or 6))

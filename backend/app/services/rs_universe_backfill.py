@@ -26,6 +26,7 @@ from sqlalchemy.orm import Session
 from app.database import SessionLocal
 from app.models import Company, OHLCV
 from app.services.ohlcv_sync import sync_ohlcv
+from app.services.us_company_provider import is_supported_us_equity
 
 
 logger = logging.getLogger(__name__)
@@ -132,6 +133,8 @@ def universe_backfill_status(db: Session, market: str) -> dict:
         .order_by(Company.exchange.asc(), Company.symbol.asc())
         .all()
     )
+    if market == "US":
+        companies = [c for c in companies if is_supported_us_equity(c.symbol, c.name)]
     stats = _history_stats(db, market)
 
     ready = 0
@@ -187,6 +190,8 @@ def _candidate_companies(db: Session, market: str, limit: int) -> list[Company]:
         .filter(Company.exchange.in_(exchanges), Company.is_active == 1)
         .all()
     )
+    if market == "US":
+        companies = [c for c in companies if is_supported_us_equity(c.symbol, c.name)]
 
     candidates = []
     for company in companies:

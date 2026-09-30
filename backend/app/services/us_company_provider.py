@@ -1,4 +1,48 @@
+import re
 import requests
+
+
+_NON_EQUITY_NAME_PATTERNS = [
+    r"\bwarrants?\b",
+    r"\bunits?\b",
+    r"\brights?\b",
+    r"\bsubscription rights?\b",
+    r"\bacquisition (?:corp\.?|corporation|company|co\.?)\b",
+    r"\bblank check\b",
+    r"\bspac\b",
+    r"\bpreferred (?:stock|shares?)\b",
+    r"\bpreference shares?\b",
+    r"\bdebt securities?\b",
+    r"\bdebentures?\b",
+    r"\bbonds? due\b",
+    r"\bnotes? due\b",
+]
+
+
+def is_supported_us_equity(symbol: str, name: str, row: dict | None = None) -> bool:
+    """Return True only for ordinary US equity-like listings.
+
+    Nasdaq Trader files include ETFs, warrants, units, rights and SPAC-related
+    securities alongside regular operating-company shares.  Those instruments
+    must not consume the client's 6,000-stock RS universe or appear in the
+    default stock screener.  ADR/ADS/common/ordinary shares remain allowed.
+    """
+    symbol = str(symbol or "").strip().upper()
+    name = str(name or "").strip()
+    if not symbol or not name:
+        return False
+
+    row = row or {}
+    if str(row.get("ETF", "N") or "N").strip().upper() == "Y":
+        return False
+    if str(row.get("Test Issue", "N") or "N").strip().upper() == "Y":
+        return False
+
+    lower_name = name.lower()
+    if any(re.search(pattern, lower_name, flags=re.IGNORECASE) for pattern in _NON_EQUITY_NAME_PATTERNS):
+        return False
+
+    return True
 
 
 class USCompanyProvider:
@@ -33,9 +77,7 @@ class USCompanyProvider:
 
             name = row.get("Security Name", "").strip()
 
-            test_issue = row.get("Test Issue", "N").strip()
-
-            if not symbol or not name or test_issue == "Y":
+            if not is_supported_us_equity(symbol, name, row):
                 continue
 
             companies.append({

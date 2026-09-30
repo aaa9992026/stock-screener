@@ -167,3 +167,12 @@ This does not invent unavailable growth, delivery, or ownership data. More filte
 - Standardized button sizing, spacing, hover/focus/disabled states across Search/Refresh, timeframe controls, ranking actions, screener actions and pagination.
 - Gave Excel, copy-link, column, help and reset actions visually distinct but restrained treatments.
 - Improved screener tabs, toolbar grouping and mobile touch targets.
+
+
+## Final universe-quality / loading-state cleanup
+
+- US symbol-master ingestion now excludes ETFs, warrants, units, rights, SPAC/acquisition securities, preferred/debt instruments and other obvious non-common-equity listings from the active stock universe.
+- Legacy non-equity US rows are automatically marked inactive on company sync; historical rows are retained.
+- RS backfill defensively skips legacy non-equity US rows even before cleanup completes.
+- Company sync runs shortly after backend startup and then every 24 hours, so new listings/delistings and security-type cleanup are applied automatically.
+- When a user switches symbols, the chart now shows an explicit loading state instead of a temporary red historical-data-unavailable message.
