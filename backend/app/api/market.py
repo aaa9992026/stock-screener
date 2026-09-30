@@ -1200,6 +1200,8 @@ def get_dashboard_summary(
 
     return _json_safe({
         "symbol": symbol,
+        "name": company.name if company else None,
+        "isin": company.isin if company else None,
         "exchange": exchange,
         "score": displayed_score,
         "signal": signal,
@@ -2269,6 +2271,12 @@ def get_fundamentals(
         .first()
     )
 
+    company = (
+        db.query(Company)
+        .filter(Company.symbol == symbol.upper(), Company.exchange == exchange.upper())
+        .first()
+    )
+
     if not fundamental and not ownership:
         raise HTTPException(
             status_code=404,
@@ -2277,6 +2285,8 @@ def get_fundamentals(
 
     return {
         "symbol": symbol.upper(),
+        "name": company.name if company else None,
+        "isin": company.isin if company else None,
         "exchange": exchange.upper(),
         "fundamentals": {
             "market_cap": fundamental.market_cap if fundamental else None,
@@ -2469,6 +2479,7 @@ def get_indicators(
 SCREENER_COLUMN_LABELS = {
     "symbol": "Symbol",
     "name": "Company",
+    "isin": "ISIN",
     "exchange": "Exchange",
     "sector": "Sector",
     "industry": "Industry",
@@ -2494,7 +2505,7 @@ SCREENER_COLUMN_LABELS = {
 }
 
 SCREENER_DEFAULT_COLUMNS = [
-    "symbol", "name", "exchange", "close", "market_cap", "trailing_eps",
+    "symbol", "name", "isin", "exchange", "close", "market_cap", "trailing_eps",
     "profit_margin", "return_on_equity", "institution_percent",
     "distance_52w_high", "volume_ratio", "data_coverage",
 ]
@@ -2573,6 +2584,7 @@ def _screener_query_parts(db: Session, market: str):
         db.query(
             Company.symbol.label("symbol"),
             Company.name.label("name"),
+            Company.isin.label("isin"),
             Company.exchange.label("exchange"),
             Company.sector.label("sector"),
             Company.industry.label("industry"),
@@ -2610,6 +2622,7 @@ def _screener_query_parts(db: Session, market: str):
     expressions = {
         "symbol": Company.symbol,
         "name": Company.name,
+        "isin": Company.isin,
         "exchange": Company.exchange,
         "sector": Company.sector,
         "industry": Company.industry,
@@ -2660,7 +2673,7 @@ def _apply_screener_filters(
 ):
     if q:
         pattern = f"%{q.strip()}%"
-        query = query.filter(or_(Company.symbol.ilike(pattern), Company.name.ilike(pattern)))
+        query = query.filter(or_(Company.symbol.ilike(pattern), Company.name.ilike(pattern), Company.isin.ilike(pattern)))
     if sector:
         query = query.filter(Company.sector == sector)
     if industry:

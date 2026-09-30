@@ -52,7 +52,8 @@ def search_companies(
         pattern = f"%{q.upper()}%"
         query = query.filter(
             (Company.symbol.ilike(pattern)) |
-            (Company.name.ilike(f"%{q}%"))
+            (Company.name.ilike(f"%{q}%")) |
+            (Company.isin.ilike(pattern))
         )
 
     query = query.filter(Company.is_active == 1)
@@ -70,6 +71,7 @@ def search_companies(
         {
             "symbol": row.symbol,
             "name": row.name,
+            "isin": row.isin,
             "exchange": row.exchange,
             "sector": row.sector,
             "industry": row.industry,

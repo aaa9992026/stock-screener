@@ -11,6 +11,7 @@ class Company(Base):
     symbol = Column(String, nullable=False, index=True)
     exchange = Column(String, nullable=False, index=True)
     name = Column(String, nullable=False)
+    isin = Column(String, nullable=True, index=True)
     sector = Column(String, nullable=True)
     industry = Column(String, nullable=True)
     is_active = Column(Integer, default=1)

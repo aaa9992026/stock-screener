@@ -52,6 +52,7 @@ def sync_companies(db: Session, companies: list[dict], deactivate_missing: bool 
             "symbol": symbol,
             "exchange": exchange,
             "name": name,
+            "isin": item.get("isin"),
             "sector": item.get("sector"),
             "industry": item.get("industry"),
         })
@@ -80,6 +81,9 @@ def sync_companies(db: Session, companies: list[dict], deactivate_missing: bool 
             if company.is_active != 1:
                 reactivated += 1
             company.name = item["name"]
+            incoming_isin = item.get("isin")
+            if incoming_isin not in (None, "", "nan", "NaN"):
+                company.isin = str(incoming_isin).strip()
 
             # Symbol-master snapshots (for example NSE EQUITY_L.csv and the
             # Nasdaq Trader symbol files) do not always contain sector/industry.
@@ -99,6 +103,7 @@ def sync_companies(db: Session, companies: list[dict], deactivate_missing: bool 
                 symbol=item["symbol"],
                 exchange=item["exchange"],
                 name=item["name"],
+                isin=item.get("isin"),
                 sector=item.get("sector"),
                 industry=item.get("industry"),
                 is_active=1,

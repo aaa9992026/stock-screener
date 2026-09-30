@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .database import engine
+from .database import engine, ensure_schema_compatibility
 from .models import Base
 from .api.market import router as market_router
 from .api.companies import router as companies_router
@@ -8,6 +8,7 @@ from .services.scheduler import start_scheduler
 
 
 Base.metadata.create_all(bind=engine)
+ensure_schema_compatibility()
 
 app = FastAPI(title="Stock Screener API")
 

@@ -67,8 +67,11 @@ def sync_fundamental_data(
     if company:
         # Keep previously enriched classification when a provider temporarily
         # omits sector/industry instead of erasing it with None.
+        isin = data.get("isin")
         sector = data.get("sector")
         industry = data.get("industry")
+        if isin not in (None, "", "nan", "NaN", "-"):
+            company.isin = str(isin).strip()
         if sector not in (None, "", "nan", "NaN"):
             company.sector = sector
         if industry not in (None, "", "nan", "NaN"):

@@ -184,3 +184,11 @@ This does not invent unavailable growth, delivery, or ownership data. More filte
 - Manual bounded enrichment is available at `/companies/data-backfill/run` and `/companies/data-backfill/run-all`.
 - The stock-universe UI displays real-data coverage and includes a `Fill Missing Data` action.
 - Default list ordering prioritizes rows with higher real-data completeness rather than N/A-heavy rows.
+
+
+## 2026-09-30 ownership / ISIN / timeframe correction
+- US ownership headings now use Institutional Ownership, Insider Ownership and Retail/Public Investors.
+- Retail/Public is shown only when it can be transparently derived as 100% - institutional - insider; unavailable values remain N/A.
+- Indian ownership keeps Promoter/FII/DII/MF/Public categories from the Indian shareholding source.
+- ISIN is stored beside the company record when a real provider/listing source supplies it (official NSE list for NSE; Yahoo lookup when available for selected/enriched US/BSE symbols).
+- Selected-timeframe technical calculations already use resampled daily/weekly/monthly candles; UI labels now follow the selected period for day-based client rules.

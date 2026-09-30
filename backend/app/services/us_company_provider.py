@@ -85,6 +85,7 @@ class USCompanyProvider:
             companies.append({
                 "symbol": symbol,
                 "name": name,
+                "isin": None,
                 "exchange": "US",
                 "sector": None,
                 "industry": None

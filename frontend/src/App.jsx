@@ -47,7 +47,7 @@ const RS_WEIGHTS_STORAGE_VERSION = "m2-rs-market-universe-v2";
 
 
 const universeColumnOptions = [
-  ["symbol", "Symbol"], ["name", "Company"], ["exchange", "Exchange"],
+  ["symbol", "Symbol"], ["name", "Company"], ["isin", "ISIN"], ["exchange", "Exchange"],
   ["sector", "Sector"], ["industry", "Industry"], ["close", "LTP"],
   ["volume", "Volume"], ["market_cap", "Market Cap"], ["trailing_eps", "EPS"],
   ["forward_eps", "Forward EPS"], ["revenue", "Revenue"], ["net_income", "Net Income"],
@@ -60,7 +60,7 @@ const universeColumnOptions = [
 ];
 
 const universeDefaultColumns = [
-  "symbol", "name", "close", "market_cap", "trailing_eps", "profit_margin",
+  "symbol", "name", "isin", "close", "market_cap", "trailing_eps", "profit_margin",
   "return_on_equity", "institution_percent", "distance_52w_high", "volume_ratio", "data_coverage",
 ];
 
@@ -267,6 +267,7 @@ function App() {
   const [ownershipDetails, setOwnershipDetails] = useState(null);
   const [indiaShareholding, setIndiaShareholding] = useState(null);
   const [chartInfo, setChartInfo] = useState(null);
+  const [selectedCompany, setSelectedCompany] = useState({ name: "Apple Inc.", isin: null });
   const [scoreWeights, setScoreWeights] = useState(() => {
     try {
       if (localStorage.getItem("scoreWeightsVersion") !== SCORE_WEIGHTS_STORAGE_VERSION) {
@@ -407,6 +408,7 @@ function App() {
     setExchange(row.exchange);
     setSymbolInput(row.symbol);
     setSymbol(row.symbol);
+    setSelectedCompany({ name: row.name || row.symbol, isin: row.isin || null });
     setData([]);
     setDashboard(null);
     setFundamentals(null);
@@ -451,6 +453,18 @@ function App() {
     };
   }, []);
 
+  const loadCompanyProfile = async () => {
+    const requestKey = `${exchange}:${symbol}:${timeframe}`;
+    try {
+      const res = await axios.get(`${API}/companies/search?q=${encodeURIComponent(symbol)}&exchange=${exchange}&limit=10`);
+      if (activeSelectionRef.current !== requestKey) return;
+      const exact = (res.data || []).find((item) => String(item.symbol).toUpperCase() === String(symbol).toUpperCase());
+      if (exact) setSelectedCompany({ name: exact.name || symbol, isin: exact.isin || null });
+    } catch {
+      // Company profile is auxiliary; keep the last known name/ISIN on a transient provider failure.
+    }
+  };
+
   const loadDashboard = async () => {
     const requestKey = `${exchange}:${symbol}:${timeframe}`;
     try {
@@ -485,6 +499,9 @@ function App() {
       const res = await axios.get(`${API}/market/dashboard/${symbol}?${params.toString()}`);
       if (activeSelectionRef.current !== requestKey) return;
       setDashboard(res.data);
+      if (res.data?.name || res.data?.isin) {
+        setSelectedCompany((prev) => ({ name: res.data?.name || prev.name || symbol, isin: res.data?.isin || prev.isin || null }));
+      }
     } catch {
       if (activeSelectionRef.current !== requestKey) return;
       setDashboard(null);
@@ -595,6 +612,9 @@ function App() {
       );
 
       if (activeSelectionRef.current !== requestKey) return;
+      if (res.data?.fundamentals?.isin) {
+        setSelectedCompany((prev) => ({ ...prev, isin: res.data.fundamentals.isin }));
+      }
       setFundamentals({
         symbol: res.data.symbol,
         exchange: res.data.exchange,
@@ -623,6 +643,9 @@ function App() {
         );
         if (activeSelectionRef.current !== requestKey) return;
         setFundamentals(res.data);
+        if (res.data?.name || res.data?.isin) {
+          setSelectedCompany((prev) => ({ name: res.data?.name || prev.name || symbol, isin: res.data?.isin || prev.isin || null }));
+        }
         loadDashboard();
       } catch {
         if (activeSelectionRef.current !== requestKey) return;
@@ -802,6 +825,7 @@ function App() {
   };
 
   useEffect(() => {
+    loadCompanyProfile();
     loadChart();
     loadIndicators();
     loadBenchmark();
@@ -1238,11 +1262,10 @@ function App() {
         insider_activity: null,
       });
     } else if (exchange === "US") {
-      // The handwritten Ownership sheet specifically uses Promoter/FII/DII-MF/
-      // pledge/history factors. Yahoo's US holder tables are not equivalent to
-      // those categories, so the ownership score is intentionally unavailable
-      // instead of mapping unlike data.
-      ownershipComponent = null;
+      // US ownership uses the market-appropriate Institutional + Insider
+      // aggregate score calculated by the backend. Retail/Public is displayed
+      // as the transparent remainder when both aggregates are available.
+      ownershipComponent = finite(dashboard?.score_components?.ownership);
     }
 
     const components = {
@@ -1571,8 +1594,52 @@ function App() {
     return Number(n.toFixed(2)).toLocaleString();
   };
 
+  const renderUSOwnershipTable = () => {
+    const institution = fundamentals?.ownership?.institution_percent != null ? Number(fundamentals.ownership.institution_percent) * 100 : null;
+    const insider = fundamentals?.ownership?.insider_percent != null ? Number(fundamentals.ownership.insider_percent) * 100 : null;
+    const retail = institution != null && insider != null ? Math.max(0, 100 - institution - insider) : null;
+    const rows = [
+      ["Institutional Ownership", institution, rankingSubweights.ownership.institution, "Provider aggregate"],
+      ["Insider Ownership", insider, rankingSubweights.ownership.insider, "Provider aggregate"],
+      ["Retail / Public Investors", retail, 0, "100% - institutional - insider"],
+    ];
+    return (
+      <div className="compact-filter-card">
+        <div className="compact-filter-header">
+          <div><h3>Ownership Filters (US)</h3><p>US-market ownership categories. Missing provider values remain N/A.</p></div>
+          <div className="compact-filter-score"><span>Group score</span><strong>{filterScoreText(dashboardView?.score_components?.ownership)}</strong></div>
+        </div>
+        <div className="compact-table-scroll">
+          <table className="filter-config-table">
+            <thead><tr><th>Ownership type</th><th>Current</th><th>Weight</th><th>Source / method</th></tr></thead>
+            <tbody>
+              {rows.map(([label, value, weight, source]) => (
+                <tr key={label}>
+                  <td className="filter-name-cell"><strong>{label}</strong></td>
+                  <td>{value != null && Number.isFinite(Number(value)) ? `${Number(value).toFixed(2)}%` : "N/A"}</td>
+                  <td>{weight}%</td>
+                  <td><span className="filter-target-text">{source}</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  };
+
   const renderFilterTable = (group, title, subtitle) => {
-    const rows = handwrittenFactorMeta[group] || [];
+    const periodWord = timeframe === "weekly" ? "week" : timeframe === "monthly" ? "month" : "day";
+    const rows = (handwrittenFactorMeta[group] || []).map((row) => {
+      if (group !== "technical") return row;
+      const [key, label, description, editableValues, category] = row;
+      const timeframeLabel = label
+        .replace(/5-day/g, `5-${periodWord}`)
+        .replace(/10-day/g, `10-${periodWord}`)
+        .replace(/20-day/g, `20-${periodWord}`)
+        .replace(/40-day/g, `40-${periodWord}`);
+      return [key, timeframeLabel, description, editableValues, category];
+    });
     const evalRows = factorEvaluationRows[group] || {};
     return (
       <div className="compact-filter-card" key={group}>
@@ -1763,6 +1830,7 @@ function App() {
                       suggestionRequestRef.current += 1;
                       setSymbolInput(item.symbol);
                       setSymbol(item.symbol);
+                      setSelectedCompany({ name: item.name || item.symbol, isin: item.isin || null });
                       setData([]);
                       setDashboard(null);
                       setFundamentals(null);
@@ -1810,6 +1878,7 @@ function App() {
                 setOwnershipDetails(null);
                 setIndiaShareholding(null);
                 setSecEdgar(null);
+                setSelectedCompany({ name: nextSymbol, isin: null });
                 setMessage("");
                 setSymbol(nextSymbol);
                 return;
@@ -2047,9 +2116,10 @@ function App() {
             <strong>{exchange}</strong>
           </div>
 
-          <div className="card">
-            <span>Symbol</span>
-            <strong>{symbol}</strong>
+          <div className="card company-identity-card">
+            <span>Company</span>
+            <strong>{selectedCompany?.name || dashboard?.name || symbol}</strong>
+            <small>{symbol}{(selectedCompany?.isin || dashboard?.isin) ? ` • ISIN ${selectedCompany?.isin || dashboard?.isin}` : " • ISIN N/A"}</small>
           </div>
 
           <div className="card">
@@ -2242,9 +2312,9 @@ function App() {
 
               {showRankingDetails && (
                 <div className="compact-filter-stack">
-                  {renderFilterTable("technical", "Technical Filters", "Client handwritten technical ranking filters in compact editable format")}
+                  {renderFilterTable("technical", "Technical Filters", `Client handwritten technical ranking filters • ${timeframe.charAt(0).toUpperCase() + timeframe.slice(1)} candles; period-based rules recalculate automatically`)}
                   {renderFilterTable("fundamental", "Fundamental Filters", "EPS / PAT / Sales / NPM / CFO and additional client filters")}
-                  {renderFilterTable("ownership", "Ownership Filters", "Promoter / FII / DII-MF / pledge / insider filters")}
+                  {exchange === "US" ? renderUSOwnershipTable() : renderFilterTable("ownership", "Ownership Filters", "Promoter / FII / DII-MF / pledge / insider filters")}
 
                   <div className="qualification-panel">
                     <div>
@@ -2962,124 +3032,47 @@ function App() {
         )}
 
 {exchange === "US" && ownershipDetails && (() => {
-          const institutionRows = ownershipDetails.institutional_holders || [];
-          const mutualRows = ownershipDetails.mutual_fund_holders || [];
-
-          const rowDate = (row) => {
-            const value = row?.["Date Reported"] ?? row?.dateReported ?? row?.date ?? null;
-            return value ? String(value).slice(0, 10) : null;
-          };
-
-          const pctHeld = (row) => {
-            if (row?.pctHeld != null) return Number(row.pctHeld) * 100;
-            const raw = row?.["% Out"];
-            if (raw == null) return null;
-            const numeric = Number(String(raw).replace("%", ""));
-            return Number.isFinite(numeric) ? numeric : null;
-          };
-
-          const reportDates = Array.from(new Set([
-            ...institutionRows.map(rowDate),
-            ...mutualRows.map(rowDate),
-          ].filter(Boolean))).sort().slice(-4);
-
-          const sumForDate = (rows, date) => {
-            const values = rows
-              .filter((row) => rowDate(row) === date)
-              .map(pctHeld)
-              .filter((value) => value != null && Number.isFinite(value));
-            if (!values.length) return null;
-            return values.reduce((sum, value) => sum + value, 0);
-          };
-
-          const institutionCurrent = fundamentals?.ownership?.institution_percent != null
-            ? Number(fundamentals.ownership.institution_percent) * 100
-            : null;
-          const insiderCurrent = fundamentals?.ownership?.insider_percent != null
-            ? Number(fundamentals.ownership.insider_percent) * 100
-            : null;
-          const otherCurrent = institutionCurrent != null && insiderCurrent != null
-            ? Math.max(0, 100 - institutionCurrent - insiderCurrent)
-            : null;
+          const summary = ownershipDetails.current_summary || {};
+          const institutionCurrent = summary.institutional_percent != null
+            ? Number(summary.institutional_percent)
+            : (fundamentals?.ownership?.institution_percent != null ? Number(fundamentals.ownership.institution_percent) * 100 : null);
+          const insiderCurrent = summary.insider_percent != null
+            ? Number(summary.insider_percent)
+            : (fundamentals?.ownership?.insider_percent != null ? Number(fundamentals.ownership.insider_percent) * 100 : null);
+          const retailCurrent = summary.retail_public_percent != null
+            ? Number(summary.retail_public_percent)
+            : (institutionCurrent != null && insiderCurrent != null ? Math.max(0, 100 - institutionCurrent - insiderCurrent) : null);
 
           const ownershipRows = [
-            {
-              label: "Promoter",
-              values: reportDates.map(() => null),
-              current: null,
-              unsupported: true,
-            },
-            {
-              label: "FII",
-              values: reportDates.map(() => null),
-              current: null,
-              unsupported: true,
-            },
-            {
-              label: "DII",
-              values: reportDates.map(() => null),
-              current: null,
-              unsupported: true,
-            },
-            {
-              label: "Mutual Funds",
-              values: reportDates.map((date) => sumForDate(mutualRows, date)),
-              current: null,
-            },
-            {
-              label: "Institutional",
-              values: reportDates.map((date) => sumForDate(institutionRows, date)),
-              current: institutionCurrent,
-            },
-            {
-              label: "Insider",
-              values: reportDates.map(() => null),
-              current: insiderCurrent,
-            },
-            {
-              label: "Others / Public",
-              values: reportDates.map(() => null),
-              current: otherCurrent,
-            },
+            { label: "Institutional Ownership", current: institutionCurrent, source: "Yahoo aggregate ownership" },
+            { label: "Insider Ownership", current: insiderCurrent, source: "Yahoo aggregate ownership" },
+            { label: "Retail / Public Investors", current: retailCurrent, source: "Derived remainder: 100% - institutional - insider" },
           ];
 
           return (
             <section className="fundamental-section">
               <h2>Ownership Detail</h2>
               <div className="chart-note">
-                Ownership is shown in the requested date-across-columns format. Promoter, FII and DII
-                are Indian-market ownership classifications and are not provided for US stocks by Yahoo,
-                so those rows are shown as N/A rather than estimated. Historical Institutional and Mutual
-                Fund cells summarize only the provider-returned top-holder rows for each report date;
-                Current uses the available aggregate ownership percentages.
+                US ownership uses US-market categories. Promoter, FII and DII headings are not used for US stocks.
+                Retail/Public is shown only as the transparent remainder when both aggregate Institutional and Insider ownership are available.
               </div>
 
               {ownershipDetails.provider_note && (
                 <div className="provider-warning">{ownershipDetails.provider_note}</div>
               )}
 
-              <h3>Ownership by Report Date</h3>
+              <h3>Current US Ownership</h3>
               <div className="history-table-wrapper">
                 <table className="history-table ownership-matrix-table">
                   <thead>
-                    <tr>
-                      <th>Ownership Type</th>
-                      {reportDates.map((date) => (
-                        <th key={date}>{date}</th>
-                      ))}
-                      <th>Current</th>
-                    </tr>
+                    <tr><th>Ownership Type</th><th>Current</th><th>Source / Method</th></tr>
                   </thead>
                   <tbody>
                     {ownershipRows.map((row) => (
                       <tr key={row.label}>
                         <td><strong>{row.label}</strong></td>
-                        {row.values.map((value, index) => (
-                          <td key={`${row.label}-${reportDates[index] || index}`}>
-                            {row.unsupported ? "N/A" : (value != null ? `${value.toFixed(2)}%` : "-")}
-                          </td>
-                        ))}
-                        <td>{row.unsupported ? "N/A" : (row.current != null ? `${row.current.toFixed(2)}%` : "-")}</td>
+                        <td>{row.current != null && Number.isFinite(row.current) ? `${row.current.toFixed(2)}%` : "N/A"}</td>
+                        <td>{row.source}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -3087,9 +3080,7 @@ function App() {
               </div>
 
               <div className="chart-note">
-                Promoter, FII and DII are shown for layout consistency with the client requirement, but are N/A for US stocks.
-                “Institutional” and “Mutual Funds” historical cells are sums of the displayed provider holder rows for that report date,
-                not an estimated total market ownership history.
+                Historical Yahoo top-holder rows are not treated as total-market ownership history. This avoids presenting a sum of a few reported holders as the full institutional/public market percentage.
               </div>
             </section>
           );

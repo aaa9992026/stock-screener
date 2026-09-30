@@ -73,7 +73,19 @@ class YahooProvider(BaseMarketDataProvider):
         ticker = yf.Ticker(provider_symbol)
         info = ticker.info
 
+        isin = info.get("isin")
+        if not isin:
+            try:
+                raw_isin = getattr(ticker, "isin", None)
+                if callable(raw_isin):
+                    raw_isin = raw_isin()
+                if raw_isin and str(raw_isin).strip() not in {"-", "None", "nan"}:
+                    isin = str(raw_isin).strip()
+            except Exception:
+                isin = None
+
         return {
+            "isin": isin,
             "market_cap": info.get("marketCap"),
             "trailing_eps": info.get("trailingEps"),
             "forward_eps": info.get("forwardEps"),
@@ -638,8 +650,38 @@ class YahooProvider(BaseMarketDataProvider):
         except Exception:
             major_holders = []
 
+        current_summary = {
+            "institutional_percent": None,
+            "insider_percent": None,
+            "retail_public_percent": None,
+            "retail_public_method": None,
+        }
+        try:
+            info = ticker.info or {}
+            institution = info.get("heldPercentInstitutions")
+            insider = info.get("heldPercentInsiders")
+            if institution is not None:
+                institution = float(institution) * 100 if abs(float(institution)) <= 1.5 else float(institution)
+                current_summary["institutional_percent"] = round(institution, 4)
+            if insider is not None:
+                insider = float(insider) * 100 if abs(float(insider)) <= 1.5 else float(insider)
+                current_summary["insider_percent"] = round(insider, 4)
+            if institution is not None and insider is not None:
+                current_summary["retail_public_percent"] = round(max(0.0, 100.0 - institution - insider), 4)
+                current_summary["retail_public_method"] = "100% - institutional ownership - insider ownership"
+        except Exception:
+            pass
+
         note = None
-        if exchange.upper() in ["NSE", "BSE"]:
+        if exchange.upper() == "US":
+            note = (
+                "US ownership uses the market-appropriate headings Institutional Ownership, "
+                "Insider Ownership and Retail/Public Investors. Yahoo provides current aggregate "
+                "institutional/insider percentages; Retail/Public is the transparent remainder "
+                "100% - institutional - insider when both aggregates are available. Historical "
+                "top-holder tables are kept as source detail and are not presented as total-market history."
+            )
+        elif exchange.upper() in ["NSE", "BSE"]:
             note = (
                 "Verified FII/DII/promoter-change breakdown is not exposed by the "
                 "configured Yahoo provider. Available holder data is shown without "
@@ -654,6 +696,7 @@ class YahooProvider(BaseMarketDataProvider):
             "mutual_fund_holders": mutual_funds,
             "insider_transactions": insider_transactions,
             "major_holders": major_holders,
+            "current_summary": current_summary,
             "provider_note": note,
         }
 
