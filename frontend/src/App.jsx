@@ -1308,6 +1308,55 @@ function App() {
     window.setTimeout(() => setExcelCopyMessage(""), 3500);
   };
 
+  const downloadExcelSnapshot = async () => {
+    const requestedSymbol = String(symbol || "").trim().toUpperCase();
+    if (!requestedSymbol) {
+      setExcelCopyMessage("Enter a stock symbol before downloading Excel.");
+      window.setTimeout(() => setExcelCopyMessage(""), 3500);
+      return;
+    }
+
+    const url = `${API}/market/excel-export/${encodeURIComponent(requestedSymbol)}?exchange=${encodeURIComponent(exchange)}`;
+    try {
+      setExcelCopyMessage("Preparing Excel file…");
+      const response = await fetch(url, {
+        method: "GET",
+        headers: { Accept: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" },
+        cache: "no-store",
+      });
+      if (!response.ok) {
+        let detail = `Excel export failed (HTTP ${response.status})`;
+        try {
+          const payload = await response.json();
+          if (payload?.detail) detail = String(payload.detail);
+        } catch {
+          // Keep the HTTP status fallback if the proxy returned a non-JSON error.
+        }
+        throw new Error(detail);
+      }
+
+      const blob = await response.blob();
+      if (!blob.size) throw new Error("Excel export returned an empty file.");
+
+      const disposition = response.headers.get("content-disposition") || "";
+      const match = disposition.match(/filename\*?=(?:UTF-8''|")?([^";]+)/i);
+      const filename = match?.[1] ? decodeURIComponent(match[1].replace(/"/g, "")) : `${requestedSymbol}_${exchange}_screener.xlsx`;
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = objectUrl;
+      link.download = filename;
+      link.style.display = "none";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+      setExcelCopyMessage(`Downloaded ${filename}`);
+    } catch (error) {
+      setExcelCopyMessage(error?.message || "Excel export failed. Please try again.");
+    }
+    window.setTimeout(() => setExcelCopyMessage(""), 4500);
+  };
+
   const relativeStrengthChartData = (() => {
     const rows = technicalSummary?.rs_chart;
     if (!Array.isArray(rows)) return [];
@@ -1818,9 +1867,7 @@ function App() {
                   loadDashboard();
                   loadTechnicalSummary();
                 }}>Apply Ranking</button>
-                <button type="button" className="secondary-button ranking-secondary-button" onClick={() => {
-                  window.open(`${API}/market/excel-export/${symbol}?exchange=${exchange}`, "_blank", "noopener,noreferrer");
-                }}>Download Excel</button>
+                <button type="button" className="secondary-button ranking-secondary-button" onClick={downloadExcelSnapshot}>Download Excel</button>
                 <button type="button" className="secondary-button ranking-secondary-button" onClick={copyExcelFeedUrl}>Copy Excel Feed URL</button>
                 <button type="button" className="secondary-button ranking-secondary-button" onClick={() => setShowExcelHelp((v) => !v)}>
                   {showExcelHelp ? "Hide Excel Steps" : "Excel Setup"}
@@ -1892,9 +1939,7 @@ function App() {
                 <p>Captured from the newest handwritten Milestone 2 notes.</p>
               </div>
               <div className="formula-excel-actions">
-                <button type="button" className="secondary-button" onClick={() => {
-                  window.open(`${API}/market/excel-export/${symbol}?exchange=${exchange}`, "_blank", "noopener,noreferrer");
-                }}>Download Excel</button>
+                <button type="button" className="secondary-button" onClick={downloadExcelSnapshot}>Download Excel</button>
                 <button type="button" className="secondary-button" onClick={copyExcelFeedUrl}>Copy Feed URL</button>
               </div>
             </div>
@@ -2714,6 +2759,11 @@ function App() {
             <div className="chart-note">
               {secEdgar.note || "Official SEC EDGAR filing metadata and XBRL company facts."}
             </div>
+            {Array.isArray(secEdgar.warnings) && secEdgar.warnings.length > 0 && (
+              <div className="provider-warning">
+                {secEdgar.warnings.join(" ")}
+              </div>
+            )}
             <div className="fundamental-grid">
               <div className="metric"><span>Company</span><strong>{secEdgar.company_name || symbol}</strong></div>
               <div className="metric"><span>CIK</span><strong>{secEdgar.cik || "-"}</strong></div>

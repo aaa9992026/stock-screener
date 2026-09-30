@@ -136,3 +136,13 @@ Current provider note: the history backfill uses real Yahoo Finance/yfinance OHL
 - The selected stock gets a transparent Fundamental Qualification status; missing provider values remain N/A and prevent false qualification.
 - Excel actions are split into Download Excel, Copy Excel Feed URL and an in-app Excel setup guide.
 - Excel exports now contain `Technical_Filter_Config` and `Fundamental_Filter_Config` sheets with editable comparison/threshold/weight/enable columns and formula-driven score cells.
+
+## 2026-09-29 one-pass deployment hardening
+
+- Excel download no longer opens the export endpoint in a blank browser tab. The frontend now fetches the workbook through the same-origin `/api` proxy, validates the HTTP response, creates a browser Blob, and forces a named `.xlsx` download.
+- The Excel backend now returns a fixed byte response with `Content-Disposition`, `Content-Length`, `Cache-Control: no-store`, and `X-Content-Type-Options: nosniff` so Vercel/Railway proxies preserve the file download reliably.
+- SEC EDGAR requests now use a retrying HTTP session for transient `429/5xx` responses and official ticker/CIK files only. The unnecessary manual `Host` header was removed.
+- SEC ticker lookup has an official `company_tickers_exchange.json` fallback if the primary association file is temporarily unavailable.
+- SEC filings and XBRL company-facts are handled independently: if one SEC resource is temporarily unavailable, the other can still be displayed. Missing values remain empty and are never invented.
+- The SEC UI shows partial-provider warnings instead of silently hiding them.
+- `SEC_USER_AGENT` remains an environment variable and is not committed into source control. It should contain the application name/version and a real contact email.

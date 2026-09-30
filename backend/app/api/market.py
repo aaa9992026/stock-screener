@@ -2,7 +2,7 @@ from app.models import OHLCV
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi import Query
-from fastapi.responses import StreamingResponse
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from app.database import SessionLocal
@@ -1242,8 +1242,12 @@ def get_sec_edgar_data(
         return _json_safe(data)
     except HTTPException:
         raise
-    except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"SEC EDGAR request failed: {str(exc)}")
+    except RuntimeError as exc:
+        # Configuration/ticker-map failures are explicit, while transient SEC
+        # sub-resource failures are handled inside get_snapshot as partial data.
+        raise HTTPException(status_code=503, detail=str(exc))
+    except Exception:
+        raise HTTPException(status_code=503, detail="SEC EDGAR is temporarily unavailable. Please retry shortly.")
 
 
 @router.post("/refresh-configured")
@@ -1440,10 +1444,16 @@ def export_excel_snapshot(symbol: str, exchange: str = "US", limit: int = Query(
     wb.save(stream)
     stream.seek(0)
     filename = f"{symbol}_{exchange}_screener.xlsx"
-    return StreamingResponse(
-        stream,
+    payload = stream.getvalue()
+    return Response(
+        content=payload,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Content-Length": str(len(payload)),
+            "Cache-Control": "no-store",
+            "X-Content-Type-Options": "nosniff",
+        },
     )
 
 

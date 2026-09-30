@@ -1,19 +1,22 @@
 import os
-import re
 from datetime import datetime
 from functools import lru_cache
 
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 
 class SECFundamentalsProvider:
-    """Official SEC company-facts fallback for US fundamental history.
+    """Official SEC EDGAR submissions + company-facts provider.
 
-    Used only to fill history that Yahoo does not expose (for example, more
-    than ~5 quarterly periods). It does not replace price data.
+    SEC data is supplemental to market-price data. Requests are deliberately
+    conservative, identified with the configured contact User-Agent, retried
+    on transient failures, and never replaced with fabricated values.
     """
 
     TICKERS_URL = "https://www.sec.gov/files/company_tickers.json"
+    TICKERS_EXCHANGE_URL = "https://www.sec.gov/files/company_tickers_exchange.json"
     COMPANY_FACTS_URL = "https://data.sec.gov/api/xbrl/companyfacts/CIK{cik}.json"
     SUBMISSIONS_URL = "https://data.sec.gov/submissions/CIK{cik}.json"
 
@@ -25,64 +28,124 @@ class SECFundamentalsProvider:
                 "and a real contact email before using SEC EDGAR."
             )
 
+        retry = Retry(
+            total=3,
+            connect=3,
+            read=3,
+            backoff_factor=0.6,
+            status_forcelist=(429, 500, 502, 503, 504),
+            allowed_methods=frozenset({"GET"}),
+            respect_retry_after_header=True,
+            raise_on_status=False,
+        )
+        self.session = requests.Session()
+        adapter = HTTPAdapter(max_retries=retry, pool_connections=4, pool_maxsize=4)
+        self.session.mount("https://", adapter)
+
     def _headers(self):
         return {
             "User-Agent": self.user_agent,
             "Accept-Encoding": "gzip, deflate",
-            "Host": "data.sec.gov",
+            "Accept": "application/json,text/plain,*/*",
         }
+
+    @staticmethod
+    def _safe_http_error(response):
+        status = getattr(response, "status_code", None)
+        if status == 403:
+            return "SEC EDGAR denied this automated request (HTTP 403). Verify the SEC_USER_AGENT contact and retry later."
+        if status == 429:
+            return "SEC EDGAR rate limit reached (HTTP 429). Please retry after the provider cooldown."
+        if status:
+            return f"SEC EDGAR temporarily returned HTTP {status}."
+        return "SEC EDGAR request failed temporarily."
+
+    def _request_json(self, url: str, timeout: int = 30):
+        response = self.session.get(url, headers=self._headers(), timeout=timeout)
+        if not response.ok:
+            raise RuntimeError(self._safe_http_error(response))
+        try:
+            payload = response.json()
+        except Exception as exc:
+            raise RuntimeError("SEC EDGAR returned a non-JSON response.") from exc
+        if not isinstance(payload, (dict, list)):
+            raise RuntimeError("SEC EDGAR returned an unexpected response format.")
+        return payload
 
     @lru_cache(maxsize=1)
     def _ticker_map(self):
-        headers = {"User-Agent": self.user_agent, "Accept-Encoding": "gzip, deflate"}
-        response = requests.get(self.TICKERS_URL, headers=headers, timeout=25)
-        response.raise_for_status()
-        payload = response.json()
-        result = {}
-        for item in payload.values():
-            ticker = str(item.get("ticker", "")).upper()
-            cik = item.get("cik_str")
-            if ticker and cik is not None:
-                result[ticker] = str(cik).zfill(10)
-        return result
+        """Resolve ticker -> CIK from official SEC association files.
 
-    @lru_cache(maxsize=128)
+        The ordinary company_tickers file is the primary source. The exchange
+        variant is an official fallback in case SEC changes the primary file's
+        availability/shape.
+        """
+        errors = []
+        try:
+            payload = self._request_json(self.TICKERS_URL, timeout=25)
+            result = {}
+            for item in payload.values() if isinstance(payload, dict) else []:
+                ticker = str((item or {}).get("ticker", "")).upper().strip()
+                cik = (item or {}).get("cik_str")
+                if ticker and cik is not None:
+                    result[ticker] = str(cik).zfill(10)
+            if result:
+                return result
+        except Exception as exc:
+            errors.append(str(exc))
+
+        try:
+            payload = self._request_json(self.TICKERS_EXCHANGE_URL, timeout=25)
+            fields = payload.get("fields", []) if isinstance(payload, dict) else []
+            data = payload.get("data", []) if isinstance(payload, dict) else []
+            field_index = {str(name): i for i, name in enumerate(fields)}
+            ticker_i = field_index.get("ticker")
+            cik_i = field_index.get("cik")
+            result = {}
+            if ticker_i is not None and cik_i is not None:
+                for row in data:
+                    if not isinstance(row, list) or max(ticker_i, cik_i) >= len(row):
+                        continue
+                    ticker = str(row[ticker_i] or "").upper().strip()
+                    cik = row[cik_i]
+                    if ticker and cik is not None:
+                        result[ticker] = str(cik).zfill(10)
+            if result:
+                return result
+        except Exception as exc:
+            errors.append(str(exc))
+
+        detail = errors[-1] if errors else "official ticker files were unavailable"
+        raise RuntimeError(f"Could not load the SEC ticker/CIK map: {detail}")
+
+    @lru_cache(maxsize=256)
     def _company_facts(self, symbol: str):
         cik = self._ticker_map().get(symbol.upper())
         if not cik:
             return None
-        url = self.COMPANY_FACTS_URL.format(cik=cik)
-        response = requests.get(url, headers=self._headers(), timeout=30)
-        response.raise_for_status()
-        return response.json()
+        return self._request_json(self.COMPANY_FACTS_URL.format(cik=cik), timeout=30)
 
-    @lru_cache(maxsize=128)
+    @lru_cache(maxsize=256)
     def _submissions(self, symbol: str):
         cik = self._ticker_map().get(symbol.upper())
         if not cik:
             return None
-        url = self.SUBMISSIONS_URL.format(cik=cik)
-        response = requests.get(url, headers=self._headers(), timeout=30)
-        response.raise_for_status()
-        return response.json()
+        return self._request_json(self.SUBMISSIONS_URL.format(cik=cik), timeout=30)
 
     def get_recent_filings(self, symbol: str, limit: int = 12):
-        """Return recent official EDGAR filings for a US ticker.
-
-        This is intentionally based on SEC submissions JSON rather than HTML
-        scraping.  It is more stable, rate-limit friendly, and keeps the
-        screener independent of a personal API account.
-        """
+        """Return recent official EDGAR filings for a US ticker."""
         symbol = symbol.upper()
         cik = self._ticker_map().get(symbol)
-        payload = self._submissions(symbol)
-        if not cik or not payload:
+        if not cik:
             return {
-                "symbol": symbol,
-                "cik": cik,
-                "company_name": None,
-                "filings": [],
-                "source": "SEC EDGAR submissions",
+                "symbol": symbol, "cik": None, "company_name": None,
+                "filings": [], "source": "SEC EDGAR submissions",
+            }
+        payload = self._submissions(symbol)
+        if not payload:
+            return {
+                "symbol": symbol, "cik": cik, "company_name": None,
+                "filings": [], "source": "SEC EDGAR submissions",
             }
 
         recent = ((payload.get("filings") or {}).get("recent") or {})
@@ -93,9 +156,6 @@ class SECFundamentalsProvider:
         primary = recent.get("primaryDocument") or []
         descriptions = recent.get("primaryDocDescription") or []
 
-        # Keep the forms most useful to the screener.  10-K/10-Q supply
-        # fundamentals, Forms 3/4/5 are insider filings, and 13D/13G variants
-        # are beneficial-ownership filings.
         useful_prefixes = ("10-K", "10-Q", "8-K", "3", "4", "5", "SC 13D", "SC 13G")
         filings = []
         for i, form in enumerate(forms):
@@ -124,25 +184,59 @@ class SECFundamentalsProvider:
                 break
 
         return {
-            "symbol": symbol,
-            "cik": cik,
-            "company_name": payload.get("name"),
-            "filings": filings,
-            "source": "SEC EDGAR submissions",
+            "symbol": symbol, "cik": cik, "company_name": payload.get("name"),
+            "filings": filings, "source": "SEC EDGAR submissions",
         }
 
     def get_snapshot(self, symbol: str, filings_limit: int = 12):
-        """One response for the Milestone-2 SEC EDGAR module."""
+        """Return SEC data without letting one transient SEC sub-endpoint break the dashboard.
+
+        Filings and company-facts are independent official SEC resources. If one
+        is temporarily unavailable, the other can still be shown; no missing
+        values are fabricated.
+        """
         symbol = symbol.upper()
-        filing_data = self.get_recent_filings(symbol, filings_limit)
-        history = self.get_history(symbol)
+        cik = self._ticker_map().get(symbol)
+        if not cik:
+            return {
+                "symbol": symbol, "cik": None, "company_name": None,
+                "filings": [], "fundamental_history": None,
+                "source": "SEC EDGAR", "companyfacts_source": None,
+                "available": False, "status": "not_found",
+                "warnings": ["Ticker was not found in the official SEC ticker/CIK association file."],
+                "note": "No SEC values were substituted.",
+            }
+
+        warnings = []
+        try:
+            filing_data = self.get_recent_filings(symbol, filings_limit)
+        except Exception as exc:
+            filing_data = {
+                "symbol": symbol, "cik": cik, "company_name": None,
+                "filings": [], "source": "SEC EDGAR submissions",
+            }
+            warnings.append(f"Filings temporarily unavailable: {exc}")
+
+        try:
+            history = self.get_history(symbol)
+        except Exception as exc:
+            history = None
+            warnings.append(f"Company facts temporarily unavailable: {exc}")
+
+        has_filings = bool(filing_data.get("filings"))
+        has_history = bool(history and (history.get("quarterly") or history.get("annual")))
+        status = "available" if has_filings and has_history else "partial" if (has_filings or has_history) else "temporarily_unavailable"
         return {
             **filing_data,
             "fundamental_history": history,
-            "companyfacts_source": "SEC EDGAR companyfacts" if history else None,
+            "companyfacts_source": "SEC EDGAR companyfacts" if has_history else None,
+            "available": bool(has_filings or has_history),
+            "status": status,
+            "warnings": warnings,
             "note": (
                 "Official SEC EDGAR data is used for US filing history and XBRL fundamentals. "
-                "Price/OHLCV data remains sourced from the configured market-data provider."
+                "Price/OHLCV data remains sourced from the configured market-data provider. "
+                "Unavailable SEC fields remain empty and are never substituted."
             ),
         }
 
