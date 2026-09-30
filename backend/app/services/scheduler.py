@@ -11,6 +11,8 @@ from app.services.ohlcv_sync import sync_ohlcv
 from app.services.providers.bse_provider import BSEProvider
 from app.services.providers.yahoo_provider import YahooProvider
 from app.services.rs_universe_backfill import backfill_all_markets_once
+from app.services.equity_filters import deactivate_legacy_us_non_equities
+from app.services.universe_data_backfill import backfill_all_fundamentals_once
 
 
 logger = logging.getLogger(__name__)
@@ -129,9 +131,48 @@ def refresh_rs_universe_history():
         logger.exception("RS universe backfill scheduler job failed")
         return {"status": "error"}
 
+
+
+def cleanup_legacy_universe():
+    db = SessionLocal()
+    try:
+        result = deactivate_legacy_us_non_equities(db)
+        logger.info("Legacy US non-equity cleanup completed: %s", result)
+        return result
+    except Exception:
+        db.rollback()
+        logger.exception("Legacy US non-equity cleanup failed")
+        return {"status": "error"}
+    finally:
+        db.close()
+
+
+def refresh_universe_fundamentals():
+    """Fill missing current fundamentals/ownership in bounded provider batches."""
+    batch_size = max(1, min(50, int(os.getenv("FUNDAMENTAL_BACKFILL_BATCH_SIZE", "8") or 8)))
+    try:
+        result = backfill_all_fundamentals_once(batch_size=batch_size)
+        logger.info("Universe fundamental enrichment completed: %s", result)
+        return result
+    except Exception:
+        logger.exception("Universe fundamental enrichment job failed")
+        return {"status": "error"}
+
+
 def start_scheduler():
     if scheduler.running:
         return
+
+    scheduler.add_job(
+        cleanup_legacy_universe,
+        "interval",
+        hours=6,
+        id="legacy_universe_cleanup",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+        next_run_time=datetime.now() + timedelta(seconds=5),
+    )
 
     scheduler.add_job(
         sync_all_companies,
@@ -167,6 +208,19 @@ def start_scheduler():
             max_instances=1,
             coalesce=True,
             next_run_time=datetime.now() + timedelta(minutes=2),
+        )
+
+    if _env_flag("FUNDAMENTAL_BACKFILL_ENABLED", True):
+        fundamental_interval = max(5, int(os.getenv("FUNDAMENTAL_BACKFILL_INTERVAL_MINUTES", "10") or 10))
+        scheduler.add_job(
+            refresh_universe_fundamentals,
+            "interval",
+            minutes=fundamental_interval,
+            id="fundamental_universe_backfill",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+            next_run_time=datetime.now() + timedelta(minutes=3),
         )
 
     scheduler.start()

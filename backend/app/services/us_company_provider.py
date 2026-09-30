@@ -10,6 +10,8 @@ _NON_EQUITY_NAME_PATTERNS = [
     r"\bacquisition (?:corp\.?|corporation|company|co\.?)\b",
     r"\bblank check\b",
     r"\bspac\b",
+    r"\betf\b",
+    r"\bexchange traded fund\b",
     r"\bpreferred (?:stock|shares?)\b",
     r"\bpreference shares?\b",
     r"\bdebt securities?\b",

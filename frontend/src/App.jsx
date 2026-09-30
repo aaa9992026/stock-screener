@@ -56,11 +56,12 @@ const universeColumnOptions = [
   ["shares_outstanding", "Shares Outstanding"], ["float_shares", "Float Shares"],
   ["distance_52w_high", "Distance From 52W High"], ["distance_52w_low", "Distance From 52W Low"],
   ["volume_ratio", "Volume / 52W Avg"], ["latest_date", "Latest Price Date"],
+  ["data_coverage", "Data Coverage"],
 ];
 
 const universeDefaultColumns = [
   "symbol", "name", "close", "market_cap", "trailing_eps", "profit_margin",
-  "return_on_equity", "institution_percent", "distance_52w_high", "volume_ratio",
+  "return_on_equity", "institution_percent", "distance_52w_high", "volume_ratio", "data_coverage",
 ];
 
 const emptyUniverseFilters = {
@@ -68,12 +69,12 @@ const emptyUniverseFilters = {
   eps_min: "", revenue_min: "", net_income_min: "", roe_min: "", roa_min: "",
   profit_margin_min: "", institution_min: "", insider_min: "", close_min: "", close_max: "",
   distance_52w_high_max: "", distance_52w_low_max: "", volume_ratio_min: "",
-  sort_by: "symbol", sort_dir: "asc",
+  sort_by: "data_coverage", sort_dir: "desc",
 };
 
 const formatUniverseCell = (key, value, row) => {
   if (value === null || value === undefined || value === "") return "N/A";
-  if (["profit_margin", "return_on_equity", "return_on_assets", "institution_percent", "insider_percent", "distance_52w_high", "distance_52w_low"].includes(key)) {
+  if (["profit_margin", "return_on_equity", "return_on_assets", "institution_percent", "insider_percent", "distance_52w_high", "distance_52w_low", "data_coverage"].includes(key)) {
     return `${Number(value).toFixed(2)}%`;
   }
   if (["market_cap", "revenue", "net_income", "shares_outstanding", "float_shares"].includes(key)) {
@@ -312,8 +313,9 @@ function App() {
   const [universeTab, setUniverseTab] = useState("Popular");
   const [universeFilters, setUniverseFilters] = useState({ ...emptyUniverseFilters });
   const [universeRows, setUniverseRows] = useState([]);
-  const [universeMeta, setUniverseMeta] = useState({ total: 0, pages: 1, facets: { sectors: [], industries: [] } });
+  const [universeMeta, setUniverseMeta] = useState({ total: 0, pages: 1, facets: { sectors: [], industries: [] }, coverage: {} });
   const [universeLoading, setUniverseLoading] = useState(false);
+  const [universeSyncing, setUniverseSyncing] = useState(false);
   const [universeError, setUniverseError] = useState("");
   const [universePage, setUniversePage] = useState(1);
   const [universePageSize, setUniversePageSize] = useState(25);
@@ -343,6 +345,7 @@ function App() {
         total: res.data.total || 0,
         pages: res.data.pages || 1,
         facets: res.data.facets || { sectors: [], industries: [] },
+        coverage: res.data.coverage || {},
       });
       setUniversePage(res.data.page || page);
     } catch (error) {
@@ -377,6 +380,24 @@ function App() {
       URL.revokeObjectURL(url);
     } catch (error) {
       setUniverseError(error?.response?.data?.detail || "Filtered Excel export failed.");
+    }
+  };
+
+  const refreshUniverseMissingData = async () => {
+    setUniverseSyncing(true);
+    setUniverseError("");
+    try {
+      const market = (universeFilters.market || "ALL").toUpperCase();
+      const endpoint = market === "ALL"
+        ? `${API}/companies/data-backfill/run-all`
+        : `${API}/companies/data-backfill/run`;
+      const params = market === "ALL" ? { batch_size: 8 } : { market, batch_size: 8 };
+      await axios.post(endpoint, null, { params });
+      await loadUniverseScreener(universePage);
+    } catch (error) {
+      setUniverseError(error?.response?.data?.detail || "Missing-data refresh could not be completed right now.");
+    } finally {
+      setUniverseSyncing(false);
     }
   };
 
@@ -1852,8 +1873,16 @@ function App() {
             </div>
             <div className="universe-count-badge">
               <strong>{Number(universeMeta.total || 0).toLocaleString()}</strong>
-              <span>Stocks</span>
+              <span>Eligible stocks</span>
             </div>
+          </div>
+
+          <div className="universe-coverage-strip">
+            <div><span>Price history</span><strong>{Number(universeMeta.coverage?.price_history_percent || 0).toFixed(1)}%</strong></div>
+            <div><span>Fundamentals</span><strong>{Number(universeMeta.coverage?.fundamentals_percent || 0).toFixed(1)}%</strong></div>
+            <div><span>Ownership</span><strong>{Number(universeMeta.coverage?.ownership_percent || 0).toFixed(1)}%</strong></div>
+            <div><span>Sector / Industry</span><strong>{Number(universeMeta.coverage?.classification_percent || 0).toFixed(1)}%</strong></div>
+            <small>Real provider data only • missing values are filled automatically in bounded background batches.</small>
           </div>
 
           <div className="universe-tabs">
@@ -1940,12 +1969,13 @@ function App() {
               <button type="button" className="ranking-primary-button universe-apply-button" onClick={() => { setUniversePage(1); loadUniverseScreener(1); }}>Apply Filters</button>
               <button type="button" className="secondary-button button-muted" onClick={resetUniverseFilters}>Reset Filters</button>
               <button type="button" className="secondary-button button-columns" onClick={() => setShowUniverseColumns((v) => !v)}>{showUniverseColumns ? "Hide Columns" : "Add Columns"}</button>
+              <button type="button" className="secondary-button button-sync" disabled={universeSyncing} onClick={refreshUniverseMissingData}>{universeSyncing ? "Filling Data…" : "Fill Missing Data"}</button>
               <button type="button" className="secondary-button button-excel" onClick={downloadUniverseExcel}>Export Excel</button>
             </div>
             <div className="universe-toolbar-right">
               <label>Sort
                 <select value={universeFilters.sort_by} onChange={(e) => setUniverseFilters((v) => ({ ...v, sort_by: e.target.value }))}>
-                  <option value="symbol">Symbol</option><option value="market_cap">Market Cap</option><option value="close">LTP</option>
+                  <option value="data_coverage">Data Coverage</option><option value="symbol">Symbol</option><option value="market_cap">Market Cap</option><option value="close">LTP</option>
                   <option value="return_on_equity">ROE</option><option value="profit_margin">Profit Margin</option>
                   <option value="institution_percent">Institutional Holding</option><option value="distance_52w_high">Distance 52W High</option>
                   <option value="volume_ratio">Volume Ratio</option>
@@ -2008,7 +2038,7 @@ function App() {
               <button type="button" className="secondary-button" disabled={universePage >= (universeMeta.pages || 1) || universeLoading} onClick={() => { const p = Math.min(universeMeta.pages || 1, universePage + 1); setUniversePage(p); loadUniverseScreener(p); }}>Next</button>
             </div>
           </div>
-          <div className="universe-data-note">Only stored provider/database values are used. Missing fields remain N/A; the screener does not invent data to make a stock pass a filter.</div>
+          <div className="universe-data-note">Only verified provider/database values are shown. Warrants, units, ETFs and obvious SPAC/acquisition securities are excluded from the normal US stock universe. Missing values remain N/A until the automatic enrichment process retrieves real data.</div>
         </section>
 
         <section className="cards">

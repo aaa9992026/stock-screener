@@ -81,3 +81,7 @@ The Milestone 2 UI includes a many-stock screener with Popular, Fundamentals, Te
 
 - `GET /market/screener` — paginated filtered stock table.
 - `GET /market/screener-export` — download the full filtered result as an Excel workbook.
+
+## Final screener data-availability update
+
+The universe screener now applies an equity-only US filter at query time, automatically cleans legacy warrants/units/ETFs/SPAC rows, shows real-data coverage, prioritizes rows with the most available verified data, and incrementally enriches missing fundamentals/ownership in bounded background batches. No missing values are fabricated. Use **Fill Missing Data** for an additional bounded refresh of the selected market and **Export Excel** to export the current filtered universe.

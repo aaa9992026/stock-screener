@@ -15,6 +15,8 @@ from app.services.providers.bse_provider import BSEProvider
 from app.services.providers.india_shareholding_provider import IndiaShareholdingProvider
 from app.services.providers.sec_provider import SECFundamentalsProvider
 from app.services.scheduler import refresh_configured_market_data
+from app.services.equity_filters import apply_eligible_equity_filter
+from app.services.universe_data_backfill import universe_data_status
 
 import os
 import math
@@ -2488,12 +2490,13 @@ SCREENER_COLUMN_LABELS = {
     "distance_52w_low": "Distance From 52W Low %",
     "volume_ratio": "Volume / 52W Avg",
     "latest_date": "Latest Price Date",
+    "data_coverage": "Data Coverage %",
 }
 
 SCREENER_DEFAULT_COLUMNS = [
     "symbol", "name", "exchange", "close", "market_cap", "trailing_eps",
     "profit_margin", "return_on_equity", "institution_percent",
-    "distance_52w_high", "volume_ratio",
+    "distance_52w_high", "volume_ratio", "data_coverage",
 ]
 
 
@@ -2550,6 +2553,22 @@ def _screener_query_parts(db: Session, market: str):
         else_=None,
     )
 
+    # Prefer rows with useful real data instead of filling the first page with
+    # N/A-only listings.  This is a completeness indicator only; it never
+    # substitutes or estimates a missing value.
+    data_points = (
+        case((latest.close.isnot(None), 1), else_=0)
+        + case((Fundamental.market_cap.isnot(None), 1), else_=0)
+        + case((Fundamental.trailing_eps.isnot(None), 1), else_=0)
+        + case((Fundamental.revenue.isnot(None), 1), else_=0)
+        + case((Fundamental.net_income.isnot(None), 1), else_=0)
+        + case((Fundamental.profit_margin.isnot(None), 1), else_=0)
+        + case((Fundamental.return_on_equity.isnot(None), 1), else_=0)
+        + case((Ownership.institution_percent.isnot(None), 1), else_=0)
+        + case((or_(Company.sector.isnot(None), Company.industry.isnot(None)), 1), else_=0)
+    )
+    data_coverage = (data_points * 100.0 / 9.0)
+
     query = (
         db.query(
             Company.symbol.label("symbol"),
@@ -2575,6 +2594,7 @@ def _screener_query_parts(db: Session, market: str):
             distance_high.label("distance_52w_high"),
             distance_low.label("distance_52w_low"),
             volume_ratio.label("volume_ratio"),
+            data_coverage.label("data_coverage"),
         )
         .outerjoin(Fundamental, (Fundamental.symbol == Company.symbol) & (Fundamental.exchange == Company.exchange))
         .outerjoin(Ownership, (Ownership.symbol == Company.symbol) & (Ownership.exchange == Company.exchange))
@@ -2583,6 +2603,10 @@ def _screener_query_parts(db: Session, market: str):
         .outerjoin(year_stats, (year_stats.c.symbol == Company.symbol) & (year_stats.c.exchange == Company.exchange))
         .filter(Company.is_active == 1, Company.exchange.in_(exchanges))
     )
+    # Defensive query-time equity filter: even if a provider sync is delayed,
+    # legacy US warrants/units/SPAC rows cannot leak into the normal screener.
+    query = apply_eligible_equity_filter(query, exchanges)
+
     expressions = {
         "symbol": Company.symbol,
         "name": Company.name,
@@ -2607,6 +2631,7 @@ def _screener_query_parts(db: Session, market: str):
         "distance_52w_low": distance_low,
         "volume_ratio": volume_ratio,
         "latest_date": latest.date,
+        "data_coverage": data_coverage,
     }
     return query, expressions
 
@@ -2685,19 +2710,33 @@ def _screener_row_dict(row):
 
 def _screener_facets(db: Session, market: str):
     exchanges = _screener_market_exchanges(market)
+
+    sector_query = (
+        db.query(Company.sector)
+        .filter(
+            Company.is_active == 1,
+            Company.exchange.in_(exchanges),
+            Company.sector.isnot(None),
+            Company.sector != "",
+        )
+    )
+    sector_query = apply_eligible_equity_filter(sector_query, exchanges)
     sectors = [
-        value for (value,) in (
-            db.query(Company.sector)
-            .filter(Company.is_active == 1, Company.exchange.in_(exchanges), Company.sector.isnot(None), Company.sector != "")
-            .distinct().order_by(Company.sector.asc()).all()
-        ) if value
+        value for (value,) in sector_query.distinct().order_by(Company.sector.asc()).all() if value
     ]
+
+    industry_query = (
+        db.query(Company.industry)
+        .filter(
+            Company.is_active == 1,
+            Company.exchange.in_(exchanges),
+            Company.industry.isnot(None),
+            Company.industry != "",
+        )
+    )
+    industry_query = apply_eligible_equity_filter(industry_query, exchanges)
     industries = [
-        value for (value,) in (
-            db.query(Company.industry)
-            .filter(Company.is_active == 1, Company.exchange.in_(exchanges), Company.industry.isnot(None), Company.industry != "")
-            .distinct().order_by(Company.industry.asc()).all()
-        ) if value
+        value for (value,) in industry_query.distinct().order_by(Company.industry.asc()).all() if value
     ]
     return {"sectors": sectors[:500], "industries": industries[:1000]}
 
@@ -2748,6 +2787,7 @@ def get_universe_screener(
         "pages": max(1, math.ceil(total / page_size)) if page_size else 1,
         "rows": [_screener_row_dict(row) for row in rows],
         "facets": _screener_facets(db, market),
+        "coverage": universe_data_status(db, market),
         "columns": [{"key": key, "label": label} for key, label in SCREENER_COLUMN_LABELS.items()],
         "default_columns": SCREENER_DEFAULT_COLUMNS,
         "data_rule": "Stored provider/database values only. Missing values remain N/A and are never fabricated.",

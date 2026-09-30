@@ -8,6 +8,13 @@ from app.services.company_sync import sync_companies
 from app.services.nse_company_provider import NSECompanyProvider
 from app.services.us_company_provider import USCompanyProvider
 from app.services.company_auto_sync import sync_all_companies
+from app.services.equity_filters import apply_eligible_equity_filter, deactivate_legacy_us_non_equities
+from app.services.universe_data_backfill import (
+    backfill_all_fundamentals_once,
+    backfill_market_fundamentals,
+    normalize_data_market,
+    universe_data_status,
+)
 from app.services.rs_universe_backfill import (
     backfill_all_markets_once,
     backfill_market_batch,
@@ -48,9 +55,12 @@ def search_companies(
             (Company.name.ilike(f"%{q}%"))
         )
 
+    query = query.filter(Company.is_active == 1)
+    exchanges = [exchange.upper()] if exchange else ["US", "NSE", "BSE"]
+    query = apply_eligible_equity_filter(query, exchanges)
+
     rows = (
         query
-        .filter(Company.is_active == 1)
         .order_by(Company.symbol.asc())
         .limit(limit)
         .all()
@@ -113,6 +123,50 @@ def sync_all():
         "status": "success",
         "markets": result
     }
+
+@router.post("/cleanup-us-equities")
+def cleanup_us_equities(db: Session = Depends(get_db)):
+    """Deactivate legacy warrants/units/SPAC rows without deleting history."""
+    return {"status": "success", **deactivate_legacy_us_non_equities(db)}
+
+
+@router.get("/data-backfill/status")
+def data_backfill_status(
+    market: str = Query("ALL", description="US, INDIA, NSE, BSE or ALL"),
+    db: Session = Depends(get_db),
+):
+    try:
+        normalized = normalize_data_market(market)
+    except ValueError as exc:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail=str(exc))
+    if normalized == "ALL":
+        return {
+            "US": universe_data_status(db, "US"),
+            "INDIA": universe_data_status(db, "INDIA"),
+        }
+    return universe_data_status(db, normalized)
+
+
+@router.post("/data-backfill/run")
+def run_data_backfill(
+    market: str = Query(..., description="US, INDIA, NSE or BSE"),
+    batch_size: int = Query(8, ge=1, le=50),
+):
+    try:
+        normalized = normalize_data_market(market)
+        if normalized == "ALL":
+            return backfill_all_fundamentals_once(batch_size=batch_size)
+        return backfill_market_fundamentals(normalized, batch_size=batch_size)
+    except ValueError as exc:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
+@router.post("/data-backfill/run-all")
+def run_all_data_backfill(batch_size: int = Query(8, ge=1, le=50)):
+    return backfill_all_fundamentals_once(batch_size=batch_size)
+
 
 @router.get("/universe-status")
 def universe_status(db: Session = Depends(get_db)):

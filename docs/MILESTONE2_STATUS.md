@@ -176,3 +176,11 @@ This does not invent unavailable growth, delivery, or ownership data. More filte
 - RS backfill defensively skips legacy non-equity US rows even before cleanup completes.
 - Company sync runs shortly after backend startup and then every 24 hours, so new listings/delistings and security-type cleanup are applied automatically.
 - When a user switches symbols, the chart now shows an explicit loading state instead of a temporary red historical-data-unavailable message.
+
+## Final universe/data-availability pass
+- The normal US screener now applies the equity-only rule at query time as well as during symbol sync. Legacy warrants, units and obvious SPAC/acquisition securities cannot appear simply because an upstream sync is delayed.
+- A local cleanup job deactivates legacy non-equity US rows without deleting their historical records.
+- Current fundamentals/ownership are enriched automatically in bounded Yahoo-provider batches for US and Indian equities. Missing fields remain N/A until real provider data is obtained.
+- Manual bounded enrichment is available at `/companies/data-backfill/run` and `/companies/data-backfill/run-all`.
+- The stock-universe UI displays real-data coverage and includes a `Fill Missing Data` action.
+- Default list ordering prioritizes rows with higher real-data completeness rather than N/A-heavy rows.
