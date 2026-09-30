@@ -209,3 +209,11 @@ This does not invent unavailable growth, delivery, or ownership data. More filte
 - A successful live benchmark download is cached under exchange `BENCHMARK`, so temporary upstream failures do not remove verified NIFTY 500/S&P 500 overlap from RS calculations.
 - The `/market/benchmark/{exchange}` endpoint and the RS scoring engine now use the same benchmark loader, preventing chart/RS disagreement.
 - Missing benchmark data remains unavailable rather than being estimated.
+
+## 2026-09-30 — Final NIFTY 500 RS verification pass
+- Indian RS remains tied to the exact NIFTY 500 benchmark.
+- The benchmark loader now actually invokes NSE India's current official historical endpoint: `/api/historicalOR/indicesHistory`.
+- Loader order is: recent verified database cache -> Yahoo/yfinance -> Yahoo direct chart -> current official NSE India historical API -> legacy NSE Indices endpoint -> verified stored fallback.
+- Official NSE rows are parsed from `EOD_*` fields, validated as positive OHLC values, de-duplicated, freshness-checked, and cached in PostgreSQL.
+- The current NSE loader/parser and fallback routing were unit-checked with a 260-trading-day NIFTY 500 response; the RS overlap calculation was checked across 1W/1M/3M/6M/1Y periods.
+- US Yahoo class-share mapping and failed-symbol retry cooldown remain included in this cumulative build.

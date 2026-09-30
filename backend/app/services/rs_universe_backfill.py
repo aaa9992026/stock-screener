@@ -44,6 +44,14 @@ MAX_STALE_DAYS = 14
 _market_locks = {"US": threading.Lock(), "INDIA": threading.Lock()}
 _last_results: dict[str, dict] = {}
 
+# Provider failures must not cause the same unsupported symbol to be retried
+# every scheduler cycle. This is deliberately an in-process cooldown rather
+# than a permanent delisting decision: the authoritative company sync remains
+# responsible for listing/delisting state.
+_symbol_retry_after: dict[tuple[str, str], datetime] = {}
+EMPTY_RETRY_HOURS = 6
+ERROR_RETRY_HOURS = 2
+
 
 def normalize_market(market: str) -> str:
     value = str(market or "").strip().upper()
@@ -65,6 +73,8 @@ def _provider_symbol(symbol: str, exchange: str) -> str:
         return f"{symbol}.NS"
     if exchange == "BSE":
         return f"{symbol}.BO"
+    if exchange == "US":
+        return symbol.replace(".", "-").replace("/", "-")
     return symbol
 
 
@@ -194,8 +204,14 @@ def _candidate_companies(db: Session, market: str, limit: int) -> list[Company]:
         companies = [c for c in companies if is_supported_us_equity(c.symbol, c.name)]
 
     candidates = []
+    now = datetime.utcnow()
     for company in companies:
         key = (company.exchange.upper(), company.symbol.upper())
+        retry_after = _symbol_retry_after.get(key)
+        if retry_after is not None:
+            if retry_after > now:
+                continue
+            _symbol_retry_after.pop(key, None)
         stat = stats.get(key)
         if _is_ready(stat):
             continue
@@ -368,13 +384,16 @@ def backfill_market_batch(market: str, batch_size: int | None = None) -> dict:
                 rows = _frame_to_rows(frame)
                 if not rows:
                     empty += 1
+                    _symbol_retry_after[(exchange, symbol)] = datetime.utcnow() + timedelta(hours=EMPTY_RETRY_HOURS)
                     details.append({
                         "symbol": symbol,
                         "exchange": exchange,
                         "status": "empty",
+                        "retry_after": _symbol_retry_after[(exchange, symbol)].isoformat() + "Z",
                     })
                     continue
                 sync_result = sync_ohlcv(db, symbol, exchange, rows)
+                _symbol_retry_after.pop((exchange, symbol), None)
                 succeeded += 1
                 details.append({
                     "symbol": symbol,
@@ -386,12 +405,14 @@ def backfill_market_batch(market: str, batch_size: int | None = None) -> dict:
             except Exception as exc:
                 db.rollback()
                 failed += 1
-                logger.exception("RS backfill failed for %s:%s", exchange, symbol)
+                _symbol_retry_after[(exchange, symbol)] = datetime.utcnow() + timedelta(hours=ERROR_RETRY_HOURS)
+                logger.warning("RS backfill provider error for %s:%s: %s", exchange, symbol, exc)
                 details.append({
                     "symbol": symbol,
                     "exchange": exchange,
                     "status": "error",
                     "error": str(exc),
+                    "retry_after": _symbol_retry_after[(exchange, symbol)].isoformat() + "Z",
                 })
 
         after = universe_backfill_status(db, market)

@@ -20,6 +20,12 @@ class YahooProvider(BaseMarketDataProvider):
         if exchange == "BSE":
             return f"{symbol}.BO"
 
+        # Yahoo uses hyphens for US share classes (for example BRK-B, AKO-A)
+        # while official symbol masters may use dots/slashes. Keep the canonical
+        # database symbol unchanged and translate only for the Yahoo request.
+        if exchange == "US":
+            return symbol.replace(".", "-").replace("/", "-")
+
         return symbol
 
     def get_ohlcv(
