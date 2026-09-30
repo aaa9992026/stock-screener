@@ -20,6 +20,7 @@ from app.services.universe_data_backfill import universe_data_status
 
 import os
 import math
+import json
 import requests
 from io import BytesIO
 from datetime import datetime, timedelta, date
@@ -155,6 +156,97 @@ def _benchmark_points_from_yahoo_chart(ticker_symbol: str, range_value: str = "5
         return []
 
 
+def _benchmark_points_from_niftyindices(index_name: str = "NIFTY 500", years: int = 5):
+    """Official NSE Indices historical-data fallback for Indian benchmarks.
+
+    Uses the publisher's historical index endpoint. Data is requested in
+    <= 360-day chunks to avoid endpoint range limits and then normalized by
+    _clean_benchmark_points. No proxy index or synthetic values are used.
+    """
+    try:
+        session = requests.Session()
+        session.headers.update({
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                          "AppleWebKit/537.36 Chrome/124 Safari/537.36",
+            "Accept": "application/json, text/javascript, */*; q=0.01",
+            "Content-Type": "application/json; charset=UTF-8",
+            "X-Requested-With": "XMLHttpRequest",
+            "Origin": "https://www.niftyindices.com",
+            "Referer": "https://www.niftyindices.com/reports/historical-data",
+        })
+        # Best-effort cookie/bootstrap. Some publisher edge configurations need it.
+        try:
+            session.get(
+                "https://www.niftyindices.com/reports/historical-data",
+                timeout=8,
+            )
+        except Exception:
+            pass
+
+        end_date = date.today()
+        start_date = end_date - timedelta(days=max(1, int(years)) * 366)
+        api_url = "https://www.niftyindices.com/Backpage.aspx/getHistoricaldatatabletoString"
+        points = []
+        cursor = start_date
+        while cursor <= end_date:
+            chunk_end = min(cursor + timedelta(days=359), end_date)
+            cinfo = {
+                "name": index_name,
+                "indexName": index_name,
+                "startDate": cursor.strftime("%d-%b-%Y"),
+                "endDate": chunk_end.strftime("%d-%b-%Y"),
+            }
+            response = session.post(
+                api_url,
+                json={"cinfo": json.dumps(cinfo, separators=(",", ":"))},
+                timeout=20,
+            )
+            response.raise_for_status()
+            outer = response.json() or {}
+            raw = outer.get("d")
+            if isinstance(raw, str):
+                rows = json.loads(raw or "[]")
+            elif isinstance(raw, list):
+                rows = raw
+            else:
+                rows = []
+            for row in rows or []:
+                try:
+                    raw_date = row.get("HistoricalDate") or row.get("DATE") or row.get("Date")
+                    trade_date = None
+                    for fmt in ("%d %b %Y", "%d-%b-%Y", "%Y-%m-%d"):
+                        try:
+                            trade_date = datetime.strptime(str(raw_date).strip(), fmt).date()
+                            break
+                        except Exception:
+                            continue
+                    if trade_date is None:
+                        continue
+                    def num(*keys):
+                        for key in keys:
+                            value = row.get(key)
+                            if value not in (None, "", "-"):
+                                return float(str(value).replace(",", ""))
+                        return None
+                    close_value = num("CLOSE", "Close", "close")
+                    if close_value is None:
+                        continue
+                    points.append((
+                        trade_date,
+                        num("OPEN", "Open", "open") or close_value,
+                        num("HIGH", "High", "high") or close_value,
+                        num("LOW", "Low", "low") or close_value,
+                        close_value,
+                    ))
+                except Exception:
+                    continue
+            cursor = chunk_end + timedelta(days=1)
+
+        return _clean_benchmark_points(points)
+    except Exception:
+        return []
+
+
 def _cached_benchmark_points(db: Session, ticker_symbol: str):
     if db is None:
         return []
@@ -230,10 +322,17 @@ def _load_benchmark_points(exchange: str, db: Session = None, minimum_points: in
         if latest_date >= date.today() - timedelta(days=5):
             return cached, ticker_symbol, benchmark_name, "Database benchmark cache"
 
-    for loader, method in (
-        (_benchmark_points_from_yfinance, "Yahoo Finance via yfinance"),
-        (_benchmark_points_from_yahoo_chart, "Yahoo Finance direct chart fallback"),
-    ):
+    loaders = [
+        (lambda symbol: _benchmark_points_from_yfinance(symbol), "Yahoo Finance via yfinance"),
+        (lambda symbol: _benchmark_points_from_yahoo_chart(symbol), "Yahoo Finance direct chart fallback"),
+    ]
+    # For Indian markets, add the official NSE Indices publisher as an independent
+    # fallback for the exact NIFTY 500 benchmark. This is not a proxy/substitute.
+    if str(exchange or "").upper() in {"NSE", "BSE"} and benchmark_name == "NIFTY 500":
+        loaders.append((lambda _symbol: _benchmark_points_from_niftyindices("NIFTY 500", years=5),
+                        "Official NSE Indices historical data"))
+
+    for loader, method in loaders:
         points = loader(ticker_symbol)
         if len(points) >= minimum_points:
             _cache_benchmark_points(db, ticker_symbol, points)
