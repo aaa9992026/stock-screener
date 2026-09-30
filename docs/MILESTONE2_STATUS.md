@@ -146,3 +146,19 @@ Current provider note: the history backfill uses real Yahoo Finance/yfinance OHL
 - SEC filings and XBRL company-facts are handled independently: if one SEC resource is temporarily unavailable, the other can still be displayed. Missing values remain empty and are never invented.
 - The SEC UI shows partial-provider warnings instead of silently hiding them.
 - `SEC_USER_AGENT` remains an environment variable and is not committed into source control. It should contain the application name/version and a real contact email.
+
+## 2026-09-30 — Many-stock screener + filtered Excel export
+
+Added the client's requested list-style stock screener for easier access and Excel workflows.
+
+- Tabs: Popular, Fundamentals, Technicals, Relative Comparison.
+- Market selector: US, India, NSE, BSE, or combined.
+- Filters use stored real provider/database values only; missing values stay N/A.
+- Paginated stock table with configurable columns and row action to open the selected stock in the detailed dashboard.
+- Add Columns picker and page-size controls.
+- `GET /market/screener` returns the filtered stock universe.
+- `GET /market/screener-export` exports the complete current filtered result set (up to 10,000 rows) to `.xlsx`, not only the current single stock.
+- Excel workbook includes a `Filter Summary` sheet so the exported criteria are auditable.
+- Supported stored-data filters include market/sector/industry, market cap, EPS, revenue, net income, profit margin, ROE/ROA, institutional/insider holding, LTP, 52-week distance, and volume-vs-52-week-average ratio.
+
+This does not invent unavailable growth, delivery, or ownership data. More filter families can be added as those fields become persistently stored for the full universe.

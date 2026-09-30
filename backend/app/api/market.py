@@ -3,7 +3,8 @@ from app.models import OHLCV
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi import Query
 from fastapi.responses import Response
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, aliased
+from sqlalchemy import func, or_, case
 
 from app.database import SessionLocal
 from app.services.providers.yahoo_provider import YahooProvider
@@ -2455,3 +2456,400 @@ def get_indicators(
         "ema_200": round(ema_200_value, 2) if ema_200_value is not None else None,
         "rsi": round(rsi_value, 2)
     }
+
+# ---------------------------------------------------------------------------
+# Universe screener: stored-data-first list view + filtered Excel export.
+# This powers the client's requested "many stocks in one table" workflow.
+# It intentionally uses only data already stored in this application's DB.
+# Missing fields stay N/A; no synthetic fundamentals/ownership values are made.
+# ---------------------------------------------------------------------------
+
+SCREENER_COLUMN_LABELS = {
+    "symbol": "Symbol",
+    "name": "Company",
+    "exchange": "Exchange",
+    "sector": "Sector",
+    "industry": "Industry",
+    "close": "LTP",
+    "volume": "Volume",
+    "market_cap": "Market Cap",
+    "trailing_eps": "EPS",
+    "forward_eps": "Forward EPS",
+    "revenue": "Revenue",
+    "net_income": "Net Income",
+    "profit_margin": "Profit Margin %",
+    "return_on_equity": "ROE %",
+    "return_on_assets": "ROA %",
+    "institution_percent": "Institution %",
+    "insider_percent": "Insider %",
+    "shares_outstanding": "Shares Outstanding",
+    "float_shares": "Float Shares",
+    "distance_52w_high": "Distance From 52W High %",
+    "distance_52w_low": "Distance From 52W Low %",
+    "volume_ratio": "Volume / 52W Avg",
+    "latest_date": "Latest Price Date",
+}
+
+SCREENER_DEFAULT_COLUMNS = [
+    "symbol", "name", "exchange", "close", "market_cap", "trailing_eps",
+    "profit_margin", "return_on_equity", "institution_percent",
+    "distance_52w_high", "volume_ratio",
+]
+
+
+def _screener_market_exchanges(market: str):
+    market = (market or "ALL").upper()
+    if market == "US":
+        return ["US"]
+    if market in {"INDIA", "IN"}:
+        return ["NSE", "BSE"]
+    if market == "NSE":
+        return ["NSE"]
+    if market == "BSE":
+        return ["BSE"]
+    return ["US", "NSE", "BSE"]
+
+
+def _screener_query_parts(db: Session, market: str):
+    exchanges = _screener_market_exchanges(market)
+    latest_dates = (
+        db.query(
+            OHLCV.symbol.label("symbol"),
+            OHLCV.exchange.label("exchange"),
+            func.max(OHLCV.date).label("max_date"),
+        )
+        .filter(OHLCV.exchange.in_(exchanges))
+        .group_by(OHLCV.symbol, OHLCV.exchange)
+        .subquery()
+    )
+    latest = aliased(OHLCV)
+    cutoff = date.today() - timedelta(days=370)
+    year_stats = (
+        db.query(
+            OHLCV.symbol.label("symbol"),
+            OHLCV.exchange.label("exchange"),
+            func.max(OHLCV.high).label("high_52w"),
+            func.min(OHLCV.low).label("low_52w"),
+            func.avg(OHLCV.volume).label("avg_volume_52w"),
+        )
+        .filter(OHLCV.exchange.in_(exchanges), OHLCV.date >= cutoff)
+        .group_by(OHLCV.symbol, OHLCV.exchange)
+        .subquery()
+    )
+
+    distance_high = case(
+        (year_stats.c.high_52w > 0, ((year_stats.c.high_52w - latest.close) / year_stats.c.high_52w) * 100.0),
+        else_=None,
+    )
+    distance_low = case(
+        (year_stats.c.low_52w > 0, ((latest.close - year_stats.c.low_52w) / year_stats.c.low_52w) * 100.0),
+        else_=None,
+    )
+    volume_ratio = case(
+        (year_stats.c.avg_volume_52w > 0, latest.volume / year_stats.c.avg_volume_52w),
+        else_=None,
+    )
+
+    query = (
+        db.query(
+            Company.symbol.label("symbol"),
+            Company.name.label("name"),
+            Company.exchange.label("exchange"),
+            Company.sector.label("sector"),
+            Company.industry.label("industry"),
+            latest.close.label("close"),
+            latest.volume.label("volume"),
+            latest.date.label("latest_date"),
+            Fundamental.market_cap.label("market_cap"),
+            Fundamental.trailing_eps.label("trailing_eps"),
+            Fundamental.forward_eps.label("forward_eps"),
+            Fundamental.revenue.label("revenue"),
+            Fundamental.net_income.label("net_income"),
+            Fundamental.profit_margin.label("profit_margin"),
+            Fundamental.return_on_equity.label("return_on_equity"),
+            Fundamental.return_on_assets.label("return_on_assets"),
+            Ownership.institution_percent.label("institution_percent"),
+            Ownership.insider_percent.label("insider_percent"),
+            Ownership.shares_outstanding.label("shares_outstanding"),
+            Ownership.float_shares.label("float_shares"),
+            distance_high.label("distance_52w_high"),
+            distance_low.label("distance_52w_low"),
+            volume_ratio.label("volume_ratio"),
+        )
+        .outerjoin(Fundamental, (Fundamental.symbol == Company.symbol) & (Fundamental.exchange == Company.exchange))
+        .outerjoin(Ownership, (Ownership.symbol == Company.symbol) & (Ownership.exchange == Company.exchange))
+        .outerjoin(latest_dates, (latest_dates.c.symbol == Company.symbol) & (latest_dates.c.exchange == Company.exchange))
+        .outerjoin(latest, (latest.symbol == Company.symbol) & (latest.exchange == Company.exchange) & (latest.date == latest_dates.c.max_date))
+        .outerjoin(year_stats, (year_stats.c.symbol == Company.symbol) & (year_stats.c.exchange == Company.exchange))
+        .filter(Company.is_active == 1, Company.exchange.in_(exchanges))
+    )
+    expressions = {
+        "symbol": Company.symbol,
+        "name": Company.name,
+        "exchange": Company.exchange,
+        "sector": Company.sector,
+        "industry": Company.industry,
+        "close": latest.close,
+        "volume": latest.volume,
+        "market_cap": Fundamental.market_cap,
+        "trailing_eps": Fundamental.trailing_eps,
+        "forward_eps": Fundamental.forward_eps,
+        "revenue": Fundamental.revenue,
+        "net_income": Fundamental.net_income,
+        "profit_margin": Fundamental.profit_margin,
+        "return_on_equity": Fundamental.return_on_equity,
+        "return_on_assets": Fundamental.return_on_assets,
+        "institution_percent": Ownership.institution_percent,
+        "insider_percent": Ownership.insider_percent,
+        "shares_outstanding": Ownership.shares_outstanding,
+        "float_shares": Ownership.float_shares,
+        "distance_52w_high": distance_high,
+        "distance_52w_low": distance_low,
+        "volume_ratio": volume_ratio,
+        "latest_date": latest.date,
+    }
+    return query, expressions
+
+
+def _apply_screener_filters(
+    query,
+    expressions,
+    q=None,
+    sector=None,
+    industry=None,
+    market_cap_min=None,
+    market_cap_max=None,
+    eps_min=None,
+    revenue_min=None,
+    net_income_min=None,
+    roe_min=None,
+    roa_min=None,
+    profit_margin_min=None,
+    institution_min=None,
+    insider_min=None,
+    close_min=None,
+    close_max=None,
+    distance_52w_high_max=None,
+    distance_52w_low_max=None,
+    volume_ratio_min=None,
+):
+    if q:
+        pattern = f"%{q.strip()}%"
+        query = query.filter(or_(Company.symbol.ilike(pattern), Company.name.ilike(pattern)))
+    if sector:
+        query = query.filter(Company.sector == sector)
+    if industry:
+        query = query.filter(Company.industry == industry)
+    bounds = [
+        ("market_cap", market_cap_min, market_cap_max),
+        ("close", close_min, close_max),
+    ]
+    for key, lower, upper in bounds:
+        expr = expressions[key]
+        if lower is not None:
+            query = query.filter(expr >= lower)
+        if upper is not None:
+            query = query.filter(expr <= upper)
+    minimums = [
+        ("trailing_eps", eps_min),
+        ("revenue", revenue_min),
+        ("net_income", net_income_min),
+        ("return_on_equity", roe_min),
+        ("return_on_assets", roa_min),
+        ("profit_margin", profit_margin_min),
+        ("institution_percent", institution_min),
+        ("insider_percent", insider_min),
+        ("volume_ratio", volume_ratio_min),
+    ]
+    for key, value in minimums:
+        if value is not None:
+            query = query.filter(expressions[key] >= value)
+    if distance_52w_high_max is not None:
+        query = query.filter(expressions["distance_52w_high"] <= distance_52w_high_max)
+    if distance_52w_low_max is not None:
+        query = query.filter(expressions["distance_52w_low"] <= distance_52w_low_max)
+    return query
+
+
+def _screener_row_dict(row):
+    data = {}
+    for key in SCREENER_COLUMN_LABELS:
+        value = getattr(row, key, None)
+        if isinstance(value, (datetime, date)):
+            value = value.isoformat()
+        elif isinstance(value, float) and not math.isfinite(value):
+            value = None
+        data[key] = value
+    return data
+
+
+def _screener_facets(db: Session, market: str):
+    exchanges = _screener_market_exchanges(market)
+    sectors = [
+        value for (value,) in (
+            db.query(Company.sector)
+            .filter(Company.is_active == 1, Company.exchange.in_(exchanges), Company.sector.isnot(None), Company.sector != "")
+            .distinct().order_by(Company.sector.asc()).all()
+        ) if value
+    ]
+    industries = [
+        value for (value,) in (
+            db.query(Company.industry)
+            .filter(Company.is_active == 1, Company.exchange.in_(exchanges), Company.industry.isnot(None), Company.industry != "")
+            .distinct().order_by(Company.industry.asc()).all()
+        ) if value
+    ]
+    return {"sectors": sectors[:500], "industries": industries[:1000]}
+
+
+@router.get("/screener")
+def get_universe_screener(
+    market: str = "ALL",
+    q: str | None = None,
+    sector: str | None = None,
+    industry: str | None = None,
+    market_cap_min: float | None = None,
+    market_cap_max: float | None = None,
+    eps_min: float | None = None,
+    revenue_min: float | None = None,
+    net_income_min: float | None = None,
+    roe_min: float | None = None,
+    roa_min: float | None = None,
+    profit_margin_min: float | None = None,
+    institution_min: float | None = None,
+    insider_min: float | None = None,
+    close_min: float | None = None,
+    close_max: float | None = None,
+    distance_52w_high_max: float | None = None,
+    distance_52w_low_max: float | None = None,
+    volume_ratio_min: float | None = None,
+    sort_by: str = "symbol",
+    sort_dir: str = "asc",
+    page: int = Query(1, ge=1),
+    page_size: int = Query(25, ge=10, le=100),
+    db: Session = Depends(get_db),
+):
+    """Paginated multi-stock screener using only real stored DB data."""
+    query, expressions = _screener_query_parts(db, market)
+    query = _apply_screener_filters(
+        query, expressions, q, sector, industry, market_cap_min, market_cap_max,
+        eps_min, revenue_min, net_income_min, roe_min, roa_min, profit_margin_min, institution_min, insider_min, close_min,
+        close_max, distance_52w_high_max, distance_52w_low_max, volume_ratio_min,
+    )
+    total = int(query.count())
+    sort_expr = expressions.get(sort_by, Company.symbol)
+    order = sort_expr.desc() if (sort_dir or "asc").lower() == "desc" else sort_expr.asc()
+    rows = query.order_by(order.nullslast(), Company.symbol.asc()).offset((page - 1) * page_size).limit(page_size).all()
+    return _json_safe({
+        "market": market.upper(),
+        "page": page,
+        "page_size": page_size,
+        "total": total,
+        "pages": max(1, math.ceil(total / page_size)) if page_size else 1,
+        "rows": [_screener_row_dict(row) for row in rows],
+        "facets": _screener_facets(db, market),
+        "columns": [{"key": key, "label": label} for key, label in SCREENER_COLUMN_LABELS.items()],
+        "default_columns": SCREENER_DEFAULT_COLUMNS,
+        "data_rule": "Stored provider/database values only. Missing values remain N/A and are never fabricated.",
+    })
+
+
+@router.get("/screener-export")
+def export_universe_screener(
+    market: str = "ALL",
+    q: str | None = None,
+    sector: str | None = None,
+    industry: str | None = None,
+    market_cap_min: float | None = None,
+    market_cap_max: float | None = None,
+    eps_min: float | None = None,
+    revenue_min: float | None = None,
+    net_income_min: float | None = None,
+    roe_min: float | None = None,
+    roa_min: float | None = None,
+    profit_margin_min: float | None = None,
+    institution_min: float | None = None,
+    insider_min: float | None = None,
+    close_min: float | None = None,
+    close_max: float | None = None,
+    distance_52w_high_max: float | None = None,
+    distance_52w_low_max: float | None = None,
+    volume_ratio_min: float | None = None,
+    sort_by: str = "symbol",
+    sort_dir: str = "asc",
+    columns: str | None = None,
+    db: Session = Depends(get_db),
+):
+    """Export the complete currently filtered screener result to Excel."""
+    try:
+        from openpyxl import Workbook
+        from openpyxl.styles import Font
+        from openpyxl.utils import get_column_letter
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Excel export dependency is unavailable: {exc}")
+
+    query, expressions = _screener_query_parts(db, market)
+    query = _apply_screener_filters(
+        query, expressions, q, sector, industry, market_cap_min, market_cap_max,
+        eps_min, revenue_min, net_income_min, roe_min, roa_min, profit_margin_min, institution_min, insider_min, close_min,
+        close_max, distance_52w_high_max, distance_52w_low_max, volume_ratio_min,
+    )
+    sort_expr = expressions.get(sort_by, Company.symbol)
+    order = sort_expr.desc() if (sort_dir or "asc").lower() == "desc" else sort_expr.asc()
+    rows = query.order_by(order.nullslast(), Company.symbol.asc()).limit(10000).all()
+
+    requested = [c.strip() for c in (columns or "").split(",") if c.strip()]
+    selected = [c for c in requested if c in SCREENER_COLUMN_LABELS] or list(SCREENER_DEFAULT_COLUMNS)
+    if "symbol" not in selected:
+        selected.insert(0, "symbol")
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Filtered Stocks"
+    ws.append([SCREENER_COLUMN_LABELS[c] for c in selected])
+    for cell in ws[1]:
+        cell.font = Font(bold=True)
+    for row in rows:
+        item = _screener_row_dict(row)
+        ws.append([item.get(c) for c in selected])
+    ws.freeze_panes = "A2"
+    ws.auto_filter.ref = ws.dimensions
+    for idx, key in enumerate(selected, start=1):
+        max_len = len(SCREENER_COLUMN_LABELS[key])
+        for cell in ws[get_column_letter(idx)][1: min(ws.max_row, 300)]:
+            max_len = max(max_len, len(str(cell.value)) if cell.value is not None else 0)
+        ws.column_dimensions[get_column_letter(idx)].width = min(32, max(12, max_len + 2))
+
+    meta = wb.create_sheet("Filter Summary")
+    meta.append(["Filter", "Value"])
+    for c in meta[1]: c.font = Font(bold=True)
+    for key, value in [
+        ("Market", market), ("Search", q), ("Sector", sector), ("Industry", industry),
+        ("Market Cap Min", market_cap_min), ("Market Cap Max", market_cap_max),
+        ("EPS Min", eps_min), ("Revenue Min", revenue_min), ("Net Income Min", net_income_min),
+        ("ROE Min", roe_min), ("ROA Min", roa_min), ("Profit Margin Min", profit_margin_min),
+        ("Institution Min", institution_min), ("Insider Min", insider_min),
+        ("Close Min", close_min), ("Close Max", close_max),
+        ("Distance 52W High Max", distance_52w_high_max),
+        ("Distance 52W Low Max", distance_52w_low_max),
+        ("Volume Ratio Min", volume_ratio_min), ("Sort By", sort_by), ("Sort Direction", sort_dir),
+        ("Exported Rows", len(rows)),
+    ]:
+        meta.append([key, value])
+    meta.append(["Data Rule", "Stored provider/database values only; missing fields remain blank/N/A."])
+
+    stream = BytesIO()
+    wb.save(stream)
+    stream.seek(0)
+    filename = f"{market.upper()}_filtered_stock_screener.xlsx"
+    payload = stream.getvalue()
+    return Response(
+        content=payload,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Content-Length": str(len(payload)),
+            "Cache-Control": "no-store",
+            "X-Content-Type-Options": "nosniff",
+        },
+    )

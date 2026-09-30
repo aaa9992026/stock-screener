@@ -45,6 +45,45 @@ const defaultRsWeights = { "1w": 30, "2w": 0, "1m": 25, "2m": 0, "3m": 20, "6m":
 const SCORE_WEIGHTS_STORAGE_VERSION = "m2-client-composite-100-v1";
 const RS_WEIGHTS_STORAGE_VERSION = "m2-rs-market-universe-v2";
 
+
+const universeColumnOptions = [
+  ["symbol", "Symbol"], ["name", "Company"], ["exchange", "Exchange"],
+  ["sector", "Sector"], ["industry", "Industry"], ["close", "LTP"],
+  ["volume", "Volume"], ["market_cap", "Market Cap"], ["trailing_eps", "EPS"],
+  ["forward_eps", "Forward EPS"], ["revenue", "Revenue"], ["net_income", "Net Income"],
+  ["profit_margin", "Profit Margin"], ["return_on_equity", "ROE"], ["return_on_assets", "ROA"],
+  ["institution_percent", "Institutional Holding"], ["insider_percent", "Insider Holding"],
+  ["shares_outstanding", "Shares Outstanding"], ["float_shares", "Float Shares"],
+  ["distance_52w_high", "Distance From 52W High"], ["distance_52w_low", "Distance From 52W Low"],
+  ["volume_ratio", "Volume / 52W Avg"], ["latest_date", "Latest Price Date"],
+];
+
+const universeDefaultColumns = [
+  "symbol", "name", "close", "market_cap", "trailing_eps", "profit_margin",
+  "return_on_equity", "institution_percent", "distance_52w_high", "volume_ratio",
+];
+
+const emptyUniverseFilters = {
+  market: "ALL", q: "", sector: "", industry: "", market_cap_min: "", market_cap_max: "",
+  eps_min: "", revenue_min: "", net_income_min: "", roe_min: "", roa_min: "",
+  profit_margin_min: "", institution_min: "", insider_min: "", close_min: "", close_max: "",
+  distance_52w_high_max: "", distance_52w_low_max: "", volume_ratio_min: "",
+  sort_by: "symbol", sort_dir: "asc",
+};
+
+const formatUniverseCell = (key, value, row) => {
+  if (value === null || value === undefined || value === "") return "N/A";
+  if (["profit_margin", "return_on_equity", "return_on_assets", "institution_percent", "insider_percent", "distance_52w_high", "distance_52w_low"].includes(key)) {
+    return `${Number(value).toFixed(2)}%`;
+  }
+  if (["market_cap", "revenue", "net_income", "shares_outstanding", "float_shares"].includes(key)) {
+    return new Intl.NumberFormat(row?.exchange === "US" ? "en-US" : "en-IN", { notation: "compact", maximumFractionDigits: 2 }).format(Number(value));
+  }
+  if (key === "volume") return Number(value).toLocaleString();
+  if (["close", "trailing_eps", "forward_eps", "volume_ratio"].includes(key)) return Number(value).toFixed(2);
+  return String(value);
+};
+
 const compareNumeric = (left, comparator, right) => {
   const a = Number(left);
   const b = Number(right);
@@ -270,9 +309,101 @@ function App() {
   const [showRankingDetails, setShowRankingDetails] = useState(true);
   const [showExcelHelp, setShowExcelHelp] = useState(false);
   const [excelCopyMessage, setExcelCopyMessage] = useState("");
+  const [universeTab, setUniverseTab] = useState("Popular");
+  const [universeFilters, setUniverseFilters] = useState({ ...emptyUniverseFilters });
+  const [universeRows, setUniverseRows] = useState([]);
+  const [universeMeta, setUniverseMeta] = useState({ total: 0, pages: 1, facets: { sectors: [], industries: [] } });
+  const [universeLoading, setUniverseLoading] = useState(false);
+  const [universeError, setUniverseError] = useState("");
+  const [universePage, setUniversePage] = useState(1);
+  const [universePageSize, setUniversePageSize] = useState(25);
+  const [universeColumns, setUniverseColumns] = useState([...universeDefaultColumns]);
+  const [showUniverseColumns, setShowUniverseColumns] = useState(false);
   const [chartOverlays, setChartOverlays] = useState({
     ema: true, sma: true, bollinger: true, volume: true, eps: true, rs: true
   });
+
+
+  const buildUniverseParams = (page = universePage, includePage = true, filterOverride = universeFilters, pageSizeOverride = universePageSize) => {
+    const params = { page_size: pageSizeOverride };
+    if (includePage) params.page = page;
+    Object.entries(filterOverride).forEach(([key, value]) => {
+      if (value !== "" && value !== null && value !== undefined) params[key] = value;
+    });
+    return params;
+  };
+
+  const loadUniverseScreener = async (page = 1, filterOverride = universeFilters, pageSizeOverride = universePageSize) => {
+    setUniverseLoading(true);
+    setUniverseError("");
+    try {
+      const res = await axios.get(`${API}/market/screener`, { params: buildUniverseParams(page, true, filterOverride, pageSizeOverride) });
+      setUniverseRows(res.data.rows || []);
+      setUniverseMeta({
+        total: res.data.total || 0,
+        pages: res.data.pages || 1,
+        facets: res.data.facets || { sectors: [], industries: [] },
+      });
+      setUniversePage(res.data.page || page);
+    } catch (error) {
+      setUniverseRows([]);
+      setUniverseError(error?.response?.data?.detail || "The stock-universe screener could not be loaded.");
+    } finally {
+      setUniverseLoading(false);
+    }
+  };
+
+  const resetUniverseFilters = () => {
+    const next = { ...emptyUniverseFilters };
+    setUniverseFilters(next);
+    setUniversePage(1);
+    loadUniverseScreener(1, next, universePageSize);
+  };
+
+  const downloadUniverseExcel = async () => {
+    try {
+      setUniverseError("");
+      const params = buildUniverseParams(universePage, false);
+      params.columns = universeColumns.join(",");
+      const res = await axios.get(`${API}/market/screener-export`, { params, responseType: "blob" });
+      const blob = new Blob([res.data], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `${(universeFilters.market || "ALL").toUpperCase()}_filtered_stock_screener.xlsx`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      setUniverseError(error?.response?.data?.detail || "Filtered Excel export failed.");
+    }
+  };
+
+  const openUniverseStock = (row) => {
+    if (!row?.symbol || !row?.exchange) return;
+    suggestionRequestRef.current += 1;
+    setExchange(row.exchange);
+    setSymbolInput(row.symbol);
+    setSymbol(row.symbol);
+    setData([]);
+    setDashboard(null);
+    setFundamentals(null);
+    setFundamentalHistory(null);
+    setTechnicalSummary(null);
+    setIndicators(null);
+    setOwnershipDetails(null);
+    setIndiaShareholding(null);
+    setSecEdgar(null);
+    setMessage("");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    loadUniverseScreener(1);
+    // Initial universe table load only. Further changes apply when the user presses Apply Filters.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const handleOutsideClick = (event) => {
@@ -1706,6 +1837,174 @@ function App() {
             {message}
           </div>
         )}
+
+
+        <section className="universe-screener-card">
+          <div className="universe-screener-header">
+            <div>
+              <h2>Stock Universe Screener</h2>
+              <p>Filter many stocks, choose the columns you need, then export the currently filtered list to Excel.</p>
+            </div>
+            <div className="universe-count-badge">
+              <strong>{Number(universeMeta.total || 0).toLocaleString()}</strong>
+              <span>Stocks</span>
+            </div>
+          </div>
+
+          <div className="universe-tabs">
+            {["Popular", "Fundamentals", "Technicals", "Relative Comparison"].map((tab) => (
+              <button key={tab} type="button" className={universeTab === tab ? "active" : ""} onClick={() => setUniverseTab(tab)}>
+                {tab}
+              </button>
+            ))}
+          </div>
+
+          <div className="universe-filter-grid">
+            <label>
+              <span>Stock Universe</span>
+              <select value={universeFilters.market} onChange={(e) => setUniverseFilters((v) => ({ ...v, market: e.target.value, sector: "", industry: "" }))}>
+                <option value="ALL">US + India</option>
+                <option value="US">US Stocks</option>
+                <option value="INDIA">Indian Stocks</option>
+                <option value="NSE">NSE Only</option>
+                <option value="BSE">BSE Only</option>
+              </select>
+            </label>
+            <label>
+              <span>Search</span>
+              <input value={universeFilters.q} onChange={(e) => setUniverseFilters((v) => ({ ...v, q: e.target.value }))} placeholder="Symbol or company" />
+            </label>
+            <label>
+              <span>Sector</span>
+              <select value={universeFilters.sector} onChange={(e) => setUniverseFilters((v) => ({ ...v, sector: e.target.value }))}>
+                <option value="">All sectors</option>
+                {(universeMeta.facets?.sectors || []).map((item) => <option key={item} value={item}>{item}</option>)}
+              </select>
+            </label>
+            <label>
+              <span>Industry</span>
+              <select value={universeFilters.industry} onChange={(e) => setUniverseFilters((v) => ({ ...v, industry: e.target.value }))}>
+                <option value="">All industries</option>
+                {(universeMeta.facets?.industries || []).map((item) => <option key={item} value={item}>{item}</option>)}
+              </select>
+            </label>
+
+            {universeTab === "Popular" && (
+              <>
+                <label><span>Market Cap Min</span><input type="number" value={universeFilters.market_cap_min} onChange={(e) => setUniverseFilters((v) => ({ ...v, market_cap_min: e.target.value }))} placeholder="Any" /></label>
+                <label><span>Near 52W High ≤ %</span><input type="number" value={universeFilters.distance_52w_high_max} onChange={(e) => setUniverseFilters((v) => ({ ...v, distance_52w_high_max: e.target.value }))} placeholder="e.g. 10" /></label>
+                <label><span>Near 52W Low ≤ %</span><input type="number" value={universeFilters.distance_52w_low_max} onChange={(e) => setUniverseFilters((v) => ({ ...v, distance_52w_low_max: e.target.value }))} placeholder="e.g. 10" /></label>
+                <label><span>Volume Shocker ≥ x</span><input type="number" step="0.1" value={universeFilters.volume_ratio_min} onChange={(e) => setUniverseFilters((v) => ({ ...v, volume_ratio_min: e.target.value }))} placeholder="e.g. 1.5" /></label>
+              </>
+            )}
+
+            {universeTab === "Fundamentals" && (
+              <>
+                <label><span>Market Cap Min</span><input type="number" value={universeFilters.market_cap_min} onChange={(e) => setUniverseFilters((v) => ({ ...v, market_cap_min: e.target.value }))} placeholder="Any" /></label>
+                <label><span>EPS Min</span><input type="number" step="0.01" value={universeFilters.eps_min} onChange={(e) => setUniverseFilters((v) => ({ ...v, eps_min: e.target.value }))} placeholder="Any" /></label>
+                <label><span>Revenue Min</span><input type="number" value={universeFilters.revenue_min} onChange={(e) => setUniverseFilters((v) => ({ ...v, revenue_min: e.target.value }))} placeholder="Any" /></label>
+                <label><span>Net Income Min</span><input type="number" value={universeFilters.net_income_min} onChange={(e) => setUniverseFilters((v) => ({ ...v, net_income_min: e.target.value }))} placeholder="Any" /></label>
+                <label><span>Profit Margin ≥ %</span><input type="number" step="0.1" value={universeFilters.profit_margin_min} onChange={(e) => setUniverseFilters((v) => ({ ...v, profit_margin_min: e.target.value }))} placeholder="Any" /></label>
+                <label><span>ROE ≥ %</span><input type="number" step="0.1" value={universeFilters.roe_min} onChange={(e) => setUniverseFilters((v) => ({ ...v, roe_min: e.target.value }))} placeholder="Any" /></label>
+                <label><span>ROA ≥ %</span><input type="number" step="0.1" value={universeFilters.roa_min} onChange={(e) => setUniverseFilters((v) => ({ ...v, roa_min: e.target.value }))} placeholder="Any" /></label>
+              </>
+            )}
+
+            {universeTab === "Technicals" && (
+              <>
+                <label><span>LTP Min</span><input type="number" step="0.01" value={universeFilters.close_min} onChange={(e) => setUniverseFilters((v) => ({ ...v, close_min: e.target.value }))} placeholder="Any" /></label>
+                <label><span>LTP Max</span><input type="number" step="0.01" value={universeFilters.close_max} onChange={(e) => setUniverseFilters((v) => ({ ...v, close_max: e.target.value }))} placeholder="Any" /></label>
+                <label><span>Distance From 52W High ≤ %</span><input type="number" step="0.1" value={universeFilters.distance_52w_high_max} onChange={(e) => setUniverseFilters((v) => ({ ...v, distance_52w_high_max: e.target.value }))} placeholder="Any" /></label>
+                <label><span>Distance From 52W Low ≤ %</span><input type="number" step="0.1" value={universeFilters.distance_52w_low_max} onChange={(e) => setUniverseFilters((v) => ({ ...v, distance_52w_low_max: e.target.value }))} placeholder="Any" /></label>
+                <label><span>Volume / 52W Avg ≥ x</span><input type="number" step="0.1" value={universeFilters.volume_ratio_min} onChange={(e) => setUniverseFilters((v) => ({ ...v, volume_ratio_min: e.target.value }))} placeholder="Any" /></label>
+              </>
+            )}
+
+            {universeTab === "Relative Comparison" && (
+              <>
+                <label><span>Institutional Holding ≥ %</span><input type="number" step="0.1" value={universeFilters.institution_min} onChange={(e) => setUniverseFilters((v) => ({ ...v, institution_min: e.target.value }))} placeholder="Any" /></label>
+                <label><span>Insider Holding ≥ %</span><input type="number" step="0.1" value={universeFilters.insider_min} onChange={(e) => setUniverseFilters((v) => ({ ...v, insider_min: e.target.value }))} placeholder="Any" /></label>
+                <label><span>ROE ≥ %</span><input type="number" step="0.1" value={universeFilters.roe_min} onChange={(e) => setUniverseFilters((v) => ({ ...v, roe_min: e.target.value }))} placeholder="Any" /></label>
+                <label><span>Near 52W High ≤ %</span><input type="number" step="0.1" value={universeFilters.distance_52w_high_max} onChange={(e) => setUniverseFilters((v) => ({ ...v, distance_52w_high_max: e.target.value }))} placeholder="Any" /></label>
+              </>
+            )}
+          </div>
+
+          <div className="universe-toolbar">
+            <div className="universe-toolbar-left">
+              <button type="button" className="ranking-primary-button" onClick={() => { setUniversePage(1); loadUniverseScreener(1); }}>Apply Filters</button>
+              <button type="button" className="secondary-button" onClick={resetUniverseFilters}>Reset</button>
+              <button type="button" className="secondary-button" onClick={() => setShowUniverseColumns((v) => !v)}>Add Columns</button>
+              <button type="button" className="secondary-button" onClick={downloadUniverseExcel}>Export Excel</button>
+            </div>
+            <div className="universe-toolbar-right">
+              <label>Sort
+                <select value={universeFilters.sort_by} onChange={(e) => setUniverseFilters((v) => ({ ...v, sort_by: e.target.value }))}>
+                  <option value="symbol">Symbol</option><option value="market_cap">Market Cap</option><option value="close">LTP</option>
+                  <option value="return_on_equity">ROE</option><option value="profit_margin">Profit Margin</option>
+                  <option value="institution_percent">Institutional Holding</option><option value="distance_52w_high">Distance 52W High</option>
+                  <option value="volume_ratio">Volume Ratio</option>
+                </select>
+              </label>
+              <select aria-label="Sort direction" value={universeFilters.sort_dir} onChange={(e) => setUniverseFilters((v) => ({ ...v, sort_dir: e.target.value }))}>
+                <option value="asc">Ascending</option><option value="desc">Descending</option>
+              </select>
+              <label>Page Size
+                <select value={universePageSize} onChange={(e) => { const size = Number(e.target.value); setUniversePageSize(size); setUniversePage(1); loadUniverseScreener(1, universeFilters, size); }}>
+                  {[25, 50, 100].map((size) => <option key={size} value={size}>{size}</option>)}
+                </select>
+              </label>
+            </div>
+          </div>
+
+          {showUniverseColumns && (
+            <div className="universe-column-picker">
+              {universeColumnOptions.map(([key, label]) => (
+                <label key={key}>
+                  <input type="checkbox" checked={universeColumns.includes(key)} onChange={(e) => {
+                    setUniverseColumns((cols) => e.target.checked ? [...new Set([...cols, key])] : cols.filter((item) => item !== key || key === "symbol"));
+                  }} />
+                  <span>{label}</span>
+                </label>
+              ))}
+            </div>
+          )}
+
+          {universeError && <div className="message error-message universe-message">{universeError}</div>}
+          <div className="universe-table-wrap">
+            <table className="universe-table">
+              <thead>
+                <tr>
+                  {universeColumns.map((key) => <th key={key}>{universeColumnOptions.find(([item]) => item === key)?.[1] || key}</th>)}
+                  <th>Open</th>
+                </tr>
+              </thead>
+              <tbody>
+                {universeLoading ? (
+                  <tr><td colSpan={universeColumns.length + 1} className="universe-empty">Loading filtered stocks…</td></tr>
+                ) : universeRows.length ? universeRows.map((row) => (
+                  <tr key={`${row.exchange}-${row.symbol}`}>
+                    {universeColumns.map((key) => (
+                      <td key={key} className={key === "symbol" ? "universe-symbol-cell" : ""}>{formatUniverseCell(key, row[key], row)}</td>
+                    ))}
+                    <td><button type="button" className="universe-open-button" onClick={() => openUniverseStock(row)}>View</button></td>
+                  </tr>
+                )) : (
+                  <tr><td colSpan={universeColumns.length + 1} className="universe-empty">No stocks match the current filters.</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="universe-pagination">
+            <span>Page {universePage} of {universeMeta.pages || 1}</span>
+            <div>
+              <button type="button" className="secondary-button" disabled={universePage <= 1 || universeLoading} onClick={() => { const p = Math.max(1, universePage - 1); setUniversePage(p); loadUniverseScreener(p); }}>Previous</button>
+              <button type="button" className="secondary-button" disabled={universePage >= (universeMeta.pages || 1) || universeLoading} onClick={() => { const p = Math.min(universeMeta.pages || 1, universePage + 1); setUniversePage(p); loadUniverseScreener(p); }}>Next</button>
+            </div>
+          </div>
+          <div className="universe-data-note">Only stored provider/database values are used. Missing fields remain N/A; the screener does not invent data to make a stock pass a filter.</div>
+        </section>
 
         <section className="cards">
           <div className="card">

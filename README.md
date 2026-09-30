@@ -74,3 +74,10 @@ Useful endpoints:
 - `GET /market/provider-status` — configured provider status, including SEC/Twelve Data/Kotak Neo readiness.
 
 Kotak Neo is kept separate as an Indian-market source. Do not commit client API keys/tokens to Git.
+
+### Universe screener / Excel export
+
+The Milestone 2 UI includes a many-stock screener with Popular, Fundamentals, Technicals and Relative Comparison tabs. It uses stored provider/database values and supports configurable columns plus filtered Excel export.
+
+- `GET /market/screener` — paginated filtered stock table.
+- `GET /market/screener-export` — download the full filtered result as an Excel workbook.
