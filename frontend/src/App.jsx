@@ -1932,10 +1932,10 @@ function App() {
 
           <div className="universe-toolbar">
             <div className="universe-toolbar-left">
-              <button type="button" className="ranking-primary-button" onClick={() => { setUniversePage(1); loadUniverseScreener(1); }}>Apply Filters</button>
-              <button type="button" className="secondary-button" onClick={resetUniverseFilters}>Reset</button>
-              <button type="button" className="secondary-button" onClick={() => setShowUniverseColumns((v) => !v)}>Add Columns</button>
-              <button type="button" className="secondary-button" onClick={downloadUniverseExcel}>Export Excel</button>
+              <button type="button" className="ranking-primary-button universe-apply-button" onClick={() => { setUniversePage(1); loadUniverseScreener(1); }}>Apply Filters</button>
+              <button type="button" className="secondary-button button-muted" onClick={resetUniverseFilters}>Reset Filters</button>
+              <button type="button" className="secondary-button button-columns" onClick={() => setShowUniverseColumns((v) => !v)}>{showUniverseColumns ? "Hide Columns" : "Add Columns"}</button>
+              <button type="button" className="secondary-button button-excel" onClick={downloadUniverseExcel}>Export Excel</button>
             </div>
             <div className="universe-toolbar-right">
               <label>Sort
@@ -1987,7 +1987,7 @@ function App() {
                     {universeColumns.map((key) => (
                       <td key={key} className={key === "symbol" ? "universe-symbol-cell" : ""}>{formatUniverseCell(key, row[key], row)}</td>
                     ))}
-                    <td><button type="button" className="universe-open-button" onClick={() => openUniverseStock(row)}>View</button></td>
+                    <td><button type="button" className="universe-open-button" onClick={() => openUniverseStock(row)}>Open</button></td>
                   </tr>
                 )) : (
                   <tr><td colSpan={universeColumns.length + 1} className="universe-empty">No stocks match the current filters.</td></tr>
@@ -2166,15 +2166,15 @@ function App() {
                   loadDashboard();
                   loadTechnicalSummary();
                 }}>Apply Ranking</button>
-                <button type="button" className="secondary-button ranking-secondary-button" onClick={downloadExcelSnapshot}>Download Excel</button>
-                <button type="button" className="secondary-button ranking-secondary-button" onClick={copyExcelFeedUrl}>Copy Excel Feed URL</button>
-                <button type="button" className="secondary-button ranking-secondary-button" onClick={() => setShowExcelHelp((v) => !v)}>
+                <button type="button" className="secondary-button ranking-secondary-button button-excel" onClick={downloadExcelSnapshot}>Download Excel</button>
+                <button type="button" className="secondary-button ranking-secondary-button button-copy" onClick={copyExcelFeedUrl}>Copy Excel Feed URL</button>
+                <button type="button" className="secondary-button ranking-secondary-button button-help" onClick={() => setShowExcelHelp((v) => !v)}>
                   {showExcelHelp ? "Hide Excel Steps" : "Excel Setup"}
                 </button>
-                <button type="button" className="secondary-button ranking-secondary-button" onClick={() => setShowRankingDetails((v) => !v)}>
+                <button type="button" className="secondary-button ranking-secondary-button button-factors" onClick={() => setShowRankingDetails((v) => !v)}>
                   {showRankingDetails ? "Hide Factors" : "Show Factors"}
                 </button>
-                <button type="button" className="secondary-button ranking-secondary-button" onClick={() => {
+                <button type="button" className="secondary-button ranking-secondary-button button-danger-soft" onClick={() => {
                   setScoreWeights({ ...defaultScoreWeights });
                   setHandwrittenFactors(JSON.parse(JSON.stringify(defaultHandwrittenFactors)));
                   localStorage.setItem("scoreWeights", JSON.stringify(defaultScoreWeights));
@@ -2238,8 +2238,8 @@ function App() {
                 <p>Captured from the newest handwritten Milestone 2 notes.</p>
               </div>
               <div className="formula-excel-actions">
-                <button type="button" className="secondary-button" onClick={downloadExcelSnapshot}>Download Excel</button>
-                <button type="button" className="secondary-button" onClick={copyExcelFeedUrl}>Copy Feed URL</button>
+                <button type="button" className="secondary-button button-excel" onClick={downloadExcelSnapshot}>Download Excel</button>
+                <button type="button" className="secondary-button button-copy" onClick={copyExcelFeedUrl}>Copy Feed URL</button>
               </div>
             </div>
             <div className="chart-note">

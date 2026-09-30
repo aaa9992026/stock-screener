@@ -162,3 +162,8 @@ Added the client's requested list-style stock screener for easier access and Exc
 - Supported stored-data filters include market/sector/industry, market cap, EPS, revenue, net income, profit margin, ROE/ROA, institutional/insider holding, LTP, 52-week distance, and volume-vs-52-week-average ratio.
 
 This does not invent unavailable growth, delivery, or ownership data. More filter families can be added as those fields become persistently stored for the full universe.
+
+### UI polish — action buttons
+- Standardized button sizing, spacing, hover/focus/disabled states across Search/Refresh, timeframe controls, ranking actions, screener actions and pagination.
+- Gave Excel, copy-link, column, help and reset actions visually distinct but restrained treatments.
+- Improved screener tabs, toolbar grouping and mobile touch targets.
