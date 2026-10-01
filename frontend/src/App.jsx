@@ -1577,15 +1577,56 @@ function App() {
     };
   })();
 
-  const excelFeedUrl = `${window.location.origin}${API}/market/excel-feed/${symbol}?exchange=${exchange}`;
+  const excelLiveCsvUrl = `${window.location.origin}${API}/market/excel-live-csv/${symbol}?exchange=${exchange}&limit=1500`;
+
   const copyExcelFeedUrl = async () => {
     try {
-      await navigator.clipboard.writeText(excelFeedUrl);
-      setExcelCopyMessage("Excel feed URL copied");
+      await navigator.clipboard.writeText(excelLiveCsvUrl);
+      setExcelCopyMessage("Live Excel data URL copied");
     } catch {
-      setExcelCopyMessage(excelFeedUrl);
+      setExcelCopyMessage(excelLiveCsvUrl);
     }
     window.setTimeout(() => setExcelCopyMessage(""), 3500);
+  };
+
+  const downloadExcelLiveConnector = () => {
+    const requestedSymbol = String(symbol || "").trim().toUpperCase();
+    if (!requestedSymbol) {
+      setExcelCopyMessage("Enter a stock symbol before creating the live Excel connection.");
+      window.setTimeout(() => setExcelCopyMessage(""), 4000);
+      return;
+    }
+
+    // Excel Internet Query (.iqy): open it once in desktop Excel and save the
+    // workbook. The external web connection is retained, so Data -> Refresh All
+    // re-requests the current screener data instead of downloading a new file.
+    const queryUrl = `${window.location.origin}${API}/market/excel-live-csv/${encodeURIComponent(requestedSymbol)}?exchange=${encodeURIComponent(exchange)}&limit=1500`;
+    const iqy = [
+      "WEB",
+      "1",
+      queryUrl,
+      "",
+      "Selection=EntirePage",
+      "Formatting=None",
+      "PreFormattedTextToColumns=True",
+      "ConsecutiveDelimitersAsOne=False",
+      "SingleBlockTextImport=False",
+      "DisableDateRecognition=False",
+      "DisableRedirections=False",
+      "",
+    ].join("\r\n");
+
+    const blob = new Blob([iqy], { type: "text/x-ms-iqy;charset=utf-8" });
+    const objectUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = objectUrl;
+    link.download = `${requestedSymbol}_${exchange}_LIVE_5Y.iqy`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(objectUrl);
+    setExcelCopyMessage("Live Excel connector created. Open it in Excel, then save the workbook and use Refresh All.");
+    window.setTimeout(() => setExcelCopyMessage(""), 6000);
   };
 
   const downloadExcelSnapshot = async () => {
@@ -2011,6 +2052,10 @@ function App() {
 
           <button className="refresh" onClick={refreshData}>
             Refresh Data
+          </button>
+
+          <button type="button" className="excel-live-top" onClick={downloadExcelLiveConnector}>
+            Connect Excel Live
           </button>
         </section>
 
@@ -2466,11 +2511,12 @@ function App() {
                   loadDashboard();
                   loadTechnicalSummary();
                 }}>Apply Ranking</button>
-                <button type="button" className="secondary-button ranking-secondary-button button-excel" onClick={downloadExcelSnapshot}>Download Excel</button>
-                <button type="button" className="secondary-button ranking-secondary-button button-copy" onClick={copyExcelFeedUrl}>Copy Excel Feed URL</button>
+                <button type="button" className="secondary-button ranking-secondary-button button-excel" onClick={downloadExcelLiveConnector}>Connect Excel Live</button>
+                <button type="button" className="secondary-button ranking-secondary-button button-copy" onClick={copyExcelFeedUrl}>Copy Live Data URL</button>
                 <button type="button" className="secondary-button ranking-secondary-button button-help" onClick={() => setShowExcelHelp((v) => !v)}>
                   {showExcelHelp ? "Hide Excel Steps" : "Excel Setup"}
                 </button>
+                <button type="button" className="secondary-button ranking-secondary-button" onClick={downloadExcelSnapshot}>Excel Snapshot</button>
                 <button type="button" className="secondary-button ranking-secondary-button button-factors" onClick={() => setShowRankingDetails((v) => !v)}>
                   {showRankingDetails ? "Hide Factors" : "Show Factors"}
                 </button>
@@ -2488,14 +2534,16 @@ function App() {
                   {excelCopyMessage && <div className="excel-copy-message">{excelCopyMessage}</div>}
                   {showExcelHelp && (
                     <>
-                      <strong>Connect this screener to Excel</strong>
+                      <strong>Live Excel connection — at least 4 years of indicator data</strong>
                       <ol>
-                        <li>In Excel open <b>Data → Get Data → From Web</b>.</li>
-                        <li>Click <b>Copy Excel Feed URL</b> above and paste that URL into Excel.</li>
-                        <li>Choose <b>Load</b>. Later use <b>Data → Refresh All</b> to fetch the latest stored provider data.</li>
-                        <li>Keep your own formulas in separate Excel columns/sheets so refresh does not overwrite them.</li>
+                        <li>Click <b>Connect Excel Live</b>. This creates a small <b>.iqy</b> connection file, not a static data export.</li>
+                        <li>Open the .iqy file in desktop Excel and allow the web connection when Excel asks.</li>
+                        <li>Save the opened sheet as your normal <b>.xlsx</b> workbook. The external screener connection stays attached.</li>
+                        <li>Later use <b>Data → Refresh All</b>; Excel requests the latest daily data from this screener automatically.</li>
+                        <li>The live feed requests <b>5 years</b> of daily OHLCV, giving at least the required <b>4 years</b> for indicator creation when the provider has the history.</li>
+                        <li>Keep your own indicator formulas on separate columns/sheets so a data refresh does not overwrite them.</li>
                       </ol>
-                      <code>{excelFeedUrl}</code>
+                      <code>{excelLiveCsvUrl}</code>
                     </>
                   )}
                 </div>
@@ -2538,8 +2586,8 @@ function App() {
                 <p>Captured from the newest handwritten Milestone 2 notes.</p>
               </div>
               <div className="formula-excel-actions">
-                <button type="button" className="secondary-button button-excel" onClick={downloadExcelSnapshot}>Download Excel</button>
-                <button type="button" className="secondary-button button-copy" onClick={copyExcelFeedUrl}>Copy Feed URL</button>
+                <button type="button" className="secondary-button button-excel" onClick={downloadExcelLiveConnector}>Connect Excel Live</button>
+                <button type="button" className="secondary-button button-copy" onClick={copyExcelFeedUrl}>Copy Live URL</button>
               </div>
             </div>
             <div className="chart-note">

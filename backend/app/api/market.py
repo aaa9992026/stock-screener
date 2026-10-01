@@ -22,8 +22,9 @@ from app.services.company_sync import repair_company_identity, bootstrap_compani
 import os
 import math
 import json
+import csv
 import requests
-from io import BytesIO
+from io import BytesIO, StringIO
 from datetime import datetime, timedelta, date
 from urllib.parse import quote
 from statistics import median
@@ -1961,11 +1962,73 @@ def get_client_ranking_spec():
     }
 
 
-@router.get("/excel-feed/{symbol}")
-def get_excel_feed(symbol: str, exchange: str = "US", limit: int = Query(260, ge=20, le=2000), db: Session = Depends(get_db)):
-    """Refreshable JSON feed for Excel Power Query; no CSV upload is required."""
+EXCEL_MIN_HISTORY_YEARS = 4
+EXCEL_FETCH_HISTORY_YEARS = 5
+EXCEL_DEFAULT_HISTORY_ROWS = 1500
+
+
+def _excel_history_status(db: Session, symbol: str, exchange: str):
     symbol = symbol.upper()
     exchange = exchange.upper()
+    earliest, latest, count = (
+        db.query(func.min(OHLCV.date), func.max(OHLCV.date), func.count(OHLCV.id))
+        .filter(OHLCV.symbol == symbol, OHLCV.exchange == exchange)
+        .one()
+    )
+    required_start = date.today() - timedelta(days=366 * EXCEL_MIN_HISTORY_YEARS)
+    return {
+        "earliest_date": earliest.isoformat() if earliest else None,
+        "latest_date": latest.isoformat() if latest else None,
+        "stored_rows": int(count or 0),
+        "required_years": EXCEL_MIN_HISTORY_YEARS,
+        "requested_years": EXCEL_FETCH_HISTORY_YEARS,
+        "requirement_met": bool(earliest and earliest <= required_start),
+    }
+
+
+def _ensure_excel_history(db: Session, symbol: str, exchange: str):
+    """Best-effort backfill so Excel receives at least four years of real daily data.
+
+    The client creates longer-period indicators in Excel.  We request five
+    calendar years to leave a safety margin around holidays and missing trading
+    days.  Provider failures never fabricate data: the endpoint still returns
+    the verified stored history together with an explicit readiness flag.
+    """
+    symbol = symbol.upper().strip()
+    exchange = exchange.upper().strip()
+    status = _excel_history_status(db, symbol, exchange)
+    if status["requirement_met"]:
+        return {**status, "backfill_attempted": False, "warning": None}
+
+    start_date = (date.today() - timedelta(days=366 * EXCEL_FETCH_HISTORY_YEARS)).isoformat()
+    warning = None
+    try:
+        # Yahoo is the common long-history source for US/NSE and a configured
+        # fallback for BSE.  sync_ohlcv is idempotent, so repeated Excel refresh
+        # requests do not duplicate rows.
+        rows = YahooProvider().get_ohlcv(
+            symbol=symbol,
+            exchange=exchange,
+            start_date=start_date,
+        )
+        if rows:
+            sync_ohlcv(db=db, symbol=symbol, exchange=exchange, rows=rows)
+        else:
+            warning = "Long-history provider returned no rows; verified stored history is being used."
+    except Exception as exc:
+        db.rollback()
+        warning = f"Long-history refresh is temporarily unavailable: {exc}"
+
+    status = _excel_history_status(db, symbol, exchange)
+    return {**status, "backfill_attempted": True, "warning": warning}
+
+
+@router.get("/excel-feed/{symbol}")
+def get_excel_feed(symbol: str, exchange: str = "US", limit: int = Query(EXCEL_DEFAULT_HISTORY_ROWS, ge=20, le=5000), db: Session = Depends(get_db)):
+    """Refreshable JSON feed for Excel with a >=4-year real-data target."""
+    symbol = symbol.upper().strip()
+    exchange = exchange.upper().strip()
+    history_status = _ensure_excel_history(db, symbol, exchange)
     company = db.query(Company).filter(Company.symbol == symbol, Company.exchange == exchange).first()
     rows = (
         db.query(OHLCV)
@@ -1981,8 +2044,10 @@ def get_excel_feed(symbol: str, exchange: str = "US", limit: int = Query(260, ge
         "symbol": symbol,
         "exchange": exchange,
         "generated_at": datetime.utcnow().isoformat() + "Z",
+        "history": history_status,
         "company": {
             "name": company.name if company else None,
+            "isin": company.isin if company else None,
             "sector": company.sector if company else None,
             "industry": company.industry if company else None,
         },
@@ -2007,12 +2072,51 @@ def get_excel_feed(symbol: str, exchange: str = "US", limit: int = Query(260, ge
             for r in rows
         ],
         "ranking_spec": get_client_ranking_spec(),
-        "excel_note": "Use Excel > Data > Get Data > From Web with this endpoint. Refresh in Excel re-requests current stored provider data.",
+        "excel_note": "Live Excel connector uses at least four years of verified daily history when the provider is available. Excel Refresh All re-requests this data; missing provider data remains N/A.",
     })
 
 
+@router.get("/excel-live-csv/{symbol}")
+def get_excel_live_csv(symbol: str, exchange: str = "US", limit: int = Query(EXCEL_DEFAULT_HISTORY_ROWS, ge=20, le=5000), db: Session = Depends(get_db)):
+    """CSV endpoint intended for a persistent Excel web-query connection.
+
+    The first request best-effort backfills five years, which satisfies the
+    client's requirement that indicator creation has at least four years of
+    daily data.  Excel can keep this URL as an external connection and update it
+    with Data -> Refresh All.
+    """
+    feed = get_excel_feed(symbol=symbol, exchange=exchange, limit=limit, db=db)
+    company = feed.get("company") or {}
+    history = feed.get("history") or {}
+    output = StringIO()
+    writer = csv.writer(output, lineterminator="\n")
+    writer.writerow([
+        "Symbol", "Exchange", "Company", "ISIN", "Sector", "Industry",
+        "Date", "Open", "High", "Low", "Close", "Volume",
+    ])
+    for row in feed.get("ohlcv") or []:
+        writer.writerow([
+            feed.get("symbol"), feed.get("exchange"), company.get("name"), company.get("isin"),
+            company.get("sector"), company.get("industry"), row.get("date"), row.get("open"),
+            row.get("high"), row.get("low"), row.get("close"), row.get("volume"),
+        ])
+
+    filename = f"{feed.get('symbol', 'stock')}_{feed.get('exchange', 'market')}_live_history.csv"
+    return Response(
+        content=output.getvalue(),
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Content-Disposition": f'inline; filename="{filename}"',
+            "Cache-Control": "no-store, max-age=0",
+            "X-Excel-History-Requirement": "met" if history.get("requirement_met") else "partial",
+            "X-Excel-Earliest-Date": str(history.get("earliest_date") or ""),
+            "X-Excel-Latest-Date": str(history.get("latest_date") or ""),
+        },
+    )
+
+
 @router.get("/excel-export/{symbol}")
-def export_excel_snapshot(symbol: str, exchange: str = "US", limit: int = Query(500, ge=20, le=5000), db: Session = Depends(get_db)):
+def export_excel_snapshot(symbol: str, exchange: str = "US", limit: int = Query(EXCEL_DEFAULT_HISTORY_ROWS, ge=20, le=5000), db: Session = Depends(get_db)):
     """Download an editable workbook containing real stored data + client ranking formula sheets."""
     try:
         from openpyxl import Workbook
@@ -2022,7 +2126,7 @@ def export_excel_snapshot(symbol: str, exchange: str = "US", limit: int = Query(
 
     symbol = symbol.upper()
     exchange = exchange.upper()
-    feed = get_excel_feed(symbol, exchange, limit, db)
+    feed = get_excel_feed(symbol=symbol, exchange=exchange, limit=limit, db=db)
     wb = Workbook()
     ws = wb.active
     ws.title = "Summary"

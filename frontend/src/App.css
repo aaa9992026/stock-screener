@@ -1774,6 +1774,14 @@ button:disabled {
   background: #1d4ed8;
 }
 
+.controls .excel-live-top {
+  background: #15803d;
+  white-space: nowrap;
+}
+.controls .excel-live-top:hover {
+  background: #166534;
+}
+
 .timeframes {
   gap: 6px;
 }

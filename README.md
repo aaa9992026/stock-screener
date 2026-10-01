@@ -18,6 +18,8 @@ Key capabilities include:
 - Weight-independent raw Relative Return; editable weights affect only Final RS Score.
 - SEC EDGAR official US filing metadata and XBRL/companyfacts integration.
 - Configurable automatic market-data refresh without CSV uploads.
+- Direct live Excel connector (.iqy) backed by a refreshable CSV endpoint; Excel Refresh All re-requests current screener data.
+- Excel live feed targets 5 years of daily OHLCV so client indicator formulas have at least 4 years of history when the provider supplies it.
 - Provider status, stale/error handling and provider-replacement documentation.
 
 ## Stack
