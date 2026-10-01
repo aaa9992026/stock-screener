@@ -689,11 +689,11 @@ def _rsi(values, period=14):
 
 
 CLIENT_COMPOSITE_WEIGHTS = {
-    "fundamental": 30.0,
-    "technical": 25.0,
-    "relative_strength": 25.0,
+    "technical": 30.0,
+    "fundamental": 25.0,
     "ownership": 15.0,
-    "sector": 5.0,
+    "sector": 20.0,
+    "relative_strength": 10.0,
 }
 
 CLIENT_SECTOR_WEIGHTS = {
@@ -1778,11 +1778,11 @@ def get_history(
 def get_dashboard_summary(
     symbol: str,
     exchange: str = "US",
-    technical_weight: float = 25,
-    fundamental_weight: float = 30,
-    relative_strength_weight: float = 25,
+    technical_weight: float = 30,
+    fundamental_weight: float = 25,
+    relative_strength_weight: float = 10,
     ownership_weight: float = 15,
-    sector_weight: float = 5,
+    sector_weight: float = 20,
     technical_ema20_weight: float = 20,
     technical_ema50_weight: float = 20,
     technical_ema150_weight: float = 20,
@@ -1884,7 +1884,7 @@ def get_dashboard_summary(
         "industry": company.industry if company else None,
         "sector_rank": sector_rank,
         "industry_rank": industry_rank,
-        "method_note": "Milestone-2 composite follows the client note: Fundamental 30% + Technical 25% + RS 25% + Ownership 15% + Sector 5%. Sector is included only when its real growth-ranking component is available; it is never substituted with price RS. For NSE/BSE, a score is withheld when a positively weighted fundamental or ownership category is unavailable, rather than producing a misleading partial ranking."
+        "method_note": "Milestone-2 composite follows the client note: Technical 30% + Fundamental 25% + Ownership 15% + Sector 20% + RS 10%. Sector is included only when its real growth-ranking component is available; it is never substituted with price RS. For NSE/BSE, a score is withheld when a positively weighted fundamental or ownership category is unavailable, rather than producing a misleading partial ranking."
     })
 
 
@@ -1938,7 +1938,7 @@ def get_client_ranking_spec():
     """Machine-readable Milestone-2 formulas transcribed from the client's notes."""
     return {
         "overall_composite": {
-            "formula": "Fundamental*0.30 + Technical*0.25 + RS*0.25 + Ownership*0.15 + Sector*0.05",
+            "formula": "Technical*0.30 + Fundamental*0.25 + Ownership*0.15 + Sector*0.20 + RS*0.10",
             "weights_percent": CLIENT_COMPOSITE_WEIGHTS,
         },
         "sector_ranking": {
@@ -2164,7 +2164,7 @@ def export_excel_snapshot(symbol: str, exchange: str = "US", limit: int = Query(
     cfg["A8"] = "Composite Score"
     cfg["B8"] = "=IF(COUNT(B2:B6)=0,\"\",SUM(D2:D6)/SUMPRODUCT(--ISNUMBER(B2:B6),C2:C6)*100)"
     cfg["A10"] = "Client formula"
-    cfg["B10"] = "Fundamental*0.30 + Technical*0.25 + RS*0.25 + Ownership*0.15 + Sector*0.05"
+    cfg["B10"] = "Technical*0.30 + Fundamental*0.25 + Ownership*0.15 + Sector*0.20 + RS*0.10"
 
     tech_filters = wb.create_sheet("Technical_Filter_Config")
     tech_filters.append(["Filter Name", "Compare", "Value / Target", "Weight", "Enabled", "Filter Score (0-100)", "Weighted Points"])
@@ -3617,6 +3617,187 @@ def get_sector_analysis(
         "formula": "EPS Growth RS 30% + PAT Growth RS 25% + Sales Growth RS 20% + Growth Acceleration RS 15% + Growth Breadth 5% + Acceleration Breadth 5%",
         "aggregation": "Median stock growth by sector, per client note.",
         "data_rule": "Current snapshot medians are real stored provider values. Historical growth-ranking fields remain N/A until real peer history is available; they are never fabricated.",
+    })
+
+
+@router.get("/top-composite")
+def get_top_composite_dashboard(
+    market: str = "ALL",
+    limit: int = Query(200, ge=20, le=200),
+    candidate_limit: int = Query(700, ge=200, le=1200),
+    db: Session = Depends(get_db),
+):
+    """Fast front-dashboard ranking built only from verified stored data.
+
+    The endpoint intentionally keeps unavailable categories as N/A.  It scores a
+    broad high-coverage candidate pool, computes technical/RS values in one
+    batched history read, then returns the best rows by the latest client
+    composite weights.  Sector/EPS/PAT/Sales sub-scores are not invented when
+    the required peer/fundamental history is missing.
+    """
+    query, expressions = _screener_query_parts(db, market)
+    candidates = (
+        query.order_by(
+            expressions["data_coverage"].desc(),
+            expressions["market_cap"].desc().nullslast(),
+            Company.symbol.asc(),
+        )
+        .limit(candidate_limit)
+        .all()
+    )
+    base_rows = [_screener_row_dict(row) for row in candidates]
+    if not base_rows:
+        return {
+            "market": market.upper(), "rows": [], "candidate_count": 0,
+            "formula": "Technical 30% + Fundamental 25% + Ownership 15% + Sector 20% + RS 10%",
+            "data_rule": "Verified stored data only; missing values remain N/A.",
+        }
+
+    by_exchange = {}
+    for row in base_rows:
+        by_exchange.setdefault(row.get("exchange") or "", []).append(row.get("symbol"))
+
+    cutoff = date.today() - timedelta(days=400)
+    grouped = {}
+    for ex, symbols in by_exchange.items():
+        symbols = [s for s in symbols if s]
+        if not symbols:
+            continue
+        price_rows = (
+            db.query(OHLCV)
+            .filter(OHLCV.exchange == ex, OHLCV.symbol.in_(symbols), OHLCV.date >= cutoff)
+            .order_by(OHLCV.symbol.asc(), OHLCV.date.asc())
+            .all()
+        )
+        for item in price_rows:
+            if item.close is None:
+                continue
+            grouped.setdefault((ex, item.symbol), []).append(float(item.close))
+
+    def technical_score(closes):
+        if not closes or len(closes) < 20:
+            return None
+        latest = closes[-1]
+        values = []
+        for period in (20, 50, 150, 200):
+            if len(closes) >= period:
+                ema = _ema(closes, period)
+                if ema is not None:
+                    values.append(100.0 if latest > ema else 0.0)
+        rsi = _rsi(closes, 14) if len(closes) >= 15 else None
+        if rsi is not None:
+            values.append(100.0 if 50 <= rsi <= 70 else 50.0 if (40 <= rsi < 50 or 70 < rsi <= 80) else 0.0)
+        return round(sum(values) / len(values), 2) if values else None
+
+    def fundamental_score(row):
+        checks = []
+        mapping = [
+            (row.get("trailing_eps"), lambda x: x > 0),
+            (row.get("net_income"), lambda x: x > 0),
+            (row.get("profit_margin"), lambda x: x > 0),
+            (row.get("return_on_equity"), lambda x: x >= 0.15),
+            (row.get("return_on_assets"), lambda x: x >= 0.05),
+        ]
+        for raw, fn in mapping:
+            if raw is None:
+                continue
+            try:
+                num = float(raw)
+                checks.append(100.0 if fn(num) else (50.0 if num > 0 else 0.0))
+            except Exception:
+                continue
+        return round(sum(checks) / len(checks), 2) if checks else None
+
+    def ownership_score(row):
+        values = []
+        inst = row.get("institution_percent")
+        insider = row.get("insider_percent")
+        if inst is not None:
+            try:
+                x = float(inst); x = x * 100 if x <= 1 else x
+                values.append((max(0.0, min(100.0, x)), 70.0))
+            except Exception:
+                pass
+        if insider is not None:
+            try:
+                x = float(insider); x = x * 100 if x <= 1 else x
+                values.append((max(0.0, min(100.0, x * 5.0)), 30.0))
+            except Exception:
+                pass
+        total = sum(w for _, w in values)
+        return round(sum(v*w for v,w in values)/total, 2) if total else None
+
+    periods = {"1w": 5, "1m": 21, "3m": 63, "6m": 126, "1y": 252}
+    period_weights = {"1w": 30.0, "1m": 25.0, "3m": 20.0, "6m": 15.0, "1y": 10.0}
+    raw_returns = {}
+    peers_by_group = {"US": {k: [] for k in periods}, "INDIA": {k: [] for k in periods}}
+    for row in base_rows:
+        key = (row.get("exchange"), row.get("symbol"))
+        closes = grouped.get(key, [])
+        vals = {}
+        for label, days in periods.items():
+            if len(closes) > days and closes[-1-days] not in (None, 0):
+                vals[label] = ((closes[-1] / closes[-1-days]) - 1.0) * 100.0
+        raw_returns[key] = vals
+        group = "US" if row.get("exchange") == "US" else "INDIA"
+        for label, value in vals.items():
+            peers_by_group[group][label].append(value)
+
+    ranked = []
+    weights = CLIENT_COMPOSITE_WEIGHTS
+    for row in base_rows:
+        ex, sym = row.get("exchange"), row.get("symbol")
+        closes = grouped.get((ex, sym), [])
+        tech = technical_score(closes)
+        fund = fundamental_score(row)
+        own = ownership_score(row)
+        group = "US" if ex == "US" else "INDIA"
+        rs_points = []
+        rs_weight = 0.0
+        for label, weight in period_weights.items():
+            value = raw_returns.get((ex, sym), {}).get(label)
+            peers = peers_by_group[group][label]
+            pct = _percentile_rank(peers, value) if value is not None and peers else None
+            if pct is not None:
+                rs_points.append(pct * weight)
+                rs_weight += weight
+        rs = round(sum(rs_points)/rs_weight, 2) if rs_weight else None
+        sector = None  # exact peer-growth sector score remains N/A until real history exists
+
+        components = {
+            "technical": tech, "fundamental": fund, "ownership": own,
+            "sector": sector, "relative_strength": rs,
+        }
+        available_weight = sum(weights[k] for k,v in components.items() if v is not None)
+        composite = None
+        if available_weight > 0:
+            composite = round(sum(components[k] * weights[k] for k in components if components[k] is not None) / available_weight, 2)
+        ranked.append({
+            **row,
+            "composite_score": composite,
+            "score_coverage_percent": round(available_weight, 2),
+            "technical_score": tech,
+            "fundamental_score": fund,
+            "ownership_score": own,
+            "sector_score": sector,
+            "rs_score": rs,
+            "eps_score": None, "pat_score": None, "sales_score": None,
+            "alpha": None, "beta": None,
+        })
+
+    ranked = [r for r in ranked if r.get("composite_score") is not None]
+    ranked.sort(key=lambda r: (-(r.get("composite_score") or -1), -(r.get("score_coverage_percent") or 0), str(r.get("symbol") or "")))
+    rows = ranked[:limit]
+    for idx, row in enumerate(rows, start=1):
+        row["rank"] = idx
+
+    return _json_safe({
+        "market": market.upper(),
+        "rows": rows,
+        "candidate_count": len(base_rows),
+        "formula": "Technical 30% + Fundamental 25% + Ownership 15% + Sector 20% + RS 10%",
+        "rs_note": "RS percentiles on this dashboard use the currently verified stored candidate peer set and are marked provisional until the full client market universe is populated.",
+        "data_rule": "Verified stored data only. Missing sector/EPS/PAT/Sales/Alpha/Beta history remains N/A and is never fabricated.",
     })
 
 

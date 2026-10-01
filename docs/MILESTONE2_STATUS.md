@@ -33,7 +33,7 @@ This is the cumulative Milestone 2 continuation build. It preserves all accepted
 
 ## Latest handwritten ranking update
 
-- Overall client composite updated to Fundamental 30% + Technical 25% + RS 25% + Ownership 15% + Sector 5%.
+- Overall client composite updated to Technical 30% + Fundamental 25% + Ownership 15% + Sector 20% + RS 10%.
 - Sector-ranking formula captured: EPS 30%, PAT 25%, Sales 20%, Growth Acceleration 15%, Growth Breadth 5%, Acceleration Breadth 5%.
 - Technical Summary now exposes the additional trend/strength/momentum/participation/volatility/base-formation filter inputs from the latest notes.
 - Excel Power Query feed and editable workbook export added.
@@ -42,7 +42,7 @@ This is the cumulative Milestone 2 continuation build. It preserves all accepted
 
 ## Deployment recheck fixes
 
-- Migrates stale browser-saved ranking weights to the current 100% Milestone 2 default: Fundamental 30%, Technical 25%, RS 25%, Ownership 15%, Sector 5%.
+- Migrates stale browser-saved ranking weights to the current 100% Milestone 2 default: Technical 30%, Fundamental 25%, Ownership 15%, Sector 20%, RS 10%.
 - Migrates stale RS period weights to the current client default and removes old Sector-RS 20% carry-over.
 - Fixes the Participation panel so delivery data never renders as `[object Object]`; true NSE delivery percentages are formatted as Day/Week/Month, otherwise N/A.
 - Industry/Sector return rows now exclude the selected stock and require at least five real stored peers. If peer history is insufficient, N/A is shown instead of repeating the stock's own return.

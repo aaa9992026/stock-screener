@@ -40,9 +40,9 @@ const formatMarketMoney = (value, exchange) => {
   }).format(Number(value));
 };
 
-const defaultScoreWeights = { fundamental: 30, technical: 25, relative_strength: 25, ownership: 15, sector: 5 };
+const defaultScoreWeights = { technical: 30, fundamental: 25, ownership: 15, sector: 20, relative_strength: 10 };
 const defaultRsWeights = { "1w": 30, "2w": 0, "1m": 25, "2m": 0, "3m": 20, "6m": 15, "1y": 10, "sector": 0 };
-const SCORE_WEIGHTS_STORAGE_VERSION = "m2-client-composite-100-v1";
+const SCORE_WEIGHTS_STORAGE_VERSION = "m2-client-dashboard-composite-v2";
 const RS_WEIGHTS_STORAGE_VERSION = "m2-rs-market-universe-v2";
 
 
@@ -324,6 +324,9 @@ function App() {
   const [universePageSize, setUniversePageSize] = useState(25);
   const [universeColumns, setUniverseColumns] = useState([...universeDefaultColumns]);
   const [showUniverseColumns, setShowUniverseColumns] = useState(false);
+  const [topComposite, setTopComposite] = useState({ rows: [], candidate_count: 0, formula: "", data_rule: "", rs_note: "" });
+  const [topCompositeLoading, setTopCompositeLoading] = useState(false);
+  const [topCompositeError, setTopCompositeError] = useState("");
   const [chartOverlays, setChartOverlays] = useState({
     ema: true, sma: true, bollinger: true, volume: true, eps: true, rs: true
   });
@@ -402,6 +405,28 @@ function App() {
     }
   };
 
+  const loadTopComposite = async (marketOverride = universeFilters.market || "ALL") => {
+    setTopCompositeLoading(true);
+    setTopCompositeError("");
+    try {
+      const res = await axios.get(`${API}/market/top-composite`, {
+        params: { market: marketOverride || "ALL", limit: 200, candidate_limit: 700 },
+        timeout: 45000,
+      });
+      setTopComposite({
+        rows: res.data.rows || [],
+        candidate_count: res.data.candidate_count || 0,
+        formula: res.data.formula || "",
+        data_rule: res.data.data_rule || "",
+        rs_note: res.data.rs_note || "",
+      });
+    } catch (error) {
+      setTopCompositeError(error?.response?.data?.detail || "Composite dashboard could not be loaded right now.");
+    } finally {
+      setTopCompositeLoading(false);
+    }
+  };
+
   const resetUniverseFilters = () => {
     const next = { ...emptyUniverseFilters };
     setUniverseFilters(next);
@@ -472,6 +497,7 @@ function App() {
     // a transient backend failure. A second unconditional delayed request used
     // to overwrite a successful first response with an error/empty table.
     loadUniverseScreener(1);
+    loadTopComposite("ALL");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -2082,6 +2108,129 @@ function App() {
         )}
 
 
+
+        <section className="composite-dashboard-card">
+          <div className="composite-dashboard-header">
+            <div>
+              <span className="dashboard-kicker">CLIENT DASHBOARD</span>
+              <h2>Top 200 Stocks — Composite Final Score</h2>
+              <p>Click any stock to open its chart and indicators above the ranking list.</p>
+            </div>
+            <div className="composite-dashboard-actions">
+              <select
+                value={universeFilters.market}
+                onChange={(e) => {
+                  const nextMarket = e.target.value;
+                  setUniverseFilters((v) => ({ ...v, market: nextMarket, sector: "", industry: "" }));
+                  loadTopComposite(nextMarket);
+                }}
+              >
+                <option value="ALL">US + India</option>
+                <option value="US">US Stocks</option>
+                <option value="INDIA">Indian Stocks</option>
+                <option value="NSE">NSE Only</option>
+                <option value="BSE">BSE Only</option>
+              </select>
+              <button type="button" onClick={() => loadTopComposite()} disabled={topCompositeLoading}>
+                {topCompositeLoading ? "Refreshing…" : "Refresh Top 200"}
+              </button>
+            </div>
+          </div>
+
+          <div className="composite-weight-strip">
+            {[
+              ["Technical", 30], ["Fundamental", 25], ["Ownership", 15], ["Sector", 20], ["RS", 10],
+            ].map(([label, value]) => (
+              <div key={label}><span>{label}</span><strong>{value}%</strong></div>
+            ))}
+          </div>
+
+          <div className="dashboard-selected-grid">
+            <div className="dashboard-selected-stock">
+              <span>Selected Stock</span>
+              <strong>{selectedCompany?.name || symbol}</strong>
+              <div className="dashboard-selected-meta">
+                <b>{symbol}</b>
+                <span>{exchange}</span>
+                <span>{selectedCompany?.isin ? `ISIN ${selectedCompany.isin}` : "ISIN N/A"}</span>
+              </div>
+              <div className="dashboard-score-pills">
+                <span>Final <b>{dashboard?.score ?? "N/A"}</b></span>
+                <span>Technical <b>{dashboard?.score_components?.technical ?? "N/A"}</b></span>
+                <span>Fundamental <b>{dashboard?.score_components?.fundamental ?? "N/A"}</b></span>
+                <span>Ownership <b>{dashboard?.score_components?.ownership ?? "N/A"}</b></span>
+                <span>Sector <b>{dashboard?.score_components?.sector ?? "N/A"}</b></span>
+                <span>RS <b>{dashboard?.score_components?.relative_strength ?? "N/A"}</b></span>
+              </div>
+            </div>
+
+            <div className="dashboard-mini-chart">
+              <div className="dashboard-mini-chart-title">
+                <div><strong>{symbol} Price Chart</strong><span>{timeframe} • latest {Math.min(data.length, 120)} bars</span></div>
+                <div className="dashboard-mini-indicators">
+                  {["ema", "sma", "bollinger", "volume", "rs"].map((key) => (
+                    <button key={key} type="button" className={chartOverlays[key] ? "active" : ""} onClick={() => setChartOverlays((v) => ({ ...v, [key]: !v[key] }))}>
+                      {key === "bollinger" ? "BB" : key.toUpperCase()}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {data.length ? (
+                <ResponsiveContainer width="100%" height={190}>
+                  <LineChart data={data.slice(-120).map((row) => ({ date: String(row.date || "").slice(5), close: Number(row.close) }))}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="date" minTickGap={34} tick={{ fontSize: 10 }} />
+                    <YAxis domain={["auto", "auto"]} width={55} tick={{ fontSize: 10 }} />
+                    <Tooltip formatter={(value) => [Number(value).toFixed(2), "Close"]} />
+                    <Line type="monotone" dataKey="close" dot={false} strokeWidth={2} isAnimationActive={false} />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : <div className="dashboard-mini-empty">Select a stock from the table to load its chart.</div>}
+            </div>
+          </div>
+
+          {topCompositeError && <div className="message error-message">{topCompositeError}</div>}
+          <div className="composite-table-wrap">
+            <table className="composite-ranking-table">
+              <thead>
+                <tr>
+                  <th>#</th><th>Stock</th><th>Composite</th><th>Technical</th><th>Fundamental</th><th>Ownership</th><th>Sector</th><th>RS</th><th>EPS</th><th>PAT</th><th>Sales</th><th>Alpha</th><th>Beta</th><th>Coverage</th>
+                </tr>
+              </thead>
+              <tbody>
+                {topCompositeLoading && !topComposite.rows.length ? (
+                  <tr><td colSpan="14" className="dashboard-table-empty">Loading the verified ranking…</td></tr>
+                ) : topComposite.rows.length ? topComposite.rows.map((row) => (
+                  <tr key={`${row.exchange}-${row.symbol}`} onClick={() => openUniverseStock(row)} className={row.symbol === symbol && row.exchange === exchange ? "selected" : ""}>
+                    <td>{row.rank}</td>
+                    <td><strong>{row.symbol}</strong><small>{row.name || row.symbol}</small></td>
+                    <td><b>{row.composite_score ?? "N/A"}</b></td>
+                    <td>{row.technical_score ?? "N/A"}</td>
+                    <td>{row.fundamental_score ?? "N/A"}</td>
+                    <td>{row.ownership_score ?? "N/A"}</td>
+                    <td>{row.sector_score ?? "N/A"}</td>
+                    <td>{row.rs_score ?? "N/A"}</td>
+                    <td>{row.eps_score ?? "N/A"}</td>
+                    <td>{row.pat_score ?? "N/A"}</td>
+                    <td>{row.sales_score ?? "N/A"}</td>
+                    <td>{row.alpha ?? "N/A"}</td>
+                    <td>{row.beta ?? "N/A"}</td>
+                    <td>{row.score_coverage_percent != null ? `${Number(row.score_coverage_percent).toFixed(0)}%` : "N/A"}</td>
+                  </tr>
+                )) : (
+                  <tr><td colSpan="14" className="dashboard-table-empty">No verified ranking rows are available yet.</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+          <div className="composite-dashboard-note">
+            <strong>{topComposite.formula || "Technical 30% + Fundamental 25% + Ownership 15% + Sector 20% + RS 10%"}</strong>
+            <span>{topComposite.data_rule || "Verified stored data only; missing values remain N/A."}</span>
+            {topComposite.rs_note && <span>{topComposite.rs_note}</span>}
+          </div>
+        </section>
+
+
         <section className="universe-screener-card">
           <div className="universe-screener-header">
             <div>
@@ -2423,7 +2572,7 @@ function App() {
               <div className="ranking-settings-header">
                 <div>
                   <h2>Milestone 2 Ranking Weight Settings ({exchange})</h2>
-                  <p>Client composite: Fundamental 30% + Technical 25% + RS 25% + Ownership 15% + Sector 5%. Editable weights remain normalized automatically.</p>
+                  <p>Client composite: Technical 30% + Fundamental 25% + Ownership 15% + Sector 20% + RS 10%. Editable weights remain normalized automatically.</p>
                 </div>
                 <div className="ranking-total-badge">
                   <span>Entered total</span>
@@ -2556,7 +2705,7 @@ function App() {
               )}
 
               <div className="ranking-help-note">
-                <strong>How weighting works:</strong> the Milestone 2 default follows the latest handwritten composite formula: Fundamental 30%, Technical 25%, RS 25%, Ownership 15%, Sector 5%. Missing provider values remain N/A and are never invented. Ambiguous handwritten point allocations remain editable until confirmed.
+                <strong>How weighting works:</strong> the Milestone 2 default follows the latest handwritten composite formula: Technical 30%, Fundamental 25%, Ownership 15%, Sector 20%, RS 10%. Missing provider values remain N/A and are never invented. Ambiguous handwritten point allocations remain editable until confirmed.
               </div>
 
               {showRankingDetails && (
@@ -2597,7 +2746,7 @@ function App() {
               </div>
             </div>
             <div className="chart-note">
-              Composite = Fundamental × 30% + Technical × 25% + RS × 25% + Ownership × 15% + Sector × 5%
+              Composite = Technical × 30% + Fundamental × 25% + Ownership × 15% + Sector × 20% + RS × 10%
             </div>
             <div className="chart-note" style={{ marginTop: 8 }}>
               Sector = EPS RS × 30% + PAT RS × 25% + Sales RS × 20% + Growth Acceleration RS × 15% + Growth Breadth × 5% + Acceleration Breadth × 5%
