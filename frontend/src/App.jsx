@@ -2599,30 +2599,51 @@ function App() {
         </section>
 
         <section className="fundamental-section relative-strength-section">
-          <h2>Relative Strength vs {benchmark?.name || (exchange === "US" ? "S&P 500" : "NIFTY 500")}</h2>
+          <div className="rs-section-header">
+            <div>
+              <h2>Relative Strength vs {benchmark?.name || (exchange === "US" ? "S&P 500" : "NIFTY 500")}</h2>
+              <p>Choose the periods to include and adjust their contribution to the final RS score.</p>
+            </div>
+            <div className="rs-weight-total" title="Sum of all RS weights">
+              <span>Total weight</span>
+              <strong>{Object.values(rsWeights).reduce((sum, value) => sum + (Number(value) || 0), 0)}%</strong>
+            </div>
+          </div>
           <div className="indicator-settings rs-weight-settings rs-horizon-settings">
             {["1w","2w","1m","2m","3m","6m","1y","sector"].map((key) => (
               <div key={key} className={`rs-horizon-control ${rsVisibility[key] === false ? "is-hidden" : ""}`}>
-                <label>{key === "sector" ? "Sector RS %" : `${key.toUpperCase()} %`}</label>
-                <input type="number" min="0" value={rsWeights[key]}
-                  onChange={(e) => setRsWeights((prev) => ({ ...prev, [key]: Math.max(0, Number(e.target.value) || 0) }))} />
-                <label className="rs-visibility-toggle">
-                  <input
-                    type="checkbox"
-                    checked={rsVisibility[key] !== false}
-                    onChange={(e) => setRsVisibility((prev) => ({ ...prev, [key]: e.target.checked }))}
-                  />
-                  Show
+                <div className="rs-horizon-card-head">
+                  <span className="rs-period-label">{key === "sector" ? "Sector RS" : key.toUpperCase()}</span>
+                  <label className="rs-switch" title={rsVisibility[key] !== false ? "Included in display" : "Hidden from display"}>
+                    <input
+                      type="checkbox"
+                      checked={rsVisibility[key] !== false}
+                      onChange={(e) => setRsVisibility((prev) => ({ ...prev, [key]: e.target.checked }))}
+                    />
+                    <span className="rs-switch-track"><span className="rs-switch-thumb" /></span>
+                    <span className="rs-switch-text">{rsVisibility[key] !== false ? "Shown" : "Hidden"}</span>
+                  </label>
+                </div>
+                <label className="rs-weight-field">
+                  <span>Weight</span>
+                  <span className="rs-weight-input-wrap">
+                    <input type="number" min="0" value={rsWeights[key]}
+                      onChange={(e) => setRsWeights((prev) => ({ ...prev, [key]: Math.max(0, Number(e.target.value) || 0) }))} />
+                    <span className="rs-percent-suffix">%</span>
+                  </span>
                 </label>
               </div>
             ))}
-            <button onClick={() => {
-              localStorage.setItem("rsWeights", JSON.stringify(rsWeights));
-              localStorage.setItem("rsWeightsVersion", RS_WEIGHTS_STORAGE_VERSION);
-              localStorage.setItem("rsVisibility", JSON.stringify(rsVisibility));
-              loadTechnicalSummary();
-              loadDashboard();
-            }}>Apply RS Settings</button>
+            <div className="rs-settings-actions">
+              <span>Changes are applied to the RS calculation after saving.</span>
+              <button onClick={() => {
+                localStorage.setItem("rsWeights", JSON.stringify(rsWeights));
+                localStorage.setItem("rsWeightsVersion", RS_WEIGHTS_STORAGE_VERSION);
+                localStorage.setItem("rsVisibility", JSON.stringify(rsVisibility));
+                loadTechnicalSummary();
+                loadDashboard();
+              }}>Apply RS Settings</button>
+            </div>
           </div>
           <div className="rs-score-summary">
             <div className="metric rs-score-card">
