@@ -2880,3 +2880,20 @@ button:disabled {
   .dashboard-mini-chart-title { flex-direction: column; }
   .dashboard-mini-indicators { justify-content: flex-start; }
 }
+
+.provisional-score-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  margin-left: 5px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #fff7ed;
+  border: 1px solid #fdba74;
+  color: #c2410c;
+  font-size: 9px;
+  font-weight: 800;
+  vertical-align: middle;
+}

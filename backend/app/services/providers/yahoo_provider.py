@@ -400,29 +400,15 @@ class YahooProvider(BaseMarketDataProvider):
 
         quarterly_results = build_periods(quarterly, 12)
 
-        for i in range(len(quarterly_results)):
-            quarterly_results[i]["yoy_sales"] = None
-            quarterly_results[i]["yoy_pat"] = None
-            quarterly_results[i]["yoy_eps"] = None
-
-        if len(quarterly_results) >= 5:
-            current = quarterly_results[0]
-            year_ago = quarterly_results[4]
-
-            current["yoy_sales"] = growth(
-                current["sales"],
-                year_ago["sales"]
-            )
-
-            current["yoy_pat"] = growth(
-                current["pat"],
-                year_ago["pat"]
-            )
-
-            current["yoy_eps"] = growth(
-                current["eps"],
-                year_ago["eps"]
-            )
+        # The client's exact handwritten EPS/PAT/Sales formulas compare the
+        # latest, prior and second-prior quarterly YoY growth values. Compute
+        # YoY for every quarter that has a matching year-ago quarter instead
+        # of only calculating it for the latest row.
+        for i, current in enumerate(quarterly_results):
+            year_ago = quarterly_results[i + 4] if i + 4 < len(quarterly_results) else None
+            current["yoy_sales"] = growth(current.get("sales"), year_ago.get("sales")) if year_ago else None
+            current["yoy_pat"] = growth(current.get("pat"), year_ago.get("pat")) if year_ago else None
+            current["yoy_eps"] = growth(current.get("eps"), year_ago.get("eps")) if year_ago else None
 
         annual_results = build_periods(annual, 7)
 

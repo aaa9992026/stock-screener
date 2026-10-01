@@ -101,3 +101,7 @@ The Milestone 2 UI includes a many-stock screener with Popular, Fundamentals, Te
 ## Final screener data-availability update
 
 The universe screener now applies an equity-only US filter at query time, automatically cleans legacy warrants/units/ETFs/SPAC rows, shows real-data coverage, prioritizes rows with the most available verified data, and incrementally enriches missing fundamentals/ownership in bounded background batches. No missing values are fabricated. Use **Fill Missing Data** for an additional bounded refresh of the selected market and **Export Excel** to export the current filtered universe.
+
+## 2026-10-01 exact handwritten formula revision
+
+The Fundamental Filters tab now implements the client's exact 11-rule EPS composite and the same 11-rule structure for PAT and Sales. All six visible NPM formulas are represented; any point weight that is not legible in the supplied page remains editable and defaults to zero rather than being guessed. Quarterly YoY values are calculated for prior quarters as required. Incomplete Top-200 composite rows are explicitly marked Provisional instead of being presented as Final.

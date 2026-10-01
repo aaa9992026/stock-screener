@@ -722,27 +722,51 @@ CLIENT_TECHNICAL_FILTER_CONFIG = [
 ]
 
 CLIENT_FUNDAMENTAL_FILTER_CONFIG = [
-    {"group": "EPS", "name": "Latest quarter EPS YoY", "compare": ">", "value": 30.0, "weight": 10.0, "enabled": True},
-    {"group": "EPS", "name": "Quarterly EPS YoY trend rising", "compare": ">", "value": "previous 2 YoY values", "weight": 6.0, "enabled": True},
-    {"group": "EPS", "name": "Latest year EPS YoY", "compare": ">", "value": 20.0, "weight": 6.0, "enabled": True},
-    {"group": "EPS", "name": "Annual EPS trend rising", "compare": ">", "value": "previous 2 years", "weight": 4.0, "enabled": True},
-    {"group": "PAT", "name": "Latest quarter PAT YoY", "compare": ">", "value": 30.0, "weight": 6.0, "enabled": True},
-    {"group": "PAT", "name": "Quarterly PAT rising", "compare": ">", "value": "previous 2 quarters", "weight": 4.0, "enabled": True},
-    {"group": "PAT", "name": "Quarterly PAT YoY trend rising", "compare": ">", "value": "previous 2 YoY values", "weight": 6.0, "enabled": True},
-    {"group": "PAT", "name": "Latest year PAT YoY", "compare": ">", "value": 20.0, "weight": 5.0, "enabled": True},
-    {"group": "PAT", "name": "Annual PAT trend rising", "compare": ">", "value": "previous 2 years", "weight": 4.0, "enabled": True},
-    {"group": "Sales", "name": "Latest quarter Sales YoY", "compare": ">", "value": 30.0, "weight": 7.0, "enabled": True},
-    {"group": "Sales", "name": "Quarterly Sales trend rising", "compare": ">", "value": "previous 2 quarters", "weight": 4.0, "enabled": True},
-    {"group": "Sales", "name": "Latest year Sales YoY", "compare": ">", "value": 20.0, "weight": 5.0, "enabled": True},
-    {"group": "Sales", "name": "Annual Sales trend rising", "compare": ">", "value": "previous 2 years", "weight": 4.0, "enabled": True},
-    {"group": "NPM", "name": "Quarterly NPM growth YoY", "compare": ">", "value": 20.0, "weight": 4.0, "enabled": True},
-    {"group": "NPM", "name": "Annual NPM rising", "compare": ">", "value": "previous year", "weight": 3.0, "enabled": True},
-    {"group": "CFO", "name": "Operating cash flow YoY", "compare": ">", "value": 10.0, "weight": 4.0, "enabled": True},
-    {"group": "CFO", "name": "Cash flow per share", "compare": ">", "value": 0.0, "weight": 0.0, "enabled": False},
-    {"group": "Other", "name": "ROE", "compare": ">", "value": 20.0, "weight": 0.0, "enabled": True},
-    {"group": "Other", "name": "ROCE", "compare": ">", "value": 30.0, "weight": 0.0, "enabled": True},
-    {"group": "Other", "name": "Outstanding shares", "compare": "<", "value": 0.0, "weight": 0.0, "enabled": False},
-    {"group": "Other", "name": "Float shares", "compare": "<", "value": 0.0, "weight": 0.0, "enabled": False},
+    {"group": 'EPS', "name": 'Latest quarter EPS growth (YoY)', "compare": '>', "value": 20, "weight": 10.0, "enabled": True},
+    {"group": 'EPS', "name": 'Latest Q EPS YoY - prior Q EPS YoY', "compare": '>', "value": 20, "weight": 10.0, "enabled": True},
+    {"group": 'EPS', "name": 'Prior Q EPS YoY - second-prior Q EPS YoY', "compare": '>', "value": 20, "weight": 10.0, "enabled": True},
+    {"group": 'EPS', "name": 'Latest Q EPS YoY - prior-two YoY average', "compare": '>', "value": 20, "weight": 10.0, "enabled": True},
+    {"group": 'EPS', "name": 'Latest quarter EPS growth (QoQ)', "compare": '>', "value": 20, "weight": 10.0, "enabled": True},
+    {"group": 'EPS', "name": 'Prior-quarter EPS growth (QoQ)', "compare": '>', "value": 20, "weight": 10.0, "enabled": True},
+    {"group": 'EPS', "name": 'Second-prior-quarter EPS growth (QoQ)', "compare": '>', "value": 20, "weight": 10.0, "enabled": True},
+    {"group": 'EPS', "name": 'Latest Q EPS QoQ - prior-two QoQ average', "compare": '>', "value": 20, "weight": 5.0, "enabled": True},
+    {"group": 'EPS', "name": 'Latest annual EPS growth (YoY)', "compare": '>', "value": 20, "weight": 10.0, "enabled": True},
+    {"group": 'EPS', "name": 'Latest annual EPS YoY - prior annual EPS YoY', "compare": '>', "value": 20, "weight": 5.0, "enabled": True},
+    {"group": 'EPS', "name": 'Latest annual EPS YoY - prior-two annual YoY average', "compare": '>', "value": 20, "weight": 10.0, "enabled": True},
+    {"group": 'PAT', "name": 'Latest quarter PAT growth (YoY)', "compare": '>', "value": 20, "weight": 10.0, "enabled": True},
+    {"group": 'PAT', "name": 'Latest Q PAT YoY - prior Q PAT YoY', "compare": '>', "value": 20, "weight": 10.0, "enabled": True},
+    {"group": 'PAT', "name": 'Prior Q PAT YoY - second-prior Q PAT YoY', "compare": '>', "value": 20, "weight": 10.0, "enabled": True},
+    {"group": 'PAT', "name": 'Latest Q PAT YoY - prior-two YoY average', "compare": '>', "value": 20, "weight": 10.0, "enabled": True},
+    {"group": 'PAT', "name": 'Latest quarter PAT growth (QoQ)', "compare": '>', "value": 20, "weight": 10.0, "enabled": True},
+    {"group": 'PAT', "name": 'Prior-quarter PAT growth (QoQ)', "compare": '>', "value": 20, "weight": 10.0, "enabled": True},
+    {"group": 'PAT', "name": 'Second-prior-quarter PAT growth (QoQ)', "compare": '>', "value": 20, "weight": 10.0, "enabled": True},
+    {"group": 'PAT', "name": 'Latest Q PAT QoQ - prior-two QoQ average', "compare": '>', "value": 20, "weight": 5.0, "enabled": True},
+    {"group": 'PAT', "name": 'Latest annual PAT growth (YoY)', "compare": '>', "value": 20, "weight": 10.0, "enabled": True},
+    {"group": 'PAT', "name": 'Latest annual PAT YoY - prior annual PAT YoY', "compare": '>', "value": 20, "weight": 5.0, "enabled": True},
+    {"group": 'PAT', "name": 'Latest annual PAT YoY - prior-two annual YoY average', "compare": '>', "value": 20, "weight": 10.0, "enabled": True},
+    {"group": 'Sales', "name": 'Latest quarter Sales growth (YoY)', "compare": '>', "value": 20, "weight": 10.0, "enabled": True},
+    {"group": 'Sales', "name": 'Latest Q Sales YoY - prior Q Sales YoY', "compare": '>', "value": 20, "weight": 10.0, "enabled": True},
+    {"group": 'Sales', "name": 'Prior Q Sales YoY - second-prior Q Sales YoY', "compare": '>', "value": 20, "weight": 10.0, "enabled": True},
+    {"group": 'Sales', "name": 'Latest Q Sales YoY - prior-two YoY average', "compare": '>', "value": 20, "weight": 10.0, "enabled": True},
+    {"group": 'Sales', "name": 'Latest quarter Sales growth (QoQ)', "compare": '>', "value": 20, "weight": 10.0, "enabled": True},
+    {"group": 'Sales', "name": 'Prior-quarter Sales growth (QoQ)', "compare": '>', "value": 20, "weight": 10.0, "enabled": True},
+    {"group": 'Sales', "name": 'Second-prior-quarter Sales growth (QoQ)', "compare": '>', "value": 20, "weight": 10.0, "enabled": True},
+    {"group": 'Sales', "name": 'Latest Q Sales QoQ - prior-two QoQ average', "compare": '>', "value": 20, "weight": 5.0, "enabled": True},
+    {"group": 'Sales', "name": 'Latest annual Sales growth (YoY)', "compare": '>', "value": 20, "weight": 10.0, "enabled": True},
+    {"group": 'Sales', "name": 'Latest annual Sales YoY - prior annual Sales YoY', "compare": '>', "value": 20, "weight": 5.0, "enabled": True},
+    {"group": 'Sales', "name": 'Latest annual Sales YoY - prior-two annual YoY average', "compare": '>', "value": 20, "weight": 10.0, "enabled": True},
+    {"group": 'NPM', "name": 'Latest quarter NPM growth (YoY)', "compare": '>', "value": 20.0, "weight": 20.0, "enabled": True},
+    {"group": 'NPM', "name": 'Latest quarter NPM growth (QoQ)', "compare": '>', "value": 20.0, "weight": 20.0, "enabled": True},
+    {"group": 'NPM', "name": 'Latest annual NPM growth (YoY)', "compare": '>', "value": 20.0, "weight": 20.0, "enabled": True},
+    {"group": 'NPM', "name": 'NPM expansion vs 3-year average', "compare": '>', "value": 0.0, "weight": 0.0, "enabled": True},
+    {"group": 'NPM', "name": 'Industry NPM comparison', "compare": 'industry', "value": 'Above median=20 points; below median=10 points', "weight": 20.0, "enabled": True},
+    {"group": 'NPM', "name": 'Latest Q NPM YoY - prior Q NPM YoY', "compare": '>', "value": 20.0, "weight": 0.0, "enabled": True},
+    {"group": 'CFO', "name": 'Operating cash flow growth (YoY)', "compare": '>', "value": 0.0, "weight": 0.0, "enabled": False},
+    {"group": 'CFO', "name": 'Cash flow per share', "compare": '>', "value": 0.0, "weight": 0.0, "enabled": False},
+    {"group": 'Other', "name": 'ROE', "compare": '>', "value": 20.0, "weight": 0.0, "enabled": True},
+    {"group": 'Other', "name": 'ROCE', "compare": '>', "value": 30.0, "weight": 0.0, "enabled": True},
+    {"group": 'Other', "name": 'Outstanding shares', "compare": '<', "value": 0.0, "weight": 0.0, "enabled": False},
+    {"group": 'Other', "name": 'Float shares', "compare": '<', "value": 0.0, "weight": 0.0, "enabled": False},
 ]
 
 
@@ -1867,6 +1891,42 @@ def get_dashboard_summary(
     sector_rank = _rank_within(db, company, "sector") if company and not missing_required else None
     industry_rank = _rank_within(db, company, "industry") if company and not missing_required else None
 
+    # Client NPM rule #5 compares the current NPM with the median NPM of the
+    # selected stock's industry.  Use only verified stored provider margins.
+    industry_median_npm = None
+    industry_npm_peer_count = 0
+    if company and company.industry:
+        peer_rows = (
+            db.query(Fundamental.profit_margin)
+            .join(
+                Company,
+                (Company.symbol == Fundamental.symbol)
+                & (Company.exchange == Fundamental.exchange),
+            )
+            .filter(
+                Company.exchange == exchange,
+                Company.industry == company.industry,
+                Fundamental.profit_margin.isnot(None),
+            )
+            .all()
+        )
+        peer_npms = []
+        for (raw_margin,) in peer_rows:
+            try:
+                value = float(raw_margin)
+                if not math.isfinite(value):
+                    continue
+                # Yahoo snapshot profit margin is normally a ratio (0.25 =
+                # 25%). Keep already-percent values unchanged.
+                if abs(value) <= 1:
+                    value *= 100.0
+                peer_npms.append(value)
+            except (TypeError, ValueError):
+                continue
+        if peer_npms:
+            industry_median_npm = float(median(peer_npms))
+            industry_npm_peer_count = len(peer_npms)
+
     return _json_safe({
         "symbol": symbol,
         "name": company.name if company else None,
@@ -1882,6 +1942,8 @@ def get_dashboard_summary(
         "rs_period_weights": rs_period_weights,
         "sector": company.sector if company else None,
         "industry": company.industry if company else None,
+        "industry_median_npm": industry_median_npm,
+        "industry_npm_peer_count": industry_npm_peer_count,
         "sector_rank": sector_rank,
         "industry_rank": industry_rank,
         "method_note": "Milestone-2 composite follows the client note: Technical 30% + Fundamental 25% + Ownership 15% + Sector 20% + RS 10%. Sector is included only when its real growth-ranking component is available; it is never substituted with price RS. For NSE/BSE, a score is withheld when a positively weighted fundamental or ownership category is unavailable, rather than producing a misleading partial ranking."
@@ -3749,7 +3811,11 @@ def get_top_composite_dashboard(
         ex, sym = row.get("exchange"), row.get("symbol")
         closes = grouped.get((ex, sym), [])
         tech = technical_score(closes)
-        fund = fundamental_score(row)
+        # The client's exact fundamental score requires quarterly/annual
+        # history (11 EPS + 11 PAT + 11 Sales + NPM/CFO rules). The universe
+        # snapshot does not contain that history, so never substitute the old
+        # generic positive-EPS/margin score here.
+        fund = None
         own = ownership_score(row)
         group = "US" if ex == "US" else "INDIA"
         rs_points = []
@@ -3769,12 +3835,27 @@ def get_top_composite_dashboard(
             "sector": sector, "relative_strength": rs,
         }
         available_weight = sum(weights[k] for k,v in components.items() if v is not None)
-        composite = None
+        provisional = None
         if available_weight > 0:
-            composite = round(sum(components[k] * weights[k] for k in components if components[k] is not None) / available_weight, 2)
+            provisional = round(
+                sum(components[k] * weights[k] for k in components if components[k] is not None)
+                / available_weight,
+                2,
+            )
+        all_required_available = all(
+            components.get(key) is not None
+            for key, weight in weights.items()
+            if float(weight or 0) > 0
+        )
+        final_composite = provisional if all_required_available else None
         ranked.append({
             **row,
-            "composite_score": composite,
+            # Keep a sortable provisional value, but never label it Final when
+            # exact handwritten fundamental/sector history is unavailable.
+            "composite_score": provisional,
+            "final_composite_score": final_composite,
+            "provisional_composite_score": provisional,
+            "score_status": "Final" if final_composite is not None else "Provisional",
             "score_coverage_percent": round(available_weight, 2),
             "technical_score": tech,
             "fundamental_score": fund,
@@ -3785,7 +3866,7 @@ def get_top_composite_dashboard(
             "alpha": None, "beta": None,
         })
 
-    ranked = [r for r in ranked if r.get("composite_score") is not None]
+    ranked = [r for r in ranked if r.get("provisional_composite_score") is not None]
     ranked.sort(key=lambda r: (-(r.get("composite_score") or -1), -(r.get("score_coverage_percent") or 0), str(r.get("symbol") or "")))
     rows = ranked[:limit]
     for idx, row in enumerate(rows, start=1):
@@ -3796,8 +3877,8 @@ def get_top_composite_dashboard(
         "rows": rows,
         "candidate_count": len(base_rows),
         "formula": "Technical 30% + Fundamental 25% + Ownership 15% + Sector 20% + RS 10%",
-        "rs_note": "RS percentiles on this dashboard use the currently verified stored candidate peer set and are marked provisional until the full client market universe is populated.",
-        "data_rule": "Verified stored data only. Missing sector/EPS/PAT/Sales/Alpha/Beta history remains N/A and is never fabricated.",
+        "rs_note": "RS percentiles on this dashboard use the currently verified stored candidate peer set and remain provisional until the full client market universe is populated.",
+        "data_rule": "Final Composite is shown only when all five weighted client categories are available. Rows with missing exact handwritten fundamental/sector history are explicitly Provisional; missing EPS/PAT/Sales/Alpha/Beta values remain N/A and are never fabricated.",
     })
 
 

@@ -141,25 +141,53 @@ const defaultHandwrittenFactors = {
     ema50_gt150: { weight: 4, comparator: ">" },
   },
   fundamental: {
-    q_eps_yoy: { weight: 10, threshold: 30, comparator: ">" },
-    q_eps_yoy_rising: { weight: 6, comparator: ">" },
-    q_pat_yoy: { weight: 6, threshold: 30, comparator: ">" },
-    q_pat_rising: { weight: 4, comparator: ">" },
-    q_pat_yoy_rising: { weight: 6, comparator: ">" },
-    q_npm_yoy: { weight: 4, threshold: 20, comparator: ">" },
-    q_sales_yoy: { weight: 7, threshold: 30, comparator: ">" },
-    q_sales_rising: { weight: 4, comparator: ">" },
-    a_eps_yoy: { weight: 6, threshold: 20, comparator: ">" },
-    a_eps_rising: { weight: 4, comparator: ">" },
-    a_pat_yoy: { weight: 5, threshold: 20, comparator: ">" },
-    a_pat_rising: { weight: 4, comparator: ">" },
-    a_sales_yoy: { weight: 5, threshold: 20, comparator: ">" },
-    a_sales_rising: { weight: 4, comparator: ">" },
-    a_ocf_yoy: { weight: 4, threshold: 10, comparator: ">" },
-    a_npm_rising: { weight: 3, comparator: ">" },
+    q_eps_yoy_latest: { weight: 10, threshold: 20, comparator: ">" },
+    q_eps_yoy_delta_latest_prior: { weight: 10, threshold: 20, comparator: ">" },
+    q_eps_yoy_delta_prior_second: { weight: 10, threshold: 20, comparator: ">" },
+    q_eps_yoy_accel_vs_avg: { weight: 10, threshold: 20, comparator: ">" },
+    q_eps_qoq_latest: { weight: 10, threshold: 20, comparator: ">" },
+    q_eps_qoq_prior: { weight: 10, threshold: 20, comparator: ">" },
+    q_eps_qoq_second: { weight: 10, threshold: 20, comparator: ">" },
+    q_eps_qoq_accel_vs_avg: { weight: 5, threshold: 20, comparator: ">" },
+    a_eps_yoy_latest: { weight: 10, threshold: 20, comparator: ">" },
+    a_eps_yoy_delta_latest_prior: { weight: 5, threshold: 20, comparator: ">" },
+    a_eps_yoy_accel_vs_avg: { weight: 10, threshold: 20, comparator: ">" },
+
+    q_pat_yoy_latest: { weight: 10, threshold: 20, comparator: ">" },
+    q_pat_yoy_delta_latest_prior: { weight: 10, threshold: 20, comparator: ">" },
+    q_pat_yoy_delta_prior_second: { weight: 10, threshold: 20, comparator: ">" },
+    q_pat_yoy_accel_vs_avg: { weight: 10, threshold: 20, comparator: ">" },
+    q_pat_qoq_latest: { weight: 10, threshold: 20, comparator: ">" },
+    q_pat_qoq_prior: { weight: 10, threshold: 20, comparator: ">" },
+    q_pat_qoq_second: { weight: 10, threshold: 20, comparator: ">" },
+    q_pat_qoq_accel_vs_avg: { weight: 5, threshold: 20, comparator: ">" },
+    a_pat_yoy_latest: { weight: 10, threshold: 20, comparator: ">" },
+    a_pat_yoy_delta_latest_prior: { weight: 5, threshold: 20, comparator: ">" },
+    a_pat_yoy_accel_vs_avg: { weight: 10, threshold: 20, comparator: ">" },
+
+    q_sales_yoy_latest: { weight: 10, threshold: 20, comparator: ">" },
+    q_sales_yoy_delta_latest_prior: { weight: 10, threshold: 20, comparator: ">" },
+    q_sales_yoy_delta_prior_second: { weight: 10, threshold: 20, comparator: ">" },
+    q_sales_yoy_accel_vs_avg: { weight: 10, threshold: 20, comparator: ">" },
+    q_sales_qoq_latest: { weight: 10, threshold: 20, comparator: ">" },
+    q_sales_qoq_prior: { weight: 10, threshold: 20, comparator: ">" },
+    q_sales_qoq_second: { weight: 10, threshold: 20, comparator: ">" },
+    q_sales_qoq_accel_vs_avg: { weight: 5, threshold: 20, comparator: ">" },
+    a_sales_yoy_latest: { weight: 10, threshold: 20, comparator: ">" },
+    a_sales_yoy_delta_latest_prior: { weight: 5, threshold: 20, comparator: ">" },
+    a_sales_yoy_accel_vs_avg: { weight: 10, threshold: 20, comparator: ">" },
+
+    npm_q_yoy_growth: { weight: 20, threshold: 20, comparator: ">" },
+    npm_q_qoq_growth: { weight: 20, threshold: 20, comparator: ">" },
+    npm_a_yoy_growth: { weight: 20, threshold: 20, comparator: ">" },
+    npm_expansion_3y: { weight: 0, threshold: 0, comparator: ">", enabled: true },
+    npm_industry_compare: { weight: 20, comparator: "industry" },
+    npm_q_yoy_delta: { weight: 0, threshold: 20, comparator: ">", enabled: true },
+
+    a_ocf_yoy: { weight: 0, threshold: 0, comparator: ">", enabled: false },
+    cashflow_per_share: { weight: 0, threshold: 0, comparator: ">", enabled: false },
     roe_above: { weight: 0, threshold: 20, comparator: ">", enabled: true },
     roce_above: { weight: 0, threshold: 30, comparator: ">", enabled: true },
-    cashflow_per_share: { weight: 0, threshold: 0, comparator: ">", enabled: false },
     shares_outstanding: { weight: 0, threshold: 0, comparator: "<", enabled: false },
     float_shares: { weight: 0, threshold: 0, comparator: "<", enabled: false },
   },
@@ -189,27 +217,55 @@ const handwrittenFactorMeta = {
     ["ema50_gt150", "50 EMA > 150 EMA", "EMA trend factor", []],
   ],
   fundamental: [
-    ["q_eps_yoy", "Latest quarter EPS (YoY)", "Latest quarterly EPS YoY growth", ["threshold"], "EPS"],
-    ["q_eps_yoy_rising", "Quarterly EPS YoY trend rising", "Latest YoY > prior YoY > second-prior YoY", [], "EPS"],
-    ["a_eps_yoy", "Latest year EPS (YoY)", "Latest annual EPS growth", ["threshold"], "EPS"],
-    ["a_eps_rising", "Annual EPS trend rising", "Latest EPS > prior year > second-prior year", [], "EPS"],
-    ["q_pat_yoy", "Latest quarter PAT (YoY)", "Latest quarterly PAT YoY growth", ["threshold"], "PAT"],
-    ["q_pat_rising", "Quarterly PAT rising", "Latest PAT > prior PAT > second-prior PAT", [], "PAT"],
-    ["q_pat_yoy_rising", "Quarterly PAT YoY trend rising", "Latest YoY > prior YoY > second-prior YoY", [], "PAT"],
-    ["a_pat_yoy", "Latest year PAT (YoY)", "Latest annual PAT growth", ["threshold"], "PAT"],
-    ["a_pat_rising", "Annual PAT trend rising", "Latest PAT > prior year > second-prior year", [], "PAT"],
-    ["q_sales_yoy", "Latest quarter Sales (YoY)", "Latest quarterly sales YoY growth", ["threshold"], "Sales"],
-    ["q_sales_rising", "Quarterly Sales trend rising", "Latest sales > prior sales > second-prior sales", [], "Sales"],
-    ["a_sales_yoy", "Latest year Sales (YoY)", "Latest annual sales growth", ["threshold"], "Sales"],
-    ["a_sales_rising", "Annual Sales trend rising", "Latest sales > prior year > second-prior year", [], "Sales"],
-    ["q_npm_yoy", "Quarterly NPM growth (YoY)", "Latest NPM vs year-ago quarter", ["threshold"], "NPM"],
-    ["a_npm_rising", "Annual NPM rising", "Latest year NPM > prior year NPM", [], "NPM"],
-    ["a_ocf_yoy", "Cash flow from operating activities (YoY)", "Latest annual operating cash flow growth", ["threshold"], "CFO"],
-    ["cashflow_per_share", "Cash flow per share", "Editable threshold; disabled until client confirms the exact rule", ["threshold"], "CFO"],
-    ["roe_above", "ROE", "Client note: ROE > 20; weight remains editable", ["threshold"], "Other"],
-    ["roce_above", "ROCE", "Client note: ROCE > 30; weight remains editable", ["threshold"], "Other"],
-    ["shares_outstanding", "Outstanding shares", "Editable threshold; disabled until client confirms the exact rule", ["threshold"], "Other"],
-    ["float_shares", "Float shares", "Editable threshold; disabled until client confirms the exact rule", ["threshold"], "Other"],
+    ["q_eps_yoy_latest", "EPS 1 — Latest quarter EPS growth (YoY)", "Latest Q EPS YoY > 20%", ["threshold"], "EPS"],
+    ["q_eps_yoy_delta_latest_prior", "EPS 2 — Latest YoY minus prior-quarter YoY", "Latest Q EPS YoY - prior Q EPS YoY > 20%", ["threshold"], "EPS"],
+    ["q_eps_yoy_delta_prior_second", "EPS 3 — Prior YoY minus second-prior YoY", "Prior Q EPS YoY - second-prior Q EPS YoY > 20%", ["threshold"], "EPS"],
+    ["q_eps_yoy_accel_vs_avg", "EPS 4 — Latest YoY vs prior-two average", "Latest Q EPS YoY - average(prior Q YoY, second-prior Q YoY) > 20%", ["threshold"], "EPS"],
+    ["q_eps_qoq_latest", "EPS 5 — Latest quarter EPS growth (QoQ)", "Latest Q EPS QoQ > 20%", ["threshold"], "EPS"],
+    ["q_eps_qoq_prior", "EPS 6 — Prior-quarter EPS growth (QoQ)", "Prior Q EPS QoQ > 20%", ["threshold"], "EPS"],
+    ["q_eps_qoq_second", "EPS 7 — Second-prior-quarter EPS growth (QoQ)", "Second-prior Q EPS QoQ > 20%", ["threshold"], "EPS"],
+    ["q_eps_qoq_accel_vs_avg", "EPS 8 — Latest QoQ vs prior-two average", "Latest Q EPS QoQ - average(prior Q QoQ, second-prior Q QoQ) > 20%", ["threshold"], "EPS"],
+    ["a_eps_yoy_latest", "EPS 9 — Latest annual EPS growth (YoY)", "Latest annual EPS growth YoY > 20%", ["threshold"], "EPS"],
+    ["a_eps_yoy_delta_latest_prior", "EPS 10 — Latest annual growth minus prior annual growth", "Latest annual EPS YoY - prior annual EPS YoY > 20%", ["threshold"], "EPS"],
+    ["a_eps_yoy_accel_vs_avg", "EPS 11 — Latest annual growth vs prior-two average", "Latest annual EPS YoY - average(prior annual YoY, second-prior annual YoY) > 20%", ["threshold"], "EPS"],
+
+    ["q_pat_yoy_latest", "PAT 1 — Latest quarter PAT growth (YoY)", "Latest Q PAT YoY > 20%", ["threshold"], "PAT"],
+    ["q_pat_yoy_delta_latest_prior", "PAT 2 — Latest YoY minus prior-quarter YoY", "Latest Q PAT YoY - prior Q PAT YoY > 20%", ["threshold"], "PAT"],
+    ["q_pat_yoy_delta_prior_second", "PAT 3 — Prior YoY minus second-prior YoY", "Prior Q PAT YoY - second-prior Q PAT YoY > 20%", ["threshold"], "PAT"],
+    ["q_pat_yoy_accel_vs_avg", "PAT 4 — Latest YoY vs prior-two average", "Latest Q PAT YoY - average(prior Q YoY, second-prior Q YoY) > 20%", ["threshold"], "PAT"],
+    ["q_pat_qoq_latest", "PAT 5 — Latest quarter PAT growth (QoQ)", "Latest Q PAT QoQ > 20%", ["threshold"], "PAT"],
+    ["q_pat_qoq_prior", "PAT 6 — Prior-quarter PAT growth (QoQ)", "Prior Q PAT QoQ > 20%", ["threshold"], "PAT"],
+    ["q_pat_qoq_second", "PAT 7 — Second-prior-quarter PAT growth (QoQ)", "Second-prior Q PAT QoQ > 20%", ["threshold"], "PAT"],
+    ["q_pat_qoq_accel_vs_avg", "PAT 8 — Latest QoQ vs prior-two average", "Latest Q PAT QoQ - average(prior Q QoQ, second-prior Q QoQ) > 20%", ["threshold"], "PAT"],
+    ["a_pat_yoy_latest", "PAT 9 — Latest annual PAT growth (YoY)", "Latest annual PAT growth YoY > 20%", ["threshold"], "PAT"],
+    ["a_pat_yoy_delta_latest_prior", "PAT 10 — Latest annual growth minus prior annual growth", "Latest annual PAT YoY - prior annual PAT YoY > 20%", ["threshold"], "PAT"],
+    ["a_pat_yoy_accel_vs_avg", "PAT 11 — Latest annual growth vs prior-two average", "Latest annual PAT YoY - average(prior annual YoY, second-prior annual YoY) > 20%", ["threshold"], "PAT"],
+
+    ["q_sales_yoy_latest", "Sales 1 — Latest quarter Sales growth (YoY)", "Latest Q Sales YoY > 20%", ["threshold"], "Sales"],
+    ["q_sales_yoy_delta_latest_prior", "Sales 2 — Latest YoY minus prior-quarter YoY", "Latest Q Sales YoY - prior Q Sales YoY > 20%", ["threshold"], "Sales"],
+    ["q_sales_yoy_delta_prior_second", "Sales 3 — Prior YoY minus second-prior YoY", "Prior Q Sales YoY - second-prior Q Sales YoY > 20%", ["threshold"], "Sales"],
+    ["q_sales_yoy_accel_vs_avg", "Sales 4 — Latest YoY vs prior-two average", "Latest Q Sales YoY - average(prior Q YoY, second-prior Q YoY) > 20%", ["threshold"], "Sales"],
+    ["q_sales_qoq_latest", "Sales 5 — Latest quarter Sales growth (QoQ)", "Latest Q Sales QoQ > 20%", ["threshold"], "Sales"],
+    ["q_sales_qoq_prior", "Sales 6 — Prior-quarter Sales growth (QoQ)", "Prior Q Sales QoQ > 20%", ["threshold"], "Sales"],
+    ["q_sales_qoq_second", "Sales 7 — Second-prior-quarter Sales growth (QoQ)", "Second-prior Q Sales QoQ > 20%", ["threshold"], "Sales"],
+    ["q_sales_qoq_accel_vs_avg", "Sales 8 — Latest QoQ vs prior-two average", "Latest Q Sales QoQ - average(prior Q QoQ, second-prior Q QoQ) > 20%", ["threshold"], "Sales"],
+    ["a_sales_yoy_latest", "Sales 9 — Latest annual Sales growth (YoY)", "Latest annual Sales growth YoY > 20%", ["threshold"], "Sales"],
+    ["a_sales_yoy_delta_latest_prior", "Sales 10 — Latest annual growth minus prior annual growth", "Latest annual Sales YoY - prior annual Sales YoY > 20%", ["threshold"], "Sales"],
+    ["a_sales_yoy_accel_vs_avg", "Sales 11 — Latest annual growth vs prior-two average", "Latest annual Sales YoY - average(prior annual YoY, second-prior annual YoY) > 20%", ["threshold"], "Sales"],
+
+    ["npm_q_yoy_growth", "NPM 1 — Latest quarter NPM growth (YoY)", "Latest Q NPM growth YoY > 20%", ["threshold"], "NPM"],
+    ["npm_q_qoq_growth", "NPM 2 — Latest quarter NPM growth (QoQ)", "Latest Q NPM growth QoQ > 20%", ["threshold"], "NPM"],
+    ["npm_a_yoy_growth", "NPM 3 — Latest annual NPM growth (YoY)", "Latest annual NPM growth YoY > 20%", ["threshold"], "NPM"],
+    ["npm_expansion_3y", "NPM 4 — NPM expansion vs 3-year average", "(Current NPM - 3-year average NPM) / |3-year average NPM| × 100; point weight is editable because it is not legible in the supplied photo", ["threshold"], "NPM"],
+    ["npm_industry_compare", "NPM 5 — Industry comparison", "Current NPM versus industry median NPM: above median = 20 points; below median = 10 points", [], "NPM"],
+    ["npm_q_yoy_delta", "NPM 6 — Latest quarter YoY minus prior-quarter YoY", "Latest Q NPM YoY - prior Q NPM YoY > 20%; point weight is editable because it is not legible in the supplied photo", ["threshold"], "NPM"],
+
+    ["a_ocf_yoy", "CFO — Operating cash flow growth (YoY)", "Raw provider value only; disabled until the exact CFO threshold / points are confirmed from the client note", ["threshold"], "CFO"],
+    ["cashflow_per_share", "CFO — Cash flow per share", "Editable threshold; disabled until an exact point rule is confirmed", ["threshold"], "CFO"],
+    ["roe_above", "ROE", "Confirmed rule: ROE > 20; weight remains editable", ["threshold"], "Other"],
+    ["roce_above", "ROCE", "Confirmed rule: ROCE > 30; weight remains editable", ["threshold"], "Other"],
+    ["shares_outstanding", "Outstanding shares", "Editable threshold; disabled until an exact point rule is confirmed", ["threshold"], "Other"],
+    ["float_shares", "Float shares", "Editable threshold; disabled until an exact point rule is confirmed", ["threshold"], "Other"],
   ],
   ownership: [
     ["promoter_qoq", "Promoter holding change (QoQ)", "Latest quarter promoter change", ["threshold"]],
@@ -231,6 +287,147 @@ const readLocalObject = (key, fallback) => {
   } catch {
     return fallback;
   }
+};
+
+
+const buildClientFundamentalRows = ({ fundamentalHistory, fundamentals, dashboard, factors }) => {
+  const finite = (value) => {
+    if (value === null || value === undefined || value === "") return null;
+    const n = Number(value);
+    return Number.isFinite(n) ? n : null;
+  };
+  const growth = (current, previous) => {
+    const c = finite(current);
+    const p = finite(previous);
+    if (c == null || p == null || p === 0) return null;
+    return ((c - p) / Math.abs(p)) * 100;
+  };
+  const delta = (left, right) => {
+    const a = finite(left);
+    const b = finite(right);
+    return a == null || b == null ? null : a - b;
+  };
+  const avg2 = (a, b) => {
+    const x = finite(a);
+    const y = finite(b);
+    return x == null || y == null ? null : (x + y) / 2;
+  };
+  const avg = (values) => {
+    const valid = values.map(finite).filter((v) => v != null);
+    return valid.length === values.length && valid.length ? valid.reduce((sum, v) => sum + v, 0) / valid.length : null;
+  };
+  const row = (key, currentValue, targetText = null, forcedScore = undefined) => {
+    const cfg = factors?.[key] || {};
+    let score = forcedScore;
+    if (score === undefined) {
+      const result = compareNumeric(currentValue, cfg.comparator || ">", cfg.threshold);
+      score = result == null ? null : (result ? 100 : 0);
+    }
+    return { currentValue, score, targetText };
+  };
+
+  const q = Array.isArray(fundamentalHistory?.quarterly) ? fundamentalHistory.quarterly : [];
+  const a = Array.isArray(fundamentalHistory?.annual) ? fundamentalHistory.annual : [];
+  const rows = {};
+
+  const addMetric = (metric) => {
+    const yoy = [0, 1, 2].map((i) => finite(q[i]?.[`yoy_${metric}`]));
+    const qoq = [0, 1, 2].map((i) => finite(q[i]?.[`qoq_${metric}`]));
+    const annualYoy = [0, 1, 2].map((i) => finite(a[i]?.[`yoy_${metric}`]));
+
+    rows[`q_${metric}_yoy_latest`] = row(`q_${metric}_yoy_latest`, yoy[0]);
+    rows[`q_${metric}_yoy_delta_latest_prior`] = row(`q_${metric}_yoy_delta_latest_prior`, delta(yoy[0], yoy[1]), yoy[1] == null ? "Prior Q YoY unavailable" : `Prior Q YoY ${yoy[1].toFixed(2)}%`);
+    rows[`q_${metric}_yoy_delta_prior_second`] = row(`q_${metric}_yoy_delta_prior_second`, delta(yoy[1], yoy[2]), yoy[2] == null ? "Second-prior Q YoY unavailable" : `Second-prior Q YoY ${yoy[2].toFixed(2)}%`);
+    rows[`q_${metric}_yoy_accel_vs_avg`] = row(
+      `q_${metric}_yoy_accel_vs_avg`,
+      avg2(yoy[1], yoy[2]) == null || yoy[0] == null ? null : yoy[0] - avg2(yoy[1], yoy[2]),
+      avg2(yoy[1], yoy[2]) == null ? "Prior-two YoY average unavailable" : `Prior-two YoY avg ${avg2(yoy[1], yoy[2]).toFixed(2)}%`
+    );
+
+    rows[`q_${metric}_qoq_latest`] = row(`q_${metric}_qoq_latest`, qoq[0]);
+    rows[`q_${metric}_qoq_prior`] = row(`q_${metric}_qoq_prior`, qoq[1]);
+    rows[`q_${metric}_qoq_second`] = row(`q_${metric}_qoq_second`, qoq[2]);
+    rows[`q_${metric}_qoq_accel_vs_avg`] = row(
+      `q_${metric}_qoq_accel_vs_avg`,
+      avg2(qoq[1], qoq[2]) == null || qoq[0] == null ? null : qoq[0] - avg2(qoq[1], qoq[2]),
+      avg2(qoq[1], qoq[2]) == null ? "Prior-two QoQ average unavailable" : `Prior-two QoQ avg ${avg2(qoq[1], qoq[2]).toFixed(2)}%`
+    );
+
+    rows[`a_${metric}_yoy_latest`] = row(`a_${metric}_yoy_latest`, annualYoy[0]);
+    rows[`a_${metric}_yoy_delta_latest_prior`] = row(
+      `a_${metric}_yoy_delta_latest_prior`,
+      delta(annualYoy[0], annualYoy[1]),
+      annualYoy[1] == null ? "Prior annual YoY unavailable" : `Prior annual YoY ${annualYoy[1].toFixed(2)}%`
+    );
+    rows[`a_${metric}_yoy_accel_vs_avg`] = row(
+      `a_${metric}_yoy_accel_vs_avg`,
+      avg2(annualYoy[1], annualYoy[2]) == null || annualYoy[0] == null ? null : annualYoy[0] - avg2(annualYoy[1], annualYoy[2]),
+      avg2(annualYoy[1], annualYoy[2]) == null ? "Prior-two annual YoY average unavailable" : `Prior-two annual YoY avg ${avg2(annualYoy[1], annualYoy[2]).toFixed(2)}%`
+    );
+  };
+
+  addMetric("eps");
+  addMetric("pat");
+  addMetric("sales");
+
+  const latestQNpm = finite(q[0]?.npm);
+  const qNpmYoy0 = q.length >= 5 ? growth(q[0]?.npm, q[4]?.npm) : null;
+  const qNpmYoy1 = q.length >= 6 ? growth(q[1]?.npm, q[5]?.npm) : null;
+  const qNpmQoq = q.length >= 2 ? growth(q[0]?.npm, q[1]?.npm) : null;
+  const annualNpmYoy = a.length >= 2 ? growth(a[0]?.npm, a[1]?.npm) : null;
+  const npm3yAverage = a.length >= 3 ? avg([a[0]?.npm, a[1]?.npm, a[2]?.npm]) : null;
+  const currentNpm = latestQNpm ?? finite(a[0]?.npm);
+  const npmExpansion = currentNpm == null || npm3yAverage == null || npm3yAverage === 0
+    ? null
+    : ((currentNpm - npm3yAverage) / Math.abs(npm3yAverage)) * 100;
+  const industryMedianNpm = finite(dashboard?.industry_median_npm);
+  const industryScore = currentNpm == null || industryMedianNpm == null
+    ? null
+    : (currentNpm > industryMedianNpm ? 100 : 50);
+
+  rows.npm_q_yoy_growth = row("npm_q_yoy_growth", qNpmYoy0);
+  rows.npm_q_qoq_growth = row("npm_q_qoq_growth", qNpmQoq);
+  rows.npm_a_yoy_growth = row("npm_a_yoy_growth", annualNpmYoy);
+  rows.npm_expansion_3y = row(
+    "npm_expansion_3y",
+    npmExpansion,
+    npm3yAverage == null ? "3-year average NPM unavailable" : `3-year average NPM ${npm3yAverage.toFixed(2)}%`
+  );
+  rows.npm_industry_compare = row(
+    "npm_industry_compare",
+    currentNpm,
+    industryMedianNpm == null ? "Industry median NPM unavailable" : `Industry median NPM ${industryMedianNpm.toFixed(2)}%`,
+    industryScore
+  );
+  rows.npm_q_yoy_delta = row(
+    "npm_q_yoy_delta",
+    delta(qNpmYoy0, qNpmYoy1),
+    qNpmYoy1 == null ? "Prior Q NPM YoY unavailable" : `Prior Q NPM YoY ${qNpmYoy1.toFixed(2)}%`
+  );
+
+  let annualOcfGrowth = null;
+  if (a.length >= 2) annualOcfGrowth = growth(a[0]?.operating_cash_flow, a[1]?.operating_cash_flow);
+  const roeValue = finite(a[0]?.roe) ?? (finite(fundamentals?.fundamentals?.return_on_equity) != null ? Number(fundamentals.fundamentals.return_on_equity) * 100 : null);
+  const roceValue = finite(a[0]?.roce);
+  const sharesOutstanding = finite(fundamentals?.ownership?.shares_outstanding);
+  const floatShares = finite(fundamentals?.ownership?.float_shares);
+  const latestOcf = finite(a[0]?.operating_cash_flow);
+  const cashflowPerShare = latestOcf != null && sharesOutstanding != null && sharesOutstanding !== 0 ? latestOcf / sharesOutstanding : null;
+
+  rows.a_ocf_yoy = row("a_ocf_yoy", annualOcfGrowth);
+  rows.cashflow_per_share = factors?.cashflow_per_share?.enabled === false
+    ? { currentValue: cashflowPerShare, score: null, targetText: "Disabled until exact point rule is confirmed" }
+    : row("cashflow_per_share", cashflowPerShare);
+  rows.roe_above = row("roe_above", roeValue);
+  rows.roce_above = row("roce_above", roceValue);
+  rows.shares_outstanding = factors?.shares_outstanding?.enabled === false
+    ? { currentValue: sharesOutstanding, score: null, targetText: "Disabled until exact point rule is confirmed" }
+    : row("shares_outstanding", sharesOutstanding);
+  rows.float_shares = factors?.float_shares?.enabled === false
+    ? { currentValue: floatShares, score: null, targetText: "Disabled until exact point rule is confirmed" }
+    : row("float_shares", floatShares);
+
+  return rows;
 };
 
 function App() {
@@ -1311,49 +1508,16 @@ function App() {
       ema50_gt150: finite(em["50"]) == null || finite(em["150"]) == null ? null : (Number(em["50"]) > Number(em["150"]) ? 100 : 0),
     });
 
-    const q = Array.isArray(fundamentalHistory?.quarterly) ? fundamentalHistory.quarterly : [];
-    const a = Array.isArray(fundamentalHistory?.annual) ? fundamentalHistory.annual : [];
-    const fcfg = handwrittenFactors.fundamental;
-    let qNpmGrowth = null;
-    if (q.length >= 5 && finite(q[0]?.npm) != null && finite(q[4]?.npm) != null && Number(q[4].npm) !== 0) {
-      qNpmGrowth = ((Number(q[0].npm) - Number(q[4].npm)) / Math.abs(Number(q[4].npm))) * 100;
-    }
-    const comparable = (field) => q.map((row) => finite(row?.[field])).filter((v) => v != null).slice(0, 3);
-    let annualOcfGrowth = null;
-    if (a.length >= 2 && finite(a[0]?.operating_cash_flow) != null && finite(a[1]?.operating_cash_flow) != null && Number(a[1].operating_cash_flow) !== 0) {
-      annualOcfGrowth = ((Number(a[0].operating_cash_flow) - Number(a[1].operating_cash_flow)) / Math.abs(Number(a[1].operating_cash_flow))) * 100;
-    }
-    const roeFilterValue = finite(a[0]?.roe) ?? (finite(fundamentals?.fundamentals?.return_on_equity) != null ? Number(fundamentals.fundamentals.return_on_equity) * 100 : null);
-    const roceFilterValue = finite(a[0]?.roce);
-    const sharesOutstandingFilterValue = finite(fundamentals?.ownership?.shares_outstanding);
-    const floatSharesFilterValue = finite(fundamentals?.ownership?.float_shares);
-    const latestOcfFilterValue = finite(a[0]?.operating_cash_flow);
-    const cashflowPerShareFilterValue = latestOcfFilterValue != null && sharesOutstandingFilterValue != null && sharesOutstandingFilterValue !== 0
-      ? latestOcfFilterValue / sharesOutstandingFilterValue
-      : null;
-    const fundamentalComponent = factorScore("fundamental", {
-      q_eps_yoy: finite(q[0]?.yoy_eps) == null ? null : (compareNumeric(q[0]?.yoy_eps, fcfg.q_eps_yoy.comparator || ">", fcfg.q_eps_yoy.threshold) ? 100 : 0),
-      q_eps_yoy_rising: comparable("yoy_eps").length < 3 ? null : (isRising3(...comparable("yoy_eps")) ? 100 : 0),
-      q_pat_yoy: finite(q[0]?.yoy_pat) == null ? null : (compareNumeric(q[0]?.yoy_pat, fcfg.q_pat_yoy.comparator || ">", fcfg.q_pat_yoy.threshold) ? 100 : 0),
-      q_pat_rising: q.length < 3 ? null : (isRising3(q[0]?.pat, q[1]?.pat, q[2]?.pat) ? 100 : 0),
-      q_pat_yoy_rising: comparable("yoy_pat").length < 3 ? null : (isRising3(...comparable("yoy_pat")) ? 100 : 0),
-      q_npm_yoy: qNpmGrowth == null ? null : (compareNumeric(qNpmGrowth, fcfg.q_npm_yoy.comparator || ">", fcfg.q_npm_yoy.threshold) ? 100 : 0),
-      q_sales_yoy: finite(q[0]?.yoy_sales) == null ? null : (compareNumeric(q[0]?.yoy_sales, fcfg.q_sales_yoy.comparator || ">", fcfg.q_sales_yoy.threshold) ? 100 : 0),
-      q_sales_rising: q.length < 3 ? null : (isRising3(q[0]?.sales, q[1]?.sales, q[2]?.sales) ? 100 : 0),
-      a_eps_yoy: finite(a[0]?.yoy_eps) == null ? null : (compareNumeric(a[0]?.yoy_eps, fcfg.a_eps_yoy.comparator || ">", fcfg.a_eps_yoy.threshold) ? 100 : 0),
-      a_eps_rising: a.length < 3 ? null : (isRising3(a[0]?.eps, a[1]?.eps, a[2]?.eps) ? 100 : 0),
-      a_pat_yoy: finite(a[0]?.yoy_pat) == null ? null : (compareNumeric(a[0]?.yoy_pat, fcfg.a_pat_yoy.comparator || ">", fcfg.a_pat_yoy.threshold) ? 100 : 0),
-      a_pat_rising: a.length < 3 ? null : (isRising3(a[0]?.pat, a[1]?.pat, a[2]?.pat) ? 100 : 0),
-      a_sales_yoy: finite(a[0]?.yoy_sales) == null ? null : (compareNumeric(a[0]?.yoy_sales, fcfg.a_sales_yoy.comparator || ">", fcfg.a_sales_yoy.threshold) ? 100 : 0),
-      a_sales_rising: a.length < 3 ? null : (isRising3(a[0]?.sales, a[1]?.sales, a[2]?.sales) ? 100 : 0),
-      a_ocf_yoy: annualOcfGrowth == null ? null : (compareNumeric(annualOcfGrowth, fcfg.a_ocf_yoy.comparator || ">", fcfg.a_ocf_yoy.threshold) ? 100 : 0),
-      a_npm_rising: a.length < 2 || finite(a[0]?.npm) == null || finite(a[1]?.npm) == null ? null : (Number(a[0].npm) > Number(a[1].npm) ? 100 : 0),
-      roe_above: roeFilterValue == null ? null : (compareNumeric(roeFilterValue, fcfg.roe_above.comparator || ">", fcfg.roe_above.threshold) ? 100 : 0),
-      roce_above: roceFilterValue == null ? null : (compareNumeric(roceFilterValue, fcfg.roce_above.comparator || ">", fcfg.roce_above.threshold) ? 100 : 0),
-      cashflow_per_share: fcfg.cashflow_per_share?.enabled === false || cashflowPerShareFilterValue == null ? null : (compareNumeric(cashflowPerShareFilterValue, fcfg.cashflow_per_share.comparator || ">", fcfg.cashflow_per_share.threshold) ? 100 : 0),
-      shares_outstanding: fcfg.shares_outstanding?.enabled === false || sharesOutstandingFilterValue == null ? null : (compareNumeric(sharesOutstandingFilterValue, fcfg.shares_outstanding.comparator || "<", fcfg.shares_outstanding.threshold) ? 100 : 0),
-      float_shares: fcfg.float_shares?.enabled === false || floatSharesFilterValue == null ? null : (compareNumeric(floatSharesFilterValue, fcfg.float_shares.comparator || "<", fcfg.float_shares.threshold) ? 100 : 0),
+    const fundamentalRowsForDashboard = buildClientFundamentalRows({
+      fundamentalHistory,
+      fundamentals,
+      dashboard,
+      factors: handwrittenFactors.fundamental,
     });
+    const fundamentalComponent = factorScore(
+      "fundamental",
+      Object.fromEntries(Object.entries(fundamentalRowsForDashboard).map(([key, value]) => [key, value?.score ?? null]))
+    );
 
     let ownershipComponent = null;
     if (exchange !== "US" && Array.isArray(indiaShareholding?.history) && indiaShareholding.history.length) {
@@ -1410,15 +1574,20 @@ function App() {
       points += Number(value) * weight;
       availableWeight += weight;
     });
-    const missingIndianFundamental = exchange !== "US" && normalizedWeights.fundamental > 0 && fundamentalComponent == null;
-    const missingIndianOwnership = exchange !== "US" && normalizedWeights.ownership > 0 && ownershipComponent == null;
-    const score = missingIndianFundamental || missingIndianOwnership || availableWeight <= 0
+    const missingRequiredScoreCategories = Object.entries(normalizedWeights)
+      .filter(([key, weight]) => Number(weight) > 0 && (components[key] == null || !Number.isFinite(Number(components[key]))))
+      .map(([key]) => key);
+    const provisionalScore = availableWeight <= 0
       ? null
       : Math.max(0, Math.min(100, Math.round(points / availableWeight)));
+    const score = missingRequiredScoreCategories.length ? null : provisionalScore;
     const signal = score == null ? "Insufficient Data" : score >= 70 ? "Buy" : score >= 45 ? "Watch" : "Sell";
     return {
       ...dashboard,
-      score, signal,
+      score,
+      provisional_score: provisionalScore,
+      signal,
+      missing_required_score_categories: missingRequiredScoreCategories,
       score_coverage_percent: Math.round(availableWeight),
       score_components: components,
       score_weights: normalizedWeights,
@@ -1469,48 +1638,12 @@ function App() {
       ema50_gt150: resultRow(finite(em["50"]), finite(em["50"]) == null || finite(em["150"]) == null ? null : (Number(em["50"]) > Number(em["150"]) ? 100 : 0), finite(em["150"])),
     };
 
-    const q = Array.isArray(fundamentalHistory?.quarterly) ? fundamentalHistory.quarterly : [];
-    const a = Array.isArray(fundamentalHistory?.annual) ? fundamentalHistory.annual : [];
-    const fcfg = handwrittenFactors.fundamental;
-    const comparable = (field) => q.map((row) => finite(row?.[field])).filter((v) => v != null).slice(0, 3);
-    let qNpmGrowth = null;
-    if (q.length >= 5 && finite(q[0]?.npm) != null && finite(q[4]?.npm) != null && Number(q[4].npm) !== 0) {
-      qNpmGrowth = ((Number(q[0].npm) - Number(q[4].npm)) / Math.abs(Number(q[4].npm))) * 100;
-    }
-    let annualOcfGrowth = null;
-    if (a.length >= 2 && finite(a[0]?.operating_cash_flow) != null && finite(a[1]?.operating_cash_flow) != null && Number(a[1].operating_cash_flow) !== 0) {
-      annualOcfGrowth = ((Number(a[0].operating_cash_flow) - Number(a[1].operating_cash_flow)) / Math.abs(Number(a[1].operating_cash_flow))) * 100;
-    }
-    const roeValue = finite(a[0]?.roe) ?? (finite(fundamentals?.fundamentals?.return_on_equity) != null ? Number(fundamentals.fundamentals.return_on_equity) * 100 : null);
-    const roceValue = finite(a[0]?.roce);
-    const sharesOutstanding = finite(fundamentals?.ownership?.shares_outstanding);
-    const floatShares = finite(fundamentals?.ownership?.float_shares);
-    const latestOcf = finite(a[0]?.operating_cash_flow);
-    const cashflowPerShare = latestOcf != null && sharesOutstanding != null && sharesOutstanding !== 0 ? latestOcf / sharesOutstanding : null;
-
-    const fundamental = {
-      q_eps_yoy: resultRow(finite(q[0]?.yoy_eps), passScore(q[0]?.yoy_eps, fcfg.q_eps_yoy)),
-      q_eps_yoy_rising: resultRow(finite(q[0]?.yoy_eps), comparable("yoy_eps").length < 3 ? null : (trend3(...comparable("yoy_eps")) ? 100 : 0), "Prior 2 YoY values"),
-      a_eps_yoy: resultRow(finite(a[0]?.yoy_eps), passScore(a[0]?.yoy_eps, fcfg.a_eps_yoy)),
-      a_eps_rising: resultRow(finite(a[0]?.eps), a.length < 3 ? null : (trend3(a[0]?.eps, a[1]?.eps, a[2]?.eps) ? 100 : 0), "Prior 2 years"),
-      q_pat_yoy: resultRow(finite(q[0]?.yoy_pat), passScore(q[0]?.yoy_pat, fcfg.q_pat_yoy)),
-      q_pat_rising: resultRow(finite(q[0]?.pat), q.length < 3 ? null : (trend3(q[0]?.pat, q[1]?.pat, q[2]?.pat) ? 100 : 0), "Prior 2 quarters"),
-      q_pat_yoy_rising: resultRow(finite(q[0]?.yoy_pat), comparable("yoy_pat").length < 3 ? null : (trend3(...comparable("yoy_pat")) ? 100 : 0), "Prior 2 YoY values"),
-      a_pat_yoy: resultRow(finite(a[0]?.yoy_pat), passScore(a[0]?.yoy_pat, fcfg.a_pat_yoy)),
-      a_pat_rising: resultRow(finite(a[0]?.pat), a.length < 3 ? null : (trend3(a[0]?.pat, a[1]?.pat, a[2]?.pat) ? 100 : 0), "Prior 2 years"),
-      q_sales_yoy: resultRow(finite(q[0]?.yoy_sales), passScore(q[0]?.yoy_sales, fcfg.q_sales_yoy)),
-      q_sales_rising: resultRow(finite(q[0]?.sales), q.length < 3 ? null : (trend3(q[0]?.sales, q[1]?.sales, q[2]?.sales) ? 100 : 0), "Prior 2 quarters"),
-      a_sales_yoy: resultRow(finite(a[0]?.yoy_sales), passScore(a[0]?.yoy_sales, fcfg.a_sales_yoy)),
-      a_sales_rising: resultRow(finite(a[0]?.sales), a.length < 3 ? null : (trend3(a[0]?.sales, a[1]?.sales, a[2]?.sales) ? 100 : 0), "Prior 2 years"),
-      q_npm_yoy: resultRow(qNpmGrowth, passScore(qNpmGrowth, fcfg.q_npm_yoy)),
-      a_npm_rising: resultRow(finite(a[0]?.npm), a.length < 2 || finite(a[0]?.npm) == null || finite(a[1]?.npm) == null ? null : (Number(a[0].npm) > Number(a[1].npm) ? 100 : 0), finite(a[1]?.npm)),
-      a_ocf_yoy: resultRow(annualOcfGrowth, passScore(annualOcfGrowth, fcfg.a_ocf_yoy)),
-      cashflow_per_share: resultRow(cashflowPerShare, fcfg.cashflow_per_share?.enabled === false ? null : passScore(cashflowPerShare, fcfg.cashflow_per_share)),
-      roe_above: resultRow(roeValue, passScore(roeValue, fcfg.roe_above)),
-      roce_above: resultRow(roceValue, passScore(roceValue, fcfg.roce_above)),
-      shares_outstanding: resultRow(sharesOutstanding, fcfg.shares_outstanding?.enabled === false ? null : passScore(sharesOutstanding, fcfg.shares_outstanding)),
-      float_shares: resultRow(floatShares, fcfg.float_shares?.enabled === false ? null : passScore(floatShares, fcfg.float_shares)),
-    };
+    const fundamental = buildClientFundamentalRows({
+      fundamentalHistory,
+      fundamentals,
+      dashboard,
+      factors: handwrittenFactors.fundamental,
+    });
 
     const ownership = {};
     if (exchange !== "US" && Array.isArray(indiaShareholding?.history) && indiaShareholding.history.length) {
@@ -2025,8 +2158,8 @@ function App() {
           <div className="composite-dashboard-header">
             <div>
               <span className="dashboard-kicker">CLIENT DASHBOARD</span>
-              <h2>Top 200 Stocks — Composite Final Score</h2>
-              <p>Click any stock to open its chart and indicators above the ranking list.</p>
+              <h2>Top 200 Stocks — Composite Score</h2>
+              <p>Final only when all five client categories are available; otherwise the row is clearly marked Provisional.</p>
             </div>
             <div className="composite-dashboard-actions">
               <select
@@ -2067,12 +2200,15 @@ function App() {
                 <span>{selectedCompany?.isin ? `ISIN ${selectedCompany.isin}` : "ISIN N/A"}</span>
               </div>
               <div className="dashboard-score-pills">
-                <span>Final <b>{dashboard?.score ?? "N/A"}</b></span>
-                <span>Technical <b>{dashboard?.score_components?.technical ?? "N/A"}</b></span>
-                <span>Fundamental <b>{dashboard?.score_components?.fundamental ?? "N/A"}</b></span>
-                <span>Ownership <b>{dashboard?.score_components?.ownership ?? "N/A"}</b></span>
-                <span>Sector <b>{dashboard?.score_components?.sector ?? "N/A"}</b></span>
-                <span>RS <b>{dashboard?.score_components?.relative_strength ?? "N/A"}</b></span>
+                <span>Final <b>{dashboardView?.score ?? "N/A"}</b></span>
+                {dashboardView?.score == null && dashboardView?.provisional_score != null && (
+                  <span>Provisional <b>{dashboardView.provisional_score}</b></span>
+                )}
+                <span>Technical <b>{dashboardView?.score_components?.technical ?? "N/A"}</b></span>
+                <span>Fundamental <b>{dashboardView?.score_components?.fundamental ?? "N/A"}</b></span>
+                <span>Ownership <b>{dashboardView?.score_components?.ownership ?? "N/A"}</b></span>
+                <span>Sector <b>{dashboardView?.score_components?.sector ?? "N/A"}</b></span>
+                <span>RS <b>{dashboardView?.score_components?.relative_strength ?? "N/A"}</b></span>
               </div>
             </div>
 
@@ -2116,7 +2252,10 @@ function App() {
                   <tr key={`${row.exchange}-${row.symbol}`} onClick={() => openUniverseStock(row)} className={row.symbol === symbol && row.exchange === exchange ? "selected" : ""}>
                     <td>{row.rank}</td>
                     <td><strong>{row.symbol}</strong><small>{row.name || row.symbol}</small></td>
-                    <td><b>{row.composite_score ?? "N/A"}</b></td>
+                    <td>
+                      <b>{row.final_composite_score ?? row.provisional_composite_score ?? row.composite_score ?? "N/A"}</b>
+                      {row.score_status === "Provisional" && <small className="provisional-score-tag">P</small>}
+                    </td>
                     <td>{row.technical_score ?? "N/A"}</td>
                     <td>{row.fundamental_score ?? "N/A"}</td>
                     <td>{row.ownership_score ?? "N/A"}</td>
@@ -2137,7 +2276,7 @@ function App() {
           </div>
           <div className="composite-dashboard-note">
             <strong>{topComposite.formula || "Technical 30% + Fundamental 25% + Ownership 15% + Sector 20% + RS 10%"}</strong>
-            <span>{topComposite.data_rule || "Verified stored data only; missing values remain N/A."}</span>
+            <span>{topComposite.data_rule || "Final Composite is shown only when all five weighted client categories are available; incomplete rows are Provisional."}</span>
             {topComposite.rs_note && <span>{topComposite.rs_note}</span>}
           </div>
         </section>
@@ -2165,7 +2304,7 @@ function App() {
 
           <div className="universe-filter-title">
             <strong>Filters</strong>
-            <span>{universeTab === "Fundamentals" ? "Client handwritten fundamental rules only — EPS / PAT / Sales / NPM / CFO / ROE / ROCE. Edit the exact rules below and apply them." : "Choose a filter group, set the values, then press Apply Filters."}</span>
+            <span>{universeTab === "Fundamentals" ? "Client handwritten formulas only — 11 EPS rules, the same 11 for PAT and Sales, 6 NPM rules, plus confirmed CFO / ROE / ROCE items." : "Choose a filter group, set the values, then press Apply Filters."}</span>
           </div>
 
           <div className="universe-tabs">
@@ -2220,11 +2359,11 @@ function App() {
                 <div className="universe-client-factor-head">
                   <div>
                     <strong>Client Fundamental Filters</strong>
-                    <span>Exact handwritten groups: EPS, PAT, Sales, NPM, CFO and the confirmed ROE / ROCE rules. Generic Market Cap / EPS Min / Revenue Min filters have been removed from this tab.</span>
+                    <span>Exact handwritten mapping: EPS rules 1–11; the same 11-rule structure for PAT and Sales; NPM rules 1–6; plus confirmed CFO / ROE / ROCE items. Generic filters are not mixed into this tab.</span>
                   </div>
                   <span className="client-note-badge">Client notes</span>
                 </div>
-                {renderFilterTable("fundamental", "Fundamental Filters", "Quarterly + annual rules supplied by the client. Missing provider history stays N/A; nothing is fabricated.")}
+                {renderFilterTable("fundamental", "Fundamental Filters", "Exact client formulas and point weights. Missing provider history stays N/A; nothing is fabricated.")}
                 <div className="universe-client-factor-actions">
                   <button type="button" className="ranking-primary-button" onClick={() => {
                     localStorage.setItem("handwrittenFactors", JSON.stringify(handwrittenFactors));
