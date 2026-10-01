@@ -2202,9 +2202,15 @@ function App() {
           </div>
 
           <div className="card company-identity-card">
-            <span>Company</span>
-            <strong>{selectedCompany?.name || dashboard?.name || symbol}</strong>
-            <small>{symbol}{(selectedCompany?.isin || dashboard?.isin) ? ` • ISIN ${selectedCompany?.isin || dashboard?.isin}` : " • ISIN N/A"}</small>
+            <span className="company-card-label">Company</span>
+            <strong className="company-card-name">{selectedCompany?.name || dashboard?.name || symbol}</strong>
+            <div className="company-card-meta">
+              <span className="company-symbol-badge">{symbol}</span>
+              <span className={`company-isin-badge ${(selectedCompany?.isin || dashboard?.isin) ? "has-value" : "is-missing"}`}>
+                <span className="company-meta-label">ISIN</span>
+                <b>{selectedCompany?.isin || dashboard?.isin || "N/A"}</b>
+              </span>
+            </div>
           </div>
 
           <div className="card">

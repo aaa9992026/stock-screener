@@ -2354,3 +2354,110 @@ button:disabled {
     width: 100%;
   }
 }
+
+
+/* Company identity card — keep long names, symbol and ISIN visually separated. */
+.company-identity-card {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0;
+  overflow: hidden;
+}
+
+.company-identity-card .company-card-label {
+  margin: 0 0 7px;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.company-identity-card .company-card-name {
+  display: block;
+  margin: 0;
+  color: #0f172a;
+  font-size: clamp(19px, 1.55vw, 24px);
+  line-height: 1.16;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+
+.company-card-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 11px;
+}
+
+.company-card-meta .company-symbol-badge,
+.company-card-meta .company-isin-badge {
+  display: inline-flex;
+  align-items: center;
+  width: auto;
+  margin: 0;
+  border-radius: 999px;
+  line-height: 1;
+}
+
+.company-card-meta .company-symbol-badge {
+  padding: 7px 10px;
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+}
+
+.company-card-meta .company-isin-badge {
+  gap: 6px;
+  padding: 7px 10px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #334155;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.company-card-meta .company-isin-badge.has-value {
+  border-color: #dbeafe;
+  background: #f8fbff;
+}
+
+.company-card-meta .company-isin-badge.is-missing {
+  color: #64748b;
+}
+
+.company-card-meta .company-meta-label {
+  display: inline;
+  margin: 0;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+.company-card-meta .company-isin-badge b {
+  font-weight: 800;
+  color: inherit;
+}
+
+@media (max-width: 1100px) {
+  .cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .company-card-meta {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .company-card-meta .company-isin-badge {
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+}
