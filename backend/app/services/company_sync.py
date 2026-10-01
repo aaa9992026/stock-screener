@@ -204,12 +204,25 @@ def repair_company_identity(db: Session, symbol: str, exchange: str):
     except Exception:
         official = None
 
-    # Railway/NSE connectivity can be transient.  For the exact client test
-    # symbols, use a verified identity-only fallback rather than leaving stale
-    # name/ISIN metadata in PostgreSQL.  No price/fundamental values are
-    # hard-coded here.
-    if not official:
-        official = VERIFIED_NSE_IDENTITY_FALLBACKS.get(symbol)
+    # Railway/NSE connectivity can be transient and the NSE symbol-master
+    # response can occasionally be incomplete.  For the exact client test
+    # symbols, merge the verified identity-only fallback into any missing
+    # official fields instead of using it only when the whole provider record
+    # is absent.  This keeps provider values authoritative when present while
+    # preventing a valid symbol such as INFY from ending up with ISIN N/A.
+    fallback = VERIFIED_NSE_IDENTITY_FALLBACKS.get(symbol)
+
+    def _usable_identity_value(value):
+        return value not in (None, "", "nan", "NaN", "none", "None", "N/A", "n/a", "-")
+
+    if official and fallback:
+        merged = dict(fallback)
+        for key, value in official.items():
+            if _usable_identity_value(value):
+                merged[key] = value
+        official = merged
+    elif not official:
+        official = fallback
 
     if not official:
         return None
