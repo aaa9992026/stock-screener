@@ -60,17 +60,26 @@ main {
 
 .controls {
   display: flex;
+  align-items: flex-start;
   gap: 12px;
   margin-bottom: 18px;
 }
 
 .controls input {
-  width: 240px;
-  padding: 12px 14px;
-  border: 1px solid #d7deea;
-  border-radius: 9px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
   outline: none;
   background: white;
+  color: #0f172a;
+  font-size: 14px;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.controls input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, .12);
 }
 
 .controls button,
@@ -215,17 +224,23 @@ th {
 }
 
 .controls select {
-  padding: 12px 14px;
-  border: 1px solid #d7deea;
-  border-radius: 9px;
+  min-width: 160px;
+  min-height: 44px;
+  padding: 0 38px 0 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
   background: white;
-  color: #162033;
+  color: #0f172a;
   outline: none;
+  font-size: 14px;
 }
 
 .symbol-search {
   position: relative;
-  width: 280px;
+  flex: 1 1 340px;
+  width: min(440px, 42vw);
+  max-width: 440px;
+  min-width: 260px;
 }
 
 .symbol-search input {
@@ -233,45 +248,65 @@ th {
 }
 
 .suggestions {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  right: 0;
+  position: relative;
   z-index: 20;
-  background: white;
-  border: 1px solid #d7deea;
-  border-radius: 10px;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
-  max-height: 320px;
+  margin-top: 7px;
+  background: #fff;
+  border: 1px solid #dbe3ef;
+  border-radius: 12px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, .10);
+  max-height: 240px;
   overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .suggestions button {
   width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 3px;
-  padding: 11px 13px;
-  background: white;
-  color: #162033;
-  border: 0;
-  border-bottom: 1px solid #edf0f4;
-  border-radius: 0;
+  min-height: 54px !important;
+  display: grid !important;
+  grid-template-columns: 76px minmax(0, 1fr);
+  align-items: center !important;
+  gap: 12px;
+  padding: 9px 12px !important;
+  background: #fff !important;
+  color: #0f172a !important;
+  border: 0 !important;
+  border-bottom: 1px solid #eef2f7 !important;
+  border-radius: 0 !important;
   text-align: left;
+  box-shadow: none !important;
+}
+
+.suggestions button:last-child {
+  border-bottom: 0 !important;
 }
 
 .suggestions button:hover {
-  background: #f4f7fb;
+  background: #f8fbff !important;
 }
 
 .suggestions strong {
-  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  padding: 0 9px;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: .01em;
 }
 
 .suggestions span {
-  font-size: 12px;
-  color: #718096;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 650;
+  color: #475569;
 }
 
 .fundamental-section {
@@ -2019,4 +2054,36 @@ button:disabled {
 .universe-filter-title span {
   font-size: 12px;
   opacity: 0.72;
+}
+
+
+/* Final search UI polish: keep company suggestions readable and out of the timeframe controls. */
+@media (max-width: 760px) {
+  .controls {
+    align-items: stretch;
+  }
+  .controls select {
+    min-width: 155px;
+  }
+  .symbol-search {
+    flex: 1 1 280px;
+    width: auto;
+    min-width: 230px;
+    max-width: none;
+  }
+}
+@media (max-width: 560px) {
+  .controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .controls select,
+  .symbol-search {
+    grid-column: 1 / -1;
+    width: 100%;
+    max-width: none;
+  }
+  .controls button {
+    width: 100%;
+  }
 }
