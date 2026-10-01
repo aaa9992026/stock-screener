@@ -2108,7 +2108,7 @@ function App() {
 
           <div className="universe-filter-title">
             <strong>Filters</strong>
-            <span>Choose a filter group, set the values, then press Apply Filters.</span>
+            <span>{universeTab === "Fundamentals" ? "Client handwritten fundamental rules only — EPS / PAT / Sales / NPM / CFO / ROE / ROCE. Edit the exact rules below and apply them." : "Choose a filter group, set the values, then press Apply Filters."}</span>
           </div>
 
           <div className="universe-tabs">
@@ -2159,15 +2159,23 @@ function App() {
             )}
 
             {universeTab === "Fundamentals" && (
-              <>
-                <label><span>Market Cap Min</span><input type="number" value={universeFilters.market_cap_min} onChange={(e) => setUniverseFilters((v) => ({ ...v, market_cap_min: e.target.value }))} placeholder="Any" /></label>
-                <label><span>EPS Min</span><input type="number" step="0.01" value={universeFilters.eps_min} onChange={(e) => setUniverseFilters((v) => ({ ...v, eps_min: e.target.value }))} placeholder="Any" /></label>
-                <label><span>Revenue Min</span><input type="number" value={universeFilters.revenue_min} onChange={(e) => setUniverseFilters((v) => ({ ...v, revenue_min: e.target.value }))} placeholder="Any" /></label>
-                <label><span>Net Income Min</span><input type="number" value={universeFilters.net_income_min} onChange={(e) => setUniverseFilters((v) => ({ ...v, net_income_min: e.target.value }))} placeholder="Any" /></label>
-                <label><span>Profit Margin ≥ %</span><input type="number" step="0.1" value={universeFilters.profit_margin_min} onChange={(e) => setUniverseFilters((v) => ({ ...v, profit_margin_min: e.target.value }))} placeholder="Any" /></label>
-                <label><span>ROE ≥ %</span><input type="number" step="0.1" value={universeFilters.roe_min} onChange={(e) => setUniverseFilters((v) => ({ ...v, roe_min: e.target.value }))} placeholder="Any" /></label>
-                <label><span>ROA ≥ %</span><input type="number" step="0.1" value={universeFilters.roa_min} onChange={(e) => setUniverseFilters((v) => ({ ...v, roa_min: e.target.value }))} placeholder="Any" /></label>
-              </>
+              <div className="universe-client-factor-panel">
+                <div className="universe-client-factor-head">
+                  <div>
+                    <strong>Client Fundamental Filters</strong>
+                    <span>Exact handwritten groups: EPS, PAT, Sales, NPM, CFO and the confirmed ROE / ROCE rules. Generic Market Cap / EPS Min / Revenue Min filters have been removed from this tab.</span>
+                  </div>
+                  <span className="client-note-badge">Client notes</span>
+                </div>
+                {renderFilterTable("fundamental", "Fundamental Filters", "Quarterly + annual rules supplied by the client. Missing provider history stays N/A; nothing is fabricated.")}
+                <div className="universe-client-factor-actions">
+                  <button type="button" className="ranking-primary-button" onClick={() => {
+                    localStorage.setItem("handwrittenFactors", JSON.stringify(handwrittenFactors));
+                    loadDashboard();
+                  }}>Apply Fundamental Rules</button>
+                  <span>Settings are shared with the Milestone 2 ranking / qualification engine.</span>
+                </div>
+              </div>
             )}
 
             {universeTab === "Technicals" && (
@@ -2214,7 +2222,9 @@ function App() {
 
           <div className="universe-toolbar">
             <div className="universe-toolbar-left">
-              <button type="button" className="ranking-primary-button universe-apply-button" onClick={() => { setUniversePage(1); loadUniverseScreener(1); }}>Apply Filters</button>
+              {universeTab !== "Fundamentals" && (
+                <button type="button" className="ranking-primary-button universe-apply-button" onClick={() => { setUniversePage(1); loadUniverseScreener(1); }}>Apply Filters</button>
+              )}
               <button type="button" className="secondary-button button-muted" onClick={resetUniverseFilters}>Reset Filters</button>
               <button type="button" className="secondary-button button-columns" onClick={() => setShowUniverseColumns((v) => !v)}>{showUniverseColumns ? "Hide Columns" : "Add Columns"}</button>
               <button type="button" className="secondary-button button-factors" onClick={() => document.getElementById("ranking-filters")?.scrollIntoView({ behavior: "smooth", block: "start" })}>Ranking Filters ↓</button>
