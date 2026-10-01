@@ -17,7 +17,7 @@ from app.services.providers.sec_provider import SECFundamentalsProvider
 from app.services.scheduler import refresh_configured_market_data
 from app.services.equity_filters import apply_eligible_equity_filter
 from app.services.universe_data_backfill import universe_data_status
-from app.services.company_sync import repair_company_identity
+from app.services.company_sync import repair_company_identity, bootstrap_companies_from_stored_data
 
 import os
 import math
@@ -1638,18 +1638,29 @@ def refresh_symbol(
         }
 
     try:
+        # Manual refresh used to request the complete history from 2000 on every
+        # click. Repeated clicks can trigger provider rate limits and make a
+        # healthy deployment look stale. Fetch only a small overlap after the
+        # newest stored bar; use the full history only for a first-time symbol.
+        latest_stored = (
+            db.query(func.max(OHLCV.date))
+            .filter(OHLCV.symbol == symbol, OHLCV.exchange == exchange)
+            .scalar()
+        )
+        start_date = "2000-01-01"
+        if latest_stored:
+            start_date = (latest_stored - timedelta(days=10)).isoformat()
+
         if exchange == "BSE":
             try:
                 rows = BSEProvider().get_ohlcv(symbol)
             except Exception as primary_exc:
                 # BSE has a second configured provider path through Yahoo.
-                # If the paid/feed provider is temporarily unavailable, try the
-                # alternate real-data source before falling back to stored bars.
                 try:
                     rows = YahooProvider().get_ohlcv(
                         symbol=symbol,
                         exchange=exchange,
-                        start_date="2000-01-01",
+                        start_date=start_date,
                     )
                 except Exception:
                     cached = cached_response(f"Live BSE refresh unavailable: {primary_exc}")
@@ -1660,7 +1671,7 @@ def refresh_symbol(
             rows = YahooProvider().get_ohlcv(
                 symbol=symbol,
                 exchange=exchange,
-                start_date="2000-01-01"
+                start_date=start_date,
             )
 
         if not rows:
@@ -1676,13 +1687,45 @@ def refresh_symbol(
             rows=rows
         )
 
+        # Make a freshly loaded ticker immediately available to the universe
+        # screener even if the external company-master job is still pending.
+        company = (
+            db.query(Company)
+            .filter(Company.symbol == symbol, Company.exchange == exchange)
+            .first()
+        )
+        if company is None:
+            db.add(Company(symbol=symbol, exchange=exchange, name=symbol, is_active=1))
+            db.commit()
+
+        # Refresh identity/fundamentals separately. A metadata-provider failure
+        # must never turn a successful OHLCV refresh into a failed refresh.
+        try:
+            if exchange == "NSE":
+                repair_company_identity(db, symbol, exchange)
+            metadata = YahooProvider().get_fundamentals(symbol, exchange)
+            if isinstance(metadata, dict) and metadata:
+                sync_fundamental_data(db, symbol, exchange, metadata)
+            if exchange == "NSE":
+                # NSE official identity wins over any third-party display name.
+                repair_company_identity(db, symbol, exchange)
+        except Exception:
+            db.rollback()
+
         cached = _cached_symbol_summary(db, symbol, exchange) or {}
+        company = (
+            db.query(Company)
+            .filter(Company.symbol == symbol, Company.exchange == exchange)
+            .first()
+        )
         return {
             "status": "success",
             "provider_refresh_ok": True,
             "symbol": symbol,
             "exchange": exchange,
             "records_received": len(rows),
+            "company_name": company.name if company else None,
+            "isin": company.isin if company else None,
             **result,
             **cached,
         }
@@ -2748,10 +2791,28 @@ def get_chart_data(
     rows = _valid_trading_rows(rows, exchange)
 
     if not rows:
-        raise HTTPException(
-            status_code=404,
-            detail="No stored data found"
+        # First visit after a clean deploy should recover automatically instead
+        # of showing a stale/empty dashboard and requiring repeated Refresh
+        # clicks. The refresh endpoint already has provider fallbacks and an
+        # explicit no-cache error when real data cannot be obtained.
+        try:
+            refresh_symbol(symbol=symbol, exchange=exchange, db=db)
+        except HTTPException as exc:
+            raise HTTPException(status_code=exc.status_code, detail=exc.detail)
+
+        rows = (
+            db.query(OHLCV)
+            .filter(
+                OHLCV.symbol == symbol.upper(),
+                OHLCV.exchange == exchange.upper()
+            )
+            .order_by(OHLCV.date.asc())
+            .all()
         )
+        rows = _valid_trading_rows(rows, exchange)
+
+    if not rows:
+        raise HTTPException(status_code=404, detail="No verified market data is available for this symbol yet")
 
     data = [
         {
@@ -3400,6 +3461,17 @@ def get_universe_screener(
     db: Session = Depends(get_db),
 ):
     """Paginated multi-stock screener using only real stored DB data."""
+    # If the symbol-master table has not populated yet, recover visible rows
+    # from verified OHLCV/fundamental/ownership data already stored locally.
+    # This prevents a transient external symbol-master outage from producing a
+    # misleading "0 eligible stocks" screener.
+    exchanges = _screener_market_exchanges(market)
+    active_count = db.query(Company.id).filter(Company.is_active == 1, Company.exchange.in_(exchanges)).count()
+    if active_count == 0:
+        try:
+            bootstrap_companies_from_stored_data(db)
+        except Exception:
+            db.rollback()
     query, expressions = _screener_query_parts(db, market)
     query = _apply_screener_filters(
         query, expressions, q, sector, industry, market_cap_min, market_cap_max,

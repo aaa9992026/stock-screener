@@ -424,7 +424,11 @@ function App() {
 
   useEffect(() => {
     loadUniverseScreener(1);
-    // Initial universe table load only. Further changes apply when the user presses Apply Filters.
+    // Company-master synchronization runs in the backend immediately after a
+    // deploy. Retry once so a page opened during those first few seconds does
+    // not remain stuck on an old "0 eligible stocks" result.
+    const retry = window.setTimeout(() => loadUniverseScreener(1), 5000);
+    return () => window.clearTimeout(retry);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -804,6 +808,12 @@ function App() {
       );
 
       const usedCachedData = res.data?.status === "cached" || res.data?.provider_refresh_ok === false;
+      if (res.data?.company_name || res.data?.isin) {
+        setSelectedCompany((current) => ({
+          name: res.data?.company_name || current?.name || requestedSymbol,
+          isin: res.data?.isin || current?.isin || null,
+        }));
+      }
       setDataStale(false);
       setDataStatus(usedCachedData ? "cached" : "fresh");
       if (!usedCachedData) setLastUpdated(new Date());
@@ -2001,6 +2011,11 @@ function App() {
             <small>Real provider data only • missing values are filled automatically in bounded background batches.</small>
           </div>
 
+          <div className="universe-filter-title">
+            <strong>Filters</strong>
+            <span>Choose a filter group, set the values, then press Apply Filters.</span>
+          </div>
+
           <div className="universe-tabs">
             {["Popular", "Fundamentals", "Technicals", "Relative Comparison"].map((tab) => (
               <button key={tab} type="button" className={universeTab === tab ? "active" : ""} onClick={() => setUniverseTab(tab)}>
@@ -2085,6 +2100,7 @@ function App() {
               <button type="button" className="ranking-primary-button universe-apply-button" onClick={() => { setUniversePage(1); loadUniverseScreener(1); }}>Apply Filters</button>
               <button type="button" className="secondary-button button-muted" onClick={resetUniverseFilters}>Reset Filters</button>
               <button type="button" className="secondary-button button-columns" onClick={() => setShowUniverseColumns((v) => !v)}>{showUniverseColumns ? "Hide Columns" : "Add Columns"}</button>
+              <button type="button" className="secondary-button button-factors" onClick={() => document.getElementById("ranking-filters")?.scrollIntoView({ behavior: "smooth", block: "start" })}>Ranking Filters ↓</button>
               <button type="button" className="secondary-button button-sync" disabled={universeSyncing} onClick={refreshUniverseMissingData}>{universeSyncing ? "Filling Data…" : "Fill Missing Data"}</button>
               <button type="button" className="secondary-button button-excel" onClick={downloadUniverseExcel}>Export Excel</button>
             </div>
@@ -2220,7 +2236,7 @@ function App() {
         )}
 
         {dashboard && (
-            <section className="fundamental-section score-weight-section ranking-settings-panel">
+            <section id="ranking-filters" className="fundamental-section score-weight-section ranking-settings-panel">
               <div className="ranking-settings-header">
                 <div>
                   <h2>Milestone 2 Ranking Weight Settings ({exchange})</h2>

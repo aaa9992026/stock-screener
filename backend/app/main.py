@@ -5,6 +5,8 @@ from .models import Base
 from .api.market import router as market_router
 from .api.companies import router as companies_router
 from .services.scheduler import start_scheduler
+from .services.company_sync import bootstrap_companies_from_stored_data
+from .database import SessionLocal
 
 
 Base.metadata.create_all(bind=engine)
@@ -32,4 +34,13 @@ def root():
 
 @app.on_event("startup")
 def startup_event():
+    # Recover the visible screener universe immediately from data already in
+    # PostgreSQL; external symbol-master sync continues in the background.
+    db = SessionLocal()
+    try:
+        bootstrap_companies_from_stored_data(db)
+    except Exception:
+        db.rollback()
+    finally:
+        db.close()
     start_scheduler()

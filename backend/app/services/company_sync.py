@@ -250,3 +250,63 @@ def repair_company_identity(db: Session, symbol: str, exchange: str):
     db.commit()
     db.refresh(company)
     return company
+
+
+def bootstrap_companies_from_stored_data(db: Session):
+    """Create missing Company rows from verified data already stored locally.
+
+    This is an offline-safe recovery path for deployments where OHLCV,
+    fundamentals or ownership survived/reached PostgreSQL before the external
+    symbol-master sync completed. It never invents market values: it only
+    exposes symbol/exchange pairs that already exist in this application's
+    provider-backed tables. External symbol-master sync later enriches names,
+    ISINs and classifications.
+    """
+    from app.models import OHLCV, Fundamental, Ownership
+
+    stored_pairs = set()
+    for model in (OHLCV, Fundamental, Ownership):
+        try:
+            rows = db.query(model.symbol, model.exchange).distinct().all()
+        except Exception:
+            db.rollback()
+            continue
+        for symbol, exchange in rows:
+            symbol = str(symbol or "").strip().upper()
+            exchange = str(exchange or "").strip().upper()
+            if symbol and exchange in {"US", "NSE", "BSE"}:
+                stored_pairs.add((symbol, exchange))
+
+    if not stored_pairs:
+        return {"stored_pairs": 0, "added": 0, "reactivated": 0}
+
+    existing = {
+        (str(row.symbol or "").upper(), str(row.exchange or "").upper()): row
+        for row in db.query(Company).filter(Company.exchange.in_(["US", "NSE", "BSE"])).all()
+    }
+
+    added = 0
+    reactivated = 0
+    for symbol, exchange in sorted(stored_pairs):
+        row = existing.get((symbol, exchange))
+        if row is not None:
+            # Do not revive a deliberately delisted symbol. Only repair a row
+            # whose identity was never populated but which is already active.
+            if row.is_active == 1 and not row.name:
+                row.name = symbol
+            continue
+
+        fallback = VERIFIED_NSE_IDENTITY_FALLBACKS.get(symbol) if exchange == "NSE" else None
+        db.add(Company(
+            symbol=symbol,
+            exchange=exchange,
+            name=(fallback or {}).get("name") or symbol,
+            isin=(fallback or {}).get("isin"),
+            sector=None,
+            industry=None,
+            is_active=1,
+        ))
+        added += 1
+
+    db.commit()
+    return {"stored_pairs": len(stored_pairs), "added": added, "reactivated": reactivated}

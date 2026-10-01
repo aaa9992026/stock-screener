@@ -64,14 +64,29 @@ def sync_fundamental_data(
         .first()
     )
 
-    if company:
+    # A successful provider refresh must also make the symbol visible in the
+    # stock-universe screener. Railway databases can contain OHLCV/fundamental
+    # history from an older deployment while the company-master table is still
+    # empty or has not finished its background symbol sync yet.
+    name = data.get("name")
+    isin = data.get("isin")
+    sector = data.get("sector")
+    industry = data.get("industry")
+    if not company:
+        company = Company(
+            symbol=symbol,
+            exchange=exchange,
+            name=str(name).strip() if name not in (None, "", "nan", "NaN", "-") else symbol,
+            isin=str(isin).strip() if isin not in (None, "", "nan", "NaN", "-") else None,
+            sector=sector if sector not in (None, "", "nan", "NaN") else None,
+            industry=industry if industry not in (None, "", "nan", "NaN") else None,
+            is_active=1,
+        )
+        db.add(company)
+    else:
         # Keep previously enriched classification when a provider temporarily
         # omits sector/industry instead of erasing it with None.  Provider
         # identity is also allowed to repair an old mismatched company name.
-        name = data.get("name")
-        isin = data.get("isin")
-        sector = data.get("sector")
-        industry = data.get("industry")
         if name not in (None, "", "nan", "NaN", "-"):
             company.name = str(name).strip()
         if isin not in (None, "", "nan", "NaN", "-"):
@@ -80,6 +95,7 @@ def sync_fundamental_data(
             company.sector = sector
         if industry not in (None, "", "nan", "NaN"):
             company.industry = industry
+        company.is_active = 1
 
     db.commit()
 

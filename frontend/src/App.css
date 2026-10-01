@@ -2004,3 +2004,19 @@ button:disabled {
 @media (max-width: 520px) {
   .universe-coverage-strip { grid-template-columns: 1fr; }
 }
+
+/* Milestone 2 final clarity: make the multi-stock filter area unmistakable. */
+.universe-filter-title {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-top: 14px;
+  margin-bottom: 8px;
+}
+.universe-filter-title strong {
+  font-size: 15px;
+}
+.universe-filter-title span {
+  font-size: 12px;
+  opacity: 0.72;
+}

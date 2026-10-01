@@ -182,7 +182,7 @@ def start_scheduler():
         replace_existing=True,
         max_instances=1,
         coalesce=True,
-        next_run_time=datetime.now() + timedelta(seconds=30),
+        next_run_time=datetime.now() + timedelta(seconds=3),
     )
 
     refresh_hours = max(1, int(os.getenv("AUTO_REFRESH_HOURS", "6") or 6))
