@@ -18,8 +18,8 @@ Key capabilities include:
 - Weight-independent raw Relative Return; editable weights affect only Final RS Score.
 - SEC EDGAR official US filing metadata and XBRL/companyfacts integration.
 - Configurable automatic market-data refresh without CSV uploads.
-- Direct live Excel connector (.iqy) backed by a refreshable CSV endpoint; Excel Refresh All re-requests current screener data.
-- Excel live feed targets 5 years of daily OHLCV so client indicator formulas have at least 4 years of history when the provider supplies it.
+- One reusable **Master Excel + Python (xlwings)** package: the same workbook is used for every stock, so no per-stock Excel files are created.
+- The Python bridge reads the selected exchange/symbol from Excel, requests up to 5 years of verified daily data (targeting at least 4 years), calculates technical indicators locally, and updates the same workbook in place.
 - Provider status, stale/error handling and provider-replacement documentation.
 
 ## Stack
@@ -71,11 +71,25 @@ Latest client handwritten formulas are documented in `docs/MILESTONE2_HANDWRITTE
 Useful endpoints:
 
 - `GET /market/ranking-spec` — machine-readable client composite/sector formulas.
-- `GET /market/excel-feed/{symbol}?exchange=NSE` — refreshable JSON feed for Excel Power Query.
-- `GET /market/excel-export/{symbol}?exchange=NSE` — editable Excel workbook snapshot.
+- `GET /market/excel-feed/{symbol}?exchange=NSE` — refreshable JSON source used by the master xlwings workbook.
+- `GET /market/excel-export/{symbol}?exchange=NSE` — legacy editable per-stock snapshot endpoint (kept for compatibility; not the recommended client workflow).
 - `GET /market/provider-status` — configured provider status, including SEC/Twelve Data/Kotak Neo readiness.
 
 Kotak Neo is kept separate as an Indian-market source. Do not commit client API keys/tokens to Git.
+
+
+### Master Excel + Python (recommended client workflow)
+
+Download `frontend/public/StockScreener_Master_Excel_Python.zip` from the deployed site or use the **Master Excel + Python** button. The package contains:
+
+- `StockScreener_Master.xlsx` — one reusable workbook for all stocks.
+- `excel_bridge.py` — xlwings Python bridge.
+- `INSTALL_MASTER_EXCEL.bat` — one-time package installer.
+- `START_MASTER_EXCEL.bat` — one-click updater for the selected stock.
+
+In the workbook, change **Control → Exchange / Symbol**, then run `START_MASTER_EXCEL.bat`. Python fetches the selected stock's history and rewrites the same workbook's History, Indicators, Fundamentals and Ownership sheets. It does not create another workbook.
+
+The Python bridge calculates SMA/EMA 20/50/200, RSI14, ATR14/ATR%, ROC14, Bollinger width, +DI/-DI/ADX/DI spread, volume ratio, 52-week levels and 1W/1M/3M/6M/1Y returns. Missing provider values remain blank/N/A.
 
 ### Universe screener / Excel export
 

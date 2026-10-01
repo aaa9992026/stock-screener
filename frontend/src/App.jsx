@@ -1599,105 +1599,17 @@ function App() {
     };
   })();
 
-  const excelLiveCsvUrl = `${window.location.origin}${API}/market/excel-live-csv/${symbol}?exchange=${exchange}&limit=1500`;
+  const masterExcelBundleUrl = "/StockScreener_Master_Excel_Python.zip";
 
-  const copyExcelFeedUrl = async () => {
-    try {
-      await navigator.clipboard.writeText(excelLiveCsvUrl);
-      setExcelCopyMessage("Live Excel data URL copied");
-    } catch {
-      setExcelCopyMessage(excelLiveCsvUrl);
-    }
-    window.setTimeout(() => setExcelCopyMessage(""), 3500);
-  };
-
-  const downloadExcelLiveConnector = () => {
-    const requestedSymbol = String(symbol || "").trim().toUpperCase();
-    if (!requestedSymbol) {
-      setExcelCopyMessage("Enter a stock symbol before creating the live Excel connection.");
-      window.setTimeout(() => setExcelCopyMessage(""), 4000);
-      return;
-    }
-
-    // Excel Internet Query (.iqy): open it once in desktop Excel and save the
-    // workbook. The external web connection is retained, so Data -> Refresh All
-    // re-requests the current screener data instead of downloading a new file.
-    const queryUrl = `${window.location.origin}${API}/market/excel-live-csv/${encodeURIComponent(requestedSymbol)}?exchange=${encodeURIComponent(exchange)}&limit=1500`;
-    const iqy = [
-      "WEB",
-      "1",
-      queryUrl,
-      "",
-      "Selection=EntirePage",
-      "Formatting=None",
-      "PreFormattedTextToColumns=True",
-      "ConsecutiveDelimitersAsOne=False",
-      "SingleBlockTextImport=False",
-      "DisableDateRecognition=False",
-      "DisableRedirections=False",
-      "",
-    ].join("\r\n");
-
-    const blob = new Blob([iqy], { type: "text/x-ms-iqy;charset=utf-8" });
-    const objectUrl = URL.createObjectURL(blob);
+  const downloadMasterExcelBundle = () => {
     const link = document.createElement("a");
-    link.href = objectUrl;
-    link.download = `${requestedSymbol}_${exchange}_LIVE_5Y.iqy`;
+    link.href = masterExcelBundleUrl;
+    link.download = "StockScreener_Master_Excel_Python.zip";
     document.body.appendChild(link);
     link.click();
     link.remove();
-    URL.revokeObjectURL(objectUrl);
-    setExcelCopyMessage("Live Excel connector created. Open it in Excel, then save the workbook and use Refresh All.");
+    setExcelCopyMessage("Master Excel + Python package downloaded. Use the same workbook for every stock.");
     window.setTimeout(() => setExcelCopyMessage(""), 6000);
-  };
-
-  const downloadExcelSnapshot = async () => {
-    const requestedSymbol = String(symbol || "").trim().toUpperCase();
-    if (!requestedSymbol) {
-      setExcelCopyMessage("Enter a stock symbol before downloading Excel.");
-      window.setTimeout(() => setExcelCopyMessage(""), 3500);
-      return;
-    }
-
-    const url = `${API}/market/excel-export/${encodeURIComponent(requestedSymbol)}?exchange=${encodeURIComponent(exchange)}`;
-    try {
-      setExcelCopyMessage("Preparing Excel file…");
-      const response = await fetch(url, {
-        method: "GET",
-        headers: { Accept: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" },
-        cache: "no-store",
-      });
-      if (!response.ok) {
-        let detail = `Excel export failed (HTTP ${response.status})`;
-        try {
-          const payload = await response.json();
-          if (payload?.detail) detail = String(payload.detail);
-        } catch {
-          // Keep the HTTP status fallback if the proxy returned a non-JSON error.
-        }
-        throw new Error(detail);
-      }
-
-      const blob = await response.blob();
-      if (!blob.size) throw new Error("Excel export returned an empty file.");
-
-      const disposition = response.headers.get("content-disposition") || "";
-      const match = disposition.match(/filename\*?=(?:UTF-8''|")?([^";]+)/i);
-      const filename = match?.[1] ? decodeURIComponent(match[1].replace(/"/g, "")) : `${requestedSymbol}_${exchange}_screener.xlsx`;
-      const objectUrl = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = objectUrl;
-      link.download = filename;
-      link.style.display = "none";
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
-      setExcelCopyMessage(`Downloaded ${filename}`);
-    } catch (error) {
-      setExcelCopyMessage(error?.message || "Excel export failed. Please try again.");
-    }
-    window.setTimeout(() => setExcelCopyMessage(""), 4500);
   };
 
   const relativeStrengthChartData = (() => {
@@ -2076,8 +1988,8 @@ function App() {
             Refresh Data
           </button>
 
-          <button type="button" className="excel-live-top" onClick={downloadExcelLiveConnector}>
-            Connect Excel Live
+          <button type="button" className="excel-live-top" onClick={downloadMasterExcelBundle}>
+            Master Excel + Python
           </button>
         </section>
 
@@ -2666,12 +2578,10 @@ function App() {
                   loadDashboard();
                   loadTechnicalSummary();
                 }}>Apply Ranking</button>
-                <button type="button" className="secondary-button ranking-secondary-button button-excel" onClick={downloadExcelLiveConnector}>Connect Excel Live</button>
-                <button type="button" className="secondary-button ranking-secondary-button button-copy" onClick={copyExcelFeedUrl}>Copy Live Data URL</button>
+                <button type="button" className="secondary-button ranking-secondary-button button-excel" onClick={downloadMasterExcelBundle}>Download Master Excel + Python</button>
                 <button type="button" className="secondary-button ranking-secondary-button button-help" onClick={() => setShowExcelHelp((v) => !v)}>
                   {showExcelHelp ? "Hide Excel Steps" : "Excel Setup"}
                 </button>
-                <button type="button" className="secondary-button ranking-secondary-button" onClick={downloadExcelSnapshot}>Excel Snapshot</button>
                 <button type="button" className="secondary-button ranking-secondary-button button-factors" onClick={() => setShowRankingDetails((v) => !v)}>
                   {showRankingDetails ? "Hide Factors" : "Show Factors"}
                 </button>
@@ -2689,16 +2599,16 @@ function App() {
                   {excelCopyMessage && <div className="excel-copy-message">{excelCopyMessage}</div>}
                   {showExcelHelp && (
                     <>
-                      <strong>Live Excel connection — at least 4 years of indicator data</strong>
+                      <strong>One master Excel workbook + Python (xlwings)</strong>
                       <ol>
-                        <li>Click <b>Connect Excel Live</b>. This creates a small <b>.iqy</b> connection file, not a static data export.</li>
-                        <li>Open the .iqy file in desktop Excel and allow the web connection when Excel asks.</li>
-                        <li>Save the opened sheet as your normal <b>.xlsx</b> workbook. The external screener connection stays attached.</li>
-                        <li>Later use <b>Data → Refresh All</b>; Excel requests the latest daily data from this screener automatically.</li>
-                        <li>The live feed requests <b>5 years</b> of daily OHLCV, giving at least the required <b>4 years</b> for indicator creation when the provider has the history.</li>
-                        <li>Keep your own indicator formulas on separate columns/sheets so a data refresh does not overwrite them.</li>
+                        <li>Click <b>Download Master Excel + Python</b> once. This package contains one reusable workbook, the Python bridge and Windows launchers.</li>
+                        <li>Run <b>INSTALL_MASTER_EXCEL.bat</b> once to install xlwings and the required Python packages.</li>
+                        <li>Open <b>StockScreener_Master.xlsx</b>. In the Control sheet choose US/NSE/BSE and type any stock symbol.</li>
+                        <li>Run <b>START_MASTER_EXCEL.bat</b>. Python updates the <b>same workbook in place</b>; it does not create one Excel file per stock.</li>
+                        <li>The bridge requests up to <b>5 years</b> of verified daily data so long-period indicators have at least the requested <b>4 years</b> when the provider has that history.</li>
+                        <li>Python calculates SMA/EMA, RSI, ATR, ROC, Bollinger width, +DI/-DI/ADX, volume ratio, 52-week levels and 1W/1M/3M/6M/1Y returns, then rewrites the History and Indicators sheets.</li>
                       </ol>
-                      <code>{excelLiveCsvUrl}</code>
+                      <code>One workbook for every stock — change Symbol, run Update, keep the same file.</code>
                     </>
                   )}
                 </div>
@@ -2741,8 +2651,7 @@ function App() {
                 <p>Captured from the newest handwritten Milestone 2 notes.</p>
               </div>
               <div className="formula-excel-actions">
-                <button type="button" className="secondary-button button-excel" onClick={downloadExcelLiveConnector}>Connect Excel Live</button>
-                <button type="button" className="secondary-button button-copy" onClick={copyExcelFeedUrl}>Copy Live URL</button>
+                <button type="button" className="secondary-button button-excel" onClick={downloadMasterExcelBundle}>Master Excel + Python</button>
               </div>
             </div>
             <div className="chart-note">
