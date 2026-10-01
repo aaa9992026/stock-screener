@@ -26,6 +26,7 @@ import requests
 from io import BytesIO
 from datetime import datetime, timedelta, date
 from urllib.parse import quote
+from statistics import median
 import yfinance as yf
 
 router = APIRouter(prefix="/market", tags=["market"])
@@ -3431,6 +3432,89 @@ def _screener_facets(db: Session, market: str):
         value for (value,) in industry_query.distinct().order_by(Company.industry.asc()).all() if value
     ]
     return {"sectors": sectors[:500], "industries": industries[:1000]}
+
+
+
+
+@router.get("/sector-analysis")
+def get_sector_analysis(
+    market: str = "ALL",
+    sector: str | None = None,
+    db: Session = Depends(get_db),
+):
+    """Stored-provider sector analysis for the Milestone-2 sector view.
+
+    Current snapshot metrics are aggregated with medians. Historical growth /
+    acceleration scores are deliberately left unavailable unless peer history
+    exists; no growth score is fabricated from a current snapshot.
+    """
+    query, _ = _screener_query_parts(db, market)
+    if sector:
+        query = query.filter(Company.sector == sector)
+    rows = query.all()
+
+    groups = {}
+    for row in rows:
+        name = (getattr(row, "sector", None) or "Unclassified").strip()
+        bucket = groups.setdefault(name, {
+            "sector": name, "stock_count": 0, "classified_count": 0,
+            "eps": [], "pat": [], "sales": [], "margin": [], "roe": [],
+            "institution": [], "insider": [], "coverage": [],
+        })
+        bucket["stock_count"] += 1
+        if name != "Unclassified":
+            bucket["classified_count"] += 1
+        for key, attr in [
+            ("eps", "trailing_eps"), ("pat", "net_income"), ("sales", "revenue"),
+            ("margin", "profit_margin"), ("roe", "return_on_equity"),
+            ("institution", "institution_percent"), ("insider", "insider_percent"),
+            ("coverage", "data_coverage"),
+        ]:
+            value = getattr(row, attr, None)
+            try:
+                value = float(value)
+                if math.isfinite(value):
+                    bucket[key].append(value)
+            except (TypeError, ValueError):
+                pass
+
+    def med(values):
+        return float(median(values)) if values else None
+
+    output = []
+    for name, bucket in groups.items():
+        output.append({
+            "sector": name,
+            "stock_count": bucket["stock_count"],
+            "median_eps": med(bucket["eps"]),
+            "median_pat": med(bucket["pat"]),
+            "median_sales": med(bucket["sales"]),
+            "median_profit_margin": med(bucket["margin"]),
+            "median_roe": med(bucket["roe"]),
+            "median_institution_percent": med(bucket["institution"]),
+            "median_insider_percent": med(bucket["insider"]),
+            "data_coverage_percent": med(bucket["coverage"]),
+            # The client's sector formula needs historical peer growth series.
+            # Do not substitute current EPS/PAT/Sales levels for growth ranks.
+            "eps_growth_rs": None,
+            "pat_growth_rs": None,
+            "sales_growth_rs": None,
+            "growth_acceleration_rs": None,
+            "growth_breadth": None,
+            "acceleration_breadth": None,
+            "sector_rs_score": None,
+            "history_status": "Peer historical fundamentals required" if name != "Unclassified" else "Classification unavailable",
+        })
+
+    output.sort(key=lambda item: (-(item.get("data_coverage_percent") or -1), -item["stock_count"], item["sector"]))
+    return _json_safe({
+        "market": market.upper(),
+        "sector": sector,
+        "rows": output,
+        "formula": "EPS Growth RS 30% + PAT Growth RS 25% + Sales Growth RS 20% + Growth Acceleration RS 15% + Growth Breadth 5% + Acceleration Breadth 5%",
+        "aggregation": "Median stock growth by sector, per client note.",
+        "data_rule": "Current snapshot medians are real stored provider values. Historical growth-ranking fields remain N/A until real peer history is available; they are never fabricated.",
+    })
 
 
 @router.get("/screener")

@@ -319,6 +319,9 @@ function App() {
   const universeRequestRef = useRef(0);
   const [universeSyncing, setUniverseSyncing] = useState(false);
   const [universeError, setUniverseError] = useState("");
+  const [sectorAnalysis, setSectorAnalysis] = useState({ rows: [], formula: "", aggregation: "", data_rule: "" });
+  const [sectorAnalysisLoading, setSectorAnalysisLoading] = useState(false);
+  const [sectorAnalysisError, setSectorAnalysisError] = useState("");
   const [universePage, setUniversePage] = useState(1);
   const [universePageSize, setUniversePageSize] = useState(25);
   const [universeColumns, setUniverseColumns] = useState([...universeDefaultColumns]);
@@ -378,6 +381,26 @@ function App() {
       return false;
     } finally {
       if (requestId === universeRequestRef.current) setUniverseLoading(false);
+    }
+  };
+
+  const loadSectorAnalysis = async (filterOverride = universeFilters) => {
+    setSectorAnalysisLoading(true);
+    setSectorAnalysisError("");
+    try {
+      const params = { market: filterOverride.market || "ALL" };
+      if (filterOverride.sector) params.sector = filterOverride.sector;
+      const res = await axios.get(`${API}/market/sector-analysis`, { params, timeout: 30000 });
+      setSectorAnalysis({
+        rows: res.data.rows || [],
+        formula: res.data.formula || "",
+        aggregation: res.data.aggregation || "",
+        data_rule: res.data.data_rule || "",
+      });
+    } catch (error) {
+      setSectorAnalysisError(error?.response?.data?.detail || "Sector analysis could not be loaded.");
+    } finally {
+      setSectorAnalysisLoading(false);
     }
   };
 
@@ -453,6 +476,11 @@ function App() {
     loadUniverseScreener(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (universeTab === "Sector Analysis") loadSectorAnalysis(universeFilters);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [universeTab, universeFilters.market, universeFilters.sector]);
 
   useEffect(() => {
     const handleOutsideClick = (event) => {
@@ -2039,7 +2067,7 @@ function App() {
           </div>
 
           <div className="universe-tabs">
-            {["Popular", "Fundamentals", "Technicals", "Relative Comparison"].map((tab) => (
+            {["Popular", "Fundamentals", "Technicals", "Ownership", "Sector Analysis", "Relative Comparison"].map((tab) => (
               <button key={tab} type="button" className={universeTab === tab ? "active" : ""} onClick={() => setUniverseTab(tab)}>
                 {tab}
               </button>
@@ -2107,6 +2135,28 @@ function App() {
               </>
             )}
 
+            {universeTab === "Ownership" && (
+              <>
+                <label><span>Institutional Holding ≥ %</span><input type="number" step="0.1" value={universeFilters.institution_min} onChange={(e) => setUniverseFilters((v) => ({ ...v, institution_min: e.target.value }))} placeholder="Any" /></label>
+                <label><span>Insider Holding ≥ %</span><input type="number" step="0.1" value={universeFilters.insider_min} onChange={(e) => setUniverseFilters((v) => ({ ...v, insider_min: e.target.value }))} placeholder="Any" /></label>
+                <div className="universe-info-tile ownership-info-tile">
+                  <strong>{universeFilters.market === "US" ? "US Ownership" : universeFilters.market === "ALL" ? "US + India Ownership" : "Indian Ownership"}</strong>
+                  <span>{universeFilters.market === "US" ? "Institutional and insider provider holdings are filterable here. Public/retail is the residual where provider data allows it." : "Available provider ownership fields are filterable here. Promoter/FII/DII-MF historical rules remain in Advanced Ownership Filters and missing values stay N/A."}</span>
+                </div>
+                <button type="button" className="secondary-button ownership-advanced-button" onClick={() => document.getElementById("ranking-filters")?.scrollIntoView({ behavior: "smooth", block: "start" })}>Advanced Ownership Filters ↓</button>
+              </>
+            )}
+
+            {universeTab === "Sector Analysis" && (
+              <>
+                <div className="universe-info-tile sector-info-tile">
+                  <strong>Sector Analysis</strong>
+                  <span>Select a sector above or leave All sectors to compare sectors. Current snapshot medians use real stored provider data; historical growth scores stay N/A until verified peer history exists.</span>
+                </div>
+                <button type="button" className="secondary-button sector-refresh-button" disabled={sectorAnalysisLoading} onClick={() => loadSectorAnalysis(universeFilters)}>{sectorAnalysisLoading ? "Loading…" : "Refresh Sector Analysis"}</button>
+              </>
+            )}
+
             {universeTab === "Relative Comparison" && (
               <>
                 <label><span>Institutional Holding ≥ %</span><input type="number" step="0.1" value={universeFilters.institution_min} onChange={(e) => setUniverseFilters((v) => ({ ...v, institution_min: e.target.value }))} placeholder="Any" /></label>
@@ -2145,6 +2195,60 @@ function App() {
               </label>
             </div>
           </div>
+
+          {universeTab === "Ownership" && (
+            <div className="ownership-universe-panel">
+              <div className="ownership-universe-head">
+                <div>
+                  <h3>Ownership Filters</h3>
+                  <p>Visible here exactly as a dedicated filter section. US uses Insider / Institutional / Retail-Public categories; Indian ranking rules use Promoter / FII / DII-MF / pledge / insider rules from the client notes.</p>
+                </div>
+                <span className="ownership-market-badge">{universeFilters.market === "ALL" ? "US + India" : universeFilters.market}</span>
+              </div>
+              {(universeFilters.market === "US" || universeFilters.market === "ALL") && renderUSOwnershipTable()}
+              {(universeFilters.market !== "US") && renderFilterTable("ownership", "Ownership Ranking Filters", "Promoter / FII / DII-MF / pledge / insider rules from the handwritten client notes. Missing provider history remains N/A.")}
+            </div>
+          )}
+
+          {universeTab === "Sector Analysis" && (
+            <div className="sector-analysis-panel">
+              <div className="sector-analysis-head">
+                <div>
+                  <h3>Sector Analysis</h3>
+                  <p>{sectorAnalysis.formula || "EPS Growth RS 30% + PAT Growth RS 25% + Sales Growth RS 20% + Growth Acceleration RS 15% + Growth Breadth 5% + Acceleration Breadth 5%"}</p>
+                </div>
+                <span className="sector-method-badge">Median aggregation</span>
+              </div>
+              {sectorAnalysisError && <div className="message error-message universe-message">{sectorAnalysisError}</div>}
+              <div className="sector-analysis-table-wrap">
+                <table className="sector-analysis-table">
+                  <thead><tr><th>Sector</th><th>Stocks</th><th>Median EPS</th><th>Median PAT</th><th>Median Sales</th><th>EPS Growth RS</th><th>PAT Growth RS</th><th>Sales Growth RS</th><th>Growth Accel RS</th><th>Growth Breadth</th><th>Accel Breadth</th><th>Sector RS</th><th>Status</th></tr></thead>
+                  <tbody>
+                    {sectorAnalysisLoading ? (
+                      <tr><td colSpan="13" className="universe-empty">Loading sector analysis…</td></tr>
+                    ) : sectorAnalysis.rows?.length ? sectorAnalysis.rows.map((row) => (
+                      <tr key={row.sector}>
+                        <td><strong>{row.sector}</strong></td>
+                        <td>{Number(row.stock_count || 0).toLocaleString()}</td>
+                        <td>{row.median_eps == null ? "N/A" : Number(row.median_eps).toFixed(2)}</td>
+                        <td>{row.median_pat == null ? "N/A" : Number(row.median_pat).toLocaleString(undefined, { notation: "compact", maximumFractionDigits: 2 })}</td>
+                        <td>{row.median_sales == null ? "N/A" : Number(row.median_sales).toLocaleString(undefined, { notation: "compact", maximumFractionDigits: 2 })}</td>
+                        <td>{row.eps_growth_rs == null ? "N/A" : Number(row.eps_growth_rs).toFixed(2)}</td>
+                        <td>{row.pat_growth_rs == null ? "N/A" : Number(row.pat_growth_rs).toFixed(2)}</td>
+                        <td>{row.sales_growth_rs == null ? "N/A" : Number(row.sales_growth_rs).toFixed(2)}</td>
+                        <td>{row.growth_acceleration_rs == null ? "N/A" : Number(row.growth_acceleration_rs).toFixed(2)}</td>
+                        <td>{row.growth_breadth == null ? "N/A" : Number(row.growth_breadth).toFixed(2)}</td>
+                        <td>{row.acceleration_breadth == null ? "N/A" : Number(row.acceleration_breadth).toFixed(2)}</td>
+                        <td><strong>{row.sector_rs_score == null ? "N/A" : Number(row.sector_rs_score).toFixed(2)}</strong></td>
+                        <td><span className={`sector-status ${row.sector_rs_score == null ? "is-pending" : "is-ready"}`}>{row.sector_rs_score == null ? row.history_status : "Ready"}</span></td>
+                      </tr>
+                    )) : <tr><td colSpan="13" className="universe-empty">No sector data is available for the selected universe.</td></tr>}
+                  </tbody>
+                </table>
+              </div>
+              <div className="sector-analysis-note">{sectorAnalysis.aggregation || "Use median stock growth for sector growth metrics rather than average."} {sectorAnalysis.data_rule}</div>
+            </div>
+          )}
 
           {showUniverseColumns && (
             <div className="universe-column-picker">

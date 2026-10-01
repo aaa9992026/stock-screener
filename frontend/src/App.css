@@ -2461,3 +2461,104 @@ button:disabled {
     overflow-wrap: anywhere;
   }
 }
+
+/* Milestone 2 final visibility fix: dedicated Ownership and Sector Analysis views */
+.universe-info-tile {
+  grid-column: span 2;
+  min-height: 74px;
+  border: 1px solid #dbeafe;
+  border-radius: 10px;
+  background: #f8fbff;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  color: #334155;
+}
+.universe-info-tile strong { color: #0f172a; font-size: 13px; }
+.universe-info-tile span { font-size: 11px; line-height: 1.45; color: #64748b; }
+.ownership-info-tile { border-color: #c7d2fe; background: #f7f7ff; }
+.sector-info-tile { border-color: #bbf7d0; background: #f7fff9; }
+.ownership-advanced-button,
+.sector-refresh-button {
+  align-self: end;
+  min-height: 40px;
+}
+.sector-analysis-panel {
+  margin: 14px 0;
+  border: 1px solid #dbeafe;
+  border-radius: 12px;
+  background: #fbfdff;
+  padding: 14px;
+}
+.sector-analysis-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+.sector-analysis-head h3 { margin: 0 0 5px; color: #0f172a; }
+.sector-analysis-head p { margin: 0; color: #64748b; font-size: 11px; line-height: 1.45; max-width: 980px; }
+.sector-method-badge {
+  white-space: nowrap;
+  border: 1px solid #bfdbfe;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  padding: 6px 10px;
+  font-size: 10px;
+  font-weight: 800;
+}
+.sector-analysis-table-wrap { overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 10px; background: #fff; }
+.sector-analysis-table { width: 100%; min-width: 1180px; border-collapse: collapse; }
+.sector-analysis-table th,
+.sector-analysis-table td { padding: 9px 10px; border-bottom: 1px solid #edf2f7; text-align: left; white-space: nowrap; font-size: 11px; }
+.sector-analysis-table th { background: #f8fafc; color: #475569; font-size: 9px; text-transform: uppercase; letter-spacing: .04em; }
+.sector-analysis-table tbody tr:hover { background: #f8fbff; }
+.sector-status { display: inline-flex; max-width: 240px; white-space: normal; border-radius: 999px; padding: 4px 8px; font-size: 9px; font-weight: 800; }
+.sector-status.is-pending { background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; }
+.sector-status.is-ready { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+.sector-analysis-note { margin-top: 10px; color: #64748b; font-size: 10px; line-height: 1.45; }
+
+@media (max-width: 1100px) {
+  .universe-info-tile { grid-column: span 2; }
+}
+@media (max-width: 650px) {
+  .universe-info-tile { grid-column: span 1; }
+  .sector-analysis-head { flex-direction: column; }
+  .ownership-advanced-button, .sector-refresh-button { width: 100%; align-self: stretch; }
+}
+
+.ownership-universe-panel {
+  margin: 14px 0;
+  border: 1px solid #c7d2fe;
+  border-radius: 12px;
+  background: #fbfbff;
+  padding: 14px;
+}
+.ownership-universe-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+.ownership-universe-head h3 { margin: 0 0 5px; color: #0f172a; }
+.ownership-universe-head p { margin: 0; color: #64748b; font-size: 11px; line-height: 1.45; max-width: 980px; }
+.ownership-market-badge {
+  white-space: nowrap;
+  border: 1px solid #c7d2fe;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #4338ca;
+  padding: 6px 10px;
+  font-size: 10px;
+  font-weight: 800;
+}
+.ownership-universe-panel .compact-filter-card { margin: 10px 0 0; }
+
+@media (max-width: 650px) {
+  .ownership-universe-head { flex-direction: column; }
+}
