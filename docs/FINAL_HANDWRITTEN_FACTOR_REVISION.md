@@ -29,7 +29,6 @@ The exact RSI point allocation is not fully legible in the supplied photo, so it
 
 Quarterly:
 - Latest quarter EPS YoY growth
-- Quarterly EPS rising over the latest three quarters
 - Quarterly EPS YoY trend rising
 - Latest quarter PAT YoY growth
 - Quarterly PAT rising over the latest three quarters

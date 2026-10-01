@@ -142,7 +142,6 @@ const defaultHandwrittenFactors = {
   },
   fundamental: {
     q_eps_yoy: { weight: 10, threshold: 30, comparator: ">" },
-    q_eps_rising: { weight: 4, comparator: ">" },
     q_eps_yoy_rising: { weight: 6, comparator: ">" },
     q_pat_yoy: { weight: 6, threshold: 30, comparator: ">" },
     q_pat_rising: { weight: 4, comparator: ">" },
@@ -191,7 +190,6 @@ const handwrittenFactorMeta = {
   ],
   fundamental: [
     ["q_eps_yoy", "Latest quarter EPS (YoY)", "Latest quarterly EPS YoY growth", ["threshold"], "EPS"],
-    ["q_eps_rising", "Quarterly EPS rising", "Latest EPS > prior EPS > second-prior EPS", [], "EPS"],
     ["q_eps_yoy_rising", "Quarterly EPS YoY trend rising", "Latest YoY > prior YoY > second-prior YoY", [], "EPS"],
     ["a_eps_yoy", "Latest year EPS (YoY)", "Latest annual EPS growth", ["threshold"], "EPS"],
     ["a_eps_rising", "Annual EPS trend rising", "Latest EPS > prior year > second-prior year", [], "EPS"],
@@ -1309,7 +1307,6 @@ function App() {
       : null;
     const fundamentalComponent = factorScore("fundamental", {
       q_eps_yoy: finite(q[0]?.yoy_eps) == null ? null : (compareNumeric(q[0]?.yoy_eps, fcfg.q_eps_yoy.comparator || ">", fcfg.q_eps_yoy.threshold) ? 100 : 0),
-      q_eps_rising: q.length < 3 ? null : (isRising3(q[0]?.eps, q[1]?.eps, q[2]?.eps) ? 100 : 0),
       q_eps_yoy_rising: comparable("yoy_eps").length < 3 ? null : (isRising3(...comparable("yoy_eps")) ? 100 : 0),
       q_pat_yoy: finite(q[0]?.yoy_pat) == null ? null : (compareNumeric(q[0]?.yoy_pat, fcfg.q_pat_yoy.comparator || ">", fcfg.q_pat_yoy.threshold) ? 100 : 0),
       q_pat_rising: q.length < 3 ? null : (isRising3(q[0]?.pat, q[1]?.pat, q[2]?.pat) ? 100 : 0),
@@ -1467,7 +1464,6 @@ function App() {
 
     const fundamental = {
       q_eps_yoy: resultRow(finite(q[0]?.yoy_eps), passScore(q[0]?.yoy_eps, fcfg.q_eps_yoy)),
-      q_eps_rising: resultRow(finite(q[0]?.eps), q.length < 3 ? null : (trend3(q[0]?.eps, q[1]?.eps, q[2]?.eps) ? 100 : 0), "Prior 2 quarters"),
       q_eps_yoy_rising: resultRow(finite(q[0]?.yoy_eps), comparable("yoy_eps").length < 3 ? null : (trend3(...comparable("yoy_eps")) ? 100 : 0), "Prior 2 YoY values"),
       a_eps_yoy: resultRow(finite(a[0]?.yoy_eps), passScore(a[0]?.yoy_eps, fcfg.a_eps_yoy)),
       a_eps_rising: resultRow(finite(a[0]?.eps), a.length < 3 ? null : (trend3(a[0]?.eps, a[1]?.eps, a[2]?.eps) ? 100 : 0), "Prior 2 years"),

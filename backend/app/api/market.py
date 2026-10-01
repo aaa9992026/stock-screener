@@ -723,7 +723,6 @@ CLIENT_TECHNICAL_FILTER_CONFIG = [
 
 CLIENT_FUNDAMENTAL_FILTER_CONFIG = [
     {"group": "EPS", "name": "Latest quarter EPS YoY", "compare": ">", "value": 30.0, "weight": 10.0, "enabled": True},
-    {"group": "EPS", "name": "Quarterly EPS rising", "compare": ">", "value": "previous 2 quarters", "weight": 4.0, "enabled": True},
     {"group": "EPS", "name": "Quarterly EPS YoY trend rising", "compare": ">", "value": "previous 2 YoY values", "weight": 6.0, "enabled": True},
     {"group": "EPS", "name": "Latest year EPS YoY", "compare": ">", "value": 20.0, "weight": 6.0, "enabled": True},
     {"group": "EPS", "name": "Annual EPS trend rising", "compare": ">", "value": "previous 2 years", "weight": 4.0, "enabled": True},
