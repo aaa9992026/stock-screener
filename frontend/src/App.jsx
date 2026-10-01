@@ -316,6 +316,7 @@ function App() {
   const [universeRows, setUniverseRows] = useState([]);
   const [universeMeta, setUniverseMeta] = useState({ total: 0, pages: 1, facets: { sectors: [], industries: [] }, coverage: {} });
   const [universeLoading, setUniverseLoading] = useState(false);
+  const universeRequestRef = useRef(0);
   const [universeSyncing, setUniverseSyncing] = useState(false);
   const [universeError, setUniverseError] = useState("");
   const [universePage, setUniversePage] = useState(1);
@@ -337,23 +338,46 @@ function App() {
   };
 
   const loadUniverseScreener = async (page = 1, filterOverride = universeFilters, pageSizeOverride = universePageSize) => {
+    const requestId = ++universeRequestRef.current;
     setUniverseLoading(true);
     setUniverseError("");
+    let lastError = null;
+
     try {
-      const res = await axios.get(`${API}/market/screener`, { params: buildUniverseParams(page, true, filterOverride, pageSizeOverride) });
-      setUniverseRows(res.data.rows || []);
-      setUniverseMeta({
-        total: res.data.total || 0,
-        pages: res.data.pages || 1,
-        facets: res.data.facets || { sectors: [], industries: [] },
-        coverage: res.data.coverage || {},
-      });
-      setUniversePage(res.data.page || page);
-    } catch (error) {
-      setUniverseRows([]);
-      setUniverseError(error?.response?.data?.detail || "The stock-universe screener could not be loaded.");
+      // Railway can briefly reject a read while startup/background sync work is
+      // committing. Retry the same request once, but never erase a valid table
+      // because of one transient failure.
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        try {
+          const res = await axios.get(`${API}/market/screener`, {
+            params: buildUniverseParams(page, true, filterOverride, pageSizeOverride),
+            timeout: 30000,
+          });
+          if (requestId !== universeRequestRef.current) return false;
+          setUniverseRows(res.data.rows || []);
+          setUniverseMeta({
+            total: res.data.total || 0,
+            pages: res.data.pages || 1,
+            facets: res.data.facets || { sectors: [], industries: [] },
+            coverage: res.data.coverage || {},
+          });
+          setUniversePage(res.data.page || page);
+          setUniverseError("");
+          return true;
+        } catch (error) {
+          lastError = error;
+          if (attempt === 0) {
+            await new Promise((resolve) => window.setTimeout(resolve, 900));
+          }
+        }
+      }
+
+      if (requestId === universeRequestRef.current) {
+        setUniverseError(lastError?.response?.data?.detail || "The stock-universe screener could not be loaded. Please retry.");
+      }
+      return false;
     } finally {
-      setUniverseLoading(false);
+      if (requestId === universeRequestRef.current) setUniverseLoading(false);
     }
   };
 
@@ -423,12 +447,10 @@ function App() {
   };
 
   useEffect(() => {
+    // One guarded load is enough. loadUniverseScreener itself retries once on
+    // a transient backend failure. A second unconditional delayed request used
+    // to overwrite a successful first response with an error/empty table.
     loadUniverseScreener(1);
-    // Company-master synchronization runs in the backend immediately after a
-    // deploy. Retry once so a page opened during those first few seconds does
-    // not remain stuck on an old "0 eligible stocks" result.
-    const retry = window.setTimeout(() => loadUniverseScreener(1), 5000);
-    return () => window.clearTimeout(retry);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
