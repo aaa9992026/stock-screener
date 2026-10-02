@@ -3689,52 +3689,124 @@ def get_top_composite_dashboard(
     candidate_limit: int = Query(700, ge=200, le=1200),
     db: Session = Depends(get_db),
 ):
-    """Fast front-dashboard ranking built only from verified stored data.
+    """Front-dashboard ranking using verified stored data only.
 
-    The endpoint intentionally keeps unavailable categories as N/A.  It scores a
-    broad high-coverage candidate pool, computes technical/RS values in one
-    batched history read, then returns the best rows by the latest client
-    composite weights.  Sector/EPS/PAT/Sales sub-scores are not invented when
-    the required peer/fundamental history is missing.
+    This path intentionally avoids the much heavier generic screener query,
+    which calculates 52-week aggregates for the entire universe.  The dashboard
+    does not use those fields, so scanning them made the Top-200 request prone
+    to timeouts on Railway as the database grew.
+
+    Candidate metadata is selected with a lightweight company/fundamental/
+    ownership query.  Price history is then streamed only for those candidates
+    and only for the period needed by the dashboard calculations.
     """
-    query, expressions = _screener_query_parts(db, market)
+    exchanges = _screener_market_exchanges(market)
+
+    # Lightweight candidate coverage score.  Do not join the all-universe
+    # 52-week aggregate subquery used by /screener; Top-200 does not need it.
+    candidate_points = (
+        case((Fundamental.market_cap.isnot(None), 1), else_=0)
+        + case((Fundamental.trailing_eps.isnot(None), 1), else_=0)
+        + case((Fundamental.revenue.isnot(None), 1), else_=0)
+        + case((Fundamental.net_income.isnot(None), 1), else_=0)
+        + case((Fundamental.profit_margin.isnot(None), 1), else_=0)
+        + case((Fundamental.return_on_equity.isnot(None), 1), else_=0)
+        + case((Ownership.institution_percent.isnot(None), 1), else_=0)
+        + case((Ownership.insider_percent.isnot(None), 1), else_=0)
+        + case((or_(Company.sector.isnot(None), Company.industry.isnot(None)), 1), else_=0)
+    )
+    candidate_coverage = candidate_points * 100.0 / 9.0
+
+    query = (
+        db.query(
+            Company.symbol.label("symbol"),
+            Company.name.label("name"),
+            Company.isin.label("isin"),
+            Company.exchange.label("exchange"),
+            Company.sector.label("sector"),
+            Company.industry.label("industry"),
+            Fundamental.market_cap.label("market_cap"),
+            Fundamental.trailing_eps.label("trailing_eps"),
+            Fundamental.forward_eps.label("forward_eps"),
+            Fundamental.revenue.label("revenue"),
+            Fundamental.net_income.label("net_income"),
+            Fundamental.profit_margin.label("profit_margin"),
+            Fundamental.return_on_equity.label("return_on_equity"),
+            Fundamental.return_on_assets.label("return_on_assets"),
+            Ownership.institution_percent.label("institution_percent"),
+            Ownership.insider_percent.label("insider_percent"),
+            Ownership.shares_outstanding.label("shares_outstanding"),
+            Ownership.float_shares.label("float_shares"),
+            candidate_coverage.label("data_coverage"),
+        )
+        .outerjoin(
+            Fundamental,
+            (Fundamental.symbol == Company.symbol)
+            & (Fundamental.exchange == Company.exchange),
+        )
+        .outerjoin(
+            Ownership,
+            (Ownership.symbol == Company.symbol)
+            & (Ownership.exchange == Company.exchange),
+        )
+        .filter(Company.is_active == 1, Company.exchange.in_(exchanges))
+    )
+    query = apply_eligible_equity_filter(query, exchanges)
     candidates = (
         query.order_by(
-            expressions["data_coverage"].desc(),
-            expressions["market_cap"].desc().nullslast(),
+            candidate_coverage.desc(),
+            Fundamental.market_cap.desc().nullslast(),
             Company.symbol.asc(),
         )
         .limit(candidate_limit)
         .all()
     )
+
     base_rows = [_screener_row_dict(row) for row in candidates]
     if not base_rows:
         return {
-            "market": market.upper(), "rows": [], "candidate_count": 0,
+            "market": market.upper(),
+            "rows": [],
+            "candidate_count": 0,
             "formula": "Technical 30% + Fundamental 25% + Ownership 15% + Sector 20% + RS 10%",
             "data_rule": "Verified stored data only; missing values remain N/A.",
         }
 
     by_exchange = {}
     for row in base_rows:
-        by_exchange.setdefault(row.get("exchange") or "", []).append(row.get("symbol"))
+        ex = row.get("exchange") or ""
+        symbol = row.get("symbol")
+        if symbol:
+            by_exchange.setdefault(ex, []).append(symbol)
 
+    # 400 calendar days safely covers the 252-trading-day 1Y window.  Stream
+    # only symbol/close instead of materializing full ORM OHLCV rows.  Chunking
+    # avoids oversized IN clauses and keeps memory stable on Railway.
     cutoff = date.today() - timedelta(days=400)
     grouped = {}
+    history_chunk_size = 150
     for ex, symbols in by_exchange.items():
-        symbols = [s for s in symbols if s]
-        if not symbols:
-            continue
-        price_rows = (
-            db.query(OHLCV)
-            .filter(OHLCV.exchange == ex, OHLCV.symbol.in_(symbols), OHLCV.date >= cutoff)
-            .order_by(OHLCV.symbol.asc(), OHLCV.date.asc())
-            .all()
-        )
-        for item in price_rows:
-            if item.close is None:
-                continue
-            grouped.setdefault((ex, item.symbol), []).append(float(item.close))
+        for offset in range(0, len(symbols), history_chunk_size):
+            chunk = symbols[offset:offset + history_chunk_size]
+            price_rows = (
+                db.query(OHLCV.symbol, OHLCV.close)
+                .filter(
+                    OHLCV.exchange == ex,
+                    OHLCV.symbol.in_(chunk),
+                    OHLCV.date >= cutoff,
+                    OHLCV.close.isnot(None),
+                )
+                .order_by(OHLCV.symbol.asc(), OHLCV.date.asc())
+                .yield_per(5000)
+            )
+            for item in price_rows:
+                try:
+                    close = float(item.close)
+                except (TypeError, ValueError):
+                    continue
+                if not math.isfinite(close) or close <= 0:
+                    continue
+                grouped.setdefault((ex, item.symbol), []).append(close)
 
     def technical_score(closes):
         if not closes or len(closes) < 20:
@@ -3748,27 +3820,12 @@ def get_top_composite_dashboard(
                     values.append(100.0 if latest > ema else 0.0)
         rsi = _rsi(closes, 14) if len(closes) >= 15 else None
         if rsi is not None:
-            values.append(100.0 if 50 <= rsi <= 70 else 50.0 if (40 <= rsi < 50 or 70 < rsi <= 80) else 0.0)
+            values.append(
+                100.0 if 50 <= rsi <= 70
+                else 50.0 if (40 <= rsi < 50 or 70 < rsi <= 80)
+                else 0.0
+            )
         return round(sum(values) / len(values), 2) if values else None
-
-    def fundamental_score(row):
-        checks = []
-        mapping = [
-            (row.get("trailing_eps"), lambda x: x > 0),
-            (row.get("net_income"), lambda x: x > 0),
-            (row.get("profit_margin"), lambda x: x > 0),
-            (row.get("return_on_equity"), lambda x: x >= 0.15),
-            (row.get("return_on_assets"), lambda x: x >= 0.05),
-        ]
-        for raw, fn in mapping:
-            if raw is None:
-                continue
-            try:
-                num = float(raw)
-                checks.append(100.0 if fn(num) else (50.0 if num > 0 else 0.0))
-            except Exception:
-                continue
-        return round(sum(checks) / len(checks), 2) if checks else None
 
     def ownership_score(row):
         values = []
@@ -3776,72 +3833,90 @@ def get_top_composite_dashboard(
         insider = row.get("insider_percent")
         if inst is not None:
             try:
-                x = float(inst); x = x * 100 if x <= 1 else x
+                x = float(inst)
+                x = x * 100 if x <= 1 else x
                 values.append((max(0.0, min(100.0, x)), 70.0))
             except Exception:
                 pass
         if insider is not None:
             try:
-                x = float(insider); x = x * 100 if x <= 1 else x
+                x = float(insider)
+                x = x * 100 if x <= 1 else x
                 values.append((max(0.0, min(100.0, x * 5.0)), 30.0))
             except Exception:
                 pass
-        total = sum(w for _, w in values)
-        return round(sum(v*w for v,w in values)/total, 2) if total else None
+        total = sum(weight for _, weight in values)
+        return (
+            round(sum(value * weight for value, weight in values) / total, 2)
+            if total else None
+        )
 
     periods = {"1w": 5, "1m": 21, "3m": 63, "6m": 126, "1y": 252}
     period_weights = {"1w": 30.0, "1m": 25.0, "3m": 20.0, "6m": 15.0, "1y": 10.0}
     raw_returns = {}
-    peers_by_group = {"US": {k: [] for k in periods}, "INDIA": {k: [] for k in periods}}
+    peers_by_group = {
+        "US": {key: [] for key in periods},
+        "INDIA": {key: [] for key in periods},
+    }
     for row in base_rows:
         key = (row.get("exchange"), row.get("symbol"))
         closes = grouped.get(key, [])
-        vals = {}
+        values = {}
         for label, days in periods.items():
-            if len(closes) > days and closes[-1-days] not in (None, 0):
-                vals[label] = ((closes[-1] / closes[-1-days]) - 1.0) * 100.0
-        raw_returns[key] = vals
+            if len(closes) > days and closes[-1 - days] not in (None, 0):
+                values[label] = ((closes[-1] / closes[-1 - days]) - 1.0) * 100.0
+        raw_returns[key] = values
         group = "US" if row.get("exchange") == "US" else "INDIA"
-        for label, value in vals.items():
+        for label, value in values.items():
             peers_by_group[group][label].append(value)
 
     ranked = []
     weights = CLIENT_COMPOSITE_WEIGHTS
     for row in base_rows:
-        ex, sym = row.get("exchange"), row.get("symbol")
-        closes = grouped.get((ex, sym), [])
-        tech = technical_score(closes)
-        # The client's exact fundamental score requires quarterly/annual
-        # history (11 EPS + 11 PAT + 11 Sales + NPM/CFO rules). The universe
-        # snapshot does not contain that history, so never substitute the old
-        # generic positive-EPS/margin score here.
-        fund = None
-        own = ownership_score(row)
+        ex, symbol = row.get("exchange"), row.get("symbol")
+        closes = grouped.get((ex, symbol), [])
+        technical = technical_score(closes)
+
+        # Exact client fundamental score needs quarterly/annual history (11 EPS
+        # + 11 PAT + 11 Sales + NPM/CFO).  Never substitute the old generic
+        # positive-EPS/margin score here.
+        fundamental = None
+        ownership = ownership_score(row)
+
         group = "US" if ex == "US" else "INDIA"
         rs_points = []
         rs_weight = 0.0
         for label, weight in period_weights.items():
-            value = raw_returns.get((ex, sym), {}).get(label)
+            value = raw_returns.get((ex, symbol), {}).get(label)
             peers = peers_by_group[group][label]
-            pct = _percentile_rank(peers, value) if value is not None and peers else None
-            if pct is not None:
-                rs_points.append(pct * weight)
+            percentile = _percentile_rank(peers, value) if value is not None and peers else None
+            if percentile is not None:
+                rs_points.append(percentile * weight)
                 rs_weight += weight
-        rs = round(sum(rs_points)/rs_weight, 2) if rs_weight else None
-        sector = None  # exact peer-growth sector score remains N/A until real history exists
+        rs = round(sum(rs_points) / rs_weight, 2) if rs_weight else None
+        sector = None
 
         components = {
-            "technical": tech, "fundamental": fund, "ownership": own,
-            "sector": sector, "relative_strength": rs,
+            "technical": technical,
+            "fundamental": fundamental,
+            "ownership": ownership,
+            "sector": sector,
+            "relative_strength": rs,
         }
-        available_weight = sum(weights[k] for k,v in components.items() if v is not None)
+        available_weight = sum(
+            weights[key] for key, value in components.items() if value is not None
+        )
         provisional = None
         if available_weight > 0:
             provisional = round(
-                sum(components[k] * weights[k] for k in components if components[k] is not None)
-                / available_weight,
+                sum(
+                    components[key] * weights[key]
+                    for key in components
+                    if components[key] is not None
+                ) / available_weight,
                 2,
             )
+
         all_required_available = all(
             components.get(key) is not None
             for key, weight in weights.items()
@@ -3850,27 +3925,37 @@ def get_top_composite_dashboard(
         final_composite = provisional if all_required_available else None
         ranked.append({
             **row,
-            # Keep a sortable provisional value, but never label it Final when
-            # exact handwritten fundamental/sector history is unavailable.
             "composite_score": provisional,
             "final_composite_score": final_composite,
             "provisional_composite_score": provisional,
             "score_status": "Final" if final_composite is not None else "Provisional",
             "score_coverage_percent": round(available_weight, 2),
-            "technical_score": tech,
-            "fundamental_score": fund,
-            "ownership_score": own,
+            "technical_score": technical,
+            "fundamental_score": fundamental,
+            "ownership_score": ownership,
             "sector_score": sector,
             "rs_score": rs,
-            "eps_score": None, "pat_score": None, "sales_score": None,
-            "alpha": None, "beta": None,
+            "eps_score": None,
+            "pat_score": None,
+            "sales_score": None,
+            "alpha": None,
+            "beta": None,
         })
 
-    ranked = [r for r in ranked if r.get("provisional_composite_score") is not None]
-    ranked.sort(key=lambda r: (-(r.get("composite_score") or -1), -(r.get("score_coverage_percent") or 0), str(r.get("symbol") or "")))
+    ranked = [
+        row for row in ranked
+        if row.get("provisional_composite_score") is not None
+    ]
+    ranked.sort(
+        key=lambda row: (
+            -(row.get("composite_score") or -1),
+            -(row.get("score_coverage_percent") or 0),
+            str(row.get("symbol") or ""),
+        )
+    )
     rows = ranked[:limit]
-    for idx, row in enumerate(rows, start=1):
-        row["rank"] = idx
+    for index, row in enumerate(rows, start=1):
+        row["rank"] = index
 
     return _json_safe({
         "market": market.upper(),

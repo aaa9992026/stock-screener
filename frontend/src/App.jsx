@@ -605,11 +605,25 @@ function App() {
   const loadTopComposite = async (marketOverride = universeFilters.market || "ALL") => {
     setTopCompositeLoading(true);
     setTopCompositeError("");
-    try {
-      const res = await axios.get(`${API}/market/top-composite`, {
-        params: { market: marketOverride || "ALL", limit: 200, candidate_limit: 700 },
-        timeout: 45000,
+
+    const requestComposite = (candidateLimit, timeout) =>
+      axios.get(`${API}/market/top-composite`, {
+        params: { market: marketOverride || "ALL", limit: 200, candidate_limit: candidateLimit },
+        timeout,
       });
+
+    try {
+      let res;
+      try {
+        // Normal full candidate pass. Backend is optimized to stream only the
+        // history required for these candidates.
+        res = await requestComposite(700, 60000);
+      } catch (firstError) {
+        // One bounded recovery pass protects the dashboard from a transient
+        // cold-start/database timeout without requiring another deployment.
+        res = await requestComposite(350, 45000);
+      }
+
       setTopComposite({
         rows: res.data.rows || [],
         candidate_count: res.data.candidate_count || 0,
@@ -618,7 +632,12 @@ function App() {
         rs_note: res.data.rs_note || "",
       });
     } catch (error) {
-      setTopCompositeError(error?.response?.data?.detail || "Composite dashboard could not be loaded right now.");
+      // Keep any previously verified rows on screen instead of erasing them on
+      // a transient refresh failure.
+      setTopCompositeError(
+        error?.response?.data?.detail ||
+        "Top 200 data is temporarily unavailable. Please press Refresh Top 200 once more."
+      );
     } finally {
       setTopCompositeLoading(false);
     }
