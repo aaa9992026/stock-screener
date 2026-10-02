@@ -626,8 +626,10 @@ def _warm_ranking_enrichment_background(rows):
     def runner():
         global _RANKING_WARM_ACTIVE
         try:
-            for offset in range(0, len(rows), 25):
-                chunk = rows[offset:offset + 25]
+            # Smaller provider batches reduce Yahoo/SEC throttling while the
+            # cache is warming in the background.
+            for offset in range(0, len(rows), 10):
+                chunk = rows[offset:offset + 10]
                 try:
                     _apply_ranking_enrichment(chunk, limit=len(chunk))
                 except Exception:
@@ -4786,10 +4788,14 @@ def get_top_composite_dashboard(
         # older cached dashboard. The remainder is warmed and persisted by a
         # daemon worker, so later refreshes gain coverage without growing OHLCV.
         try:
-            sync_limit = int(os.getenv("TOP200_SYNC_ENRICH_LIMIT", "10") or 10)
+            sync_limit = int(os.getenv("TOP200_SYNC_ENRICH_LIMIT", "20") or 20)
         except Exception:
-            sync_limit = 10
-        sync_limit = max(0, min(20, sync_limit))
+            sync_limit = 20
+        # Enrich enough leading candidates synchronously that the first visible
+        # ranking page is not dominated by low-coverage rows. Keep the cap
+        # bounded for the Railway free tier; remaining candidates continue in
+        # the background/persisted cache.
+        sync_limit = max(0, min(30, sync_limit))
         if missing_rows and sync_limit > 0:
             enrichment.update(_apply_ranking_enrichment(missing_rows, limit=sync_limit))
             enrichment.update(_apply_cached_ranking_enrichment(enrichment_rows))
@@ -4859,12 +4865,19 @@ def get_top_composite_dashboard(
         )
         provisional = None
         if available_weight > 0:
+            # IMPORTANT: do not renormalize away missing categories. Doing so
+            # allowed a 55%-coverage row (Technical + Ownership + RS only) to
+            # display a 90+ provisional score and outrank rows that actually
+            # had Fundamental/Sector data. Missing categories remain N/A and
+            # simply do not earn their configured weight. Because `weights`
+            # are already normalized to 100, this score is naturally bounded
+            # by coverage (e.g. a 55%-coverage row cannot score above 55).
             provisional = round(
                 sum(
                     components[key_name] * weights[key_name]
                     for key_name in components
                     if components[key_name] is not None
-                ) / available_weight,
+                ) / 100.0,
                 2,
             )
 
@@ -4941,7 +4954,7 @@ def get_top_composite_dashboard(
         "enrichment_target_count": min(200, len(enrichment_rows)),
         "enrichment_remaining_count": len(enrichment_remaining) if _free_tier_mode() else 0,
         "enrichment_in_progress": bool(enrichment_remaining) if _free_tier_mode() else False,
-        "sync_enrichment_limit": int(os.getenv("TOP200_SYNC_ENRICH_LIMIT", "10") or 10) if _free_tier_mode() else 0,
+        "sync_enrichment_limit": int(os.getenv("TOP200_SYNC_ENRICH_LIMIT", "20") or 20) if _free_tier_mode() else 0,
     })
 
 
