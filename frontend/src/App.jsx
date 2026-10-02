@@ -2794,20 +2794,23 @@ function App() {
               <p>Framework-first layout: click any Top-200 stock to open its candlestick chart and customizable indicator basket.</p>
             </div>
             <div className="composite-dashboard-actions">
-              <select
-                value={universeFilters.market}
-                onChange={(e) => {
-                  const nextMarket = e.target.value;
-                  setUniverseFilters((v) => ({ ...v, market: nextMarket, sector: "", industry: "" }));
-                  loadTopComposite(nextMarket);
-                }}
-              >
-                <option value="ALL">US + India</option>
-                <option value="US">US Stocks</option>
-                <option value="INDIA">Indian Stocks</option>
-                <option value="NSE">NSE Only</option>
-                <option value="BSE">BSE Only</option>
-              </select>
+              <label className="dashboard-sort-control dashboard-market-control"><span>Market</span>
+                <select
+                  aria-label="Top 200 market"
+                  value={universeFilters.market}
+                  onChange={(e) => {
+                    const nextMarket = e.target.value;
+                    setUniverseFilters((v) => ({ ...v, market: nextMarket, sector: "", industry: "" }));
+                    loadTopComposite(nextMarket);
+                  }}
+                >
+                  <option value="ALL">US + India</option>
+                  <option value="US">US Stocks</option>
+                  <option value="INDIA">Indian Stocks</option>
+                  <option value="NSE">NSE Only</option>
+                  <option value="BSE">BSE Only</option>
+                </select>
+              </label>
               <label className="dashboard-sort-control"><span>Sort by</span>
                 <select aria-label="Top 200 sort field" value={topCompositeSortBy} onChange={(e) => setTopCompositeSortBy(e.target.value)}>
                   <option value="composite">Composite</option><option value="technical">Technical</option><option value="fundamental">Fundamental</option>

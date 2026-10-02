@@ -2700,7 +2700,7 @@ button:disabled {
 .composite-dashboard-actions {
   display: flex;
   gap: 8px;
-  align-items: center;
+  align-items: flex-end;
   flex-wrap: wrap;
 }
 
@@ -2735,6 +2735,7 @@ button:disabled {
   letter-spacing: .04em;
 }
 .dashboard-sort-control select { min-width: 132px; }
+.dashboard-market-control select { min-width: 132px; }
 
 .composite-weight-strip {
   display: grid;
@@ -2903,7 +2904,7 @@ button:disabled {
   .composite-dashboard-card { padding: 12px; border-radius: 14px; }
   .composite-dashboard-header h2 { font-size: 20px; }
   .composite-weight-strip { grid-template-columns: 1fr; }
-  .composite-dashboard-actions { width: 100%; }
+ .composite-dashboard-actions { width: 100%; }
   .composite-dashboard-actions select, .composite-dashboard-actions button { flex: 1; min-width: 140px; }
   .dashboard-mini-chart-title { flex-direction: column; }
   .dashboard-mini-indicators { justify-content: flex-start; }

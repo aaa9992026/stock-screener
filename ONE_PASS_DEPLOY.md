@@ -97,3 +97,6 @@ The current client-review target is the framework, not another data correction p
 - EMA 10/20/34/50/100/150/200 now each show a larger matching-color line swatch.
 - Each EMA name is printed in the exact same color as its chart line.
 - Every EMA has its own bordered badge and the legend is placed directly above the chart for fast identification.
+
+### Latest UI polish
+The Top-200 Market selector is now labeled and vertically aligned with Sort by, Order, and Refresh Top 200.

@@ -155,3 +155,7 @@ The client framework now includes ATR%, ADR%, ADR Ratio, BB Width%, and a Top-20
 ## Latest client UI fix — standalone Fundamental Filters
 
 The Fundamental Filters framework is now displayed as its own always-visible section before the Stock Universe Screener. It includes per-rule RS score, editable compare/value/weight/use controls, the Fundamental Score strip, and the qualifying-stock list directly below.
+
+## UI alignment polish
+- Top-200 Market selector now uses the same labeled control layout as Sort by and Order.
+- Market / Sort by / Order / Refresh controls are bottom-aligned for a clean single-row desktop layout.
