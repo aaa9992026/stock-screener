@@ -33,7 +33,7 @@ From the web app download `Master Excel + Python` once, or use `excel_master/Sto
 
 Extract the ZIP first. Run `INSTALL_MASTER_EXCEL.bat` once, then use the same workbook for every stock. `START_MASTER_EXCEL.bat` updates data, indicators, signals/backtests and charts in place.
 
-If the deployed API is temporarily unavailable, the Excel updater automatically falls back to Yahoo Finance directly for verified 5-year OHLCV plus current fundamental/ownership fields. Missing provider fields stay blank/N/A.
+The Excel updater now fetches up to 20 years of verified Yahoo Finance OHLCV directly for backtesting while using the deployed API for compact snapshots when available. Missing provider fields stay blank/N/A.
 
 ## Git
 ```bash
@@ -64,3 +64,9 @@ The free-tier Top 200 endpoint now live-enriches the strongest bounded candidate
 
 ## Selected-stock Sector N/A closeout (2026-10-02)
 The selected-stock dashboard now persists/reuses real sector metadata from the compact ranking cache and calculates the Sector component from real EPS/PAT/Sales peer-history metrics when at least 5 peer observations are available. It does not substitute price RS or fabricated sector values.
+
+## 2026-10-02 client closeout update
+- Top 200 ranking now recalculates locally from the currently entered composite weights and immediately reorders by Composite; Apply Weights also refreshes the backend with the same weights.
+- Price chart remains visible together with the full indicator set: RSI, MACD, ROC, ADX/+DI/-DI, ATR and Volume Ratio; EMA/SMA/Bollinger remain price overlays.
+- Master Excel backtesting now requests up to 20 years of real Yahoo provider history directly from Python, so the long history is not stored in the 500 MB Railway PostgreSQL volume.
+- Control workbook target updated to 20 years / 5,500 rows. Younger listings correctly show partial history rather than fabricated rows.

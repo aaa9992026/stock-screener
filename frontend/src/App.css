@@ -3019,3 +3019,37 @@ button:disabled {
 .dashboard-indicator-empty {
   min-height: 125px;
 }
+
+/* One-pass closeout: show the full indicator set together with the price chart. */
+.dashboard-indicator-section {
+  display: grid;
+  gap: 8px;
+}
+
+.dashboard-indicator-heading {
+  padding: 2px 2px 0;
+}
+
+.dashboard-indicator-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.dashboard-indicator-grid .dashboard-indicator-chart {
+  min-width: 0;
+  padding: 10px;
+}
+
+.dashboard-indicator-grid .dashboard-indicator-chart > strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 12px;
+  color: #1e293b;
+}
+
+@media (max-width: 900px) {
+  .dashboard-indicator-grid {
+    grid-template-columns: 1fr;
+  }
+}

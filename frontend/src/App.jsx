@@ -738,14 +738,56 @@ function App() {
     }
   };
 
-  const sortedTopCompositeRows = [...(topComposite.rows || [])].sort((a, b) => {
+  // Recalculate the visible Top-200 score from the CURRENT editor weights on
+  // every render. This makes weight changes reorder the list immediately instead
+  // of depending on an older backend response/cache. Apply Weights still sends
+  // the same weights to the backend to refresh/enrich the underlying data.
+  const enteredCompositeWeightTotal = Object.values(scoreWeights).reduce(
+    (sum, value) => sum + Math.max(0, Number(value) || 0),
+    0,
+  );
+  const normalizedDisplayWeights = enteredCompositeWeightTotal > 0 ? {
+    technical: (Math.max(0, Number(scoreWeights.technical) || 0) / enteredCompositeWeightTotal) * 100,
+    fundamental: (Math.max(0, Number(scoreWeights.fundamental) || 0) / enteredCompositeWeightTotal) * 100,
+    ownership: (Math.max(0, Number(scoreWeights.ownership) || 0) / enteredCompositeWeightTotal) * 100,
+    sector: (Math.max(0, Number(scoreWeights.sector) || 0) / enteredCompositeWeightTotal) * 100,
+    relative_strength: (Math.max(0, Number(scoreWeights.relative_strength) || 0) / enteredCompositeWeightTotal) * 100,
+  } : { technical: 0, fundamental: 0, ownership: 0, sector: 0, relative_strength: 0 };
+
+  const topCompositeDisplayRows = (topComposite.rows || []).map((row) => {
+    const components = {
+      technical: row.technical_score,
+      fundamental: row.fundamental_score,
+      ownership: row.ownership_score,
+      sector: row.sector_score,
+      relative_strength: row.rs_score,
+    };
+    let score = 0;
+    let coverage = 0;
+    Object.entries(components).forEach(([key, rawValue]) => {
+      if (rawValue === null || rawValue === undefined || rawValue === "") return;
+      const value = Number(rawValue);
+      const weight = Number(normalizedDisplayWeights[key] || 0);
+      if (Number.isFinite(value) && weight > 0) {
+        score += value * weight / 100;
+        coverage += weight;
+      }
+    });
+    return {
+      ...row,
+      display_composite_score: coverage > 0 ? Number(score.toFixed(2)) : null,
+      display_coverage_percent: Number(coverage.toFixed(2)),
+    };
+  });
+
+  const sortedTopCompositeRows = [...topCompositeDisplayRows].sort((a, b) => {
     const valueFor = (row) => {
       if (topCompositeSortBy === "symbol") return String(row.symbol || "");
-      if (topCompositeSortBy === "composite") return row.final_composite_score ?? row.provisional_composite_score ?? row.composite_score;
+      if (topCompositeSortBy === "composite") return row.display_composite_score;
       const map = {
         technical: "technical_score", fundamental: "fundamental_score", ownership: "ownership_score",
         sector: "sector_score", rs: "rs_score", eps: "eps_score", pat: "pat_score", sales: "sales_score",
-        alpha: "alpha", beta: "beta", coverage: "score_coverage_percent",
+        alpha: "alpha", beta: "beta", coverage: "display_coverage_percent",
       };
       return row[map[topCompositeSortBy]];
     };
@@ -753,10 +795,10 @@ function App() {
     const bv = valueFor(b);
     const aMissing = av === null || av === undefined || av === "" || (topCompositeSortBy !== "symbol" && !Number.isFinite(Number(av)));
     const bMissing = bv === null || bv === undefined || bv === "" || (topCompositeSortBy !== "symbol" && !Number.isFinite(Number(bv)));
-    if (aMissing && bMissing) return 0;
+    if (aMissing && bMissing) return String(a.symbol || "").localeCompare(String(b.symbol || ""));
     if (aMissing) return 1;
     if (bMissing) return -1;
-    let cmp = topCompositeSortBy === "symbol" ? String(av).localeCompare(String(bv)) : Number(av) - Number(bv);
+    const cmp = topCompositeSortBy === "symbol" ? String(av).localeCompare(String(bv)) : Number(av) - Number(bv);
     return topCompositeSortDir === "asc" ? cmp : -cmp;
   });
 
@@ -1945,26 +1987,146 @@ function App() {
     }).slice(-120);
   })();
 
-  const dashboardRsiChartData = (() => {
+  const dashboardIndicatorChartData = (() => {
     const rows = (data || [])
-      .map((row) => ({ date: String(row.date || "").slice(5), close: Number(row.close) }))
+      .map((row) => ({
+        date: String(row.date || "").slice(5),
+        close: Number(row.close),
+        high: Number(row.high),
+        low: Number(row.low),
+        volume: Number(row.volume),
+      }))
       .filter((row) => Number.isFinite(row.close) && row.close > 0);
-    const result = [];
-    for (let index = 14; index < rows.length; index += 1) {
-      let gains = 0;
-      let losses = 0;
-      for (let i = index - 13; i <= index; i += 1) {
-        const change = rows[i].close - rows[i - 1].close;
-        if (change >= 0) gains += change;
-        else losses += Math.abs(change);
+    if (rows.length < 15) return [];
+
+    const closes = rows.map((row) => row.close);
+    const ema = (values, period) => {
+      const output = new Array(values.length).fill(null);
+      const multiplier = 2 / (period + 1);
+      let seed = [];
+      let current = null;
+      values.forEach((raw, index) => {
+        const value = Number(raw);
+        if (!Number.isFinite(value)) return;
+        if (current == null) {
+          seed.push(value);
+          if (seed.length === period) {
+            current = seed.reduce((sum, item) => sum + item, 0) / period;
+            output[index] = current;
+          }
+        } else {
+          current = ((value - current) * multiplier) + current;
+          output[index] = current;
+        }
+      });
+      return output;
+    };
+
+    const ema12 = ema(closes, 12);
+    const ema26 = ema(closes, 26);
+    const macd = closes.map((_, index) => (
+      Number.isFinite(ema12[index]) && Number.isFinite(ema26[index]) ? ema12[index] - ema26[index] : null
+    ));
+    const macdSignal = new Array(rows.length).fill(null);
+    let signalSeed = [];
+    let signal = null;
+    const signalMultiplier = 2 / 10;
+    macd.forEach((value, index) => {
+      if (!Number.isFinite(value)) return;
+      if (signal == null) {
+        signalSeed.push(value);
+        if (signalSeed.length === 9) {
+          signal = signalSeed.reduce((sum, item) => sum + item, 0) / 9;
+          macdSignal[index] = signal;
+        }
+      } else {
+        signal = ((value - signal) * signalMultiplier) + signal;
+        macdSignal[index] = signal;
       }
-      const avgGain = gains / 14;
-      const avgLoss = losses / 14;
-      const rsi = avgLoss === 0 ? 100 : 100 - (100 / (1 + (avgGain / avgLoss)));
-      result.push({ date: rows[index].date, rsi: Number(rsi.toFixed(2)) });
-    }
-    return result.slice(-120);
+    });
+
+    const trueRange = rows.map((row, index) => {
+      if (index === 0) return Number.isFinite(row.high) && Number.isFinite(row.low) ? row.high - row.low : null;
+      const prevClose = rows[index - 1].close;
+      if (!Number.isFinite(row.high) || !Number.isFinite(row.low)) return null;
+      return Math.max(row.high - row.low, Math.abs(row.high - prevClose), Math.abs(row.low - prevClose));
+    });
+    const plusDm = rows.map((row, index) => {
+      if (index === 0 || !Number.isFinite(row.high) || !Number.isFinite(rows[index - 1].high)) return 0;
+      const up = row.high - rows[index - 1].high;
+      const down = rows[index - 1].low - row.low;
+      return up > down && up > 0 ? up : 0;
+    });
+    const minusDm = rows.map((row, index) => {
+      if (index === 0 || !Number.isFinite(row.low) || !Number.isFinite(rows[index - 1].low)) return 0;
+      const up = row.high - rows[index - 1].high;
+      const down = rows[index - 1].low - row.low;
+      return down > up && down > 0 ? down : 0;
+    });
+
+    const dxSeries = new Array(rows.length).fill(null);
+    const enriched = rows.map((row, index) => {
+      let rsi = null;
+      if (index >= 14) {
+        let gains = 0;
+        let losses = 0;
+        for (let i = index - 13; i <= index; i += 1) {
+          const change = closes[i] - closes[i - 1];
+          if (change >= 0) gains += change;
+          else losses += Math.abs(change);
+        }
+        const avgGain = gains / 14;
+        const avgLoss = losses / 14;
+        rsi = avgLoss === 0 ? 100 : 100 - (100 / (1 + (avgGain / avgLoss)));
+      }
+
+      const roc14 = index >= 14 && closes[index - 14] ? ((row.close / closes[index - 14]) - 1) * 100 : null;
+      let atr14 = null;
+      let plusDi14 = null;
+      let minusDi14 = null;
+      if (index >= 13) {
+        const trWindow = trueRange.slice(index - 13, index + 1).filter(Number.isFinite);
+        if (trWindow.length === 14) atr14 = trWindow.reduce((sum, value) => sum + value, 0) / 14;
+        const trSum = trWindow.reduce((sum, value) => sum + value, 0);
+        if (trWindow.length === 14 && trSum > 0) {
+          const plusSum = plusDm.slice(index - 13, index + 1).reduce((sum, value) => sum + (Number(value) || 0), 0);
+          const minusSum = minusDm.slice(index - 13, index + 1).reduce((sum, value) => sum + (Number(value) || 0), 0);
+          plusDi14 = 100 * plusSum / trSum;
+          minusDi14 = 100 * minusSum / trSum;
+          const diSum = plusDi14 + minusDi14;
+          dxSeries[index] = diSum > 0 ? 100 * Math.abs(plusDi14 - minusDi14) / diSum : 0;
+        }
+      }
+      let adx14 = null;
+      if (index >= 26) {
+        const dxWindow = dxSeries.slice(index - 13, index + 1).filter(Number.isFinite);
+        if (dxWindow.length === 14) adx14 = dxWindow.reduce((sum, value) => sum + value, 0) / 14;
+      }
+
+      let volumeRatio = null;
+      if (index >= 19) {
+        const volumes = rows.slice(index - 19, index + 1).map((item) => item.volume).filter((value) => Number.isFinite(value) && value >= 0);
+        if (volumes.length === 20) {
+          const avgVolume = volumes.reduce((sum, value) => sum + value, 0) / 20;
+          if (avgVolume > 0 && Number.isFinite(row.volume)) volumeRatio = row.volume / avgVolume;
+        }
+      }
+      return {
+        date: row.date,
+        rsi: Number.isFinite(rsi) ? Number(rsi.toFixed(2)) : null,
+        macd: Number.isFinite(macd[index]) ? Number(macd[index].toFixed(4)) : null,
+        macdSignal: Number.isFinite(macdSignal[index]) ? Number(macdSignal[index].toFixed(4)) : null,
+        roc14: Number.isFinite(roc14) ? Number(roc14.toFixed(2)) : null,
+        atr14: Number.isFinite(atr14) ? Number(atr14.toFixed(2)) : null,
+        plusDi14: Number.isFinite(plusDi14) ? Number(plusDi14.toFixed(2)) : null,
+        minusDi14: Number.isFinite(minusDi14) ? Number(minusDi14.toFixed(2)) : null,
+        adx14: Number.isFinite(adx14) ? Number(adx14.toFixed(2)) : null,
+        volumeRatio: Number.isFinite(volumeRatio) ? Number(volumeRatio.toFixed(2)) : null,
+      };
+    });
+    return enriched.slice(-120);
   })();
+
 
   const relativeStrengthChartData = (() => {
     const rows = technicalSummary?.rs_chart;
@@ -2443,12 +2605,14 @@ function App() {
             <div>
               <span>Entered total</span>
               <strong>{Object.values(scoreWeights).reduce((sum, value) => sum + Math.max(0, Number(value) || 0), 0)}%</strong>
-              <small>Weights are normalized automatically to 100% for ranking.</small>
+              <small>Weights are normalized to 100%. The ranking recalculates immediately; Apply Weights also refreshes backend data.</small>
             </div>
             <div className="composite-weight-buttons">
               <button type="button" onClick={() => {
                 localStorage.setItem("scoreWeights", JSON.stringify(scoreWeights));
                 localStorage.setItem("scoreWeightsVersion", SCORE_WEIGHTS_STORAGE_VERSION);
+                setTopCompositeSortBy("composite");
+                setTopCompositeSortDir("desc");
                 loadTopComposite(undefined, scoreWeights);
               }} disabled={topCompositeLoading}>
                 {topCompositeLoading ? "Applying…" : "Apply Weights"}
@@ -2458,6 +2622,8 @@ function App() {
                 setScoreWeights(defaults);
                 localStorage.setItem("scoreWeights", JSON.stringify(defaults));
                 localStorage.setItem("scoreWeightsVersion", SCORE_WEIGHTS_STORAGE_VERSION);
+                setTopCompositeSortBy("composite");
+                setTopCompositeSortDir("desc");
                 loadTopComposite(undefined, defaults);
               }} disabled={topCompositeLoading}>Reset 30/25/15/20/10</button>
             </div>
@@ -2514,23 +2680,85 @@ function App() {
                 ) : <div className="dashboard-mini-empty">Select a stock from the table to load its chart.</div>}
               </div>
 
-              <div className="dashboard-mini-chart dashboard-indicator-chart">
-                <div className="dashboard-mini-chart-title">
-                  <div><strong>Indicator Chart — RSI 14</strong><span>Displayed together with the price chart as requested</span></div>
+              <div className="dashboard-indicator-section">
+                <div className="dashboard-mini-chart-title dashboard-indicator-heading">
+                  <div><strong>Technical Indicator Charts</strong><span>RSI, MACD, ROC, ADX/DI, ATR and Volume Ratio shown together with the price chart</span></div>
                 </div>
-                {dashboardRsiChartData.length ? (
-                  <ResponsiveContainer width="100%" height={125}>
-                    <LineChart data={dashboardRsiChartData}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                      <XAxis dataKey="date" minTickGap={34} tick={{ fontSize: 9 }} />
-                      <YAxis domain={[0, 100]} ticks={[30, 50, 70]} width={42} tick={{ fontSize: 9 }} />
-                      <Tooltip formatter={(value) => [Number(value).toFixed(2), "RSI 14"]} />
-                      <ReferenceLine y={70} strokeDasharray="4 4" />
-                      <ReferenceLine y={30} strokeDasharray="4 4" />
-                      <Line type="monotone" dataKey="rsi" name="RSI 14" dot={false} strokeWidth={2} isAnimationActive={false} />
-                    </LineChart>
-                  </ResponsiveContainer>
-                ) : <div className="dashboard-mini-empty dashboard-indicator-empty">Not enough price history for RSI yet.</div>}
+                {dashboardIndicatorChartData.length ? (
+                  <div className="dashboard-indicator-grid">
+                    <div className="dashboard-mini-chart dashboard-indicator-chart">
+                      <strong>RSI 14</strong>
+                      <ResponsiveContainer width="100%" height={115}>
+                        <LineChart data={dashboardIndicatorChartData}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                          <XAxis dataKey="date" minTickGap={34} tick={{ fontSize: 8 }} />
+                          <YAxis domain={[0, 100]} ticks={[30, 50, 70]} width={38} tick={{ fontSize: 8 }} />
+                          <Tooltip formatter={(value) => [Number(value).toFixed(2), "RSI 14"]} />
+                          <ReferenceLine y={70} strokeDasharray="4 4" /><ReferenceLine y={30} strokeDasharray="4 4" />
+                          <Line type="monotone" dataKey="rsi" name="RSI 14" dot={false} strokeWidth={1.8} connectNulls isAnimationActive={false} />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div className="dashboard-mini-chart dashboard-indicator-chart">
+                      <strong>MACD 12/26/9</strong>
+                      <ResponsiveContainer width="100%" height={115}>
+                        <LineChart data={dashboardIndicatorChartData}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                          <XAxis dataKey="date" minTickGap={34} tick={{ fontSize: 8 }} /><YAxis width={42} tick={{ fontSize: 8 }} />
+                          <Tooltip formatter={(value, name) => [Number(value).toFixed(3), name]} /><ReferenceLine y={0} strokeDasharray="3 3" />
+                          <Line type="monotone" dataKey="macd" name="MACD" dot={false} strokeWidth={1.8} connectNulls isAnimationActive={false} />
+                          <Line type="monotone" dataKey="macdSignal" name="Signal" dot={false} strokeWidth={1.4} connectNulls isAnimationActive={false} />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div className="dashboard-mini-chart dashboard-indicator-chart">
+                      <strong>ROC 14 (%)</strong>
+                      <ResponsiveContainer width="100%" height={115}>
+                        <LineChart data={dashboardIndicatorChartData}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                          <XAxis dataKey="date" minTickGap={34} tick={{ fontSize: 8 }} /><YAxis width={42} tick={{ fontSize: 8 }} />
+                          <Tooltip formatter={(value) => [`${Number(value).toFixed(2)}%`, "ROC 14"]} /><ReferenceLine y={0} strokeDasharray="3 3" />
+                          <Line type="monotone" dataKey="roc14" name="ROC 14" dot={false} strokeWidth={1.8} connectNulls isAnimationActive={false} />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div className="dashboard-mini-chart dashboard-indicator-chart">
+                      <strong>ADX / +DI / -DI 14</strong>
+                      <ResponsiveContainer width="100%" height={115}>
+                        <LineChart data={dashboardIndicatorChartData}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                          <XAxis dataKey="date" minTickGap={34} tick={{ fontSize: 8 }} /><YAxis domain={[0, 100]} width={38} tick={{ fontSize: 8 }} />
+                          <Tooltip formatter={(value, name) => [Number(value).toFixed(2), name]} />
+                          <Line type="monotone" dataKey="adx14" name="ADX14" dot={false} strokeWidth={1.8} connectNulls isAnimationActive={false} />
+                          <Line type="monotone" dataKey="plusDi14" name="+DI14" dot={false} strokeWidth={1.2} connectNulls isAnimationActive={false} />
+                          <Line type="monotone" dataKey="minusDi14" name="-DI14" dot={false} strokeWidth={1.2} connectNulls isAnimationActive={false} />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div className="dashboard-mini-chart dashboard-indicator-chart">
+                      <strong>ATR 14</strong>
+                      <ResponsiveContainer width="100%" height={115}>
+                        <LineChart data={dashboardIndicatorChartData}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                          <XAxis dataKey="date" minTickGap={34} tick={{ fontSize: 8 }} /><YAxis width={42} tick={{ fontSize: 8 }} />
+                          <Tooltip formatter={(value) => [Number(value).toFixed(2), "ATR 14"]} />
+                          <Line type="monotone" dataKey="atr14" name="ATR 14" dot={false} strokeWidth={1.8} connectNulls isAnimationActive={false} />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div className="dashboard-mini-chart dashboard-indicator-chart">
+                      <strong>Volume Ratio (20D)</strong>
+                      <ResponsiveContainer width="100%" height={115}>
+                        <LineChart data={dashboardIndicatorChartData}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                          <XAxis dataKey="date" minTickGap={34} tick={{ fontSize: 8 }} /><YAxis width={42} tick={{ fontSize: 8 }} />
+                          <Tooltip formatter={(value) => [Number(value).toFixed(2), "Volume Ratio"]} /><ReferenceLine y={1} strokeDasharray="3 3" />
+                          <Line type="monotone" dataKey="volumeRatio" name="Volume Ratio" dot={false} strokeWidth={1.8} connectNulls isAnimationActive={false} />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                ) : <div className="dashboard-mini-empty dashboard-indicator-empty">Not enough price history for indicator charts yet.</div>}
               </div>
             </div>
           </div>
@@ -2556,7 +2784,7 @@ function App() {
                     <td>{rowIndex + 1}</td>
                     <td><strong>{row.symbol}</strong><small>{row.name || row.symbol}</small></td>
                     <td>
-                      <b>{formatScoreValue(row.final_composite_score ?? row.provisional_composite_score ?? row.composite_score)}</b>
+                      <b>{formatScoreValue(row.display_composite_score)}</b>
                       {row.score_status === "Provisional" && <small className="provisional-score-tag">P</small>}
                     </td>
                     <td>{formatScoreValue(row.technical_score)}</td>
@@ -2569,7 +2797,7 @@ function App() {
                     <td>{formatScoreValue(row.sales_score)}</td>
                     <td>{formatScoreValue(row.alpha)}</td>
                     <td>{formatScoreValue(row.beta)}</td>
-                    <td>{row.score_coverage_percent != null ? `${Number(row.score_coverage_percent).toFixed(0)}%` : "N/A"}</td>
+                    <td>{row.display_coverage_percent != null ? `${Number(row.display_coverage_percent).toFixed(0)}%` : "N/A"}</td>
                   </tr>
                 )) : (
                   <tr><td colSpan="14" className="dashboard-table-empty">No verified ranking rows are available yet.</td></tr>
@@ -2578,7 +2806,7 @@ function App() {
             </table>
           </div>
           <div className="composite-dashboard-note">
-            <strong>{topComposite.formula || `Technical ${scoreWeights.technical}% + Fundamental ${scoreWeights.fundamental}% + Ownership ${scoreWeights.ownership}% + Sector ${scoreWeights.sector}% + RS ${scoreWeights.relative_strength}%`}</strong>
+            <strong>{`Technical ${scoreWeights.technical}% + Fundamental ${scoreWeights.fundamental}% + Ownership ${scoreWeights.ownership}% + Sector ${scoreWeights.sector}% + RS ${scoreWeights.relative_strength}%`}</strong>
             <span>{topComposite.data_rule || "Final Composite is shown only when all five weighted client categories are available; incomplete rows are Provisional."}</span>
             {topComposite.rs_note && <span>{topComposite.rs_note}</span>}
           </div>
@@ -3049,7 +3277,7 @@ function App() {
                         <li>Run <b>INSTALL_MASTER_EXCEL.bat</b> once to install xlwings and the required Python packages.</li>
                         <li>Open <b>StockScreener_Master.xlsx</b>. In the Control sheet choose US/NSE/BSE and type any stock symbol.</li>
                         <li>Run <b>START_MASTER_EXCEL.bat</b>. Python updates the <b>same workbook in place</b>; it does not create one Excel file per stock.</li>
-                        <li>The bridge requests up to <b>5 years</b> of verified daily data so long-period indicators have at least the requested <b>4 years</b> when the provider has that history.</li>
+                        <li>The bridge requests up to <b>20 years</b> of verified daily provider data for backtesting while keeping long OHLCV history out of the Railway database.</li>
                         <li>Python calculates SMA/EMA, RSI, ATR, ROC, Bollinger width, +DI/-DI/ADX, volume ratio, 52-week levels and 1W/1M/3M/6M/1Y returns, then rewrites the History and Indicators sheets.</li>
                       </ol>
                       <code>One workbook for every stock — change Symbol, run Update, keep the same file.</code>

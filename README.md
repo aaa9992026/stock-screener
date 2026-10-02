@@ -19,7 +19,7 @@ Key capabilities include:
 - SEC EDGAR official US filing metadata and XBRL/companyfacts integration.
 - Configurable automatic market-data refresh without CSV uploads.
 - One reusable **Master Excel + Python (xlwings)** package: the same workbook is used for every stock, so no per-stock Excel files are created.
-- The Python bridge reads the selected exchange/symbol from Excel, requests up to 5 years of verified daily data (targeting at least 4 years), calculates technical indicators locally, and updates the same workbook in place.
+- The Python bridge reads the selected exchange/symbol from Excel, requests up to 20 years of verified daily provider data for backtesting, calculates technical indicators locally, and updates the same workbook in place without storing that long history in Railway.
 - Provider status, stale/error handling and provider-replacement documentation.
 
 ## Stack

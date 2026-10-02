@@ -9,6 +9,8 @@ import pandas as pd
 import requests
 
 WORKBOOK_NAME = "StockScreener_Master.xlsx"
+BACKTEST_HISTORY_YEARS = 20
+BACKTEST_HISTORY_ROWS = 5500
 
 
 def _safe_number(value: Any):
@@ -226,7 +228,11 @@ def _direct_yahoo_payload(symbol: str, exchange: str, limit: int):
         provider_symbol = symbol.replace(".", "-").replace("/", "-")
 
     ticker = yf.Ticker(provider_symbol)
-    hist = ticker.history(period="5y", interval="1d", auto_adjust=False)
+    # Client closeout requirement: backtesting must use up to 20 years of real
+    # daily provider history. Fetch this directly so the Railway 500 MB database
+    # does not need to persist a 20-year OHLCV cache.
+    start_date = (pd.Timestamp.now(tz="UTC") - pd.DateOffset(years=BACKTEST_HISTORY_YEARS, days=45)).date()
+    hist = ticker.history(start=start_date, interval="1d", auto_adjust=False)
     if hist is None or hist.empty:
         raise RuntimeError(f"Yahoo Finance returned no daily history for {exchange}:{symbol}.")
 
@@ -268,7 +274,7 @@ def _direct_yahoo_payload(symbol: str, exchange: str, limit: int):
     requirement_met = False
     if earliest:
         try:
-            requirement_met = pd.Timestamp(earliest).date() <= (pd.Timestamp.now().date() - pd.Timedelta(days=366 * 4))
+            requirement_met = pd.Timestamp(earliest).date() <= (pd.Timestamp.now().date() - pd.Timedelta(days=365 * 19 + 270))
         except Exception:
             requirement_met = False
 
@@ -280,11 +286,11 @@ def _direct_yahoo_payload(symbol: str, exchange: str, limit: int):
             "earliest_date": earliest,
             "latest_date": latest,
             "stored_rows": len(rows),
-            "required_years": 4,
-            "requested_years": 5,
+            "required_years": BACKTEST_HISTORY_YEARS,
+            "requested_years": BACKTEST_HISTORY_YEARS,
             "requirement_met": bool(requirement_met),
             "backfill_attempted": True,
-            "warning": "Loaded directly from Yahoo Finance because the deployed API was unavailable.",
+            "warning": "20-year backtest history loaded directly from Yahoo Finance; no long-history database storage is required.",
         },
         "company": {
             "name": info.get("longName") or info.get("shortName") or symbol,
@@ -424,8 +430,8 @@ def update_workbook(workbook_path: str | Path | None = None, visible: bool = Tru
         api_base = str(control.range("B4").value or "").strip().rstrip("/")
         exchange = str(control.range("B5").value or "US").strip().upper()
         symbol = str(control.range("B6").value or "").strip().upper()
-        limit = int(_safe_number(control.range("B8").value) or 1500)
-        limit = max(1000, min(limit, 5000))
+        limit = int(_safe_number(control.range("B8").value) or BACKTEST_HISTORY_ROWS)
+        limit = max(1000, min(limit, 6000))
 
         if not api_base:
             raise ValueError("Control!B4 API Base URL is empty.")
@@ -450,14 +456,42 @@ def update_workbook(workbook_path: str | Path | None = None, visible: bool = Tru
         try:
             response = requests.get(
                 f"{api_base}/market/excel-feed/{symbol}",
-                params={"exchange": exchange, "limit": limit},
+                params={"exchange": exchange, "limit": min(limit, 5000)},
                 timeout=90,
             )
             response.raise_for_status()
             payload = response.json()
         except Exception as exc:
-            api_warning = f"Deployed API unavailable ({exc}); Excel used direct Yahoo Finance fallback."
-            payload = _direct_yahoo_payload(symbol, exchange, limit)
+            api_warning = f"Deployed API unavailable ({exc}); Excel used direct Yahoo Finance data."
+            payload = {}
+
+        # Prefer direct provider history for the 20-year backtest target.
+        # API snapshots remain useful for company/fundamental/ownership data, but
+        # keeping 20 years of OHLCV in Railway would refill the 500 MB volume.
+        try:
+            direct_payload = _direct_yahoo_payload(symbol, exchange, limit)
+        except Exception as direct_exc:
+            if not payload or not (payload.get("ohlcv") or []):
+                raise
+            direct_payload = None
+            suffix = f"20-year direct history unavailable ({direct_exc}); using available API history."
+            api_warning = f"{api_warning} | {suffix}" if api_warning else suffix
+
+        if direct_payload is not None:
+            if not payload:
+                payload = direct_payload
+            else:
+                payload["ohlcv"] = direct_payload.get("ohlcv") or payload.get("ohlcv") or []
+                payload["history"] = direct_payload.get("history") or payload.get("history") or {}
+                payload_company = payload.setdefault("company", {})
+                for key, value in (direct_payload.get("company") or {}).items():
+                    if not payload_company.get(key) and value not in (None, ""):
+                        payload_company[key] = value
+                for section in ("fundamental_snapshot", "ownership_snapshot"):
+                    target = payload.setdefault(section, {})
+                    for key, value in (direct_payload.get(section) or {}).items():
+                        if target.get(key) is None and value is not None:
+                            target[key] = value
         rows = payload.get("ohlcv") or []
         if not rows:
             raise RuntimeError(f"No verified OHLCV rows returned for {exchange}:{symbol}.")
@@ -486,7 +520,7 @@ def update_workbook(workbook_path: str | Path | None = None, visible: bool = Tru
 
         # HISTORY
         hs = book.sheets["History"]
-        hs.range("A2:AW5001").clear_contents()
+        hs.range("A2:AW6001").clear_contents()
         hs.range("A2").options(index=False, header=False).value = calc_out.values.tolist()
         hs.range(f"A2:A{len(calc_out)+1}").number_format = "yyyy-mm-dd"
         hs.range(f"B2:E{len(calc_out)+1}").number_format = "0.00"
@@ -495,7 +529,7 @@ def update_workbook(workbook_path: str | Path | None = None, visible: bool = Tru
 
         # BACKTEST
         bs = book.sheets["Backtest"]
-        bs.range("A2:H5001").clear_contents()
+        bs.range("A2:H6001").clear_contents()
         backtest_values = backtest.where(pd.notna(backtest), None).values.tolist()
         bs.range("A2").options(index=False, header=False).value = backtest_values
         bs.range(f"A2:A{len(backtest)+1}").number_format = "yyyy-mm-dd"
@@ -593,7 +627,7 @@ def update_workbook(workbook_path: str | Path | None = None, visible: bool = Tru
         status_message = (
             f"Updated {exchange}:{symbol} — {company.get('name') or symbol} | "
             f"{len(calc)} daily rows | {calc['Date'].min().date()} to {calc['Date'].max().date()} | "
-            f"4-year history {'OK' if history.get('requirement_met') else 'PARTIAL'}"
+            f"20-year backtest history {'OK' if history.get('requirement_met') else 'PARTIAL'}"
         )
         if warning_text:
             status_message += f" | {warning_text}"

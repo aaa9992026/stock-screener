@@ -22,7 +22,7 @@ DAILY USE — SAME WORKBOOK FOR EVERY STOCK
 
 WHAT UPDATES TOGETHER
 ---------------------
-- Up to 5 years of daily OHLCV (target >=4 years)
+- Up to 20 years of daily OHLCV for backtesting (provider history permitting)
 - SMA 20/50/200 and EMA 20/50/200
 - RSI 14
 - ATR 14 / ATR %
@@ -47,6 +47,6 @@ Signals and backtests are analytical aids, not investment advice.
 BACKEND-OUTAGE FALLBACK
 -----------------------
 The updater first uses the deployed Stock Screener API. If that API is temporarily unreachable,
-Python automatically falls back to the same Yahoo Finance provider for 5-year OHLCV + current
+Python automatically uses the same Yahoo Finance provider for up to 20-year OHLCV + current
 fundamental/ownership fields, so the History, Indicators, Backtest and Dashboard sheets can still refresh.
 Provider-missing values remain blank/N/A; nothing is fabricated.

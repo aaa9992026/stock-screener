@@ -3088,6 +3088,15 @@ def _ensure_excel_history(db: Session, symbol: str, exchange: str):
     symbol = symbol.upper().strip()
     exchange = exchange.upper().strip()
     status = _excel_history_status(db, symbol, exchange)
+    if _free_tier_mode():
+        # Never refill the 500 MB Railway volume with multi-year Excel OHLCV.
+        # The Master Excel Python bridge now fetches up to 20 years directly
+        # from the provider and uses this endpoint only for compact snapshots.
+        return {
+            **status,
+            "backfill_attempted": False,
+            "warning": "Free-tier mode: long Excel/backtest history is fetched directly by the Master Excel Python bridge and is not stored in PostgreSQL.",
+        }
     if status["requirement_met"]:
         return {**status, "backfill_attempted": False, "warning": None}
 
@@ -3116,7 +3125,7 @@ def _ensure_excel_history(db: Session, symbol: str, exchange: str):
 
 @router.get("/excel-feed/{symbol}")
 def get_excel_feed(symbol: str, exchange: str = "US", limit: int = Query(EXCEL_DEFAULT_HISTORY_ROWS, ge=20, le=5000), db: Session = Depends(get_db)):
-    """Refreshable JSON feed for Excel with a >=4-year real-data target."""
+    """Refreshable JSON feed for Excel snapshots; long backtest history is fetched directly by the Master Excel bridge in free-tier mode."""
     symbol = symbol.upper().strip()
     exchange = exchange.upper().strip()
     history_status = _ensure_excel_history(db, symbol, exchange)
@@ -3163,7 +3172,7 @@ def get_excel_feed(symbol: str, exchange: str = "US", limit: int = Query(EXCEL_D
             for r in rows
         ],
         "ranking_spec": get_client_ranking_spec(),
-        "excel_note": "Live Excel connector uses at least four years of verified daily history when the provider is available. Excel Refresh All re-requests this data; missing provider data remains N/A.",
+        "excel_note": "Master Excel uses compact API snapshots plus direct real-provider history for up to 20-year backtesting in free-tier mode; missing provider data remains N/A.",
     })
 
 
