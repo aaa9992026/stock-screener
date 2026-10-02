@@ -117,3 +117,17 @@ The website's **Master Excel + Python** download now contains one reusable workb
 - Restored client composite defaults to **Fundamental 30% + Technical 25% + RS 25% + Ownership 15% + Sector 5%** and bumped browser storage versions so stale saved weights cannot override them.
 - A stale stored OHLCV cache can no longer freeze the chart at an old date. Stored history older than seven days is refreshed/merged with live provider rows, allowing 2024/2025/2026 data to appear when supplied by the provider.
 - Both composite and RS weight controls remain editable in the frontend.
+
+## 2026-10-02 framework-first client revision
+
+Per the latest client direction, the Top-200 page is now arranged for framework review before another data/scoring pass:
+
+- Selected stock opens a real candlestick chart directly in the Top-200 workflow.
+- Price overlays: RS price line, quarterly EPS line, Bollinger Bands, EMA 10/20/34/50/100/150/200, and volume.
+- Chart dates use `DD/MM/YYYY`.
+- Indicator charts are directly below the candlestick chart.
+- MACD and Signal use different colors; ADX, +DI and -DI each use different colors.
+- Indicator basket can be enabled/disabled and periods are editable.
+- Framework includes RSI, MACD, ROC, ADX/+DI/-DI, DI Spread, ATR, BB Width, Volume Ratio, Volume Contraction, Volume Dry-Up, RS and a Delivery % slot.
+- Delivery % is intentionally a framework slot until the next data stage because the client explicitly asked not to spend time on data yet.
+- Clicking a row in the Top-200 table moves back to the framework chart for that stock.

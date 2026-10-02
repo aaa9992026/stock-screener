@@ -78,6 +78,14 @@ const formatScoreValue = (value, digits = 2) => {
   return Number(numeric.toFixed(digits)).toLocaleString(undefined, { maximumFractionDigits: digits });
 };
 
+const formatChartDate = (value) => {
+  if (!value) return "";
+  const text = String(value).slice(0, 10);
+  const match = text.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (match) return `${match[3]}/${match[2]}/${match[1]}`;
+  return text;
+};
+
 const formatMarketMoney = (value, exchange) => {
   if (value === null || value === undefined || !Number.isFinite(Number(value))) return "-";
   const currency = exchange === "US" ? "USD" : "INR";
@@ -504,6 +512,7 @@ function App() {
   const [smaLong, setSmaLong] = useState(50);
   const [rsiPeriod, setRsiPeriod] = useState(14);
   const chartContainerRef = useRef(null);
+  const dashboardCandlestickRef = useRef(null);
   const symbolSearchRef = useRef(null);
   const suggestionRequestRef = useRef(0);
   const activeSelectionRef = useRef("");
@@ -585,6 +594,14 @@ function App() {
   const [topCompositeSortDir, setTopCompositeSortDir] = useState("desc");
   const [chartOverlays, setChartOverlays] = useState({
     ema: true, sma: true, bollinger: true, volume: true, eps: true, rs: true
+  });
+  const [frameworkIndicatorSettings, setFrameworkIndicatorSettings] = useState({
+    rsi: 14, macdFast: 12, macdSlow: 26, macdSignal: 9, roc: 14, adx: 14, atr: 14, volumeRatio: 20,
+    bbWidth: 20, volumeShort: 10, volumeLong: 30, volumeDryUp: 50, delivery: 5, rsScore: 14
+  });
+  const [frameworkIndicatorVisibility, setFrameworkIndicatorVisibility] = useState({
+    rsi: true, macd: true, roc: true, adx: true, atr: true, volumeRatio: true,
+    diSpread: true, bbWidth: true, volumeContraction: true, volumeDryUp: true, rsScore: true, delivery: true
   });
 
 
@@ -864,7 +881,9 @@ function App() {
     setIndiaShareholding(null);
     setSecEdgar(null);
     setMessage("");
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    window.setTimeout(() => {
+      document.getElementById("client-framework-dashboard")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
   };
 
   useEffect(() => {
@@ -1404,7 +1423,7 @@ function App() {
         timeVisible: true,
       },
       localization: {
-        dateFormat: "MM/dd/yyyy",
+        dateFormat: "dd/MM/yyyy",
       },
     });
 
@@ -1440,15 +1459,16 @@ function App() {
 
     if (chartOverlays.ema) {
       const emaColors = {
-        20: "#2563eb",
-        30: "#f59e0b",
+        10: "#2563eb",
+        20: "#0f766e",
+        34: "#f59e0b",
         50: "#7c3aed",
         100: "#0891b2",
         150: "#db2777",
         200: "#92400e",
       };
 
-      [20, 30, 50, 100, 150, 200].forEach((period) => {
+      [10, 20, 34, 50, 100, 150, 200].forEach((period) => {
         const values = calculateEmaSeries(candleData, period);
         if (!values.length) return;
         const series = chart.addSeries(LineSeries, {
@@ -1654,6 +1674,131 @@ function App() {
       chart.remove();
     };
   }, [data, benchmark, timeframe, fundamentalHistory, chartOverlays]);
+
+  // Client framework chart: a compact candlestick chart sits directly above
+  // the indicator basket in the Top-200 workflow.  This intentionally reuses
+  // the already-loaded stock data so framework review is instant and does not
+  // depend on another backend endpoint.
+  useEffect(() => {
+    if (!dashboardCandlestickRef.current || !data?.length) return;
+
+    const container = dashboardCandlestickRef.current;
+    container.innerHTML = "";
+    const chart = createChart(container, {
+      width: container.clientWidth,
+      height: 330,
+      layout: { background: { color: "#ffffff" }, textColor: "#334155" },
+      grid: { vertLines: { color: "#eef2f7" }, horzLines: { color: "#eef2f7" } },
+      rightPriceScale: { borderColor: "#cbd5e1", scaleMargins: { top: 0.06, bottom: 0.25 } },
+      timeScale: { borderColor: "#cbd5e1", timeVisible: true },
+      localization: { dateFormat: "dd/MM/yyyy" },
+    });
+
+    const compactRows = data.slice(-420).map((row) => ({
+      time: String(row.date).slice(0, 10),
+      open: Number(row.open), high: Number(row.high), low: Number(row.low), close: Number(row.close),
+      volume: Number(row.volume || 0),
+    })).filter((row) => [row.open, row.high, row.low, row.close].every(Number.isFinite));
+    if (!compactRows.length) return () => chart.remove();
+
+    const candleSeries = chart.addSeries(CandlestickSeries, {
+      upColor: "#16a34a", downColor: "#dc2626", wickUpColor: "#16a34a", wickDownColor: "#dc2626", borderVisible: false,
+    });
+    candleSeries.setData(compactRows.map(({ time, open, high, low, close }) => ({ time, open, high, low, close })));
+
+    const emaSeries = (period) => {
+      if (compactRows.length < period) return [];
+      const multiplier = 2 / (period + 1);
+      let current = compactRows.slice(0, period).reduce((sum, row) => sum + row.close, 0) / period;
+      const output = [{ time: compactRows[period - 1].time, value: current }];
+      for (let i = period; i < compactRows.length; i += 1) {
+        current = ((compactRows[i].close - current) * multiplier) + current;
+        output.push({ time: compactRows[i].time, value: current });
+      }
+      return output;
+    };
+
+    if (chartOverlays.ema) {
+      const colors = { 10: "#2563eb", 20: "#0f766e", 34: "#f59e0b", 50: "#7c3aed", 100: "#0891b2", 150: "#db2777", 200: "#92400e" };
+      [10, 20, 34, 50, 100, 150, 200].forEach((period) => {
+        const values = emaSeries(period);
+        if (!values.length) return;
+        const line = chart.addSeries(LineSeries, { color: colors[period], lineWidth: period <= 34 ? 2 : 1, priceLineVisible: false, lastValueVisible: false, title: `EMA ${period}` });
+        line.setData(values);
+      });
+    }
+
+    if (chartOverlays.bollinger && compactRows.length >= 20) {
+      const upper = [];
+      const lower = [];
+      for (let i = 19; i < compactRows.length; i += 1) {
+        const values = compactRows.slice(i - 19, i + 1).map((row) => row.close);
+        const mean = values.reduce((sum, value) => sum + value, 0) / values.length;
+        const variance = values.reduce((sum, value) => sum + ((value - mean) ** 2), 0) / values.length;
+        const sd = Math.sqrt(variance);
+        upper.push({ time: compactRows[i].time, value: mean + (2 * sd) });
+        lower.push({ time: compactRows[i].time, value: mean - (2 * sd) });
+      }
+      const upperLine = chart.addSeries(LineSeries, { color: "#64748b", lineWidth: 1, priceLineVisible: false, lastValueVisible: false, title: "BB Upper" });
+      const lowerLine = chart.addSeries(LineSeries, { color: "#94a3b8", lineWidth: 1, priceLineVisible: false, lastValueVisible: false, title: "BB Lower" });
+      upperLine.setData(upper);
+      lowerLine.setData(lower);
+    }
+
+    if (chartOverlays.volume) {
+      const volume = chart.addSeries(HistogramSeries, { priceScaleId: "framework-volume", priceFormat: { type: "volume" }, priceLineVisible: false, lastValueVisible: false });
+      volume.setData(compactRows.map((row) => ({ time: row.time, value: row.volume, color: row.close >= row.open ? "#86efac" : "#fca5a5" })));
+      chart.priceScale("framework-volume").applyOptions({ scaleMargins: { top: 0.82, bottom: 0 } });
+    }
+
+    if (chartOverlays.rs && benchmark?.data?.length) {
+      const benchmarkByDate = new Map(benchmark.data.map((row) => [String(row.date).slice(0, 10), Number(row.close)]));
+      const raw = compactRows.map((row) => {
+        const bench = benchmarkByDate.get(row.time);
+        return Number.isFinite(bench) && bench > 0 ? { time: row.time, ratio: row.close / bench, close: row.close } : null;
+      }).filter(Boolean);
+      if (raw.length) {
+        const firstRatio = raw[0].ratio;
+        const firstClose = raw[0].close;
+        const rs = chart.addSeries(LineSeries, { color: "#111827", lineWidth: 2, priceLineVisible: false, lastValueVisible: false, title: "RS Price Line" });
+        rs.setData(raw.map((row) => ({ time: row.time, value: (row.ratio / firstRatio) * firstClose })));
+      }
+    }
+
+    if (chartOverlays.eps && fundamentalHistory?.quarterly?.length) {
+      const visibleDates = compactRows.map((row) => row.time);
+      const nearestDate = (dateText) => {
+        const target = new Date(`${String(dateText).slice(0, 10)}T00:00:00Z`).getTime();
+        let best = null;
+        let bestDiff = Infinity;
+        visibleDates.forEach((date) => {
+          const diff = Math.abs(new Date(`${date}T00:00:00Z`).getTime() - target);
+          if (diff < bestDiff) { bestDiff = diff; best = date; }
+        });
+        return best;
+      };
+      const epsRows = [...fundamentalHistory.quarterly]
+        .filter((row) => row.eps != null)
+        .map((row) => ({ time: nearestDate(row.period), value: Number(row.eps) }))
+        .filter((row) => row.time && Number.isFinite(row.value))
+        .sort((a, b) => a.time.localeCompare(b.time));
+      const unique = [];
+      epsRows.forEach((row) => {
+        if (unique.length && unique[unique.length - 1].time === row.time) unique[unique.length - 1] = row;
+        else unique.push(row);
+      });
+      if (unique.length) {
+        const eps = chart.addSeries(LineSeries, { priceScaleId: "framework-eps", color: "#ec4899", lineWidth: 2, pointMarkersVisible: true, pointMarkersRadius: 3, priceLineVisible: false, lastValueVisible: false, title: "EPS" });
+        eps.setData(unique);
+        chart.priceScale("framework-eps").applyOptions({ scaleMargins: { top: 0.04, bottom: 0.84 } });
+      }
+    }
+
+    chart.timeScale().fitContent();
+    const resize = () => chart.applyOptions({ width: container.clientWidth });
+    window.addEventListener("resize", resize);
+    return () => { window.removeEventListener("resize", resize); chart.remove(); };
+  }, [data, benchmark, fundamentalHistory, chartOverlays, symbol, timeframe]);
 
   const latest = !dataStale && data.length
     ? data[data.length - 1]
@@ -1960,7 +2105,7 @@ function App() {
 
   const dashboardMiniChartData = (() => {
     const rows = (data || [])
-      .map((row) => ({ date: String(row.date || "").slice(5), close: Number(row.close) }))
+      .map((row) => ({ date: String(row.date || "").slice(0, 10), close: Number(row.close) }))
       .filter((row) => Number.isFinite(row.close) && row.close > 0);
     if (!rows.length) return [];
 
@@ -1990,14 +2135,32 @@ function App() {
   const dashboardIndicatorChartData = (() => {
     const rows = (data || [])
       .map((row) => ({
-        date: String(row.date || "").slice(5),
+        date: String(row.date || "").slice(0, 10),
         close: Number(row.close),
         high: Number(row.high),
         low: Number(row.low),
         volume: Number(row.volume),
       }))
       .filter((row) => Number.isFinite(row.close) && row.close > 0);
-    if (rows.length < 15) return [];
+
+    const clampPeriod = (value, fallback, min = 2, max = 250) => {
+      const n = Math.round(Number(value));
+      return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : fallback;
+    };
+    const rsiPeriodLocal = clampPeriod(frameworkIndicatorSettings.rsi, 14);
+    const macdFast = clampPeriod(frameworkIndicatorSettings.macdFast, 12);
+    const macdSlow = Math.max(macdFast + 1, clampPeriod(frameworkIndicatorSettings.macdSlow, 26));
+    const macdSignalPeriod = clampPeriod(frameworkIndicatorSettings.macdSignal, 9);
+    const rocPeriod = clampPeriod(frameworkIndicatorSettings.roc, 14);
+    const adxPeriod = clampPeriod(frameworkIndicatorSettings.adx, 14);
+    const atrPeriod = clampPeriod(frameworkIndicatorSettings.atr, 14);
+    const volumePeriod = clampPeriod(frameworkIndicatorSettings.volumeRatio, 20);
+    const bbWidthPeriod = clampPeriod(frameworkIndicatorSettings.bbWidth, 20);
+    const volumeShortPeriod = clampPeriod(frameworkIndicatorSettings.volumeShort, 10);
+    const volumeLongPeriod = Math.max(volumeShortPeriod + 1, clampPeriod(frameworkIndicatorSettings.volumeLong, 30));
+    const volumeDryUpPeriod = clampPeriod(frameworkIndicatorSettings.volumeDryUp, 50);
+    const minimumRows = Math.max(rsiPeriodLocal + 1, macdSlow + macdSignalPeriod, rocPeriod + 1, adxPeriod * 2, atrPeriod, volumePeriod, bbWidthPeriod, volumeLongPeriod, volumeDryUpPeriod);
+    if (rows.length < Math.min(minimumRows, 15)) return [];
 
     const closes = rows.map((row) => row.close);
     const ema = (values, period) => {
@@ -2022,21 +2185,21 @@ function App() {
       return output;
     };
 
-    const ema12 = ema(closes, 12);
-    const ema26 = ema(closes, 26);
+    const emaFast = ema(closes, macdFast);
+    const emaSlow = ema(closes, macdSlow);
     const macd = closes.map((_, index) => (
-      Number.isFinite(ema12[index]) && Number.isFinite(ema26[index]) ? ema12[index] - ema26[index] : null
+      Number.isFinite(emaFast[index]) && Number.isFinite(emaSlow[index]) ? emaFast[index] - emaSlow[index] : null
     ));
     const macdSignal = new Array(rows.length).fill(null);
     let signalSeed = [];
     let signal = null;
-    const signalMultiplier = 2 / 10;
+    const signalMultiplier = 2 / (macdSignalPeriod + 1);
     macd.forEach((value, index) => {
       if (!Number.isFinite(value)) return;
       if (signal == null) {
         signalSeed.push(value);
-        if (signalSeed.length === 9) {
-          signal = signalSeed.reduce((sum, item) => sum + item, 0) / 9;
+        if (signalSeed.length === macdSignalPeriod) {
+          signal = signalSeed.reduce((sum, item) => sum + item, 0) / macdSignalPeriod;
           macdSignal[index] = signal;
         }
       } else {
@@ -2067,64 +2230,103 @@ function App() {
     const dxSeries = new Array(rows.length).fill(null);
     const enriched = rows.map((row, index) => {
       let rsi = null;
-      if (index >= 14) {
+      if (index >= rsiPeriodLocal) {
         let gains = 0;
         let losses = 0;
-        for (let i = index - 13; i <= index; i += 1) {
+        for (let i = index - rsiPeriodLocal + 1; i <= index; i += 1) {
           const change = closes[i] - closes[i - 1];
           if (change >= 0) gains += change;
           else losses += Math.abs(change);
         }
-        const avgGain = gains / 14;
-        const avgLoss = losses / 14;
+        const avgGain = gains / rsiPeriodLocal;
+        const avgLoss = losses / rsiPeriodLocal;
         rsi = avgLoss === 0 ? 100 : 100 - (100 / (1 + (avgGain / avgLoss)));
       }
 
-      const roc14 = index >= 14 && closes[index - 14] ? ((row.close / closes[index - 14]) - 1) * 100 : null;
-      let atr14 = null;
-      let plusDi14 = null;
-      let minusDi14 = null;
-      if (index >= 13) {
-        const trWindow = trueRange.slice(index - 13, index + 1).filter(Number.isFinite);
-        if (trWindow.length === 14) atr14 = trWindow.reduce((sum, value) => sum + value, 0) / 14;
+      const roc = index >= rocPeriod && closes[index - rocPeriod] ? ((row.close / closes[index - rocPeriod]) - 1) * 100 : null;
+      let atr = null;
+      if (index >= atrPeriod - 1) {
+        const trWindow = trueRange.slice(index - atrPeriod + 1, index + 1).filter(Number.isFinite);
+        if (trWindow.length === atrPeriod) atr = trWindow.reduce((sum, value) => sum + value, 0) / atrPeriod;
+      }
+
+      let plusDi = null;
+      let minusDi = null;
+      if (index >= adxPeriod - 1) {
+        const trWindow = trueRange.slice(index - adxPeriod + 1, index + 1).filter(Number.isFinite);
         const trSum = trWindow.reduce((sum, value) => sum + value, 0);
-        if (trWindow.length === 14 && trSum > 0) {
-          const plusSum = plusDm.slice(index - 13, index + 1).reduce((sum, value) => sum + (Number(value) || 0), 0);
-          const minusSum = minusDm.slice(index - 13, index + 1).reduce((sum, value) => sum + (Number(value) || 0), 0);
-          plusDi14 = 100 * plusSum / trSum;
-          minusDi14 = 100 * minusSum / trSum;
-          const diSum = plusDi14 + minusDi14;
-          dxSeries[index] = diSum > 0 ? 100 * Math.abs(plusDi14 - minusDi14) / diSum : 0;
+        if (trWindow.length === adxPeriod && trSum > 0) {
+          const plusSum = plusDm.slice(index - adxPeriod + 1, index + 1).reduce((sum, value) => sum + (Number(value) || 0), 0);
+          const minusSum = minusDm.slice(index - adxPeriod + 1, index + 1).reduce((sum, value) => sum + (Number(value) || 0), 0);
+          plusDi = 100 * plusSum / trSum;
+          minusDi = 100 * minusSum / trSum;
+          const diSum = plusDi + minusDi;
+          dxSeries[index] = diSum > 0 ? 100 * Math.abs(plusDi - minusDi) / diSum : 0;
         }
       }
-      let adx14 = null;
-      if (index >= 26) {
-        const dxWindow = dxSeries.slice(index - 13, index + 1).filter(Number.isFinite);
-        if (dxWindow.length === 14) adx14 = dxWindow.reduce((sum, value) => sum + value, 0) / 14;
+      let adx = null;
+      if (index >= (adxPeriod * 2) - 2) {
+        const dxWindow = dxSeries.slice(index - adxPeriod + 1, index + 1).filter(Number.isFinite);
+        if (dxWindow.length === adxPeriod) adx = dxWindow.reduce((sum, value) => sum + value, 0) / adxPeriod;
       }
 
       let volumeRatio = null;
-      if (index >= 19) {
-        const volumes = rows.slice(index - 19, index + 1).map((item) => item.volume).filter((value) => Number.isFinite(value) && value >= 0);
-        if (volumes.length === 20) {
-          const avgVolume = volumes.reduce((sum, value) => sum + value, 0) / 20;
+      if (index >= volumePeriod - 1) {
+        const volumes = rows.slice(index - volumePeriod + 1, index + 1).map((item) => item.volume).filter((value) => Number.isFinite(value) && value >= 0);
+        if (volumes.length === volumePeriod) {
+          const avgVolume = volumes.reduce((sum, value) => sum + value, 0) / volumePeriod;
           if (avgVolume > 0 && Number.isFinite(row.volume)) volumeRatio = row.volume / avgVolume;
         }
       }
+
+      let bbWidth = null;
+      if (index >= bbWidthPeriod - 1) {
+        const values = closes.slice(index - bbWidthPeriod + 1, index + 1);
+        const mean = values.reduce((sum, value) => sum + value, 0) / bbWidthPeriod;
+        if (mean > 0) {
+          const variance = values.reduce((sum, value) => sum + ((value - mean) ** 2), 0) / bbWidthPeriod;
+          bbWidth = (4 * Math.sqrt(variance) / mean) * 100;
+        }
+      }
+
+      let volumeContraction = null;
+      if (index >= volumeLongPeriod - 1) {
+        const shortRows = rows.slice(index - volumeShortPeriod + 1, index + 1).map((item) => item.volume).filter(Number.isFinite);
+        const longRows = rows.slice(index - volumeLongPeriod + 1, index + 1).map((item) => item.volume).filter(Number.isFinite);
+        if (shortRows.length === volumeShortPeriod && longRows.length === volumeLongPeriod) {
+          const shortAvg = shortRows.reduce((sum, value) => sum + value, 0) / volumeShortPeriod;
+          const longAvg = longRows.reduce((sum, value) => sum + value, 0) / volumeLongPeriod;
+          if (longAvg > 0) volumeContraction = shortAvg / longAvg;
+        }
+      }
+
+      let volumeDryUp = null;
+      if (index >= volumeDryUpPeriod - 1) {
+        const window = rows.slice(index - volumeDryUpPeriod + 1, index + 1).map((item) => item.volume).filter(Number.isFinite);
+        if (window.length === volumeDryUpPeriod) {
+          const avg = window.reduce((sum, value) => sum + value, 0) / volumeDryUpPeriod;
+          if (avg > 0 && Number.isFinite(row.volume)) volumeDryUp = row.volume / avg;
+        }
+      }
+      const diSpread = Number.isFinite(plusDi) && Number.isFinite(minusDi) ? plusDi - minusDi : null;
       return {
         date: row.date,
         rsi: Number.isFinite(rsi) ? Number(rsi.toFixed(2)) : null,
         macd: Number.isFinite(macd[index]) ? Number(macd[index].toFixed(4)) : null,
         macdSignal: Number.isFinite(macdSignal[index]) ? Number(macdSignal[index].toFixed(4)) : null,
-        roc14: Number.isFinite(roc14) ? Number(roc14.toFixed(2)) : null,
-        atr14: Number.isFinite(atr14) ? Number(atr14.toFixed(2)) : null,
-        plusDi14: Number.isFinite(plusDi14) ? Number(plusDi14.toFixed(2)) : null,
-        minusDi14: Number.isFinite(minusDi14) ? Number(minusDi14.toFixed(2)) : null,
-        adx14: Number.isFinite(adx14) ? Number(adx14.toFixed(2)) : null,
+        roc: Number.isFinite(roc) ? Number(roc.toFixed(2)) : null,
+        atr: Number.isFinite(atr) ? Number(atr.toFixed(2)) : null,
+        plusDi: Number.isFinite(plusDi) ? Number(plusDi.toFixed(2)) : null,
+        minusDi: Number.isFinite(minusDi) ? Number(minusDi.toFixed(2)) : null,
+        adx: Number.isFinite(adx) ? Number(adx.toFixed(2)) : null,
+        diSpread: Number.isFinite(diSpread) ? Number(diSpread.toFixed(2)) : null,
+        bbWidth: Number.isFinite(bbWidth) ? Number(bbWidth.toFixed(2)) : null,
+        volumeContraction: Number.isFinite(volumeContraction) ? Number(volumeContraction.toFixed(3)) : null,
+        volumeDryUp: Number.isFinite(volumeDryUp) ? Number(volumeDryUp.toFixed(3)) : null,
         volumeRatio: Number.isFinite(volumeRatio) ? Number(volumeRatio.toFixed(2)) : null,
       };
     });
-    return enriched.slice(-120);
+    return enriched.slice(-160);
   })();
 
 
@@ -2537,12 +2739,12 @@ function App() {
 
 
 
-        <section className="composite-dashboard-card">
+        <section id="client-framework-dashboard" className="composite-dashboard-card">
           <div className="composite-dashboard-header">
             <div>
               <span className="dashboard-kicker">CLIENT DASHBOARD</span>
               <h2>Top 200 Stocks — Composite Score</h2>
-              <p>Final only when all five client categories are available; otherwise the row is clearly marked Provisional.</p>
+              <p>Framework-first layout: click any Top-200 stock to open its candlestick chart and customizable indicator basket.</p>
             </div>
             <div className="composite-dashboard-actions">
               <select
@@ -2571,6 +2773,280 @@ function App() {
               <button type="button" onClick={() => loadTopComposite()} disabled={topCompositeLoading}>
                 {topCompositeLoading ? "Refreshing…" : "Refresh Top 200"}
               </button>
+            </div>
+          </div>
+
+          <div className="framework-mode-banner">
+            <strong>Framework Review Mode</strong>
+            <span>Chart layout, indicator controls, Top-200 interaction and table structure are the focus now. Data/scoring validation is intentionally deferred to the next stage.</span>
+          </div>
+
+          <div className="dashboard-selected-grid">
+            <div className="dashboard-selected-stock">
+              <span>Selected Stock</span>
+              <strong>{selectedCompany?.name || symbol}</strong>
+              <div className="dashboard-selected-meta">
+                <b>{symbol}</b>
+                <span>{exchange}</span>
+                <span>{selectedCompany?.isin ? `ISIN ${selectedCompany.isin}` : "ISIN N/A"}</span>
+              </div>
+              <div className="dashboard-score-pills">
+                <span>Final <b>{formatScoreValue(dashboardView?.score)}</b></span>
+                {dashboardView?.score == null && dashboardView?.provisional_score != null && (
+                  <span>Provisional <b>{formatScoreValue(dashboardView.provisional_score)}</b></span>
+                )}
+                <span>Technical <b>{formatScoreValue(dashboardView?.score_components?.technical)}</b></span>
+                <span>Fundamental <b>{formatScoreValue(dashboardView?.score_components?.fundamental)}</b></span>
+                <span>Ownership <b>{formatScoreValue(dashboardView?.score_components?.ownership)}</b></span>
+                <span>Sector <b>{formatScoreValue(dashboardView?.score_components?.sector)}</b></span>
+                <span>RS <b>{formatScoreValue(dashboardView?.score_components?.relative_strength)}</b></span>
+              </div>
+            </div>
+
+            <div className="dashboard-chart-stack">
+              <div className="dashboard-mini-chart framework-price-card">
+                <div className="dashboard-mini-chart-title">
+                  <div>
+                    <strong>{symbol} Candlestick Chart</strong>
+                    <span>{timeframe} • DD/MM/YYYY • click any Top-200 stock to replace this chart</span>
+                  </div>
+                  <div className="dashboard-mini-indicators framework-overlay-toggles">
+                    {[
+                      ["ema", "EMA"], ["bollinger", "BB"], ["volume", "Volume"], ["eps", "EPS"], ["rs", "RS"]
+                    ].map(([key, label]) => (
+                      <button key={key} type="button" className={chartOverlays[key] ? "active" : ""} onClick={() => setChartOverlays((v) => ({ ...v, [key]: !v[key] }))}>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="framework-overlay-summary">
+                  <span><b>EMA:</b> 10 / 20 / 34 / 50 / 100 / 150 / 200</span>
+                  <span><b>BB:</b> 20-period</span>
+                  <span><b>RS:</b> price / benchmark</span>
+                  <span><b>EPS:</b> quarterly line</span>
+                  <span><b>Volume:</b> candle direction</span>
+                </div>
+                {data?.length ? (
+                  <div ref={dashboardCandlestickRef} className="dashboard-candlestick-canvas" />
+                ) : <div className="dashboard-mini-empty">Select a stock from the Top 200 table to load its candlestick chart.</div>}
+              </div>
+
+              <div className="dashboard-indicator-section">
+                <div className="dashboard-mini-chart-title dashboard-indicator-heading">
+                  <div>
+                    <strong>Customizable Indicator Basket</strong>
+                    <span>Enable/disable each chart and edit the periods before the data-scoring stage.</span>
+                  </div>
+                  <div className="indicator-basket-toggles">
+                    {[
+                      ["rsi", "RSI"], ["macd", "MACD"], ["roc", "ROC"], ["adx", "ADX/+DI/-DI"], ["diSpread", "DI Spread"],
+                      ["atr", "ATR"], ["bbWidth", "BB Width"], ["volumeRatio", "Volume Ratio"], ["volumeContraction", "Volume Contraction"],
+                      ["volumeDryUp", "Volume Dry-Up"], ["rsScore", "RS"], ["delivery", "Delivery %"]
+                    ].map(([key, label]) => (
+                      <button key={key} type="button" className={frameworkIndicatorVisibility[key] ? "active" : ""} onClick={() => setFrameworkIndicatorVisibility((prev) => ({ ...prev, [key]: !prev[key] }))}>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="indicator-period-editor">
+                  <label>RSI <input type="number" min="2" max="100" value={frameworkIndicatorSettings.rsi} onChange={(e) => setFrameworkIndicatorSettings((prev) => ({ ...prev, rsi: Number(e.target.value) || 14 }))} /></label>
+                  <label>ROC <input type="number" min="2" max="100" value={frameworkIndicatorSettings.roc} onChange={(e) => setFrameworkIndicatorSettings((prev) => ({ ...prev, roc: Number(e.target.value) || 14 }))} /></label>
+                  <label>ADX / DI <input type="number" min="2" max="100" value={frameworkIndicatorSettings.adx} onChange={(e) => setFrameworkIndicatorSettings((prev) => ({ ...prev, adx: Number(e.target.value) || 14 }))} /></label>
+                  <label>ATR <input type="number" min="2" max="100" value={frameworkIndicatorSettings.atr} onChange={(e) => setFrameworkIndicatorSettings((prev) => ({ ...prev, atr: Number(e.target.value) || 14 }))} /></label>
+                  <label>Volume Ratio <input type="number" min="2" max="120" value={frameworkIndicatorSettings.volumeRatio} onChange={(e) => setFrameworkIndicatorSettings((prev) => ({ ...prev, volumeRatio: Number(e.target.value) || 20 }))} /></label>
+                  <label>BB Width <input type="number" min="2" max="120" value={frameworkIndicatorSettings.bbWidth} onChange={(e) => setFrameworkIndicatorSettings((prev) => ({ ...prev, bbWidth: Number(e.target.value) || 20 }))} /></label>
+                  <label>Vol Short <input type="number" min="2" max="120" value={frameworkIndicatorSettings.volumeShort} onChange={(e) => setFrameworkIndicatorSettings((prev) => ({ ...prev, volumeShort: Number(e.target.value) || 10 }))} /></label>
+                  <label>Vol Long <input type="number" min="3" max="180" value={frameworkIndicatorSettings.volumeLong} onChange={(e) => setFrameworkIndicatorSettings((prev) => ({ ...prev, volumeLong: Number(e.target.value) || 30 }))} /></label>
+                  <label>Dry-Up <input type="number" min="2" max="250" value={frameworkIndicatorSettings.volumeDryUp} onChange={(e) => setFrameworkIndicatorSettings((prev) => ({ ...prev, volumeDryUp: Number(e.target.value) || 50 }))} /></label>
+                  <label>Delivery <input type="number" min="1" max="60" value={frameworkIndicatorSettings.delivery} onChange={(e) => setFrameworkIndicatorSettings((prev) => ({ ...prev, delivery: Number(e.target.value) || 5 }))} /></label>
+                  <label>RS <input type="number" min="2" max="100" value={frameworkIndicatorSettings.rsScore} onChange={(e) => setFrameworkIndicatorSettings((prev) => ({ ...prev, rsScore: Number(e.target.value) || 14 }))} /></label>
+                  <label className="macd-period-inputs">MACD
+                    <input aria-label="MACD fast" type="number" min="2" max="100" value={frameworkIndicatorSettings.macdFast} onChange={(e) => setFrameworkIndicatorSettings((prev) => ({ ...prev, macdFast: Number(e.target.value) || 12 }))} />
+                    <span>/</span>
+                    <input aria-label="MACD slow" type="number" min="3" max="150" value={frameworkIndicatorSettings.macdSlow} onChange={(e) => setFrameworkIndicatorSettings((prev) => ({ ...prev, macdSlow: Number(e.target.value) || 26 }))} />
+                    <span>/</span>
+                    <input aria-label="MACD signal" type="number" min="2" max="50" value={frameworkIndicatorSettings.macdSignal} onChange={(e) => setFrameworkIndicatorSettings((prev) => ({ ...prev, macdSignal: Number(e.target.value) || 9 }))} />
+                  </label>
+                </div>
+
+                {dashboardIndicatorChartData.length ? (
+                  <div className="dashboard-indicator-grid">
+                    {frameworkIndicatorVisibility.rsi && (
+                      <div className="dashboard-mini-chart dashboard-indicator-chart">
+                        <strong>RSI {frameworkIndicatorSettings.rsi}</strong>
+                        <ResponsiveContainer width="100%" height={135}>
+                          <LineChart data={dashboardIndicatorChartData}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                            <XAxis dataKey="date" minTickGap={38} tick={{ fontSize: 8 }} tickFormatter={formatChartDate} />
+                            <YAxis domain={[0, 100]} ticks={[30, 50, 70]} width={38} tick={{ fontSize: 8 }} />
+                            <Tooltip labelFormatter={formatChartDate} formatter={(value) => [Number(value).toFixed(2), `RSI ${frameworkIndicatorSettings.rsi}`]} />
+                            <ReferenceLine y={70} stroke="#94a3b8" strokeDasharray="4 4" /><ReferenceLine y={30} stroke="#94a3b8" strokeDasharray="4 4" />
+                            <Line type="monotone" dataKey="rsi" name={`RSI ${frameworkIndicatorSettings.rsi}`} stroke="#0f766e" dot={false} strokeWidth={1.8} connectNulls isAnimationActive={false} />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                    )}
+
+                    {frameworkIndicatorVisibility.macd && (
+                      <div className="dashboard-mini-chart dashboard-indicator-chart">
+                        <strong>MACD {frameworkIndicatorSettings.macdFast}/{frameworkIndicatorSettings.macdSlow}/{frameworkIndicatorSettings.macdSignal}</strong>
+                        <ResponsiveContainer width="100%" height={135}>
+                          <LineChart data={dashboardIndicatorChartData}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                            <XAxis dataKey="date" minTickGap={38} tick={{ fontSize: 8 }} tickFormatter={formatChartDate} /><YAxis width={42} tick={{ fontSize: 8 }} />
+                            <Tooltip labelFormatter={formatChartDate} formatter={(value, name) => [Number(value).toFixed(3), name]} /><ReferenceLine y={0} stroke="#94a3b8" strokeDasharray="3 3" />
+                            <Line type="monotone" dataKey="macd" name="MACD" stroke="#2563eb" dot={false} strokeWidth={1.9} connectNulls isAnimationActive={false} />
+                            <Line type="monotone" dataKey="macdSignal" name="Signal" stroke="#f59e0b" dot={false} strokeWidth={1.6} connectNulls isAnimationActive={false} />
+                          </LineChart>
+                        </ResponsiveContainer>
+                        <div className="indicator-color-key"><span><i style={{ background: "#2563eb" }} />MACD</span><span><i style={{ background: "#f59e0b" }} />Signal</span></div>
+                      </div>
+                    )}
+
+                    {frameworkIndicatorVisibility.roc && (
+                      <div className="dashboard-mini-chart dashboard-indicator-chart">
+                        <strong>ROC {frameworkIndicatorSettings.roc} (%)</strong>
+                        <ResponsiveContainer width="100%" height={135}>
+                          <LineChart data={dashboardIndicatorChartData}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                            <XAxis dataKey="date" minTickGap={38} tick={{ fontSize: 8 }} tickFormatter={formatChartDate} /><YAxis width={42} tick={{ fontSize: 8 }} />
+                            <Tooltip labelFormatter={formatChartDate} formatter={(value) => [`${Number(value).toFixed(2)}%`, `ROC ${frameworkIndicatorSettings.roc}`]} /><ReferenceLine y={0} stroke="#94a3b8" strokeDasharray="3 3" />
+                            <Line type="monotone" dataKey="roc" name={`ROC ${frameworkIndicatorSettings.roc}`} stroke="#0891b2" dot={false} strokeWidth={1.8} connectNulls isAnimationActive={false} />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                    )}
+
+                    {frameworkIndicatorVisibility.adx && (
+                      <div className="dashboard-mini-chart dashboard-indicator-chart">
+                        <strong>ADX / +DI / -DI {frameworkIndicatorSettings.adx}</strong>
+                        <ResponsiveContainer width="100%" height={135}>
+                          <LineChart data={dashboardIndicatorChartData}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                            <XAxis dataKey="date" minTickGap={38} tick={{ fontSize: 8 }} tickFormatter={formatChartDate} /><YAxis domain={[0, 100]} width={38} tick={{ fontSize: 8 }} />
+                            <Tooltip labelFormatter={formatChartDate} formatter={(value, name) => [Number(value).toFixed(2), name]} />
+                            <Line type="monotone" dataKey="adx" name="ADX" stroke="#7c3aed" dot={false} strokeWidth={2} connectNulls isAnimationActive={false} />
+                            <Line type="monotone" dataKey="plusDi" name="+DI" stroke="#16a34a" dot={false} strokeWidth={1.6} connectNulls isAnimationActive={false} />
+                            <Line type="monotone" dataKey="minusDi" name="-DI" stroke="#dc2626" dot={false} strokeWidth={1.6} connectNulls isAnimationActive={false} />
+                          </LineChart>
+                        </ResponsiveContainer>
+                        <div className="indicator-color-key"><span><i style={{ background: "#7c3aed" }} />ADX</span><span><i style={{ background: "#16a34a" }} />+DI</span><span><i style={{ background: "#dc2626" }} />-DI</span></div>
+                      </div>
+                    )}
+
+                    {frameworkIndicatorVisibility.atr && (
+                      <div className="dashboard-mini-chart dashboard-indicator-chart">
+                        <strong>ATR {frameworkIndicatorSettings.atr}</strong>
+                        <ResponsiveContainer width="100%" height={135}>
+                          <LineChart data={dashboardIndicatorChartData}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                            <XAxis dataKey="date" minTickGap={38} tick={{ fontSize: 8 }} tickFormatter={formatChartDate} /><YAxis width={42} tick={{ fontSize: 8 }} />
+                            <Tooltip labelFormatter={formatChartDate} formatter={(value) => [Number(value).toFixed(2), `ATR ${frameworkIndicatorSettings.atr}`]} />
+                            <Line type="monotone" dataKey="atr" name={`ATR ${frameworkIndicatorSettings.atr}`} stroke="#ea580c" dot={false} strokeWidth={1.8} connectNulls isAnimationActive={false} />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                    )}
+
+                    {frameworkIndicatorVisibility.volumeRatio && (
+                      <div className="dashboard-mini-chart dashboard-indicator-chart">
+                        <strong>Volume Ratio ({frameworkIndicatorSettings.volumeRatio}D)</strong>
+                        <ResponsiveContainer width="100%" height={135}>
+                          <LineChart data={dashboardIndicatorChartData}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                            <XAxis dataKey="date" minTickGap={38} tick={{ fontSize: 8 }} tickFormatter={formatChartDate} /><YAxis width={42} tick={{ fontSize: 8 }} />
+                            <Tooltip labelFormatter={formatChartDate} formatter={(value) => [Number(value).toFixed(2), "Volume Ratio"]} /><ReferenceLine y={1} stroke="#94a3b8" strokeDasharray="3 3" />
+                            <Line type="monotone" dataKey="volumeRatio" name="Volume Ratio" stroke="#4f46e5" dot={false} strokeWidth={1.8} connectNulls isAnimationActive={false} />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                    )}
+
+
+                    {frameworkIndicatorVisibility.diSpread && (
+                      <div className="dashboard-mini-chart dashboard-indicator-chart">
+                        <strong>DI Spread ({frameworkIndicatorSettings.adx})</strong>
+                        <ResponsiveContainer width="100%" height={135}>
+                          <LineChart data={dashboardIndicatorChartData}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                            <XAxis dataKey="date" minTickGap={38} tick={{ fontSize: 8 }} tickFormatter={formatChartDate} /><YAxis width={42} tick={{ fontSize: 8 }} />
+                            <Tooltip labelFormatter={formatChartDate} formatter={(value) => [Number(value).toFixed(2), "+DI − -DI"]} /><ReferenceLine y={0} stroke="#94a3b8" strokeDasharray="3 3" />
+                            <Line type="monotone" dataKey="diSpread" name="DI Spread" stroke="#9333ea" dot={false} strokeWidth={1.8} connectNulls isAnimationActive={false} />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                    )}
+
+                    {frameworkIndicatorVisibility.bbWidth && (
+                      <div className="dashboard-mini-chart dashboard-indicator-chart">
+                        <strong>BB Width ({frameworkIndicatorSettings.bbWidth})</strong>
+                        <ResponsiveContainer width="100%" height={135}>
+                          <LineChart data={dashboardIndicatorChartData}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                            <XAxis dataKey="date" minTickGap={38} tick={{ fontSize: 8 }} tickFormatter={formatChartDate} /><YAxis width={42} tick={{ fontSize: 8 }} />
+                            <Tooltip labelFormatter={formatChartDate} formatter={(value) => [`${Number(value).toFixed(2)}%`, "BB Width"]} />
+                            <Line type="monotone" dataKey="bbWidth" name="BB Width" stroke="#0d9488" dot={false} strokeWidth={1.8} connectNulls isAnimationActive={false} />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                    )}
+
+                    {frameworkIndicatorVisibility.volumeContraction && (
+                      <div className="dashboard-mini-chart dashboard-indicator-chart">
+                        <strong>Volume Contraction ({frameworkIndicatorSettings.volumeShort}D / {frameworkIndicatorSettings.volumeLong}D Avg)</strong>
+                        <ResponsiveContainer width="100%" height={135}>
+                          <LineChart data={dashboardIndicatorChartData}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                            <XAxis dataKey="date" minTickGap={38} tick={{ fontSize: 8 }} tickFormatter={formatChartDate} /><YAxis width={42} tick={{ fontSize: 8 }} />
+                            <Tooltip labelFormatter={formatChartDate} formatter={(value) => [Number(value).toFixed(3), "Volume Contraction"]} /><ReferenceLine y={1} stroke="#94a3b8" strokeDasharray="3 3" />
+                            <Line type="monotone" dataKey="volumeContraction" name="Volume Contraction" stroke="#be123c" dot={false} strokeWidth={1.8} connectNulls isAnimationActive={false} />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                    )}
+
+                    {frameworkIndicatorVisibility.volumeDryUp && (
+                      <div className="dashboard-mini-chart dashboard-indicator-chart">
+                        <strong>Volume Dry-Up ({frameworkIndicatorSettings.volumeDryUp}D Avg)</strong>
+                        <ResponsiveContainer width="100%" height={135}>
+                          <LineChart data={dashboardIndicatorChartData}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                            <XAxis dataKey="date" minTickGap={38} tick={{ fontSize: 8 }} tickFormatter={formatChartDate} /><YAxis width={42} tick={{ fontSize: 8 }} />
+                            <Tooltip labelFormatter={formatChartDate} formatter={(value) => [Number(value).toFixed(3), "Volume Dry-Up"]} /><ReferenceLine y={1} stroke="#94a3b8" strokeDasharray="3 3" />
+                            <Line type="monotone" dataKey="volumeDryUp" name="Volume Dry-Up" stroke="#b45309" dot={false} strokeWidth={1.8} connectNulls isAnimationActive={false} />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                    )}
+
+                    {frameworkIndicatorVisibility.rsScore && (
+                      <div className="dashboard-mini-chart dashboard-indicator-chart">
+                        <strong>RS Line / Score ({frameworkIndicatorSettings.rsScore})</strong>
+                        {relativeStrengthChartData.length > 1 ? (
+                          <ResponsiveContainer width="100%" height={135}>
+                            <LineChart data={relativeStrengthChartData.slice(-160)}>
+                              <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                              <XAxis dataKey="date" minTickGap={38} tick={{ fontSize: 8 }} tickFormatter={formatChartDate} /><YAxis width={42} tick={{ fontSize: 8 }} />
+                              <Tooltip labelFormatter={formatChartDate} formatter={(value) => [Number(value).toFixed(2), "RS"]} />
+                              <Line type="monotone" dataKey="rs" name="RS" stroke="#111827" dot={false} strokeWidth={1.9} connectNulls isAnimationActive={false} />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        ) : <div className="framework-placeholder">RS framework ready — benchmark series will populate when available.</div>}
+                      </div>
+                    )}
+
+                    {frameworkIndicatorVisibility.delivery && (
+                      <div className="dashboard-mini-chart dashboard-indicator-chart framework-placeholder-card">
+                        <strong>Delivery % ({frameworkIndicatorSettings.delivery}D)</strong>
+                        <div className="framework-placeholder">Framework slot ready. Delivery data will be connected in the next data stage, as requested.</div>
+                      </div>
+                    )}
+                  </div>
+                ) : <div className="dashboard-mini-empty dashboard-indicator-empty">Not enough price history for indicator charts yet.</div>}
+              </div>
             </div>
           </div>
 
@@ -2625,141 +3101,7 @@ function App() {
                 setTopCompositeSortBy("composite");
                 setTopCompositeSortDir("desc");
                 loadTopComposite(undefined, defaults);
-              }} disabled={topCompositeLoading}>Reset 30/25/15/20/10</button>
-            </div>
-          </div>
-
-          <div className="dashboard-selected-grid">
-            <div className="dashboard-selected-stock">
-              <span>Selected Stock</span>
-              <strong>{selectedCompany?.name || symbol}</strong>
-              <div className="dashboard-selected-meta">
-                <b>{symbol}</b>
-                <span>{exchange}</span>
-                <span>{selectedCompany?.isin ? `ISIN ${selectedCompany.isin}` : "ISIN N/A"}</span>
-              </div>
-              <div className="dashboard-score-pills">
-                <span>Final <b>{formatScoreValue(dashboardView?.score)}</b></span>
-                {dashboardView?.score == null && dashboardView?.provisional_score != null && (
-                  <span>Provisional <b>{formatScoreValue(dashboardView.provisional_score)}</b></span>
-                )}
-                <span>Technical <b>{formatScoreValue(dashboardView?.score_components?.technical)}</b></span>
-                <span>Fundamental <b>{formatScoreValue(dashboardView?.score_components?.fundamental)}</b></span>
-                <span>Ownership <b>{formatScoreValue(dashboardView?.score_components?.ownership)}</b></span>
-                <span>Sector <b>{formatScoreValue(dashboardView?.score_components?.sector)}</b></span>
-                <span>RS <b>{formatScoreValue(dashboardView?.score_components?.relative_strength)}</b></span>
-              </div>
-            </div>
-
-            <div className="dashboard-chart-stack">
-              <div className="dashboard-mini-chart">
-                <div className="dashboard-mini-chart-title">
-                  <div><strong>{symbol} Price Chart</strong><span>{timeframe} • price + moving-average overlays</span></div>
-                  <div className="dashboard-mini-indicators">
-                    {["ema", "sma", "bollinger"].map((key) => (
-                      <button key={key} type="button" className={chartOverlays[key] ? "active" : ""} onClick={() => setChartOverlays((v) => ({ ...v, [key]: !v[key] }))}>
-                        {key === "bollinger" ? "BB" : key.toUpperCase()}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                {dashboardMiniChartData.length ? (
-                  <ResponsiveContainer width="100%" height={185}>
-                    <LineChart data={dashboardMiniChartData}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                      <XAxis dataKey="date" minTickGap={34} tick={{ fontSize: 10 }} />
-                      <YAxis domain={["auto", "auto"]} width={55} tick={{ fontSize: 10 }} />
-                      <Tooltip formatter={(value, name) => [Number(value).toFixed(2), String(name).toUpperCase()]} />
-                      <Line type="monotone" dataKey="close" name="Price" dot={false} strokeWidth={2} isAnimationActive={false} />
-                      {chartOverlays.ema && <Line type="monotone" dataKey="ema20" name="EMA20" dot={false} strokeWidth={1.5} connectNulls isAnimationActive={false} />}
-                      {chartOverlays.sma && <Line type="monotone" dataKey="sma20" name="SMA20" dot={false} strokeWidth={1.5} connectNulls isAnimationActive={false} />}
-                      {chartOverlays.bollinger && <Line type="monotone" dataKey="bbUpper" name="BB Upper" dot={false} strokeWidth={1} connectNulls isAnimationActive={false} />}
-                      {chartOverlays.bollinger && <Line type="monotone" dataKey="bbLower" name="BB Lower" dot={false} strokeWidth={1} connectNulls isAnimationActive={false} />}
-                    </LineChart>
-                  </ResponsiveContainer>
-                ) : <div className="dashboard-mini-empty">Select a stock from the table to load its chart.</div>}
-              </div>
-
-              <div className="dashboard-indicator-section">
-                <div className="dashboard-mini-chart-title dashboard-indicator-heading">
-                  <div><strong>Technical Indicator Charts</strong><span>RSI, MACD, ROC, ADX/DI, ATR and Volume Ratio shown together with the price chart</span></div>
-                </div>
-                {dashboardIndicatorChartData.length ? (
-                  <div className="dashboard-indicator-grid">
-                    <div className="dashboard-mini-chart dashboard-indicator-chart">
-                      <strong>RSI 14</strong>
-                      <ResponsiveContainer width="100%" height={115}>
-                        <LineChart data={dashboardIndicatorChartData}>
-                          <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                          <XAxis dataKey="date" minTickGap={34} tick={{ fontSize: 8 }} />
-                          <YAxis domain={[0, 100]} ticks={[30, 50, 70]} width={38} tick={{ fontSize: 8 }} />
-                          <Tooltip formatter={(value) => [Number(value).toFixed(2), "RSI 14"]} />
-                          <ReferenceLine y={70} strokeDasharray="4 4" /><ReferenceLine y={30} strokeDasharray="4 4" />
-                          <Line type="monotone" dataKey="rsi" name="RSI 14" dot={false} strokeWidth={1.8} connectNulls isAnimationActive={false} />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
-                    <div className="dashboard-mini-chart dashboard-indicator-chart">
-                      <strong>MACD 12/26/9</strong>
-                      <ResponsiveContainer width="100%" height={115}>
-                        <LineChart data={dashboardIndicatorChartData}>
-                          <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                          <XAxis dataKey="date" minTickGap={34} tick={{ fontSize: 8 }} /><YAxis width={42} tick={{ fontSize: 8 }} />
-                          <Tooltip formatter={(value, name) => [Number(value).toFixed(3), name]} /><ReferenceLine y={0} strokeDasharray="3 3" />
-                          <Line type="monotone" dataKey="macd" name="MACD" dot={false} strokeWidth={1.8} connectNulls isAnimationActive={false} />
-                          <Line type="monotone" dataKey="macdSignal" name="Signal" dot={false} strokeWidth={1.4} connectNulls isAnimationActive={false} />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
-                    <div className="dashboard-mini-chart dashboard-indicator-chart">
-                      <strong>ROC 14 (%)</strong>
-                      <ResponsiveContainer width="100%" height={115}>
-                        <LineChart data={dashboardIndicatorChartData}>
-                          <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                          <XAxis dataKey="date" minTickGap={34} tick={{ fontSize: 8 }} /><YAxis width={42} tick={{ fontSize: 8 }} />
-                          <Tooltip formatter={(value) => [`${Number(value).toFixed(2)}%`, "ROC 14"]} /><ReferenceLine y={0} strokeDasharray="3 3" />
-                          <Line type="monotone" dataKey="roc14" name="ROC 14" dot={false} strokeWidth={1.8} connectNulls isAnimationActive={false} />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
-                    <div className="dashboard-mini-chart dashboard-indicator-chart">
-                      <strong>ADX / +DI / -DI 14</strong>
-                      <ResponsiveContainer width="100%" height={115}>
-                        <LineChart data={dashboardIndicatorChartData}>
-                          <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                          <XAxis dataKey="date" minTickGap={34} tick={{ fontSize: 8 }} /><YAxis domain={[0, 100]} width={38} tick={{ fontSize: 8 }} />
-                          <Tooltip formatter={(value, name) => [Number(value).toFixed(2), name]} />
-                          <Line type="monotone" dataKey="adx14" name="ADX14" dot={false} strokeWidth={1.8} connectNulls isAnimationActive={false} />
-                          <Line type="monotone" dataKey="plusDi14" name="+DI14" dot={false} strokeWidth={1.2} connectNulls isAnimationActive={false} />
-                          <Line type="monotone" dataKey="minusDi14" name="-DI14" dot={false} strokeWidth={1.2} connectNulls isAnimationActive={false} />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
-                    <div className="dashboard-mini-chart dashboard-indicator-chart">
-                      <strong>ATR 14</strong>
-                      <ResponsiveContainer width="100%" height={115}>
-                        <LineChart data={dashboardIndicatorChartData}>
-                          <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                          <XAxis dataKey="date" minTickGap={34} tick={{ fontSize: 8 }} /><YAxis width={42} tick={{ fontSize: 8 }} />
-                          <Tooltip formatter={(value) => [Number(value).toFixed(2), "ATR 14"]} />
-                          <Line type="monotone" dataKey="atr14" name="ATR 14" dot={false} strokeWidth={1.8} connectNulls isAnimationActive={false} />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
-                    <div className="dashboard-mini-chart dashboard-indicator-chart">
-                      <strong>Volume Ratio (20D)</strong>
-                      <ResponsiveContainer width="100%" height={115}>
-                        <LineChart data={dashboardIndicatorChartData}>
-                          <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                          <XAxis dataKey="date" minTickGap={34} tick={{ fontSize: 8 }} /><YAxis width={42} tick={{ fontSize: 8 }} />
-                          <Tooltip formatter={(value) => [Number(value).toFixed(2), "Volume Ratio"]} /><ReferenceLine y={1} strokeDasharray="3 3" />
-                          <Line type="monotone" dataKey="volumeRatio" name="Volume Ratio" dot={false} strokeWidth={1.8} connectNulls isAnimationActive={false} />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
-                ) : <div className="dashboard-mini-empty dashboard-indicator-empty">Not enough price history for indicator charts yet.</div>}
-              </div>
+              }} disabled={topCompositeLoading}>Reset Defaults</button>
             </div>
           </div>
 
@@ -3381,7 +3723,7 @@ function App() {
 
           {chartInfo && !dataStale && (
             <div className="chart-note">
-              {new Date(`${chartInfo.date}T00:00:00`).toLocaleDateString("en-US")} &nbsp;
+              {new Date(`${chartInfo.date}T00:00:00`).toLocaleDateString("en-GB")} &nbsp;
               O {chartInfo.open.toFixed(2)} &nbsp; H {chartInfo.high.toFixed(2)} &nbsp;
               L {chartInfo.low.toFixed(2)} &nbsp; C {chartInfo.close.toFixed(2)}
             </div>
@@ -3390,7 +3732,7 @@ function App() {
           {!dataStale && (
             <div className="indicator-settings chart-overlay-controls">
               {[
-                ["ema", "EMA 20/30/50/100/150/200"],
+                ["ema", "EMA 10/20/34/50/100/150/200"],
                 ["sma", "SMA 20/50"],
                 ["bollinger", "Bollinger Bands"],
                 ["volume", "Volume + 50P Avg"],
@@ -3412,8 +3754,9 @@ function App() {
           {!dataStale && chartOverlays.ema && (
             <div className="ema-color-legend" aria-label="EMA color legend">
               {[
-                [20, "#2563eb"],
-                [30, "#f59e0b"],
+                [10, "#2563eb"],
+                [20, "#0f766e"],
+                [34, "#f59e0b"],
                 [50, "#7c3aed"],
                 [100, "#0891b2"],
                 [150, "#db2777"],
@@ -3459,7 +3802,7 @@ function App() {
           )}
           {benchmark?.data?.length > 0 && (
             <div className="chart-note">
-              Chart overlays: EMA 20/30/50/100/150/200, Bollinger Bands, volume + 50-period average volume, quarterly EPS, and Relative Strength = Stock Price / {benchmark.name}. The RS line is visually rebased only for overlay; its direction comes from the stock/index ratio.
+              Chart overlays: EMA 10/20/34/50/100/150/200, Bollinger Bands, volume + 50-period average volume, quarterly EPS, and Relative Strength = Stock Price / {benchmark.name}. The RS line is visually rebased only for overlay; its direction comes from the stock/index ratio.
             </div>
           )}
 
@@ -3477,9 +3820,9 @@ function App() {
                   <ResponsiveContainer width="100%" height={240}>
                     <LineChart data={technicalSummary.technical_metric_series}>
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="date" minTickGap={35} />
+                      <XAxis dataKey="date" minTickGap={35} tickFormatter={formatChartDate} />
                       <YAxis unit="%" domain={["auto", "auto"]} />
-                      <Tooltip formatter={(value, name) => [`${Number(value).toFixed(2)}%`, name]} />
+                      <Tooltip labelFormatter={formatChartDate} formatter={(value, name) => [`${Number(value).toFixed(2)}%`, name]} />
                       <Line type="monotone" dataKey="adr_percent" name="ADR %" stroke="#2563eb" strokeWidth={2} dot={false} connectNulls />
                       <Line type="monotone" dataKey="atr_percent" name="ATR %" stroke="#f59e0b" strokeWidth={2} dot={false} connectNulls />
                       <Line type="monotone" dataKey="bollinger_width_percent" name="BB Width %" stroke="#7c3aed" strokeWidth={2} dot={false} connectNulls />
@@ -3637,9 +3980,9 @@ function App() {
             <ResponsiveContainer width="100%" height={230}>
               <LineChart data={relativeStrengthChartData}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" minTickGap={35} />
+                <XAxis dataKey="date" minTickGap={35} tickFormatter={formatChartDate} />
                 <YAxis domain={["auto", "auto"]} />
-                <Tooltip formatter={(value) => [Number(value).toFixed(2), "RS"]} />
+                <Tooltip labelFormatter={formatChartDate} formatter={(value) => [Number(value).toFixed(2), "RS"]} />
                 <Line type="monotone" dataKey="rs" strokeWidth={2} dot={false} />
               </LineChart>
             </ResponsiveContainer>
@@ -4525,7 +4868,7 @@ function App() {
                 {!dataStale &&
                   [...data].reverse().slice(0, 10).map((row) => (
                     <tr key={row.date}>
-                      <td>{new Date(`${String(row.date).slice(0, 10)}T00:00:00`).toLocaleDateString("en-US")}</td>
+                      <td>{new Date(`${String(row.date).slice(0, 10)}T00:00:00`).toLocaleDateString("en-GB")}</td>
                       <td>{Number(row.open).toFixed(2)}</td>
                       <td>{Number(row.high).toFixed(2)}</td>
                       <td>{Number(row.low).toFixed(2)}</td>

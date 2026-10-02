@@ -38,7 +38,7 @@ The Excel updater now fetches up to 20 years of verified Yahoo Finance OHLCV dir
 ## Git
 ```bash
 git add .
-git commit -m "Stabilize final Milestone 2 deployment and Excel refresh"
+git commit -m "Build client framework candlestick overlays and customizable indicators"
 git push
 ```
 
@@ -73,3 +73,6 @@ The selected-stock dashboard now persists/reuses real sector metadata from the c
 
 ## Latest client feedback patch (2026-10-02)
 After deployment, hard-refresh the Vercel site once. This build bumps the saved-weight versions and restores the client's exact defaults/formula. It also detects stale OHLCV caches and merges current live provider rows so charts are not allowed to stop at an old stored date merely because the cache has enough rows.
+
+## Framework-first UI revision (2026-10-02)
+The current client-review target is the framework, not another data correction pass. The Top-200 workflow now opens a candlestick chart with RS/EPS/Bollinger/EMA 10-20-34-50-100-150-200/volume overlays, followed immediately by customizable indicator charts. Dates display as DD/MM/YYYY. MACD/Signal and ADX/+DI/-DI are visually separated with distinct colors. Additional handwritten basket slots (DI Spread, BB Width, volume contraction/dry-up, RS and Delivery %) are represented in the framework; Delivery % remains an explicit provider-data slot for the next stage.
