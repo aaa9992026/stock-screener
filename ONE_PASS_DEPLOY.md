@@ -49,3 +49,6 @@ it truncates only `ohlcv` to reclaim volume. Company, fundamental and ownership 
 Charts, indicators and the Top-200 candidate technical/RS calculations use live provider data without
 repopulating the full-universe OHLCV cache. Full 4-5 year Excel history is also fetched live by the
 master Excel/Python workflow.
+
+## Top 200 missing-data closeout
+The free-tier Top 200 endpoint now live-enriches the strongest bounded candidate set with real provider statement history and metadata without writing multi-year OHLCV back to PostgreSQL. It calculates the confirmed 11-rule EPS/PAT/Sales growth scores, fills sector metadata where the provider supplies it, computes a provisional sector growth score from the bounded peer set, and calculates Alpha/Beta from real daily returns versus S&P 500/NIFTY 500. Missing provider values remain N/A. `TOP200_LIVE_ENRICH_LIMIT` defaults to 50 to keep Railway requests bounded; increase only if the deployment has enough request time/CPU.

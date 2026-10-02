@@ -30,6 +30,8 @@ from types import SimpleNamespace
 from datetime import datetime, timedelta, date
 from urllib.parse import quote
 from statistics import median
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import threading
 import yfinance as yf
 
 router = APIRouter(prefix="/market", tags=["market"])
@@ -38,6 +40,11 @@ router = APIRouter(prefix="/market", tags=["market"])
 _LIVE_ROW_CACHE = {}
 _LIVE_ROW_CACHE_TTL = 900
 _LIVE_SCREENER_SNAPSHOT_CACHE = {}
+_RANKING_ENRICH_CACHE = {}
+_RANKING_ENRICH_TTL = 21600
+_RANKING_SEC_PROVIDER = None
+_RANKING_WARM_LOCK = threading.Lock()
+_RANKING_WARM_ACTIVE = False
 
 
 def _free_tier_mode() -> bool:
@@ -208,6 +215,350 @@ def _live_close_history_for_candidates(rows):
                     result[(ex, canonical)] = closes
     return result
 
+
+
+def _finite_number(value):
+    try:
+        value = float(value)
+        return value if math.isfinite(value) else None
+    except Exception:
+        return None
+
+
+def _ranking_history_metric_score(history, metric: str):
+    """Score the confirmed 11 handwritten growth rules for EPS/PAT/Sales.
+
+    A provider may expose fewer than all historical periods.  In that case the
+    score is normalized only across rules whose required real inputs exist and
+    the returned coverage reports how much of the 100-point rule set was
+    actually observable.  No missing value is converted to zero or invented.
+    """
+    if not history:
+        return {"score": None, "coverage": 0.0, "latest_yoy": None, "acceleration": None}
+    quarterly = list(history.get("quarterly") or [])
+    annual = list(history.get("annual") or [])
+
+    def q(index, kind):
+        if index >= len(quarterly):
+            return None
+        return _finite_number((quarterly[index] or {}).get(f"{kind}_{metric}"))
+
+    def a(index):
+        if index >= len(annual):
+            return None
+        return _finite_number((annual[index] or {}).get(f"yoy_{metric}"))
+
+    qy0, qy1, qy2 = q(0, "yoy"), q(1, "yoy"), q(2, "yoy")
+    qq0, qq1, qq2 = q(0, "qoq"), q(1, "qoq"), q(2, "qoq")
+    ay0, ay1, ay2 = a(0), a(1), a(2)
+
+    rules = [
+        (10.0, (qy0,), lambda v: v[0] > 20),
+        (10.0, (qy0, qy1), lambda v: (v[0] - v[1]) > 20),
+        (10.0, (qy1, qy2), lambda v: (v[0] - v[1]) > 20),
+        (10.0, (qy0, qy1, qy2), lambda v: (v[0] - ((v[1] + v[2]) / 2.0)) > 20),
+        (10.0, (qq0,), lambda v: v[0] > 20),
+        (10.0, (qq1,), lambda v: v[0] > 20),
+        (10.0, (qq2,), lambda v: v[0] > 20),
+        (5.0, (qq0, qq1, qq2), lambda v: (v[0] - ((v[1] + v[2]) / 2.0)) > 20),
+        (10.0, (ay0,), lambda v: v[0] > 20),
+        (5.0, (ay0, ay1), lambda v: (v[0] - v[1]) > 20),
+        (10.0, (ay0, ay1, ay2), lambda v: (v[0] - ((v[1] + v[2]) / 2.0)) > 20),
+    ]
+    observed_weight = 0.0
+    earned = 0.0
+    for weight, values, predicate in rules:
+        if any(value is None for value in values):
+            continue
+        observed_weight += weight
+        try:
+            if predicate(values):
+                earned += weight
+        except Exception:
+            continue
+    score = round((earned / observed_weight) * 100.0, 2) if observed_weight > 0 else None
+    acceleration = (qy0 - qy1) if qy0 is not None and qy1 is not None else None
+    return {
+        "score": score,
+        "coverage": round(observed_weight, 2),
+        "latest_yoy": qy0,
+        "acceleration": round(acceleration, 2) if acceleration is not None else None,
+    }
+
+
+def _ranking_fundamental_bundle(history):
+    groups = {metric: _ranking_history_metric_score(history, metric) for metric in ("eps", "pat", "sales")}
+    usable = [(item["score"], item["coverage"]) for item in groups.values() if item.get("score") is not None and item.get("coverage", 0) > 0]
+    if not usable:
+        overall = None
+        coverage = 0.0
+    else:
+        total = sum(weight for _score, weight in usable)
+        overall = round(sum(score * weight for score, weight in usable) / total, 2) if total else None
+        coverage = round(sum(weight for _score, weight in usable) / 3.0, 2)
+    return {
+        "fundamental_score": overall,
+        "fundamental_rule_coverage": coverage,
+        "eps_score": groups["eps"]["score"],
+        "pat_score": groups["pat"]["score"],
+        "sales_score": groups["sales"]["score"],
+        "eps_rule_coverage": groups["eps"]["coverage"],
+        "pat_rule_coverage": groups["pat"]["coverage"],
+        "sales_rule_coverage": groups["sales"]["coverage"],
+        "eps_latest_yoy": groups["eps"]["latest_yoy"],
+        "pat_latest_yoy": groups["pat"]["latest_yoy"],
+        "sales_latest_yoy": groups["sales"]["latest_yoy"],
+        "eps_acceleration": groups["eps"]["acceleration"],
+        "pat_acceleration": groups["pat"]["acceleration"],
+        "sales_acceleration": groups["sales"]["acceleration"],
+    }
+
+
+def _get_ranking_sec_provider():
+    global _RANKING_SEC_PROVIDER
+    if _RANKING_SEC_PROVIDER is not None:
+        return _RANKING_SEC_PROVIDER
+    try:
+        _RANKING_SEC_PROVIDER = SECFundamentalsProvider()
+    except Exception:
+        _RANKING_SEC_PROVIDER = False
+    return _RANKING_SEC_PROVIDER if _RANKING_SEC_PROVIDER is not False else None
+
+
+def _fetch_ranking_enrichment(row):
+    ex = str(row.get("exchange") or "").upper()
+    symbol = str(row.get("symbol") or "").upper()
+    if not ex or not symbol:
+        return {}
+    key = (ex, symbol)
+    now = time.time()
+    cached = _RANKING_ENRICH_CACHE.get(key)
+    if cached and (now - cached[0]) < _RANKING_ENRICH_TTL:
+        return cached[1]
+
+    provider = YahooProvider()
+    history = None
+    if ex == "US":
+        sec = _get_ranking_sec_provider()
+        if sec is not None:
+            try:
+                history = sec.get_history(symbol)
+            except Exception:
+                history = None
+    if not history:
+        try:
+            history = provider.get_fundamental_history(symbol, ex)
+        except Exception:
+            history = None
+
+    metadata = {}
+    # Metadata is fetched only when the stored row has a real gap.  This keeps
+    # cold Top-200 refreshes within Railway/Vercel request budgets.
+    metadata_fields = (
+        "sector", "industry", "market_cap", "trailing_eps", "forward_eps",
+        "revenue", "net_income", "profit_margin", "return_on_equity",
+        "return_on_assets", "institution_percent", "insider_percent",
+        "shares_outstanding", "float_shares",
+    )
+    needs_metadata = any(row.get(field) in (None, "", "N/A") for field in metadata_fields)
+    if needs_metadata:
+        try:
+            metadata = provider.get_fundamentals(symbol, ex) or {}
+        except Exception:
+            metadata = {}
+
+    payload = {"history": history, "metadata": metadata}
+    payload.update(_ranking_fundamental_bundle(history))
+    _RANKING_ENRICH_CACHE[key] = (now, payload)
+    return payload
+
+
+def _apply_ranking_enrichment(rows, limit=None):
+    if not rows:
+        return {}
+    if limit is None:
+        try:
+            limit = int(os.getenv("TOP200_LIVE_ENRICH_LIMIT", "50") or 50)
+        except Exception:
+            limit = 50
+    limit = max(0, min(len(rows), int(limit)))
+    targets = list(rows[:limit])
+    if not targets:
+        return {}
+
+    result = {}
+    workers = max(1, min(8, len(targets)))
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        futures = {executor.submit(_fetch_ranking_enrichment, row): row for row in targets}
+        for future in as_completed(futures):
+            row = futures[future]
+            key = (str(row.get("exchange") or "").upper(), str(row.get("symbol") or "").upper())
+            try:
+                payload = future.result() or {}
+            except Exception:
+                payload = {}
+            result[key] = payload
+            metadata = payload.get("metadata") or {}
+            # Fill only gaps.  Existing stored provider data remains preferred.
+            mapping = {
+                "name": "name", "isin": "isin", "sector": "sector", "industry": "industry",
+                "market_cap": "market_cap", "trailing_eps": "trailing_eps", "forward_eps": "forward_eps",
+                "revenue": "revenue", "net_income": "net_income", "profit_margin": "profit_margin",
+                "return_on_equity": "return_on_equity", "return_on_assets": "return_on_assets",
+                "institution_percent": "institution_percent", "insider_percent": "insider_percent",
+                "shares_outstanding": "shares_outstanding", "float_shares": "float_shares",
+            }
+            for target_field, source_field in mapping.items():
+                if row.get(target_field) in (None, "", "N/A"):
+                    value = metadata.get(source_field)
+                    if value not in (None, "", "N/A", "nan", "NaN", "-"):
+                        row[target_field] = value
+    return result
+
+
+
+def _apply_cached_ranking_enrichment(rows):
+    result = {}
+    now = time.time()
+    mapping = {
+        "name": "name", "isin": "isin", "sector": "sector", "industry": "industry",
+        "market_cap": "market_cap", "trailing_eps": "trailing_eps", "forward_eps": "forward_eps",
+        "revenue": "revenue", "net_income": "net_income", "profit_margin": "profit_margin",
+        "return_on_equity": "return_on_equity", "return_on_assets": "return_on_assets",
+        "institution_percent": "institution_percent", "insider_percent": "insider_percent",
+        "shares_outstanding": "shares_outstanding", "float_shares": "float_shares",
+    }
+    for row in rows or []:
+        key = (str(row.get("exchange") or "").upper(), str(row.get("symbol") or "").upper())
+        cached = _RANKING_ENRICH_CACHE.get(key)
+        if not cached or (now - cached[0]) >= _RANKING_ENRICH_TTL:
+            continue
+        payload = cached[1] or {}
+        result[key] = payload
+        metadata = payload.get("metadata") or {}
+        for target_field, source_field in mapping.items():
+            if row.get(target_field) in (None, "", "N/A"):
+                value = metadata.get(source_field)
+                if value not in (None, "", "N/A", "nan", "NaN", "-"):
+                    row[target_field] = value
+    return result
+
+
+def _warm_ranking_enrichment_background(rows):
+    """Progressively warm the remaining Top-200 statement cache after response work.
+
+    This avoids making the first dashboard refresh wait for every candidate while
+    still allowing subsequent refreshes to approach full real-data coverage.
+    """
+    global _RANKING_WARM_ACTIVE
+    rows = list(rows or [])
+    if not rows:
+        return
+    with _RANKING_WARM_LOCK:
+        if _RANKING_WARM_ACTIVE:
+            return
+        _RANKING_WARM_ACTIVE = True
+
+    def runner():
+        global _RANKING_WARM_ACTIVE
+        try:
+            for offset in range(0, len(rows), 25):
+                chunk = rows[offset:offset + 25]
+                try:
+                    _apply_ranking_enrichment(chunk, limit=len(chunk))
+                except Exception:
+                    continue
+        finally:
+            with _RANKING_WARM_LOCK:
+                _RANKING_WARM_ACTIVE = False
+
+    threading.Thread(target=runner, name="top200-ranking-warm", daemon=True).start()
+
+def _sector_scores_from_enriched(rows, enrichment):
+    """Bounded real-data sector score using the client's documented components.
+
+    The live Top-200 path cannot afford an 11,500-stock historical statement
+    crawl on a 500 MB Railway tier.  This therefore ranks real historical
+    growth across the enriched candidate peer set and is explicitly marked
+    provisional by the dashboard response.
+    """
+    buckets = {}
+    for row in rows:
+        key = (str(row.get("exchange") or "").upper(), str(row.get("symbol") or "").upper())
+        payload = enrichment.get(key) or {}
+        sector = str(row.get("sector") or "").strip()
+        if not sector or not payload:
+            continue
+        bucket = buckets.setdefault(sector, {m: [] for m in ("eps_yoy", "pat_yoy", "sales_yoy", "eps_acc", "pat_acc", "sales_acc")})
+        for metric, field in (("eps_yoy", "eps_latest_yoy"), ("pat_yoy", "pat_latest_yoy"), ("sales_yoy", "sales_latest_yoy"),
+                              ("eps_acc", "eps_acceleration"), ("pat_acc", "pat_acceleration"), ("sales_acc", "sales_acceleration")):
+            value = _finite_number(payload.get(field))
+            if value is not None:
+                bucket[metric].append(value)
+
+    stats = {}
+    for sector, bucket in buckets.items():
+        def med(key):
+            values = bucket.get(key) or []
+            return float(median(values)) if values else None
+        def breadth(key):
+            values = bucket.get(key) or []
+            return (sum(1 for value in values if value > 0) * 100.0 / len(values)) if values else None
+        eps = med("eps_yoy"); pat = med("pat_yoy"); sales = med("sales_yoy")
+        acc_values = [v for v in (med("eps_acc"), med("pat_acc"), med("sales_acc")) if v is not None]
+        acceleration = sum(acc_values) / len(acc_values) if acc_values else None
+        breadth_values = [v for v in (breadth("eps_yoy"), breadth("pat_yoy"), breadth("sales_yoy")) if v is not None]
+        growth_breadth = sum(breadth_values) / len(breadth_values) if breadth_values else None
+        accel_parts = [(breadth("eps_acc"), 35.0), (breadth("pat_acc"), 35.0), (breadth("sales_acc"), 30.0)]
+        accel_parts = [(v, w) for v, w in accel_parts if v is not None]
+        acceleration_breadth = (sum(v * w for v, w in accel_parts) / sum(w for _v, w in accel_parts)) if accel_parts else None
+        stats[sector] = {
+            "eps_raw": eps, "pat_raw": pat, "sales_raw": sales,
+            "acceleration_raw": acceleration, "growth_breadth": growth_breadth,
+            "acceleration_breadth": acceleration_breadth,
+            "peer_count": max((len(values) for values in bucket.values()), default=0),
+        }
+
+    for sector, item in stats.items():
+        eps_rs = _percentile_rank([x["eps_raw"] for x in stats.values()], item["eps_raw"])
+        pat_rs = _percentile_rank([x["pat_raw"] for x in stats.values()], item["pat_raw"])
+        sales_rs = _percentile_rank([x["sales_raw"] for x in stats.values()], item["sales_raw"])
+        accel_rs = _percentile_rank([x["acceleration_raw"] for x in stats.values()], item["acceleration_raw"])
+        components = [
+            (eps_rs, 30.0), (pat_rs, 25.0), (sales_rs, 20.0), (accel_rs, 15.0),
+            (item.get("growth_breadth"), 5.0), (item.get("acceleration_breadth"), 5.0),
+        ]
+        available = [(v, w) for v, w in components if v is not None]
+        item["score"] = round(sum(v * w for v, w in available) / sum(w for _v, w in available), 2) if available else None
+    return stats
+
+
+def _alpha_beta_from_closes(stock_closes, benchmark_closes):
+    if not stock_closes or not benchmark_closes:
+        return None, None
+    n = min(len(stock_closes), len(benchmark_closes), 253)
+    if n < 61:
+        return None, None
+    stock = [float(v) for v in stock_closes[-n:] if _finite_number(v) is not None]
+    bench = [float(v) for v in benchmark_closes[-n:] if _finite_number(v) is not None]
+    n = min(len(stock), len(bench))
+    if n < 61:
+        return None, None
+    stock = stock[-n:]; bench = bench[-n:]
+    sr = [(stock[i] / stock[i - 1]) - 1.0 for i in range(1, n) if stock[i - 1] > 0]
+    br = [(bench[i] / bench[i - 1]) - 1.0 for i in range(1, n) if bench[i - 1] > 0]
+    nret = min(len(sr), len(br))
+    if nret < 60:
+        return None, None
+    sr = sr[-nret:]; br = br[-nret:]
+    mean_s = sum(sr) / nret; mean_b = sum(br) / nret
+    var_b = sum((x - mean_b) ** 2 for x in br) / max(1, nret - 1)
+    if var_b <= 0:
+        return None, None
+    cov = sum((sr[i] - mean_s) * (br[i] - mean_b) for i in range(nret)) / max(1, nret - 1)
+    beta = cov / var_b
+    alpha = (mean_s - (beta * mean_b)) * 252.0 * 100.0
+    return round(alpha, 2), round(beta, 2)
 
 def _live_screener_snapshots(rows):
     """Return live one-year price snapshots for visible screener rows without DB writes.
@@ -4006,7 +4357,7 @@ def get_top_composite_dashboard(
     exchanges = _screener_market_exchanges(market)
     if _free_tier_mode():
         # Keep the live provider batch bounded on Railway's 500 MB tier.
-        candidate_limit = min(int(candidate_limit), 260)
+        candidate_limit = min(int(candidate_limit), 220)
 
 
     # The client asked for editable top-level composite weights.  Accept the
@@ -4213,18 +4564,17 @@ def get_top_composite_dashboard(
         for label, value in values.items():
             peers_by_group[group][label].append(value)
 
-    ranked = []
+    # First compute the inexpensive market-based components for the full bounded
+    # candidate set.  We then enrich only the strongest live candidates with
+    # real historical statements/metadata so the 500 MB deployment does not
+    # perform an 11,500-stock statement crawl on every request.
+    preliminary = []
+    preliminary_by_key = {}
     for row in base_rows:
         ex, symbol = row.get("exchange"), row.get("symbol")
         closes = grouped.get((ex, symbol), [])
         technical = technical_score(closes)
-
-        # Exact client fundamental score needs quarterly/annual history (11 EPS
-        # + 11 PAT + 11 Sales + NPM/CFO).  Never substitute the old generic
-        # positive-EPS/margin score here.
-        fundamental = None
         ownership = ownership_score(row)
-
         group = "US" if ex == "US" else "INDIA"
         rs_points = []
         rs_weight = 0.0
@@ -4236,7 +4586,72 @@ def get_top_composite_dashboard(
                 rs_points.append(percentile * weight)
                 rs_weight += weight
         rs = round(sum(rs_points) / rs_weight, 2) if rs_weight else None
-        sector = None
+        simple = {"technical": technical, "ownership": ownership, "relative_strength": rs}
+        simple_weight = sum(weights[k] for k, v in simple.items() if v is not None)
+        pre_score = (
+            sum(simple[k] * weights[k] for k in simple if simple[k] is not None) / simple_weight
+            if simple_weight else -1
+        )
+        key = (str(ex or "").upper(), str(symbol or "").upper())
+        item = {"row": row, "technical": technical, "ownership": ownership, "rs": rs, "pre_score": pre_score}
+        preliminary.append(item)
+        preliminary_by_key[key] = item
+
+    preliminary.sort(key=lambda item: (-(item.get("pre_score") or -1), str((item.get("row") or {}).get("symbol") or "")))
+    enrichment_rows = [item["row"] for item in preliminary]
+    enrichment = {}
+    if _free_tier_mode():
+        # Reuse everything already warmed, synchronously enrich the strongest
+        # first-page candidates, then warm the remainder in the background.
+        enrichment.update(_apply_cached_ranking_enrichment(enrichment_rows))
+        fresh = _apply_ranking_enrichment(enrichment_rows)
+        enrichment.update(fresh)
+        enrichment.update(_apply_cached_ranking_enrichment(enrichment_rows))
+        try:
+            sync_limit = int(os.getenv("TOP200_LIVE_ENRICH_LIMIT", "50") or 50)
+        except Exception:
+            sync_limit = 50
+        _warm_ranking_enrichment_background(enrichment_rows[max(0, sync_limit):200])
+    sector_stats = _sector_scores_from_enriched(enrichment_rows, enrichment) if enrichment else {}
+
+    # Alpha/Beta use real daily return series versus the client's exact broad
+    # market benchmark.  No extra database storage is required.
+    benchmark_closes = {}
+    for ex in {str(row.get("exchange") or "").upper() for row in base_rows}:
+        group_key = "US" if ex == "US" else "INDIA"
+        if group_key in benchmark_closes:
+            continue
+        try:
+            bench_exchange = "US" if group_key == "US" else "NSE"
+            points, _bsym, _bname, _bmethod = _load_benchmark_points(bench_exchange, db=db, minimum_points=60)
+            benchmark_closes[group_key] = [float(point[4]) for point in points if len(point) >= 5 and _finite_number(point[4]) is not None]
+        except Exception:
+            benchmark_closes[group_key] = []
+
+    ranked = []
+    for row in base_rows:
+        ex, symbol = row.get("exchange"), row.get("symbol")
+        key = (str(ex or "").upper(), str(symbol or "").upper())
+        closes = grouped.get((ex, symbol), [])
+        pre = preliminary_by_key.get(key) or {}
+        technical = pre.get("technical")
+        rs = pre.get("rs")
+
+        payload = enrichment.get(key) or {}
+        # Metadata enrichment may have filled ownership fields after the first
+        # pass, so calculate ownership again from the now-complete row.
+        ownership = ownership_score(row)
+        fundamental = payload.get("fundamental_score")
+        eps_score = payload.get("eps_score")
+        pat_score = payload.get("pat_score")
+        sales_score = payload.get("sales_score")
+
+        sector_name = str(row.get("sector") or "").strip()
+        sector_info = sector_stats.get(sector_name) or {}
+        sector = sector_info.get("score")
+
+        group_key = "US" if ex == "US" else "INDIA"
+        alpha, beta = _alpha_beta_from_closes(closes, benchmark_closes.get(group_key) or [])
 
         components = {
             "technical": technical,
@@ -4246,25 +4661,35 @@ def get_top_composite_dashboard(
             "relative_strength": rs,
         }
         available_weight = sum(
-            weights[key] for key, value in components.items() if value is not None
+            weights[key_name] for key_name, value in components.items() if value is not None
         )
         provisional = None
         if available_weight > 0:
             provisional = round(
                 sum(
-                    components[key] * weights[key]
-                    for key in components
-                    if components[key] is not None
+                    components[key_name] * weights[key_name]
+                    for key_name in components
+                    if components[key_name] is not None
                 ) / available_weight,
                 2,
             )
 
+        # The bounded live peer set materially improves real data coverage, but
+        # it is still not the client's complete 6,000/5,500-stock historical
+        # ranking universe.  Therefore free-tier rows remain explicitly
+        # Provisional even when every displayed component is populated.
         all_required_available = all(
-            components.get(key) is not None
-            for key, weight in weights.items()
+            components.get(key_name) is not None
+            for key_name, weight in weights.items()
             if float(weight or 0) > 0
         )
-        final_composite = provisional if all_required_available else None
+        exact_history_available = (
+            _finite_number(payload.get("fundamental_rule_coverage")) is not None
+            and float(payload.get("fundamental_rule_coverage") or 0) >= 99.9
+            and int(sector_info.get("peer_count") or 0) >= 5
+        )
+        final_allowed = all_required_available and exact_history_available and not _free_tier_mode()
+        final_composite = provisional if final_allowed else None
         ranked.append({
             **row,
             "composite_score": provisional,
@@ -4274,14 +4699,24 @@ def get_top_composite_dashboard(
             "score_coverage_percent": round(available_weight, 2),
             "technical_score": technical,
             "fundamental_score": fundamental,
+            "fundamental_rule_coverage_percent": payload.get("fundamental_rule_coverage"),
+            "fundamental_status": (
+                "Confirmed EPS/PAT/Sales handwritten growth rules; NPM/CFO points remain excluded until exact client weights are confirmed"
+                if fundamental is not None else None
+            ),
             "ownership_score": ownership,
             "sector_score": sector,
+            "sector_peer_count": sector_info.get("peer_count"),
+            "sector_status": "Provisional bounded real-history peer ranking" if sector is not None else None,
             "rs_score": rs,
-            "eps_score": None,
-            "pat_score": None,
-            "sales_score": None,
-            "alpha": None,
-            "beta": None,
+            "eps_score": eps_score,
+            "pat_score": pat_score,
+            "sales_score": sales_score,
+            "eps_rule_coverage_percent": payload.get("eps_rule_coverage"),
+            "pat_rule_coverage_percent": payload.get("pat_rule_coverage"),
+            "sales_rule_coverage_percent": payload.get("sales_rule_coverage"),
+            "alpha": alpha,
+            "beta": beta,
         })
 
     ranked = [
@@ -4306,8 +4741,9 @@ def get_top_composite_dashboard(
         "formula": formula_text,
         "score_weights": {key: round(value, 2) for key, value in weights.items()},
         "entered_weight_total": round(entered_weight_total, 2),
-        "rs_note": "RS percentiles on this dashboard use the currently verified stored candidate peer set and remain provisional until the full client market universe is populated.",
-        "data_rule": "Final Composite is shown only when all five weighted client categories are available. Rows with missing exact handwritten fundamental/sector history are explicitly Provisional; missing EPS/PAT/Sales/Alpha/Beta values remain N/A and are never fabricated.",
+        "rs_note": "RS percentiles on this dashboard use the bounded live candidate peer set and remain provisional until the full client 6,000/5,500-stock market universe is populated.",
+        "data_rule": "The free-tier dashboard live-enriches the strongest candidates with real provider statement history, sector metadata, EPS/PAT/Sales handwritten-rule scores and benchmark Alpha/Beta. Missing provider values remain N/A. Fundamental excludes ambiguous NPM/CFO point allocations, and sector/RS peer ranks remain Provisional until the full client universe is available.",
+        "live_enrichment_limit": int(os.getenv("TOP200_LIVE_ENRICH_LIMIT", "50") or 50) if _free_tier_mode() else 0,
     })
 
 
