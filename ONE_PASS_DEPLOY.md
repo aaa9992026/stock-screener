@@ -38,7 +38,7 @@ The Excel updater now fetches up to 20 years of verified Yahoo Finance OHLCV dir
 ## Git
 ```bash
 git add .
-git commit -m "Build client framework candlestick overlays and customizable indicators"
+git commit -m "Add ATR ADR BB width metrics standard deviation and sorting"
 git push
 ```
 
@@ -76,3 +76,10 @@ After deployment, hard-refresh the Vercel site once. This build bumps the saved-
 
 ## Framework-first UI revision (2026-10-02)
 The current client-review target is the framework, not another data correction pass. The Top-200 workflow now opens a candlestick chart with RS/EPS/Bollinger/EMA 10-20-34-50-100-150-200/volume overlays, followed immediately by customizable indicator charts. Dates display as DD/MM/YYYY. MACD/Signal and ADX/+DI/-DI are visually separated with distinct colors. Additional handwritten basket slots (DI Spread, BB Width, volume contraction/dry-up, RS and Delivery %) are represented in the framework; Delivery % remains an explicit provider-data slot for the next stage.
+
+
+## Final volatility/sorting patch (2026-10-02)
+- Added ATR %, ADR %, ADR Ratio, and explicit BB Width % framework charts beneath the candlestick chart.
+- ATR/ADR periods are editable; ADR Ratio is current daily range divided by rolling ADR.
+- Top-200 now exposes Standard Deviation directly beside Beta. The value is annualized standard deviation of daily returns (%) over up to 252 sessions.
+- Sort controls are visibly labeled **Sort by** and **Order**, with explicit Ascending/Descending choices; Standard Deviation is also sortable.

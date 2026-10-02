@@ -912,6 +912,19 @@ def _alpha_beta_from_closes(stock_closes, benchmark_closes):
     alpha = (mean_s - (beta * mean_b)) * 252.0 * 100.0
     return round(alpha, 2), round(beta, 2)
 
+def _standard_deviation_percent_from_closes(closes):
+    """Annualized standard deviation of daily returns, expressed as percent."""
+    values = [float(v) for v in (closes or [])[-253:] if _finite_number(v) is not None and float(v) > 0]
+    if len(values) < 21:
+        return None
+    returns = [(values[i] / values[i - 1]) - 1.0 for i in range(1, len(values)) if values[i - 1] > 0]
+    if len(returns) < 20:
+        return None
+    mean_return = sum(returns) / len(returns)
+    variance = sum((value - mean_return) ** 2 for value in returns) / max(1, len(returns) - 1)
+    return round((variance ** 0.5) * (252.0 ** 0.5) * 100.0, 2)
+
+
 def _live_screener_snapshots(rows):
     """Return live one-year price snapshots for visible screener rows without DB writes.
 
@@ -5075,6 +5088,7 @@ def get_top_composite_dashboard(
 
         group_key = "US" if ex == "US" else "INDIA"
         alpha, beta = _alpha_beta_from_closes(closes, benchmark_closes.get(group_key) or [])
+        standard_deviation_percent = _standard_deviation_percent_from_closes(closes)
 
         components = {
             "technical": technical,
@@ -5147,6 +5161,7 @@ def get_top_composite_dashboard(
             "sales_rule_coverage_percent": payload.get("sales_rule_coverage"),
             "alpha": alpha,
             "beta": beta,
+            "standard_deviation_percent": standard_deviation_percent,
         })
 
     ranked = [

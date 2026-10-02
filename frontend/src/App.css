@@ -2708,6 +2708,18 @@ button:disabled {
 
 .composite-dashboard-actions button:disabled { opacity: .6; cursor: wait; }
 
+.dashboard-sort-control {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  color: #64748b;
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.dashboard-sort-control select { min-width: 132px; }
+
 .composite-weight-strip {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));

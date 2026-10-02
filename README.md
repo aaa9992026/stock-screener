@@ -131,3 +131,7 @@ Per the latest client direction, the Top-200 page is now arranged for framework 
 - Framework includes RSI, MACD, ROC, ADX/+DI/-DI, DI Spread, ATR, BB Width, Volume Ratio, Volume Contraction, Volume Dry-Up, RS and a Delivery % slot.
 - Delivery % is intentionally a framework slot until the next data stage because the client explicitly asked not to spend time on data yet.
 - Clicking a row in the Top-200 table moves back to the framework chart for that stock.
+
+
+### Final client framework metrics
+The client framework now includes ATR%, ADR%, ADR Ratio, BB Width%, and a Top-200 Standard Deviation column beside Beta. Top-200 sort order is explicitly selectable as ascending or descending, including Standard Deviation.

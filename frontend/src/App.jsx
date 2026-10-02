@@ -596,11 +596,11 @@ function App() {
     ema: true, sma: true, bollinger: true, volume: true, eps: true, rs: true
   });
   const [frameworkIndicatorSettings, setFrameworkIndicatorSettings] = useState({
-    rsi: 14, macdFast: 12, macdSlow: 26, macdSignal: 9, roc: 14, adx: 14, atr: 14, volumeRatio: 20,
+    rsi: 14, macdFast: 12, macdSlow: 26, macdSignal: 9, roc: 14, adx: 14, atr: 14, adr: 20, volumeRatio: 20,
     bbWidth: 20, volumeShort: 10, volumeLong: 30, volumeDryUp: 50, delivery: 5, rsScore: 14
   });
   const [frameworkIndicatorVisibility, setFrameworkIndicatorVisibility] = useState({
-    rsi: true, macd: true, roc: true, adx: true, atr: true, volumeRatio: true,
+    rsi: true, macd: true, roc: true, adx: true, atr: true, atrPercent: true, adrPercent: true, adrRatio: true, volumeRatio: true,
     diSpread: true, bbWidth: true, volumeContraction: true, volumeDryUp: true, rsScore: true, delivery: true
   });
 
@@ -804,7 +804,7 @@ function App() {
       const map = {
         technical: "technical_score", fundamental: "fundamental_score", ownership: "ownership_score",
         sector: "sector_score", rs: "rs_score", eps: "eps_score", pat: "pat_score", sales: "sales_score",
-        alpha: "alpha", beta: "beta", coverage: "display_coverage_percent",
+        alpha: "alpha", beta: "beta", stddev: "standard_deviation_percent", coverage: "display_coverage_percent",
       };
       return row[map[topCompositeSortBy]];
     };
@@ -2154,12 +2154,13 @@ function App() {
     const rocPeriod = clampPeriod(frameworkIndicatorSettings.roc, 14);
     const adxPeriod = clampPeriod(frameworkIndicatorSettings.adx, 14);
     const atrPeriod = clampPeriod(frameworkIndicatorSettings.atr, 14);
+    const adrPeriod = clampPeriod(frameworkIndicatorSettings.adr, 20);
     const volumePeriod = clampPeriod(frameworkIndicatorSettings.volumeRatio, 20);
     const bbWidthPeriod = clampPeriod(frameworkIndicatorSettings.bbWidth, 20);
     const volumeShortPeriod = clampPeriod(frameworkIndicatorSettings.volumeShort, 10);
     const volumeLongPeriod = Math.max(volumeShortPeriod + 1, clampPeriod(frameworkIndicatorSettings.volumeLong, 30));
     const volumeDryUpPeriod = clampPeriod(frameworkIndicatorSettings.volumeDryUp, 50);
-    const minimumRows = Math.max(rsiPeriodLocal + 1, macdSlow + macdSignalPeriod, rocPeriod + 1, adxPeriod * 2, atrPeriod, volumePeriod, bbWidthPeriod, volumeLongPeriod, volumeDryUpPeriod);
+    const minimumRows = Math.max(rsiPeriodLocal + 1, macdSlow + macdSignalPeriod, rocPeriod + 1, adxPeriod * 2, atrPeriod, adrPeriod, volumePeriod, bbWidthPeriod, volumeLongPeriod, volumeDryUpPeriod);
     if (rows.length < Math.min(minimumRows, 15)) return [];
 
     const closes = rows.map((row) => row.close);
@@ -2250,6 +2251,25 @@ function App() {
         if (trWindow.length === atrPeriod) atr = trWindow.reduce((sum, value) => sum + value, 0) / atrPeriod;
       }
 
+      const atrPercent = Number.isFinite(atr) && row.close > 0 ? (atr / row.close) * 100 : null;
+
+      let adr = null;
+      let adrPercent = null;
+      let adrRatio = null;
+      if (index >= adrPeriod - 1) {
+        const adrWindow = rows.slice(index - adrPeriod + 1, index + 1);
+        const absoluteRanges = adrWindow
+          .map((item) => Number.isFinite(item.high) && Number.isFinite(item.low) ? item.high - item.low : null)
+          .filter(Number.isFinite);
+        const percentRanges = adrWindow
+          .map((item) => Number.isFinite(item.high) && Number.isFinite(item.low) && item.low > 0 ? ((item.high - item.low) / item.low) * 100 : null)
+          .filter(Number.isFinite);
+        if (absoluteRanges.length === adrPeriod) adr = absoluteRanges.reduce((sum, value) => sum + value, 0) / adrPeriod;
+        if (percentRanges.length === adrPeriod) adrPercent = percentRanges.reduce((sum, value) => sum + value, 0) / adrPeriod;
+        const currentRange = Number.isFinite(row.high) && Number.isFinite(row.low) ? row.high - row.low : null;
+        if (Number.isFinite(currentRange) && Number.isFinite(adr) && adr > 0) adrRatio = currentRange / adr;
+      }
+
       let plusDi = null;
       let minusDi = null;
       if (index >= adxPeriod - 1) {
@@ -2316,6 +2336,9 @@ function App() {
         macdSignal: Number.isFinite(macdSignal[index]) ? Number(macdSignal[index].toFixed(4)) : null,
         roc: Number.isFinite(roc) ? Number(roc.toFixed(2)) : null,
         atr: Number.isFinite(atr) ? Number(atr.toFixed(2)) : null,
+        atrPercent: Number.isFinite(atrPercent) ? Number(atrPercent.toFixed(2)) : null,
+        adrPercent: Number.isFinite(adrPercent) ? Number(adrPercent.toFixed(2)) : null,
+        adrRatio: Number.isFinite(adrRatio) ? Number(adrRatio.toFixed(3)) : null,
         plusDi: Number.isFinite(plusDi) ? Number(plusDi.toFixed(2)) : null,
         minusDi: Number.isFinite(minusDi) ? Number(minusDi.toFixed(2)) : null,
         adx: Number.isFinite(adx) ? Number(adx.toFixed(2)) : null,
@@ -2761,15 +2784,19 @@ function App() {
                 <option value="NSE">NSE Only</option>
                 <option value="BSE">BSE Only</option>
               </select>
-              <select aria-label="Top 200 sort field" value={topCompositeSortBy} onChange={(e) => setTopCompositeSortBy(e.target.value)}>
-                <option value="composite">Composite</option><option value="technical">Technical</option><option value="fundamental">Fundamental</option>
-                <option value="ownership">Ownership</option><option value="sector">Sector</option><option value="rs">RS</option>
-                <option value="eps">EPS</option><option value="pat">PAT</option><option value="sales">Sales</option>
-                <option value="alpha">Alpha</option><option value="beta">Beta</option><option value="coverage">Coverage</option><option value="symbol">Symbol</option>
-              </select>
-              <select aria-label="Top 200 sort direction" value={topCompositeSortDir} onChange={(e) => setTopCompositeSortDir(e.target.value)}>
-                <option value="desc">Descending</option><option value="asc">Ascending</option>
-              </select>
+              <label className="dashboard-sort-control"><span>Sort by</span>
+                <select aria-label="Top 200 sort field" value={topCompositeSortBy} onChange={(e) => setTopCompositeSortBy(e.target.value)}>
+                  <option value="composite">Composite</option><option value="technical">Technical</option><option value="fundamental">Fundamental</option>
+                  <option value="ownership">Ownership</option><option value="sector">Sector</option><option value="rs">RS</option>
+                  <option value="eps">EPS</option><option value="pat">PAT</option><option value="sales">Sales</option>
+                  <option value="alpha">Alpha</option><option value="beta">Beta</option><option value="stddev">Std Deviation</option><option value="coverage">Coverage</option><option value="symbol">Symbol</option>
+                </select>
+              </label>
+              <label className="dashboard-sort-control"><span>Order</span>
+                <select aria-label="Top 200 sort direction" value={topCompositeSortDir} onChange={(e) => setTopCompositeSortDir(e.target.value)}>
+                  <option value="desc">Descending ↓</option><option value="asc">Ascending ↑</option>
+                </select>
+              </label>
               <button type="button" onClick={() => loadTopComposite()} disabled={topCompositeLoading}>
                 {topCompositeLoading ? "Refreshing…" : "Refresh Top 200"}
               </button>
@@ -2841,7 +2868,7 @@ function App() {
                   <div className="indicator-basket-toggles">
                     {[
                       ["rsi", "RSI"], ["macd", "MACD"], ["roc", "ROC"], ["adx", "ADX/+DI/-DI"], ["diSpread", "DI Spread"],
-                      ["atr", "ATR"], ["bbWidth", "BB Width"], ["volumeRatio", "Volume Ratio"], ["volumeContraction", "Volume Contraction"],
+                      ["atr", "ATR"], ["atrPercent", "ATR %"], ["adrPercent", "ADR %"], ["adrRatio", "ADR Ratio"], ["bbWidth", "BB Width %"], ["volumeRatio", "Volume Ratio"], ["volumeContraction", "Volume Contraction"],
                       ["volumeDryUp", "Volume Dry-Up"], ["rsScore", "RS"], ["delivery", "Delivery %"]
                     ].map(([key, label]) => (
                       <button key={key} type="button" className={frameworkIndicatorVisibility[key] ? "active" : ""} onClick={() => setFrameworkIndicatorVisibility((prev) => ({ ...prev, [key]: !prev[key] }))}>
@@ -2855,9 +2882,10 @@ function App() {
                   <label>RSI <input type="number" min="2" max="100" value={frameworkIndicatorSettings.rsi} onChange={(e) => setFrameworkIndicatorSettings((prev) => ({ ...prev, rsi: Number(e.target.value) || 14 }))} /></label>
                   <label>ROC <input type="number" min="2" max="100" value={frameworkIndicatorSettings.roc} onChange={(e) => setFrameworkIndicatorSettings((prev) => ({ ...prev, roc: Number(e.target.value) || 14 }))} /></label>
                   <label>ADX / DI <input type="number" min="2" max="100" value={frameworkIndicatorSettings.adx} onChange={(e) => setFrameworkIndicatorSettings((prev) => ({ ...prev, adx: Number(e.target.value) || 14 }))} /></label>
-                  <label>ATR <input type="number" min="2" max="100" value={frameworkIndicatorSettings.atr} onChange={(e) => setFrameworkIndicatorSettings((prev) => ({ ...prev, atr: Number(e.target.value) || 14 }))} /></label>
+                  <label>ATR / ATR% <input type="number" min="2" max="100" value={frameworkIndicatorSettings.atr} onChange={(e) => setFrameworkIndicatorSettings((prev) => ({ ...prev, atr: Number(e.target.value) || 14 }))} /></label>
+                  <label>ADR / ADR% <input type="number" min="2" max="100" value={frameworkIndicatorSettings.adr} onChange={(e) => setFrameworkIndicatorSettings((prev) => ({ ...prev, adr: Number(e.target.value) || 20 }))} /></label>
                   <label>Volume Ratio <input type="number" min="2" max="120" value={frameworkIndicatorSettings.volumeRatio} onChange={(e) => setFrameworkIndicatorSettings((prev) => ({ ...prev, volumeRatio: Number(e.target.value) || 20 }))} /></label>
-                  <label>BB Width <input type="number" min="2" max="120" value={frameworkIndicatorSettings.bbWidth} onChange={(e) => setFrameworkIndicatorSettings((prev) => ({ ...prev, bbWidth: Number(e.target.value) || 20 }))} /></label>
+                  <label>BB Width % <input type="number" min="2" max="120" value={frameworkIndicatorSettings.bbWidth} onChange={(e) => setFrameworkIndicatorSettings((prev) => ({ ...prev, bbWidth: Number(e.target.value) || 20 }))} /></label>
                   <label>Vol Short <input type="number" min="2" max="120" value={frameworkIndicatorSettings.volumeShort} onChange={(e) => setFrameworkIndicatorSettings((prev) => ({ ...prev, volumeShort: Number(e.target.value) || 10 }))} /></label>
                   <label>Vol Long <input type="number" min="3" max="180" value={frameworkIndicatorSettings.volumeLong} onChange={(e) => setFrameworkIndicatorSettings((prev) => ({ ...prev, volumeLong: Number(e.target.value) || 30 }))} /></label>
                   <label>Dry-Up <input type="number" min="2" max="250" value={frameworkIndicatorSettings.volumeDryUp} onChange={(e) => setFrameworkIndicatorSettings((prev) => ({ ...prev, volumeDryUp: Number(e.target.value) || 50 }))} /></label>
@@ -2951,6 +2979,48 @@ function App() {
                       </div>
                     )}
 
+                    {frameworkIndicatorVisibility.atrPercent && (
+                      <div className="dashboard-mini-chart dashboard-indicator-chart">
+                        <strong>ATR % ({frameworkIndicatorSettings.atr})</strong>
+                        <ResponsiveContainer width="100%" height={135}>
+                          <LineChart data={dashboardIndicatorChartData}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                            <XAxis dataKey="date" minTickGap={38} tick={{ fontSize: 8 }} tickFormatter={formatChartDate} /><YAxis width={42} tick={{ fontSize: 8 }} unit="%" />
+                            <Tooltip labelFormatter={formatChartDate} formatter={(value) => [`${Number(value).toFixed(2)}%`, "ATR %"]} />
+                            <Line type="monotone" dataKey="atrPercent" name="ATR %" stroke="#c2410c" dot={false} strokeWidth={1.8} connectNulls isAnimationActive={false} />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                    )}
+
+                    {frameworkIndicatorVisibility.adrPercent && (
+                      <div className="dashboard-mini-chart dashboard-indicator-chart">
+                        <strong>ADR % ({frameworkIndicatorSettings.adr})</strong>
+                        <ResponsiveContainer width="100%" height={135}>
+                          <LineChart data={dashboardIndicatorChartData}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                            <XAxis dataKey="date" minTickGap={38} tick={{ fontSize: 8 }} tickFormatter={formatChartDate} /><YAxis width={42} tick={{ fontSize: 8 }} unit="%" />
+                            <Tooltip labelFormatter={formatChartDate} formatter={(value) => [`${Number(value).toFixed(2)}%`, "ADR %"]} />
+                            <Line type="monotone" dataKey="adrPercent" name="ADR %" stroke="#2563eb" dot={false} strokeWidth={1.8} connectNulls isAnimationActive={false} />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                    )}
+
+                    {frameworkIndicatorVisibility.adrRatio && (
+                      <div className="dashboard-mini-chart dashboard-indicator-chart">
+                        <strong>ADR Ratio ({frameworkIndicatorSettings.adr})</strong>
+                        <ResponsiveContainer width="100%" height={135}>
+                          <LineChart data={dashboardIndicatorChartData}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                            <XAxis dataKey="date" minTickGap={38} tick={{ fontSize: 8 }} tickFormatter={formatChartDate} /><YAxis width={42} tick={{ fontSize: 8 }} />
+                            <Tooltip labelFormatter={formatChartDate} formatter={(value) => [Number(value).toFixed(3), "Current Range / ADR"]} /><ReferenceLine y={1} stroke="#94a3b8" strokeDasharray="3 3" />
+                            <Line type="monotone" dataKey="adrRatio" name="ADR Ratio" stroke="#7c3aed" dot={false} strokeWidth={1.8} connectNulls isAnimationActive={false} />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                    )}
+
                     {frameworkIndicatorVisibility.volumeRatio && (
                       <div className="dashboard-mini-chart dashboard-indicator-chart">
                         <strong>Volume Ratio ({frameworkIndicatorSettings.volumeRatio}D)</strong>
@@ -2982,13 +3052,13 @@ function App() {
 
                     {frameworkIndicatorVisibility.bbWidth && (
                       <div className="dashboard-mini-chart dashboard-indicator-chart">
-                        <strong>BB Width ({frameworkIndicatorSettings.bbWidth})</strong>
+                        <strong>BB Width % ({frameworkIndicatorSettings.bbWidth})</strong>
                         <ResponsiveContainer width="100%" height={135}>
                           <LineChart data={dashboardIndicatorChartData}>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} />
                             <XAxis dataKey="date" minTickGap={38} tick={{ fontSize: 8 }} tickFormatter={formatChartDate} /><YAxis width={42} tick={{ fontSize: 8 }} />
-                            <Tooltip labelFormatter={formatChartDate} formatter={(value) => [`${Number(value).toFixed(2)}%`, "BB Width"]} />
-                            <Line type="monotone" dataKey="bbWidth" name="BB Width" stroke="#0d9488" dot={false} strokeWidth={1.8} connectNulls isAnimationActive={false} />
+                            <Tooltip labelFormatter={formatChartDate} formatter={(value) => [`${Number(value).toFixed(2)}%`, "BB Width %"]} />
+                            <Line type="monotone" dataKey="bbWidth" name="BB Width %" stroke="#0d9488" dot={false} strokeWidth={1.8} connectNulls isAnimationActive={false} />
                           </LineChart>
                         </ResponsiveContainer>
                       </div>
@@ -3115,12 +3185,12 @@ function App() {
             <table className="composite-ranking-table">
               <thead>
                 <tr>
-                  <th>#</th><th>Stock</th><th>Composite</th><th>Technical</th><th>Fundamental</th><th>Ownership</th><th>Sector</th><th>RS</th><th>EPS</th><th>PAT</th><th>Sales</th><th>Alpha</th><th>Beta</th><th>Coverage</th>
+                  <th>#</th><th>Stock</th><th>Composite</th><th>Technical</th><th>Fundamental</th><th>Ownership</th><th>Sector</th><th>RS</th><th>EPS</th><th>PAT</th><th>Sales</th><th>Alpha</th><th>Beta</th><th>Std Deviation</th><th>Coverage</th>
                 </tr>
               </thead>
               <tbody>
                 {topCompositeLoading && !topComposite.rows.length ? (
-                  <tr><td colSpan="14" className="dashboard-table-empty">Loading the verified ranking…</td></tr>
+                  <tr><td colSpan="15" className="dashboard-table-empty">Loading the verified ranking…</td></tr>
                 ) : sortedTopCompositeRows.length ? sortedTopCompositeRows.map((row, rowIndex) => (
                   <tr key={`${row.exchange}-${row.symbol}`} onClick={() => openUniverseStock(row)} className={row.symbol === symbol && row.exchange === exchange ? "selected" : ""}>
                     <td>{rowIndex + 1}</td>
@@ -3139,10 +3209,11 @@ function App() {
                     <td>{formatScoreValue(row.sales_score)}</td>
                     <td>{formatScoreValue(row.alpha)}</td>
                     <td>{formatScoreValue(row.beta)}</td>
+                    <td>{row.standard_deviation_percent != null ? `${formatScoreValue(row.standard_deviation_percent)}%` : "N/A"}</td>
                     <td>{row.display_coverage_percent != null ? `${Number(row.display_coverage_percent).toFixed(0)}%` : "N/A"}</td>
                   </tr>
                 )) : (
-                  <tr><td colSpan="14" className="dashboard-table-empty">No verified ranking rows are available yet.</td></tr>
+                  <tr><td colSpan="15" className="dashboard-table-empty">No verified ranking rows are available yet.</td></tr>
                 )}
               </tbody>
             </table>
