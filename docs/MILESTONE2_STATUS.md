@@ -7,7 +7,7 @@ This is the cumulative Milestone 2 continuation build. It preserves all accepted
 - Existing Modules 4–8 screener functionality is preserved in one cumulative codebase rather than separate patches.
 - Relative Strength formula audit and correction:
   - raw Stock Return, Benchmark Return and Relative Return do not depend on editable score weights;
-  - stock percentile denominator is market-specific: 6,000 for US and 5,500 for the combined Indian NSE/BSE universe;
+  - stock percentile denominator is fixed at 5,000 stocks, per the client formula;
   - editable weights affect only Final RS Score;
   - default score mix is 1W 30%, 1M 25%, 3M 20%, 6M 15%, 1Y 10%; 2W/2M/Sector default to 0%;
   - the frontend displays the exact active formula for review.
@@ -33,7 +33,7 @@ This is the cumulative Milestone 2 continuation build. It preserves all accepted
 
 ## Latest handwritten ranking update
 
-- Overall client composite updated to Technical 30% + Fundamental 25% + Ownership 15% + Sector 20% + RS 10%.
+- Overall client composite corrected to Fundamental 30% + Technical 25% + RS 25% + Ownership 15% + Sector 5%.
 - Sector-ranking formula captured: EPS 30%, PAT 25%, Sales 20%, Growth Acceleration 15%, Growth Breadth 5%, Acceleration Breadth 5%.
 - Technical Summary now exposes the additional trend/strength/momentum/participation/volatility/base-formation filter inputs from the latest notes.
 - Excel Power Query feed and editable workbook export added.
@@ -42,11 +42,11 @@ This is the cumulative Milestone 2 continuation build. It preserves all accepted
 
 ## Deployment recheck fixes
 
-- Migrates stale browser-saved ranking weights to the current 100% Milestone 2 default: Technical 30%, Fundamental 25%, Ownership 15%, Sector 20%, RS 10%.
+- Migrates stale browser-saved ranking weights to the client 100% default: Fundamental 30%, Technical 25%, RS 25%, Ownership 15%, Sector 5%.
 - Migrates stale RS period weights to the current client default and removes old Sector-RS 20% carry-over.
 - Fixes the Participation panel so delivery data never renders as `[object Object]`; true NSE delivery percentages are formatted as Day/Week/Month, otherwise N/A.
 - Industry/Sector return rows now exclude the selected stock and require at least five real stored peers. If peer history is insufficient, N/A is shown instead of repeating the stock's own return.
-- RS output now exposes the number of actually scored stocks against the client-required market denominator (US 6,000; India 5,500) and labels incomplete-universe results as provisional.
+- RS output now exposes the number of actually scored stocks against the client-required market denominator (5,000 stocks) and labels incomplete-universe results as provisional.
 - SEC EDGAR failures are now visible in the UI instead of being silently hidden; missing `SEC_USER_AGENT` is reported explicitly and no substitute SEC values are invented.
 
 ## Indian fundamental-filter update
@@ -67,8 +67,8 @@ This is the cumulative Milestone 2 continuation build. It preserves all accepted
 
 ## Separate RS universes + automatic listing maintenance
 
-- US RS percentile universe is fixed at 6,000 stocks.
-- Indian RS percentile universe is fixed at 5,500 stocks and combines stored NSE + BSE histories.
+- US RS percentile denominator is fixed at 5,000 stocks.
+- Indian RS percentile denominator is fixed at 5,000 stocks and combines stored NSE + BSE histories.
 - US and Indian stocks are never mixed into one RS percentile universe.
 - Daily company-master synchronization automatically adds/reactivates newly listed symbols and marks missing symbols inactive when the provider snapshot passes safety checks. Historical rows are retained after a delisting.
 - Provider-snapshot safety prevents a partial/upstream-failure response from mass-deactivating the current company universe.
@@ -79,8 +79,8 @@ This is the cumulative Milestone 2 continuation build. It preserves all accepted
 
 Client-confirmed market universes are now separate:
 
-- US percentile denominator / target: **6,000 active US stocks**.
-- India percentile denominator / target: **5,500 active Indian stocks (NSE + BSE)**.
+- US percentile denominator / target: **5,000 stocks**.
+- India percentile denominator / target: **5,000 stocks (NSE + BSE)**.
 
 The backend now includes an incremental real-data OHLCV backfill service. It runs in small resumable batches so Railway/provider restarts or rate limits do not require restarting the whole process. Symbols that already have sufficient recent history are skipped. Empty/error responses remain pending and are retried later; no synthetic market bars are generated.
 
@@ -111,7 +111,7 @@ Operational endpoints:
 
 The RS calculation itself now uses only **active** company rows from the selected market universe. The displayed `scored_stocks_available` count requires usable values for all default RS periods (1W, 1M, 3M, 6M and 1Y), rather than counting a stock that only has a short fragment of history.
 
-Current provider note: the history backfill uses real Yahoo Finance/yfinance OHLCV for US/NSE/BSE symbols already present in the active company master. NSE and US symbol masters are automatically synchronized. BSE symbol-master completeness still depends on the future BSE/Kotak symbol-master integration; the system does not invent BSE listings to force the India count to 5,500.
+Current provider note: the history backfill uses real Yahoo Finance/yfinance OHLCV for US/NSE/BSE symbols already present in the active company master. NSE and US symbol masters are automatically synchronized. BSE symbol-master completeness still depends on the future BSE/Kotak symbol-master integration; the system does not invent BSE listings to force the India count to 5,000.
 
 
 ## Symbol search / live-video correction

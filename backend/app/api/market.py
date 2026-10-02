@@ -134,21 +134,42 @@ def _market_rows_with_live_fallback(db: Session, symbol: str, exchange: str, min
             stored = (
                 db.query(OHLCV)
                 .filter(OHLCV.symbol == symbol.upper(), OHLCV.exchange == exchange.upper())
-                .order_by(OHLCV.date.asc())
+                # Bounded free-tier reads must keep the newest rows, not the
+                # oldest rows. The previous ASC + LIMIT could make a current
+                # database appear to stop years ago.
+                .order_by(OHLCV.date.desc())
                 .limit(max(500, min_rows + 20))
                 .all()
             )
-            stored = _valid_trading_rows(stored, exchange)
+            stored = sorted(_valid_trading_rows(stored, exchange), key=lambda row: row.date)
         except Exception:
             try:
                 db.rollback()
             except Exception:
                 pass
             stored = []
-    if len(stored) >= min_rows:
+    # Do not treat a sufficiently long but stale database cache as current market data.
+    # The client reported charts stopping in Sep-2023 while newer provider data exists.
+    # Keep fresh stored rows when they are recent; otherwise fetch live rows and merge
+    # them by date (live provider rows win on overlap). This preserves free-tier DB
+    # savings without allowing a stale cache to freeze the chart/indicators.
+    latest_stored_date = stored[-1].date if stored else None
+    freshness_cutoff = date.today() - timedelta(days=7)
+    stored_is_recent = bool(latest_stored_date and latest_stored_date >= freshness_cutoff)
+    if len(stored) >= min_rows and stored_is_recent:
         return stored
+
     live = _live_provider_rows(symbol, exchange, years=years)
-    return live if len(live) >= min_rows else (stored or live)
+    if live:
+        merged = {row.date: row for row in stored}
+        for row in live:
+            merged[row.date] = row
+        merged_rows = [merged[key] for key in sorted(merged)]
+        if len(merged_rows) >= min_rows:
+            return merged_rows
+        if len(live) >= min_rows:
+            return live
+    return stored or live
 
 
 def _live_close_history_for_candidates(rows):
@@ -1676,11 +1697,11 @@ def _rsi(values, period=14):
 
 
 CLIENT_COMPOSITE_WEIGHTS = {
-    "technical": 30.0,
-    "fundamental": 25.0,
+    "technical": 25.0,
+    "fundamental": 30.0,
     "ownership": 15.0,
-    "sector": 20.0,
-    "relative_strength": 10.0,
+    "sector": 5.0,
+    "relative_strength": 25.0,
 }
 
 CLIENT_SECTOR_WEIGHTS = {
@@ -2124,8 +2145,8 @@ def _weighted_relative_return_from_points(stock_points, benchmark_points, weight
     return weighted_sum / available_weight, metrics
 
 RS_PERCENTILE_TARGETS = {
-    "US": 6000,
-    "INDIA": 5500,
+    "US": 5000,
+    "INDIA": 5000,
 }
 
 
@@ -2143,8 +2164,8 @@ def _rs_percentile_total(exchange: str) -> int:
 def _percentile_rank(values, target_value, total_count=None):
     """Client percentile: (lower + 0.5 * equal) * 100 / total.
 
-    Stock RS uses the client-defined fixed market denominator: 6,000 for the
-    US universe and 5,500 for the combined Indian (NSE/BSE) universe. Other
+    Stock RS uses the client-defined fixed 5,000-stock denominator for both
+    US and Indian (NSE/BSE) market scoring. Other
     percentile uses (for example sector-to-sector comparisons) can leave
     ``total_count`` unset and use the actual sample size.
     """
@@ -2804,11 +2825,11 @@ def get_history(
 def get_dashboard_summary(
     symbol: str,
     exchange: str = "US",
-    technical_weight: float = 30,
-    fundamental_weight: float = 25,
-    relative_strength_weight: float = 10,
+    technical_weight: float = 25,
+    fundamental_weight: float = 30,
+    relative_strength_weight: float = 25,
     ownership_weight: float = 15,
-    sector_weight: float = 20,
+    sector_weight: float = 5,
     technical_ema20_weight: float = 20,
     technical_ema50_weight: float = 20,
     technical_ema150_weight: float = 20,
@@ -2976,7 +2997,7 @@ def get_dashboard_summary(
         "industry_rank": industry_rank,
         "sector_score_peer_count": sector_peer_count,
         "sector_score_status": "Real compact peer-history ranking" if components.get("sector") is not None else "Insufficient real peer history",
-        "method_note": "Milestone-2 composite follows the client note: Technical 30% + Fundamental 25% + Ownership 15% + Sector 20% + RS 10%. The selected-stock Sector component reuses real compact Top-200 EPS/PAT/Sales peer history and requires at least 5 real peers; it is never substituted with price RS. For NSE/BSE, a score is withheld when a positively weighted fundamental or ownership category is unavailable, rather than producing a misleading partial ranking."
+        "method_note": "Milestone-2 composite follows the client note: Fundamental 30% + Technical 25% + RS 25% + Ownership 15% + Sector 5%. The selected-stock Sector component reuses real compact Top-200 EPS/PAT/Sales peer history and requires at least 5 real peers; it is never substituted with price RS. For NSE/BSE, a score is withheld when a positively weighted fundamental or ownership category is unavailable, rather than producing a misleading partial ranking."
     })
 
 
@@ -3030,7 +3051,7 @@ def get_client_ranking_spec():
     """Machine-readable Milestone-2 formulas transcribed from the client's notes."""
     return {
         "overall_composite": {
-            "formula": "Technical*0.30 + Fundamental*0.25 + Ownership*0.15 + Sector*0.20 + RS*0.10",
+            "formula": "Fundamental*0.30 + Technical*0.25 + RS*0.25 + Ownership*0.15 + Sector*0.05",
             "weights_percent": CLIENT_COMPOSITE_WEIGHTS,
         },
         "sector_ranking": {
@@ -3265,7 +3286,7 @@ def export_excel_snapshot(symbol: str, exchange: str = "US", limit: int = Query(
     cfg["A8"] = "Composite Score"
     cfg["B8"] = "=IF(COUNT(B2:B6)=0,\"\",SUM(D2:D6)/SUMPRODUCT(--ISNUMBER(B2:B6),C2:C6)*100)"
     cfg["A10"] = "Client formula"
-    cfg["B10"] = "Technical*0.30 + Fundamental*0.25 + Ownership*0.15 + Sector*0.20 + RS*0.10"
+    cfg["B10"] = "Fundamental*0.30 + Technical*0.25 + RS*0.25 + Ownership*0.15 + Sector*0.05"
 
     tech_filters = wb.create_sheet("Technical_Filter_Config")
     tech_filters.append(["Filter Name", "Compare", "Value / Target", "Weight", "Enabled", "Filter Score (0-100)", "Weighted Points"])
@@ -4704,11 +4725,11 @@ def get_top_composite_dashboard(
     market: str = "ALL",
     limit: int = Query(200, ge=20, le=200),
     candidate_limit: int = Query(700, ge=200, le=1200),
-    technical_weight: float = Query(30.0, ge=0),
-    fundamental_weight: float = Query(25.0, ge=0),
+    technical_weight: float = Query(25.0, ge=0),
+    fundamental_weight: float = Query(30.0, ge=0),
     ownership_weight: float = Query(15.0, ge=0),
-    sector_weight: float = Query(20.0, ge=0),
-    relative_strength_weight: float = Query(10.0, ge=0),
+    sector_weight: float = Query(5.0, ge=0),
+    relative_strength_weight: float = Query(25.0, ge=0),
     db: Session = Depends(get_db),
 ):
     """Front-dashboard ranking using verified stored data only.
@@ -5084,7 +5105,7 @@ def get_top_composite_dashboard(
             )
 
         # The bounded live peer set materially improves real data coverage, but
-        # it is still not the client's complete 6,000/5,500-stock historical
+        # it is still not the client's complete 5,000-stock historical
         # ranking universe.  Therefore free-tier rows remain explicitly
         # Provisional even when every displayed component is populated.
         all_required_available = all(
@@ -5150,7 +5171,7 @@ def get_top_composite_dashboard(
         "formula": formula_text,
         "score_weights": {key: round(value, 2) for key, value in weights.items()},
         "entered_weight_total": round(entered_weight_total, 2),
-        "rs_note": "RS percentiles on this dashboard use the bounded live candidate peer set and remain provisional until the full client 6,000/5,500-stock market universe is populated.",
+        "rs_note": "RS percentiles on this dashboard use the bounded live candidate peer set and remain provisional until the full client 5,000-stock market universe is populated.",
         "data_rule": "The free-tier dashboard uses a compact persisted real-provider enrichment cache for statement history, sector metadata and EPS/PAT/Sales handwritten-rule scores, while price history remains live and is never stored as a huge universe cache. Missing provider values remain N/A. Fundamental excludes ambiguous NPM/CFO point allocations, and sector/RS peer ranks remain Provisional until the full client universe is available.",
         "enrichment_cached_count": len(enrichment) if _free_tier_mode() else len(base_rows),
         "enrichment_target_count": min(200, len(enrichment_rows)),

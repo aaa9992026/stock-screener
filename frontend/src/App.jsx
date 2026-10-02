@@ -89,10 +89,10 @@ const formatMarketMoney = (value, exchange) => {
   }).format(Number(value));
 };
 
-const defaultScoreWeights = { technical: 30, fundamental: 25, ownership: 15, sector: 20, relative_strength: 10 };
+const defaultScoreWeights = { technical: 25, fundamental: 30, ownership: 15, sector: 5, relative_strength: 25 };
 const defaultRsWeights = { "1w": 30, "2w": 0, "1m": 25, "2m": 0, "3m": 20, "6m": 15, "1y": 10, "sector": 0 };
-const SCORE_WEIGHTS_STORAGE_VERSION = "m2-client-dashboard-composite-v2";
-const RS_WEIGHTS_STORAGE_VERSION = "m2-rs-market-universe-v2";
+const SCORE_WEIGHTS_STORAGE_VERSION = "m2-client-dashboard-composite-v3-correct-formula";
+const RS_WEIGHTS_STORAGE_VERSION = "m2-rs-client-5000-v3";
 
 
 const universeColumnOptions = [
@@ -2605,7 +2605,7 @@ function App() {
             <div>
               <span>Entered total</span>
               <strong>{Object.values(scoreWeights).reduce((sum, value) => sum + Math.max(0, Number(value) || 0), 0)}%</strong>
-              <small>Weights are normalized to 100%. The ranking recalculates immediately; Apply Weights also refreshes backend data.</small>
+              <small>All five fields are editable. Weights are normalized to 100%; Apply Weights saves them and refreshes backend data.</small>
             </div>
             <div className="composite-weight-buttons">
               <button type="button" onClick={() => {
@@ -3154,7 +3154,7 @@ function App() {
               <div className="ranking-settings-header">
                 <div>
                   <h2>Milestone 2 Ranking Weight Settings ({exchange})</h2>
-                  <p>Client composite: Technical 30% + Fundamental 25% + Ownership 15% + Sector 20% + RS 10%. Editable weights remain normalized automatically.</p>
+                  <p>Client composite: Fundamental 30% + Technical 25% + RS 25% + Ownership 15% + Sector 5%. All five weights are editable and normalized automatically.</p>
                 </div>
                 <div className="ranking-total-badge">
                   <span>Entered total</span>
@@ -3198,7 +3198,7 @@ function App() {
                 <div className="compact-ranking-result-header">
                   <div>
                     <h3>Composite Ranking</h3>
-                    <p>Arranged from the client note: component score × editable weight.</p>
+                    <p>Client formula: Fundamental 30% + Technical 25% + RS 25% + Ownership 15% + Sector 5%. Click any weight field above to edit it.</p>
                   </div>
                   <div className="composite-score-box">
                     <span>Final score</span>
@@ -3287,7 +3287,7 @@ function App() {
               )}
 
               <div className="ranking-help-note">
-                <strong>How weighting works:</strong> the Milestone 2 default follows the latest handwritten composite formula: Technical 30%, Fundamental 25%, Ownership 15%, Sector 20%, RS 10%. Missing provider values remain N/A and are never invented. Ambiguous handwritten point allocations remain editable until confirmed.
+                <strong>How weighting works:</strong> the client composite is Fundamental 30%, Technical 25%, RS 25%, Ownership 15%, Sector 5%. All five component weights are editable. Missing provider values remain N/A and are never invented. Ambiguous handwritten point allocations remain editable until confirmed.
               </div>
 
               {showRankingDetails && (
@@ -3327,7 +3327,7 @@ function App() {
               </div>
             </div>
             <div className="chart-note">
-              Composite = Technical × 30% + Fundamental × 25% + Ownership × 15% + Sector × 20% + RS × 10%
+              Composite = Fundamental × 30% + Technical × 25% + RS × 25% + Ownership × 15% + Sector × 5%
             </div>
             <div className="chart-note" style={{ marginTop: 8 }}>
               Sector = EPS RS × 30% + PAT RS × 25% + Sales RS × 20% + Growth Acceleration RS × 15% + Growth Breadth × 5% + Acceleration Breadth × 5%
@@ -3545,7 +3545,7 @@ function App() {
               <strong>{technicalSummary?.rs_available ? Number(technicalSummary.rs_rating).toFixed(2) : "N/A"}</strong>
               <small>
                 {technicalSummary?.rs_universe
-                  ? `${Number(technicalSummary.rs_universe.scored_stocks_available || 0).toLocaleString()}/${Number(technicalSummary.rs_universe.target_size || (exchange === "US" ? 6000 : 5500)).toLocaleString()} scored stocks available`
+                  ? `${Number(technicalSummary.rs_universe.scored_stocks_available || 0).toLocaleString()}/${Number(technicalSummary.rs_universe.target_size || 5000).toLocaleString()} scored stocks available`
                   : "Percentile-weighted score from the enabled RS periods"}
               </small>
             </div>
@@ -3615,7 +3615,7 @@ function App() {
                     <tr><td><strong>Relative Return</strong></td><td>{technicalSummary.rs_formula.relative_return}</td></tr>
                     <tr><td><strong>Editable weights affect Relative Return?</strong></td><td>{technicalSummary.rs_formula.relative_return_uses_editable_weights ? "Yes" : "No"}</td></tr>
                     <tr><td><strong>Stock Percentile</strong></td><td>{technicalSummary.rs_formula.stock_percentile}</td></tr>
-                    <tr><td><strong>Percentile Denominator</strong></td><td>{Number(technicalSummary.rs_formula.stock_percentile_denominator || (exchange === "US" ? 6000 : 5500)).toLocaleString()} stocks</td></tr>
+                    <tr><td><strong>Percentile Denominator</strong></td><td>{Number(technicalSummary.rs_formula.stock_percentile_denominator || 5000).toLocaleString()} stocks</td></tr>
                     <tr><td><strong>Final RS Score</strong></td><td>{technicalSummary.rs_formula.final_rs_score}</td></tr>
                   </tbody>
                 </table>
@@ -3623,15 +3623,15 @@ function App() {
               <div className="chart-note">Changing RS weightage changes only the Final RS Score contribution. Raw stock return, benchmark return and Relative Return remain unchanged.</div>
               {technicalSummary?.rs_universe && !technicalSummary.rs_universe.complete && (
                 <div className="provider-warning" style={{ marginTop: 10 }}>
-                  RS universe coverage: {Number(technicalSummary.rs_universe.scored_stocks_available || 0).toLocaleString()} / {Number(technicalSummary.rs_universe.target_size || (exchange === "US" ? 6000 : 5500)).toLocaleString()} scored stocks.
-                  The client-required percentile denominator remains fixed at {exchange === "US" ? "6,000 for US" : "5,500 for the Indian NSE/BSE universe"}, so the displayed RS score is provisional until the stored comparison universe is populated.
+                  RS universe coverage: {Number(technicalSummary.rs_universe.scored_stocks_available || 0).toLocaleString()} / {Number(technicalSummary.rs_universe.target_size || 5000).toLocaleString()} scored stocks.
+                  The client-required percentile denominator remains fixed at {"5,000 stocks"}, so the displayed RS score is provisional until the stored comparison universe is populated.
                 </div>
               )}
             </div>
           )}
 
           <div className="chart-note">
-            RS line = stock price / broad-market benchmark, rebased to 100 for charting only. Relative Return = Stock Return % - Benchmark Return % and is independent of the editable RS weights. The weights change only the Final RS Score. Each stock percentile uses the client-required market universe: {exchange === "US" ? "6,000 US stocks" : "5,500 Indian stocks (NSE + BSE)"}. Formula: [(stocks with lower relative return) + 0.5 × (stocks with equal relative return)] × 100 / {exchange === "US" ? "6000" : "5500"}. Final RS Score uses the enabled weighted percentile components. Default period weights remain 1W×0.30 + 1M×0.25 + 3M×0.20 + 6M×0.15 + 12M×0.10. 2W, 2M, and Sector RS are optional with default weight 0.
+            RS line = stock price / broad-market benchmark, rebased to 100 for charting only. Relative Return = Stock Return % - Benchmark Return % and is independent of the editable RS weights. The weights change only the Final RS Score. Each stock percentile uses the client-required market universe: {"5,000 stocks"}. Formula: [(stocks with lower relative return) + 0.5 × (stocks with equal relative return)] × 100 / {"5000"}. Final RS Score uses the enabled weighted percentile components. Default period weights remain 1W×0.30 + 1M×0.25 + 3M×0.20 + 6M×0.15 + 12M×0.10. 2W, 2M, and Sector RS are optional with default weight 0.
           </div>
           {technicalSummary?.rs_available && relativeStrengthChartData.length > 1 ? (
             <ResponsiveContainer width="100%" height={230}>

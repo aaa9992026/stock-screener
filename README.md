@@ -109,3 +109,11 @@ The Fundamental Filters tab now implements the client's exact 11-rule EPS compos
 ## 2026-10-02: interactive Master Excel workflow
 
 The website's **Master Excel + Python** download now contains one reusable workbook. Change the Exchange/Symbol in `Control`, run `START_MASTER_EXCEL.bat`, and the same workbook refreshes 5-year history, indicators, signals/backtests, fundamentals/ownership, and dashboard charts. The Top-200 web dashboard also includes ascending/descending sorting.
+
+## 2026-10-02 latest client feedback patch
+
+- Restored the client's fixed **5,000-stock** RS percentile denominator.
+- RS scoring remains: period Relative Return = Stock Return - Benchmark Return; period percentile = `(lower + 0.5*equal)*100/5000`; Final RS = 1W 30% + 1M 25% + 3M 20% + 6M 15% + 1Y 10%. 2W/2M/Sector are optional with 0% defaults.
+- Restored client composite defaults to **Fundamental 30% + Technical 25% + RS 25% + Ownership 15% + Sector 5%** and bumped browser storage versions so stale saved weights cannot override them.
+- A stale stored OHLCV cache can no longer freeze the chart at an old date. Stored history older than seven days is refreshed/merged with live provider rows, allowing 2024/2025/2026 data to appear when supplied by the provider.
+- Both composite and RS weight controls remain editable in the frontend.

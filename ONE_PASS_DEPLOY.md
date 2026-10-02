@@ -70,3 +70,6 @@ The selected-stock dashboard now persists/reuses real sector metadata from the c
 - Price chart remains visible together with the full indicator set: RSI, MACD, ROC, ADX/+DI/-DI, ATR and Volume Ratio; EMA/SMA/Bollinger remain price overlays.
 - Master Excel backtesting now requests up to 20 years of real Yahoo provider history directly from Python, so the long history is not stored in the 500 MB Railway PostgreSQL volume.
 - Control workbook target updated to 20 years / 5,500 rows. Younger listings correctly show partial history rather than fabricated rows.
+
+## Latest client feedback patch (2026-10-02)
+After deployment, hard-refresh the Vercel site once. This build bumps the saved-weight versions and restores the client's exact defaults/formula. It also detects stale OHLCV caches and merges current live provider rows so charts are not allowed to stop at an old stored date merely because the cache has enough rows.

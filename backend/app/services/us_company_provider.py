@@ -26,7 +26,7 @@ def is_supported_us_equity(symbol: str, name: str, row: dict | None = None) -> b
 
     Nasdaq Trader files include ETFs, warrants, units, rights and SPAC-related
     securities alongside regular operating-company shares.  Those instruments
-    must not consume the client's 6,000-stock RS universe or appear in the
+    must not consume the client's 5,000-stock RS universe or appear in the
     default stock screener.  ADR/ADS/common/ordinary shares remain allowed.
     """
     symbol = str(symbol or "").strip().upper()

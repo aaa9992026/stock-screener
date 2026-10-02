@@ -198,13 +198,13 @@ def universe_status(db: Session = Depends(get_db)):
     us_active = int((counts.get("US") or {}).get("active", 0))
     return {
         "US": {
-            "target_rs_universe": 6000,
+            "target_rs_universe": 5000,
             "active_symbols": us_active,
             "exchanges": ["US"],
             "symbol_master": "Nasdaq Trader listed-security files",
         },
         "INDIA": {
-            "target_rs_universe": 5500,
+            "target_rs_universe": 5000,
             "active_symbols": india_active,
             "exchanges": ["NSE", "BSE"],
             "symbol_master": "NSE official equity list; BSE remains limited until a BSE symbol-master feed is configured",

@@ -1,8 +1,8 @@
 """Incremental RS-universe OHLCV backfill.
 
 The client defined two separate Relative Strength universes:
-- US: 6,000 stocks
-- INDIA: 5,500 stocks (NSE + BSE)
+- US: 5,000 stocks
+- INDIA: 5,000 stocks (NSE + BSE)
 
 This service intentionally backfills only real provider OHLCV data. It never
 creates synthetic bars to make the universe count reach the requested target.
@@ -31,7 +31,7 @@ from app.services.us_company_provider import is_supported_us_equity
 
 logger = logging.getLogger(__name__)
 
-RS_UNIVERSE_TARGETS = {"US": 6000, "INDIA": 5500}
+RS_UNIVERSE_TARGETS = {"US": 5000, "INDIA": 5000}
 RS_MARKET_EXCHANGES = {"US": ("US",), "INDIA": ("NSE", "BSE")}
 
 # 1Y RS needs roughly one year of history. We request a larger window so
