@@ -524,6 +524,8 @@ function App() {
   const [topComposite, setTopComposite] = useState({ rows: [], candidate_count: 0, formula: "", data_rule: "", rs_note: "" });
   const [topCompositeLoading, setTopCompositeLoading] = useState(false);
   const [topCompositeError, setTopCompositeError] = useState("");
+  const [topCompositeSortBy, setTopCompositeSortBy] = useState("composite");
+  const [topCompositeSortDir, setTopCompositeSortDir] = useState("desc");
   const [chartOverlays, setChartOverlays] = useState({
     ema: true, sma: true, bollinger: true, volume: true, eps: true, rs: true
   });
@@ -665,6 +667,28 @@ function App() {
       setTopCompositeLoading(false);
     }
   };
+
+  const sortedTopCompositeRows = [...(topComposite.rows || [])].sort((a, b) => {
+    const valueFor = (row) => {
+      if (topCompositeSortBy === "symbol") return String(row.symbol || "");
+      if (topCompositeSortBy === "composite") return row.final_composite_score ?? row.provisional_composite_score ?? row.composite_score;
+      const map = {
+        technical: "technical_score", fundamental: "fundamental_score", ownership: "ownership_score",
+        sector: "sector_score", rs: "rs_score", eps: "eps_score", pat: "pat_score", sales: "sales_score",
+        alpha: "alpha", beta: "beta", coverage: "score_coverage_percent",
+      };
+      return row[map[topCompositeSortBy]];
+    };
+    const av = valueFor(a);
+    const bv = valueFor(b);
+    const aMissing = av === null || av === undefined || av === "" || (topCompositeSortBy !== "symbol" && !Number.isFinite(Number(av)));
+    const bMissing = bv === null || bv === undefined || bv === "" || (topCompositeSortBy !== "symbol" && !Number.isFinite(Number(bv)));
+    if (aMissing && bMissing) return 0;
+    if (aMissing) return 1;
+    if (bMissing) return -1;
+    let cmp = topCompositeSortBy === "symbol" ? String(av).localeCompare(String(bv)) : Number(av) - Number(bv);
+    return topCompositeSortDir === "asc" ? cmp : -cmp;
+  });
 
   const resetUniverseFilters = () => {
     const next = { ...emptyUniverseFilters };
@@ -2218,6 +2242,15 @@ function App() {
                 <option value="NSE">NSE Only</option>
                 <option value="BSE">BSE Only</option>
               </select>
+              <select aria-label="Top 200 sort field" value={topCompositeSortBy} onChange={(e) => setTopCompositeSortBy(e.target.value)}>
+                <option value="composite">Composite</option><option value="technical">Technical</option><option value="fundamental">Fundamental</option>
+                <option value="ownership">Ownership</option><option value="sector">Sector</option><option value="rs">RS</option>
+                <option value="eps">EPS</option><option value="pat">PAT</option><option value="sales">Sales</option>
+                <option value="alpha">Alpha</option><option value="beta">Beta</option><option value="coverage">Coverage</option><option value="symbol">Symbol</option>
+              </select>
+              <select aria-label="Top 200 sort direction" value={topCompositeSortDir} onChange={(e) => setTopCompositeSortDir(e.target.value)}>
+                <option value="desc">Descending</option><option value="asc">Ascending</option>
+              </select>
               <button type="button" onClick={() => loadTopComposite()} disabled={topCompositeLoading}>
                 {topCompositeLoading ? "Refreshing…" : "Refresh Top 200"}
               </button>
@@ -2333,9 +2366,9 @@ function App() {
               <tbody>
                 {topCompositeLoading && !topComposite.rows.length ? (
                   <tr><td colSpan="14" className="dashboard-table-empty">Loading the verified ranking…</td></tr>
-                ) : topComposite.rows.length ? topComposite.rows.map((row) => (
+                ) : sortedTopCompositeRows.length ? sortedTopCompositeRows.map((row, rowIndex) => (
                   <tr key={`${row.exchange}-${row.symbol}`} onClick={() => openUniverseStock(row)} className={row.symbol === symbol && row.exchange === exchange ? "selected" : ""}>
-                    <td>{row.rank}</td>
+                    <td>{rowIndex + 1}</td>
                     <td><strong>{row.symbol}</strong><small>{row.name || row.symbol}</small></td>
                     <td>
                       <b>{row.final_composite_score ?? row.provisional_composite_score ?? row.composite_score ?? "N/A"}</b>
