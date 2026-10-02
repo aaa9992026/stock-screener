@@ -150,3 +150,8 @@ The client framework now includes ATR%, ADR%, ADR Ratio, BB Width%, and a Top-20
 - EMA 10/20/34/50/100/150/200 now each show a larger matching-color line swatch.
 - Each EMA name is printed in the exact same color as its chart line.
 - Every EMA has its own bordered badge and the legend is placed directly above the chart for fast identification.
+
+
+## Latest client UI fix — standalone Fundamental Filters
+
+The Fundamental Filters framework is now displayed as its own always-visible section before the Stock Universe Screener. It includes per-rule RS score, editable compare/value/weight/use controls, the Fundamental Score strip, and the qualifying-stock list directly below.

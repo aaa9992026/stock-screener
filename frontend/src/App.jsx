@@ -3259,6 +3259,62 @@ function App() {
         </section>
 
 
+        <section className="standalone-fundamental-filters" id="fundamental-filters">
+          <div className="standalone-fundamental-header">
+            <div>
+              <span className="section-eyebrow">Client Fundamental Framework</span>
+              <h2>Fundamental Filters</h2>
+              <p>Standalone fundamental scoring section — separate from the Stock Universe Screener. Compare sign, target value, weight and enable/disable are editable for every rule.</p>
+            </div>
+            <div className="standalone-fundamental-score">
+              <span>Fundamental Score</span>
+              <strong>{filterScoreText(factorEvaluationRows.groupScores?.fundamental)}</strong>
+            </div>
+          </div>
+
+          {renderFilterTable("fundamental", "Fundamental Filters", "EPS / PAT / Sales / NPM / CFO / ROE / ROCE client rules with per-filter RS score. Missing provider history remains N/A.")}
+
+          <div className="standalone-fundamental-actions">
+            <button type="button" className="ranking-primary-button" onClick={() => {
+              localStorage.setItem("handwrittenFactors", JSON.stringify(handwrittenFactors));
+              loadDashboard();
+              loadTopComposite(undefined, scoreWeights);
+            }}>Apply Fundamental Rules</button>
+            <span>These settings feed the same Fundamental Score used by the ranking framework.</span>
+          </div>
+
+          <div className="fundamental-qualified-panel standalone-qualified-panel">
+            <div className="fundamental-qualified-head">
+              <div>
+                <strong>Stocks Qualifying the Fundamental Criteria</strong>
+                <span>Shown directly below the Fundamental Score. A stock appears only when the current loaded data satisfies the enabled fundamental rules with complete rule coverage.</span>
+              </div>
+              <span className="qualification-count">{fundamentalQualifiedRows.length} qualified</span>
+            </div>
+            <div className="compact-table-scroll">
+              <table className="filter-config-table fundamental-qualified-table">
+                <thead><tr><th>#</th><th>Stock</th><th>Fundamental Score</th><th>EPS RS</th><th>PAT RS</th><th>Sales RS</th><th>Coverage</th></tr></thead>
+                <tbody>
+                  {fundamentalQualifiedRows.length ? fundamentalQualifiedRows.map((row, index) => (
+                    <tr key={`standalone-${row.exchange}:${row.symbol}`} onClick={() => openUniverseStock(row)} className="qualified-stock-row">
+                      <td>{index + 1}</td>
+                      <td className="filter-name-cell"><strong>{row.symbol}</strong><small>{row.name || row.exchange}</small></td>
+                      <td><span className="filter-score-badge is-pass">{filterScoreText(row.fundamental_score)}</span></td>
+                      <td>{filterScoreText(row.eps_score)}</td>
+                      <td>{filterScoreText(row.pat_score)}</td>
+                      <td>{filterScoreText(row.sales_score)}</td>
+                      <td>{Number.isFinite(Number(row.fundamental_rule_coverage_percent)) ? `${Number(row.fundamental_rule_coverage_percent).toFixed(0)}%` : "N/A"}</td>
+                    </tr>
+                  )) : (
+                    <tr><td colSpan="7" className="qualified-empty">No fully qualified stocks in the currently loaded data yet. The framework is visible and ready; the list populates automatically when complete provider history is available.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+
         <section className="universe-screener-card">
           <div className="universe-screener-header">
             <div>

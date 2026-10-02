@@ -3400,3 +3400,100 @@ button:disabled {
     flex-direction: column;
   }
 }
+
+/* 2026-10-02 client fix: keep Fundamental Filters visible as a standalone section,
+   not hidden inside the Stock Universe Screener tabs. */
+.standalone-fundamental-filters {
+  margin: 22px 0;
+  padding: 20px;
+  border: 2px solid rgba(37, 99, 235, 0.24);
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+}
+
+.standalone-fundamental-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 18px;
+  margin-bottom: 16px;
+}
+
+.standalone-fundamental-header h2 {
+  margin: 4px 0 6px;
+  font-size: 1.35rem;
+}
+
+.standalone-fundamental-header p {
+  margin: 0;
+  color: #64748b;
+  max-width: 820px;
+}
+
+.section-eyebrow {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #2563eb;
+}
+
+.standalone-fundamental-score {
+  min-width: 150px;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  text-align: right;
+}
+
+.standalone-fundamental-score span {
+  display: block;
+  font-size: 0.74rem;
+  color: #64748b;
+  font-weight: 700;
+}
+
+.standalone-fundamental-score strong {
+  display: block;
+  margin-top: 3px;
+  color: #1d4ed8;
+  font-size: 1.5rem;
+}
+
+.standalone-fundamental-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin: 14px 0 18px;
+}
+
+.standalone-fundamental-actions span {
+  color: #64748b;
+  font-size: 0.84rem;
+}
+
+.standalone-qualified-panel {
+  margin-top: 12px;
+}
+
+.qualified-stock-row {
+  cursor: pointer;
+}
+
+.qualified-stock-row:hover {
+  background: #f8fafc;
+}
+
+@media (max-width: 780px) {
+  .standalone-fundamental-header {
+    flex-direction: column;
+  }
+  .standalone-fundamental-score {
+    width: 100%;
+    text-align: left;
+  }
+}
