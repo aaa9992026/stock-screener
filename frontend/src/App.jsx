@@ -256,8 +256,13 @@ const defaultHandwrittenFactors = {
     npm_industry_compare: { weight: 20, comparator: "industry" },
     npm_q_yoy_delta: { weight: 0, threshold: 20, comparator: ">", enabled: true },
 
-    a_ocf_yoy: { weight: 0, threshold: 0, comparator: ">", enabled: false },
-    cashflow_per_share: { weight: 0, threshold: 0, comparator: ">", enabled: false },
+    cfo_q_yoy_growth: { weight: 20, threshold: 20, comparator: ">", enabled: true },
+    cfo_q_qoq_growth: { weight: 20, threshold: 20, comparator: ">", enabled: true },
+    cfo_a_yoy_growth: { weight: 20, threshold: 20, comparator: ">", enabled: true },
+    cfo_expansion_3y: { weight: 0, threshold: 0, comparator: ">", enabled: true },
+    cfo_industry_compare: { weight: 20, comparator: "industry", enabled: true },
+    cfo_q_yoy_delta: { weight: 0, threshold: 20, comparator: ">", enabled: true },
+    cashflow_per_share: { weight: 0, threshold: 0, comparator: ">", enabled: true },
     roe_above: { weight: 0, threshold: 20, comparator: ">", enabled: true },
     roce_above: { weight: 0, threshold: 30, comparator: ">", enabled: true },
     shares_outstanding: { weight: 0, threshold: 0, comparator: "<", enabled: false },
@@ -332,8 +337,13 @@ const handwrittenFactorMeta = {
     ["npm_industry_compare", "NPM 5 — Industry comparison", "Current NPM versus industry median NPM: above median = 20 points; below median = 10 points", [], "NPM"],
     ["npm_q_yoy_delta", "NPM 6 — Latest quarter YoY minus prior-quarter YoY", "Latest Q NPM YoY - prior Q NPM YoY > 20%; point weight is editable because it is not legible in the supplied photo", ["threshold"], "NPM"],
 
-    ["a_ocf_yoy", "CFO — Operating cash flow growth (YoY)", "Raw provider value only; disabled until the exact CFO threshold / points are confirmed from the client note", ["threshold"], "CFO"],
-    ["cashflow_per_share", "CFO — Cash flow per share", "Editable threshold; disabled until an exact point rule is confirmed", ["threshold"], "CFO"],
+    ["cfo_q_yoy_growth", "CFO 1 — Latest quarter CFO growth (YoY)", "Latest Q operating cash flow growth YoY > 20%", ["threshold"], "CFO"],
+    ["cfo_q_qoq_growth", "CFO 2 — Latest quarter CFO growth (QoQ)", "Latest Q operating cash flow growth QoQ > 20%", ["threshold"], "CFO"],
+    ["cfo_a_yoy_growth", "CFO 3 — Latest annual CFO growth (YoY)", "Latest annual operating cash flow growth YoY > 20%", ["threshold"], "CFO"],
+    ["cfo_expansion_3y", "CFO 4 — CFO expansion vs 3-year average", "(Current CFO - 3-year average CFO) / |3-year average CFO| × 100; compare sign, target and weight are editable", ["threshold"], "CFO"],
+    ["cfo_industry_compare", "CFO 5 — Industry comparison", "Current CFO / CFO growth versus the available industry median; remains N/A when the provider has no industry median", [], "CFO"],
+    ["cfo_q_yoy_delta", "CFO 6 — Latest quarter YoY minus prior-quarter YoY", "Latest Q CFO YoY - prior Q CFO YoY > 20%; target and weight are editable", ["threshold"], "CFO"],
+    ["cashflow_per_share", "CFO 7 — Cash flow per share", "Operating cash flow per share with editable compare sign, target, weight and enable/disable", ["threshold"], "CFO"],
     ["roe_above", "ROE", "Confirmed rule: ROE > 20; weight remains editable", ["threshold"], "Other"],
     ["roce_above", "ROCE", "Confirmed rule: ROCE > 30; weight remains editable", ["threshold"], "Other"],
     ["shares_outstanding", "Outstanding shares", "Editable threshold; disabled until an exact point rule is confirmed", ["threshold"], "Other"],
@@ -477,19 +487,49 @@ const buildClientFundamentalRows = ({ fundamentalHistory, fundamentals, dashboar
     qNpmYoy1 == null ? "Prior Q NPM YoY unavailable" : `Prior Q NPM YoY ${qNpmYoy1.toFixed(2)}%`
   );
 
-  let annualOcfGrowth = null;
-  if (a.length >= 2) annualOcfGrowth = growth(a[0]?.operating_cash_flow, a[1]?.operating_cash_flow);
+  const qCfoYoy0 = q.length >= 5 ? growth(q[0]?.operating_cash_flow, q[4]?.operating_cash_flow) : null;
+  const qCfoYoy1 = q.length >= 6 ? growth(q[1]?.operating_cash_flow, q[5]?.operating_cash_flow) : null;
+  const qCfoQoq = q.length >= 2 ? growth(q[0]?.operating_cash_flow, q[1]?.operating_cash_flow) : null;
+  const annualOcfGrowth = a.length >= 2 ? growth(a[0]?.operating_cash_flow, a[1]?.operating_cash_flow) : null;
+  const latestQuarterCfo = finite(q[0]?.operating_cash_flow);
+  const latestAnnualCfo = finite(a[0]?.operating_cash_flow);
+  const currentCfo = latestQuarterCfo ?? latestAnnualCfo;
+  const cfo3yAverage = a.length >= 3 ? avg([a[0]?.operating_cash_flow, a[1]?.operating_cash_flow, a[2]?.operating_cash_flow]) : null;
+  const cfoExpansion = currentCfo == null || cfo3yAverage == null || cfo3yAverage === 0
+    ? null
+    : ((currentCfo - cfo3yAverage) / Math.abs(cfo3yAverage)) * 100;
+  const industryMedianCfo = finite(dashboard?.industry_median_cfo) ?? finite(dashboard?.industry_median_operating_cash_flow);
+  const cfoIndustryScore = currentCfo == null || industryMedianCfo == null
+    ? null
+    : (currentCfo > industryMedianCfo ? 100 : 50);
+
   const roeValue = finite(a[0]?.roe) ?? (finite(fundamentals?.fundamentals?.return_on_equity) != null ? Number(fundamentals.fundamentals.return_on_equity) * 100 : null);
   const roceValue = finite(a[0]?.roce);
   const sharesOutstanding = finite(fundamentals?.ownership?.shares_outstanding);
   const floatShares = finite(fundamentals?.ownership?.float_shares);
-  const latestOcf = finite(a[0]?.operating_cash_flow);
+  const latestOcf = latestAnnualCfo;
   const cashflowPerShare = latestOcf != null && sharesOutstanding != null && sharesOutstanding !== 0 ? latestOcf / sharesOutstanding : null;
 
-  rows.a_ocf_yoy = row("a_ocf_yoy", annualOcfGrowth);
-  rows.cashflow_per_share = factors?.cashflow_per_share?.enabled === false
-    ? { currentValue: cashflowPerShare, score: null, targetText: "Disabled until exact point rule is confirmed" }
-    : row("cashflow_per_share", cashflowPerShare);
+  rows.cfo_q_yoy_growth = row("cfo_q_yoy_growth", qCfoYoy0);
+  rows.cfo_q_qoq_growth = row("cfo_q_qoq_growth", qCfoQoq);
+  rows.cfo_a_yoy_growth = row("cfo_a_yoy_growth", annualOcfGrowth);
+  rows.cfo_expansion_3y = row(
+    "cfo_expansion_3y",
+    cfoExpansion,
+    cfo3yAverage == null ? "3-year average CFO unavailable" : `3-year average CFO ${cfo3yAverage.toFixed(2)}`
+  );
+  rows.cfo_industry_compare = row(
+    "cfo_industry_compare",
+    currentCfo,
+    industryMedianCfo == null ? "Industry median CFO unavailable" : `Industry median CFO ${industryMedianCfo.toFixed(2)}`,
+    cfoIndustryScore
+  );
+  rows.cfo_q_yoy_delta = row(
+    "cfo_q_yoy_delta",
+    delta(qCfoYoy0, qCfoYoy1),
+    qCfoYoy1 == null ? "Prior Q CFO YoY unavailable" : `Prior Q CFO YoY ${qCfoYoy1.toFixed(2)}%`
+  );
+  rows.cashflow_per_share = row("cashflow_per_share", cashflowPerShare);
   rows.roe_above = row("roe_above", roeValue);
   rows.roce_above = row("roce_above", roceValue);
   rows.shares_outstanding = factors?.shares_outstanding?.enabled === false
@@ -3340,7 +3380,7 @@ function App() {
 
           <div className="universe-filter-title">
             <strong>Filters</strong>
-            <span>{universeTab === "Fundamentals" ? "Client handwritten formulas only — 11 EPS rules, the same 11 for PAT and Sales, 6 NPM rules, plus confirmed CFO / ROE / ROCE items." : "Choose a filter group, set the values, then press Apply Filters."}</span>
+            <span>{universeTab === "Fundamentals" ? "Client handwritten formulas only — 11 EPS rules, the same 11 for PAT and Sales, 6 NPM rules, 7 CFO rules, plus ROE / ROCE items." : "Choose a filter group, set the values, then press Apply Filters."}</span>
           </div>
 
           <div className="universe-tabs">
@@ -3395,7 +3435,7 @@ function App() {
                 <div className="universe-client-factor-head">
                   <div>
                     <strong>Client Fundamental Filters</strong>
-                    <span>Exact handwritten mapping: EPS rules 1–11; the same 11-rule structure for PAT and Sales; NPM rules 1–6; plus confirmed CFO / ROE / ROCE items. Generic filters are not mixed into this tab.</span>
+                    <span>Exact handwritten mapping: EPS rules 1–11; the same 11-rule structure for PAT and Sales; NPM rules 1–6; CFO rules 1–7; plus ROE / ROCE items. Generic filters are not mixed into this tab.</span>
                   </div>
                   <span className="client-note-badge">Client notes</span>
                 </div>

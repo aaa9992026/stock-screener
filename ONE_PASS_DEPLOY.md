@@ -100,3 +100,9 @@ The current client-review target is the framework, not another data correction p
 
 ### Latest UI polish
 The Top-200 Market selector is now labeled and vertically aligned with Sort by, Order, and Refresh Top 200.
+
+## Latest CFO framework completion
+
+- Completed the CFO fundamental group with 7 visible filters: quarterly YoY, quarterly QoQ, annual YoY, 3-year expansion, industry comparison, YoY acceleration, and cash flow per share.
+- Each CFO rule has editable compare/target/weight/use controls and contributes to the CFO RS score when data is available.
+- Missing provider values remain N/A rather than being fabricated.

@@ -159,3 +159,9 @@ The Fundamental Filters framework is now displayed as its own always-visible sec
 ## UI alignment polish
 - Top-200 Market selector now uses the same labeled control layout as Sort by and Order.
 - Market / Sort by / Order / Refresh controls are bottom-aligned for a clean single-row desktop layout.
+
+## Latest CFO framework completion
+
+- Completed the CFO fundamental group with 7 visible filters: quarterly YoY, quarterly QoQ, annual YoY, 3-year expansion, industry comparison, YoY acceleration, and cash flow per share.
+- Each CFO rule has editable compare/target/weight/use controls and contributes to the CFO RS score when data is available.
+- Missing provider values remain N/A rather than being fabricated.
