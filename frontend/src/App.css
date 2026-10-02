@@ -2897,3 +2897,102 @@ button:disabled {
   font-weight: 800;
   vertical-align: middle;
 }
+
+/* Top-200 composite weights: client-editable controls */
+.editable-composite-weights .composite-weight-editor {
+  align-items: center;
+}
+
+.composite-weight-editor label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #1d4ed8;
+  font-weight: 800;
+}
+
+.composite-weight-editor input {
+  width: 68px;
+  height: 34px;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  background: #fff;
+  color: #0f172a;
+  font-weight: 800;
+  text-align: right;
+  padding: 0 8px;
+  outline: none;
+}
+
+.composite-weight-editor input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, .12);
+}
+
+.composite-weight-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin: -2px 0 14px;
+  padding: 10px 12px;
+  border: 1px solid #dbeafe;
+  border-radius: 10px;
+  background: #f8fbff;
+}
+
+.composite-weight-controls > div:first-child {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.composite-weight-controls span,
+.composite-weight-controls small {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.composite-weight-controls strong {
+  color: #1d4ed8;
+  font-size: 16px;
+}
+
+.composite-weight-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.composite-weight-buttons button {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid #2563eb;
+  border-radius: 9px;
+  background: #2563eb;
+  color: #fff;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.composite-weight-buttons button.secondary {
+  border-color: #cbd5e1;
+  background: #fff;
+  color: #334155;
+}
+
+.composite-weight-buttons button:disabled {
+  opacity: .6;
+  cursor: wait;
+}
+
+@media (max-width: 720px) {
+  .composite-weight-controls {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .composite-weight-buttons button {
+    flex: 1;
+  }
+}

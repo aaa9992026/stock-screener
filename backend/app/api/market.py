@@ -3687,6 +3687,11 @@ def get_top_composite_dashboard(
     market: str = "ALL",
     limit: int = Query(200, ge=20, le=200),
     candidate_limit: int = Query(700, ge=200, le=1200),
+    technical_weight: float = Query(30.0, ge=0),
+    fundamental_weight: float = Query(25.0, ge=0),
+    ownership_weight: float = Query(15.0, ge=0),
+    sector_weight: float = Query(20.0, ge=0),
+    relative_strength_weight: float = Query(10.0, ge=0),
     db: Session = Depends(get_db),
 ):
     """Front-dashboard ranking using verified stored data only.
@@ -3701,6 +3706,36 @@ def get_top_composite_dashboard(
     and only for the period needed by the dashboard calculations.
     """
     exchanges = _screener_market_exchanges(market)
+
+    # The client asked for editable top-level composite weights.  Accept the
+    # entered values directly and normalize them to 100% so any non-negative
+    # combination remains usable while preserving the relative proportions.
+    requested_weights = {
+        "technical": float(technical_weight or 0),
+        "fundamental": float(fundamental_weight or 0),
+        "ownership": float(ownership_weight or 0),
+        "sector": float(sector_weight or 0),
+        "relative_strength": float(relative_strength_weight or 0),
+    }
+    entered_weight_total = sum(max(0.0, value) for value in requested_weights.values())
+    if entered_weight_total <= 0:
+        raise HTTPException(status_code=400, detail="At least one composite weight must be greater than 0.")
+    weights = {
+        key: (max(0.0, value) / entered_weight_total) * 100.0
+        for key, value in requested_weights.items()
+    }
+
+    def _weight_text(value):
+        rounded = round(float(value), 2)
+        return str(int(rounded)) if rounded.is_integer() else f"{rounded:g}"
+
+    formula_text = (
+        f"Technical {_weight_text(weights['technical'])}% + "
+        f"Fundamental {_weight_text(weights['fundamental'])}% + "
+        f"Ownership {_weight_text(weights['ownership'])}% + "
+        f"Sector {_weight_text(weights['sector'])}% + "
+        f"RS {_weight_text(weights['relative_strength'])}%"
+    )
 
     # Lightweight candidate coverage score.  Do not join the all-universe
     # 52-week aggregate subquery used by /screener; Top-200 does not need it.
@@ -3768,7 +3803,9 @@ def get_top_composite_dashboard(
             "market": market.upper(),
             "rows": [],
             "candidate_count": 0,
-            "formula": "Technical 30% + Fundamental 25% + Ownership 15% + Sector 20% + RS 10%",
+            "formula": formula_text,
+            "score_weights": {key: round(value, 2) for key, value in weights.items()},
+            "entered_weight_total": round(entered_weight_total, 2),
             "data_rule": "Verified stored data only; missing values remain N/A.",
         }
 
@@ -3871,7 +3908,6 @@ def get_top_composite_dashboard(
             peers_by_group[group][label].append(value)
 
     ranked = []
-    weights = CLIENT_COMPOSITE_WEIGHTS
     for row in base_rows:
         ex, symbol = row.get("exchange"), row.get("symbol")
         closes = grouped.get((ex, symbol), [])
@@ -3961,7 +3997,9 @@ def get_top_composite_dashboard(
         "market": market.upper(),
         "rows": rows,
         "candidate_count": len(base_rows),
-        "formula": "Technical 30% + Fundamental 25% + Ownership 15% + Sector 20% + RS 10%",
+        "formula": formula_text,
+        "score_weights": {key: round(value, 2) for key, value in weights.items()},
+        "entered_weight_total": round(entered_weight_total, 2),
         "rs_note": "RS percentiles on this dashboard use the currently verified stored candidate peer set and remain provisional until the full client market universe is populated.",
         "data_rule": "Final Composite is shown only when all five weighted client categories are available. Rows with missing exact handwritten fundamental/sector history are explicitly Provisional; missing EPS/PAT/Sales/Alpha/Beta values remain N/A and are never fabricated.",
     })

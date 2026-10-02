@@ -602,13 +602,36 @@ function App() {
     }
   };
 
-  const loadTopComposite = async (marketOverride = universeFilters.market || "ALL") => {
+  const loadTopComposite = async (marketOverride = universeFilters.market || "ALL", weightOverride = scoreWeights) => {
     setTopCompositeLoading(true);
     setTopCompositeError("");
 
+    const safeWeights = {
+      technical: Math.max(0, Number(weightOverride?.technical) || 0),
+      fundamental: Math.max(0, Number(weightOverride?.fundamental) || 0),
+      ownership: Math.max(0, Number(weightOverride?.ownership) || 0),
+      sector: Math.max(0, Number(weightOverride?.sector) || 0),
+      relative_strength: Math.max(0, Number(weightOverride?.relative_strength) || 0),
+    };
+    const enteredTotal = Object.values(safeWeights).reduce((sum, value) => sum + value, 0);
+    if (enteredTotal <= 0) {
+      setTopCompositeError("At least one composite weight must be greater than 0.");
+      setTopCompositeLoading(false);
+      return;
+    }
+
     const requestComposite = (candidateLimit, timeout) =>
       axios.get(`${API}/market/top-composite`, {
-        params: { market: marketOverride || "ALL", limit: 200, candidate_limit: candidateLimit },
+        params: {
+          market: marketOverride || "ALL",
+          limit: 200,
+          candidate_limit: candidateLimit,
+          technical_weight: safeWeights.technical,
+          fundamental_weight: safeWeights.fundamental,
+          ownership_weight: safeWeights.ownership,
+          sector_weight: safeWeights.sector,
+          relative_strength_weight: safeWeights.relative_strength,
+        },
         timeout,
       });
 
@@ -2201,12 +2224,55 @@ function App() {
             </div>
           </div>
 
-          <div className="composite-weight-strip">
+          <div className="composite-weight-strip editable-composite-weights">
             {[
-              ["Technical", 30], ["Fundamental", 25], ["Ownership", 15], ["Sector", 20], ["RS", 10],
-            ].map(([label, value]) => (
-              <div key={label}><span>{label}</span><strong>{value}%</strong></div>
+              ["technical", "Technical"],
+              ["fundamental", "Fundamental"],
+              ["ownership", "Ownership"],
+              ["sector", "Sector"],
+              ["relative_strength", "RS"],
+            ].map(([key, label]) => (
+              <div key={key} className="composite-weight-editor">
+                <span>{label}</span>
+                <label>
+                  <input
+                    aria-label={`${label} composite weight`}
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={scoreWeights[key]}
+                    onChange={(e) => setScoreWeights((prev) => ({
+                      ...prev,
+                      [key]: Math.max(0, Number(e.target.value) || 0),
+                    }))}
+                  />
+                  <b>%</b>
+                </label>
+              </div>
             ))}
+          </div>
+          <div className="composite-weight-controls">
+            <div>
+              <span>Entered total</span>
+              <strong>{Object.values(scoreWeights).reduce((sum, value) => sum + Math.max(0, Number(value) || 0), 0)}%</strong>
+              <small>Weights are normalized automatically to 100% for ranking.</small>
+            </div>
+            <div className="composite-weight-buttons">
+              <button type="button" onClick={() => {
+                localStorage.setItem("scoreWeights", JSON.stringify(scoreWeights));
+                localStorage.setItem("scoreWeightsVersion", SCORE_WEIGHTS_STORAGE_VERSION);
+                loadTopComposite(undefined, scoreWeights);
+              }} disabled={topCompositeLoading}>
+                {topCompositeLoading ? "Applying…" : "Apply Weights"}
+              </button>
+              <button type="button" className="secondary" onClick={() => {
+                const defaults = { ...defaultScoreWeights };
+                setScoreWeights(defaults);
+                localStorage.setItem("scoreWeights", JSON.stringify(defaults));
+                localStorage.setItem("scoreWeightsVersion", SCORE_WEIGHTS_STORAGE_VERSION);
+                loadTopComposite(undefined, defaults);
+              }} disabled={topCompositeLoading}>Reset 30/25/15/20/10</button>
+            </div>
           </div>
 
           <div className="dashboard-selected-grid">
@@ -2294,7 +2360,7 @@ function App() {
             </table>
           </div>
           <div className="composite-dashboard-note">
-            <strong>{topComposite.formula || "Technical 30% + Fundamental 25% + Ownership 15% + Sector 20% + RS 10%"}</strong>
+            <strong>{topComposite.formula || `Technical ${scoreWeights.technical}% + Fundamental ${scoreWeights.fundamental}% + Ownership ${scoreWeights.ownership}% + Sector ${scoreWeights.sector}% + RS ${scoreWeights.relative_strength}%`}</strong>
             <span>{topComposite.data_rule || "Final Composite is shown only when all five weighted client categories are available; incomplete rows are Provisional."}</span>
             {topComposite.rs_note && <span>{topComposite.rs_note}</span>}
           </div>
@@ -2735,6 +2801,7 @@ function App() {
                   localStorage.setItem("rsVisibility", JSON.stringify(rsVisibility));
                   loadDashboard();
                   loadTechnicalSummary();
+                  loadTopComposite(undefined, scoreWeights);
                 }}>Apply Ranking</button>
                 <button type="button" className="secondary-button ranking-secondary-button button-excel" onClick={downloadMasterExcelBundle}>Download Master Excel + Python</button>
                 <button type="button" className="secondary-button ranking-secondary-button button-help" onClick={() => setShowExcelHelp((v) => !v)}>
@@ -2749,6 +2816,7 @@ function App() {
                   localStorage.setItem("scoreWeights", JSON.stringify(defaultScoreWeights));
                   localStorage.setItem("scoreWeightsVersion", SCORE_WEIGHTS_STORAGE_VERSION);
                   localStorage.removeItem("handwrittenFactors");
+                  loadTopComposite(undefined, defaultScoreWeights);
                 }}>Reset Defaults</button>
               </div>
 
