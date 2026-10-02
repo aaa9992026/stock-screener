@@ -354,7 +354,113 @@ def _ranking_history_metric_score(history, metric: str):
     }
 
 
-def _ranking_fundamental_bundle(history):
+def _ranking_rule_values(history, metadata=None):
+    """Return real per-rule values used by the editable Fundamental Filters.
+
+    These values let the browser re-evaluate the qualified-stock list against
+    the CURRENT enabled rules/thresholds instead of relying on a stale aggregate
+    fundamental score calculated with older/default settings. Missing provider
+    history remains None and never qualifies a stock.
+    """
+    history = history or {}
+    metadata = metadata or {}
+    quarterly = list(history.get("quarterly") or [])
+    annual = list(history.get("annual") or [])
+
+    def finite(value):
+        return _finite_number(value)
+
+    def get(rows, index, key):
+        if index >= len(rows):
+            return None
+        return finite((rows[index] or {}).get(key))
+
+    def growth(current, previous):
+        current = finite(current); previous = finite(previous)
+        if current is None or previous in (None, 0):
+            return None
+        return ((current - previous) / abs(previous)) * 100.0
+
+    def delta(a, b):
+        a = finite(a); b = finite(b)
+        return None if a is None or b is None else a - b
+
+    def accel(a, b, c):
+        a = finite(a); b = finite(b); c = finite(c)
+        return None if a is None or b is None or c is None else a - ((b + c) / 2.0)
+
+    values = {}
+    for metric in ("eps", "pat", "sales"):
+        qy = [get(quarterly, i, f"yoy_{metric}") for i in range(3)]
+        qq = [get(quarterly, i, f"qoq_{metric}") for i in range(3)]
+        ay = [get(annual, i, f"yoy_{metric}") for i in range(3)]
+        prefix = {"eps": "eps", "pat": "pat", "sales": "sales"}[metric]
+        values.update({
+            f"q_{prefix}_yoy_latest": qy[0],
+            f"q_{prefix}_yoy_delta_latest_prior": delta(qy[0], qy[1]),
+            f"q_{prefix}_yoy_delta_prior_second": delta(qy[1], qy[2]),
+            f"q_{prefix}_yoy_accel_vs_avg": accel(qy[0], qy[1], qy[2]),
+            f"q_{prefix}_qoq_latest": qq[0],
+            f"q_{prefix}_qoq_prior": qq[1],
+            f"q_{prefix}_qoq_second": qq[2],
+            f"q_{prefix}_qoq_accel_vs_avg": accel(qq[0], qq[1], qq[2]),
+            f"a_{prefix}_yoy_latest": ay[0],
+            f"a_{prefix}_yoy_delta_latest_prior": delta(ay[0], ay[1]),
+            f"a_{prefix}_yoy_accel_vs_avg": accel(ay[0], ay[1], ay[2]),
+        })
+
+    # NPM rules are based on the actual reported NPM series.
+    q_npm = [get(quarterly, i, "npm") for i in range(min(len(quarterly), 6))]
+    a_npm = [get(annual, i, "npm") for i in range(min(len(annual), 4))]
+    npm_q_yoy = growth(q_npm[0], q_npm[4]) if len(q_npm) > 4 else None
+    npm_prior_q_yoy = growth(q_npm[1], q_npm[5]) if len(q_npm) > 5 else None
+    npm_q_qoq = growth(q_npm[0], q_npm[1]) if len(q_npm) > 1 else None
+    npm_a_yoy = growth(a_npm[0], a_npm[1]) if len(a_npm) > 1 else None
+    npm_avg3 = None
+    if len(a_npm) >= 4 and all(v is not None for v in a_npm[1:4]):
+        npm_avg3 = sum(a_npm[1:4]) / 3.0
+    npm_expansion = None
+    if q_npm and q_npm[0] is not None and npm_avg3 not in (None, 0):
+        npm_expansion = ((q_npm[0] - npm_avg3) / abs(npm_avg3)) * 100.0
+    values.update({
+        "npm_q_yoy_growth": npm_q_yoy,
+        "npm_q_qoq_growth": npm_q_qoq,
+        "npm_a_yoy_growth": npm_a_yoy,
+        "npm_expansion_3y": npm_expansion,
+        "npm_industry_compare": None,
+        "npm_q_yoy_delta": delta(npm_q_yoy, npm_prior_q_yoy),
+    })
+
+    # CFO rules use real operating-cash-flow history from the provider.
+    q_cfo = [get(quarterly, i, "operating_cash_flow") for i in range(min(len(quarterly), 6))]
+    a_cfo = [get(annual, i, "operating_cash_flow") for i in range(min(len(annual), 4))]
+    cfo_q_yoy = growth(q_cfo[0], q_cfo[4]) if len(q_cfo) > 4 else None
+    cfo_prior_q_yoy = growth(q_cfo[1], q_cfo[5]) if len(q_cfo) > 5 else None
+    cfo_q_qoq = growth(q_cfo[0], q_cfo[1]) if len(q_cfo) > 1 else None
+    cfo_a_yoy = growth(a_cfo[0], a_cfo[1]) if len(a_cfo) > 1 else None
+    cfo_avg3 = None
+    if len(a_cfo) >= 4 and all(v is not None for v in a_cfo[1:4]):
+        cfo_avg3 = sum(a_cfo[1:4]) / 3.0
+    cfo_expansion = None
+    if q_cfo and q_cfo[0] is not None and cfo_avg3 not in (None, 0):
+        cfo_expansion = ((q_cfo[0] - cfo_avg3) / abs(cfo_avg3)) * 100.0
+    values.update({
+        "cfo_q_yoy_growth": cfo_q_yoy,
+        "cfo_q_qoq_growth": cfo_q_qoq,
+        "cfo_a_yoy_growth": cfo_a_yoy,
+        "cfo_expansion_3y": cfo_expansion,
+        "cfo_industry_compare": None,
+        "cfo_q_yoy_delta": delta(cfo_q_yoy, cfo_prior_q_yoy),
+        "cashflow_per_share": get(quarterly, 0, "cash_flow_per_share"),
+        "roe_above": get(quarterly, 0, "roe") or get(annual, 0, "roe"),
+        "roce_above": get(quarterly, 0, "roce") or get(annual, 0, "roce"),
+        "shares_outstanding": finite(metadata.get("shares_outstanding")),
+        "float_shares": finite(metadata.get("float_shares")),
+    })
+    return {key: (round(value, 4) if value is not None else None) for key, value in values.items()}
+
+
+def _ranking_fundamental_bundle(history, metadata=None):
     groups = {metric: _ranking_history_metric_score(history, metric) for metric in ("eps", "pat", "sales")}
     usable = [(item["score"], item["coverage"]) for item in groups.values() if item.get("score") is not None and item.get("coverage", 0) > 0]
     if not usable:
@@ -379,6 +485,7 @@ def _ranking_fundamental_bundle(history):
         "eps_acceleration": groups["eps"]["acceleration"],
         "pat_acceleration": groups["pat"]["acceleration"],
         "sales_acceleration": groups["sales"]["acceleration"],
+        "fundamental_rule_values": _ranking_rule_values(history, metadata),
     }
 
 
@@ -436,7 +543,7 @@ def _fetch_ranking_enrichment(row):
             metadata = {}
 
     payload = {"history": history, "metadata": metadata}
-    payload.update(_ranking_fundamental_bundle(history))
+    payload.update(_ranking_fundamental_bundle(history, metadata))
     _RANKING_ENRICH_CACHE[key] = (now, payload)
     return payload
 
@@ -504,6 +611,7 @@ def _ranking_snapshot_payload(payload):
         "eps_rule_coverage", "pat_rule_coverage", "sales_rule_coverage",
         "eps_latest_yoy", "pat_latest_yoy", "sales_latest_yoy",
         "eps_acceleration", "pat_acceleration", "sales_acceleration",
+        "fundamental_rule_values",
     }
     compact = {key: payload.get(key) for key in keep if key in payload}
     metadata = compact.get("metadata") or {}
@@ -5016,7 +5124,11 @@ def get_top_composite_dashboard(
                 str(candidate_row.get("exchange") or "").upper(),
                 str(candidate_row.get("symbol") or "").upper(),
             )
-            if candidate_key not in enrichment:
+            candidate_payload = enrichment.get(candidate_key) or {}
+            # Older persisted snapshots predate per-rule values. Treat those
+            # snapshots as needing a lightweight refresh so editable
+            # Fundamental Filters can recalculate the qualified-stock list.
+            if candidate_key not in enrichment or not candidate_payload.get("fundamental_rule_values"):
                 missing_rows.append(candidate_row)
 
         # Only a small first batch is synchronous. The old 50-stock cold fetch
@@ -5159,6 +5271,14 @@ def get_top_composite_dashboard(
             "eps_rule_coverage_percent": payload.get("eps_rule_coverage"),
             "pat_rule_coverage_percent": payload.get("pat_rule_coverage"),
             "sales_rule_coverage_percent": payload.get("sales_rule_coverage"),
+            "fundamental_rule_values": {
+                **({
+                    "q_eps_yoy_latest": payload.get("eps_latest_yoy"),
+                    "q_pat_yoy_latest": payload.get("pat_latest_yoy"),
+                    "q_sales_yoy_latest": payload.get("sales_latest_yoy"),
+                }),
+                **(payload.get("fundamental_rule_values") or {}),
+            },
             "alpha": alpha,
             "beta": beta,
             "standard_deviation_percent": standard_deviation_percent,

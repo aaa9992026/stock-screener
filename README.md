@@ -165,3 +165,7 @@ The Fundamental Filters framework is now displayed as its own always-visible sec
 - Completed the CFO fundamental group with 7 visible filters: quarterly YoY, quarterly QoQ, annual YoY, 3-year expansion, industry comparison, YoY acceleration, and cash flow per share.
 - Each CFO rule has editable compare/target/weight/use controls and contributes to the CFO RS score when data is available.
 - Missing provider values remain N/A rather than being fabricated.
+
+## Fundamental Qualified Stocks live-filter fix (2026-10-02)
+
+The qualified-stock list now recalculates from the currently enabled Fundamental Filters and their current compare signs / thresholds instead of using a stale aggregate score. Per-rule real provider values are returned with Top-200 rows, and older persisted ranking snapshots remain compatible for latest EPS/PAT/Sales YoY rules while the remaining rule-value cache refreshes. Missing provider values remain N/A and never count as a pass.

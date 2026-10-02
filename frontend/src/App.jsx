@@ -869,13 +869,63 @@ function App() {
     return topCompositeSortDir === "asc" ? cmp : -cmp;
   });
 
+  // Re-evaluate the qualified-stock list from the CURRENT editable fundamental
+  // rules. Previously this list used the backend's aggregate fundamental score,
+  // so changing/enabling only a rule such as EPS YoY > 20 did not change the
+  // list. Each Top-200 row now carries real per-rule values; missing provider
+  // values remain incomplete and never get treated as a pass.
   const fundamentalQualifiedRows = topCompositeDisplayRows
-    .filter((row) => {
-      const score = Number(row.fundamental_score);
-      const coverage = Number(row.fundamental_rule_coverage_percent);
-      return Number.isFinite(score) && score >= 99.999 && Number.isFinite(coverage) && coverage >= 99.9;
+    .map((row) => {
+      const values = row.fundamental_rule_values || {};
+      let active = 0;
+      let available = 0;
+      let passed = 0;
+      let earnedWeight = 0;
+      let availableWeight = 0;
+      const groupStats = {};
+
+      (handwrittenFactorMeta.fundamental || []).forEach(([key, , , , category = "Other"]) => {
+        const cfg = handwrittenFactors.fundamental?.[key];
+        const weight = Math.max(0, Number(cfg?.weight) || 0);
+        if (!cfg || cfg.enabled === false || weight <= 0) return;
+        active += 1;
+        const value = values[key];
+        const numericValue = Number(value);
+        if (value === null || value === undefined || value === "" || !Number.isFinite(numericValue)) return;
+        // Industry-comparison rules require a real industry-median value. They
+        // remain unavailable until that provider value is present.
+        if ((cfg.comparator || ">") === "industry") return;
+        available += 1;
+        availableWeight += weight;
+        const isPass = compareNumeric(numericValue, cfg.comparator || ">", cfg.threshold);
+        const group = groupStats[category] || { earned: 0, available: 0 };
+        group.available += weight;
+        if (isPass === true) {
+          passed += 1;
+          earnedWeight += weight;
+          group.earned += weight;
+        }
+        groupStats[category] = group;
+      });
+
+      const coverage = active > 0 ? (available / active) * 100 : 0;
+      const currentScore = availableWeight > 0 ? (earnedWeight / availableWeight) * 100 : null;
+      const groupScore = (name) => {
+        const group = groupStats[name];
+        return group?.available > 0 ? (group.earned / group.available) * 100 : null;
+      };
+      return {
+        ...row,
+        qualified_current_rules: active > 0 && available === active && passed === active,
+        current_fundamental_score: currentScore,
+        current_fundamental_coverage_percent: coverage,
+        current_eps_score: groupScore("EPS"),
+        current_pat_score: groupScore("PAT"),
+        current_sales_score: groupScore("Sales"),
+      };
     })
-    .sort((a, b) => Number(b.fundamental_score || 0) - Number(a.fundamental_score || 0))
+    .filter((row) => row.qualified_current_rules)
+    .sort((a, b) => Number(b.current_fundamental_score || 0) - Number(a.current_fundamental_score || 0))
     .slice(0, 30);
 
   const resetUniverseFilters = () => {
@@ -3330,7 +3380,7 @@ function App() {
             <div className="fundamental-qualified-head">
               <div>
                 <strong>Stocks Qualifying the Fundamental Criteria</strong>
-                <span>Shown directly below the Fundamental Score. A stock appears only when the current loaded data satisfies the enabled fundamental rules with complete rule coverage.</span>
+                <span>Shown directly below the Fundamental Score. This list recalculates from the currently enabled rules and thresholds. A stock appears only when all active rules pass with real provider data.</span>
               </div>
               <span className="qualification-count">{fundamentalQualifiedRows.length} qualified</span>
             </div>
@@ -3342,11 +3392,11 @@ function App() {
                     <tr key={`standalone-${row.exchange}:${row.symbol}`} onClick={() => openUniverseStock(row)} className="qualified-stock-row">
                       <td>{index + 1}</td>
                       <td className="filter-name-cell"><strong>{row.symbol}</strong><small>{row.name || row.exchange}</small></td>
-                      <td><span className="filter-score-badge is-pass">{filterScoreText(row.fundamental_score)}</span></td>
-                      <td>{filterScoreText(row.eps_score)}</td>
-                      <td>{filterScoreText(row.pat_score)}</td>
-                      <td>{filterScoreText(row.sales_score)}</td>
-                      <td>{Number.isFinite(Number(row.fundamental_rule_coverage_percent)) ? `${Number(row.fundamental_rule_coverage_percent).toFixed(0)}%` : "N/A"}</td>
+                      <td><span className="filter-score-badge is-pass">{filterScoreText(row.current_fundamental_score)}</span></td>
+                      <td>{filterScoreText(row.current_eps_score)}</td>
+                      <td>{filterScoreText(row.current_pat_score)}</td>
+                      <td>{filterScoreText(row.current_sales_score)}</td>
+                      <td>{Number.isFinite(Number(row.current_fundamental_coverage_percent)) ? `${Number(row.current_fundamental_coverage_percent).toFixed(0)}%` : "N/A"}</td>
                     </tr>
                   )) : (
                     <tr><td colSpan="7" className="qualified-empty">No fully qualified stocks in the currently loaded data yet. The framework is visible and ready; the list populates automatically when complete provider history is available.</td></tr>
@@ -3464,11 +3514,11 @@ function App() {
                           <tr key={`${row.exchange}:${row.symbol}`}>
                             <td>{index + 1}</td>
                             <td className="filter-name-cell"><strong>{row.symbol}</strong><small>{row.name || row.exchange}</small></td>
-                            <td><span className="filter-score-badge is-pass">{filterScoreText(row.fundamental_score)}</span></td>
-                            <td>{filterScoreText(row.eps_score)}</td>
-                            <td>{filterScoreText(row.pat_score)}</td>
-                            <td>{filterScoreText(row.sales_score)}</td>
-                            <td>{Number.isFinite(Number(row.fundamental_rule_coverage_percent)) ? `${Number(row.fundamental_rule_coverage_percent).toFixed(0)}%` : "N/A"}</td>
+                            <td><span className="filter-score-badge is-pass">{filterScoreText(row.current_fundamental_score)}</span></td>
+                            <td>{filterScoreText(row.current_eps_score)}</td>
+                            <td>{filterScoreText(row.current_pat_score)}</td>
+                            <td>{filterScoreText(row.current_sales_score)}</td>
+                            <td>{Number.isFinite(Number(row.current_fundamental_coverage_percent)) ? `${Number(row.current_fundamental_coverage_percent).toFixed(0)}%` : "N/A"}</td>
                           </tr>
                         )) : (
                           <tr><td colSpan="7" className="qualified-empty">No fully qualified stocks in the currently loaded data yet. The framework is ready and the list will populate automatically as complete provider history is available.</td></tr>

@@ -106,3 +106,6 @@ The Top-200 Market selector is now labeled and vertically aligned with Sort by, 
 - Completed the CFO fundamental group with 7 visible filters: quarterly YoY, quarterly QoQ, annual YoY, 3-year expansion, industry comparison, YoY acceleration, and cash flow per share.
 - Each CFO rule has editable compare/target/weight/use controls and contributes to the CFO RS score when data is available.
 - Missing provider values remain N/A rather than being fabricated.
+
+### Latest fix: Fundamental Qualified Stocks
+The qualified list now follows the active Fundamental Filters immediately. Example: if only `Latest quarter EPS growth (YoY) > 20%` is enabled, the list is rebuilt from that rule rather than the old aggregate fundamental score.
