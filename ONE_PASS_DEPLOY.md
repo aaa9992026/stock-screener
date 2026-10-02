@@ -52,3 +52,12 @@ master Excel/Python workflow.
 
 ## Top 200 missing-data closeout
 The free-tier Top 200 endpoint now live-enriches the strongest bounded candidate set with real provider statement history and metadata without writing multi-year OHLCV back to PostgreSQL. It calculates the confirmed 11-rule EPS/PAT/Sales growth scores, fills sector metadata where the provider supplies it, computes a provisional sector growth score from the bounded peer set, and calculates Alpha/Beta from real daily returns versus S&P 500/NIFTY 500. Missing provider values remain N/A. `TOP200_LIVE_ENRICH_LIMIT` defaults to 50 to keep Railway requests bounded; increase only if the deployment has enough request time/CPU.
+
+
+## Final Top-200 coverage/timeout closeout (2026-10-02)
+- Added a tiny `ranking_snapshots` table that persists only derived ranking scores and provider metadata, never OHLCV history. This is designed for the 500 MB Railway volume.
+- Top-200 requests now reuse persisted enrichment after restarts and synchronously fetch only a small cold batch; remaining candidates are enriched in background batches and saved for the next refresh.
+- This removes the previous 50-stock synchronous statement crawl that could exceed the browser/Railway timeout and force the frontend to show an older cached dashboard.
+- Alpha/Beta first use a fast exact S&P 500 / NIFTY 500 live benchmark fetch, with the existing exact-benchmark fallback chain retained.
+- Dashboard now shows the price chart and an RSI indicator chart together, while Ascending/Descending remains clearly visible beside the sort selector.
+- Missing real provider values still remain N/A; no financial values are fabricated.

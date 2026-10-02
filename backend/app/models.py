@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, Date, DateTime, UniqueConstraint
+from sqlalchemy import Column, Integer, String, Float, Date, DateTime, Text, UniqueConstraint
 from sqlalchemy.sql import func
 
 from .database import Base
@@ -110,3 +110,30 @@ class Ownership(Base):
             name="uq_ownership_symbol_exchange"
         ),
     )
+
+class RankingSnapshot(Base):
+    """Compact persisted Top-200 enrichment cache.
+
+    This stores only derived scores and small provider metadata, never OHLCV
+    history, so it is safe for the 500 MB Railway volume.
+    """
+    __tablename__ = "ranking_snapshots"
+
+    id = Column(Integer, primary_key=True, index=True)
+    symbol = Column(String, nullable=False, index=True)
+    exchange = Column(String, nullable=False, index=True)
+    payload_json = Column(Text, nullable=False)
+    updated_at = Column(
+        DateTime,
+        server_default=func.now(),
+        onupdate=func.now()
+    )
+
+    __table_args__ = (
+        UniqueConstraint(
+            "symbol",
+            "exchange",
+            name="uq_ranking_snapshot_symbol_exchange"
+        ),
+    )
+

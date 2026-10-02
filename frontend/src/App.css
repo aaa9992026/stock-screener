@@ -2996,3 +2996,26 @@ button:disabled {
     flex: 1;
   }
 }
+
+/* Final client dashboard: keep price and indicator charts visible together. */
+.dashboard-chart-stack {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.dashboard-chart-stack .dashboard-mini-chart {
+  width: 100%;
+}
+
+.dashboard-indicator-chart {
+  padding-top: 10px;
+}
+
+.dashboard-indicator-chart .dashboard-mini-chart-title {
+  margin-bottom: 2px;
+}
+
+.dashboard-indicator-empty {
+  min-height: 125px;
+}

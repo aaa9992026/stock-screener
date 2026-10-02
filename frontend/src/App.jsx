@@ -13,6 +13,7 @@ import {
   YAxis,
   Tooltip,
   CartesianGrid,
+  ReferenceLine,
   ResponsiveContainer,
 } from "recharts";
 import "./App.css";
@@ -574,7 +575,10 @@ function App() {
   const [universePageSize, setUniversePageSize] = useState(25);
   const [universeColumns, setUniverseColumns] = useState([...universeDefaultColumns]);
   const [showUniverseColumns, setShowUniverseColumns] = useState(false);
-  const [topComposite, setTopComposite] = useState({ rows: [], candidate_count: 0, formula: "", data_rule: "", rs_note: "" });
+  const [topComposite, setTopComposite] = useState({
+    rows: [], candidate_count: 0, formula: "", data_rule: "", rs_note: "",
+    enrichment_cached_count: 0, enrichment_target_count: 0, enrichment_remaining_count: 0, enrichment_in_progress: false,
+  });
   const [topCompositeLoading, setTopCompositeLoading] = useState(false);
   const [topCompositeError, setTopCompositeError] = useState("");
   const [topCompositeSortBy, setTopCompositeSortBy] = useState("composite");
@@ -699,10 +703,10 @@ function App() {
         // Keep the dashboard request bounded for Railway.  A 320-stock candidate
         // pool is enough to return the requested top 200 while avoiding the
         // previous 700-symbol cold-start query.
-        res = await requestComposite(320, 45000);
+        res = await requestComposite(220, 50000);
       } catch (firstError) {
         await new Promise((resolve) => window.setTimeout(resolve, 1200));
-        res = await requestComposite(220, 35000);
+        res = await requestComposite(200, 45000);
       }
 
       const next = {
@@ -711,6 +715,10 @@ function App() {
         formula: res.data.formula || "",
         data_rule: res.data.data_rule || "",
         rs_note: res.data.rs_note || "",
+        enrichment_cached_count: Number(res.data.enrichment_cached_count || 0),
+        enrichment_target_count: Number(res.data.enrichment_target_count || 0),
+        enrichment_remaining_count: Number(res.data.enrichment_remaining_count || 0),
+        enrichment_in_progress: Boolean(res.data.enrichment_in_progress),
       };
       setTopComposite(next);
       writeSessionCache(cacheKey, { saved_at: new Date().toISOString(), data: next });
@@ -1908,6 +1916,56 @@ function App() {
     window.setTimeout(() => setExcelCopyMessage(""), 6000);
   };
 
+  const dashboardMiniChartData = (() => {
+    const rows = (data || [])
+      .map((row) => ({ date: String(row.date || "").slice(5), close: Number(row.close) }))
+      .filter((row) => Number.isFinite(row.close) && row.close > 0);
+    if (!rows.length) return [];
+
+    let ema20 = null;
+    const multiplier = 2 / 21;
+    return rows.map((row, index) => {
+      if (index === 19) {
+        ema20 = rows.slice(0, 20).reduce((sum, item) => sum + item.close, 0) / 20;
+      } else if (index > 19 && ema20 != null) {
+        ema20 = ((row.close - ema20) * multiplier) + ema20;
+      }
+      let sma20 = null;
+      let bbUpper = null;
+      let bbLower = null;
+      if (index >= 19) {
+        const window = rows.slice(index - 19, index + 1).map((item) => item.close);
+        sma20 = window.reduce((sum, value) => sum + value, 0) / 20;
+        const variance = window.reduce((sum, value) => sum + ((value - sma20) ** 2), 0) / 20;
+        const sd = Math.sqrt(variance);
+        bbUpper = sma20 + (2 * sd);
+        bbLower = sma20 - (2 * sd);
+      }
+      return { ...row, ema20, sma20, bbUpper, bbLower };
+    }).slice(-120);
+  })();
+
+  const dashboardRsiChartData = (() => {
+    const rows = (data || [])
+      .map((row) => ({ date: String(row.date || "").slice(5), close: Number(row.close) }))
+      .filter((row) => Number.isFinite(row.close) && row.close > 0);
+    const result = [];
+    for (let index = 14; index < rows.length; index += 1) {
+      let gains = 0;
+      let losses = 0;
+      for (let i = index - 13; i <= index; i += 1) {
+        const change = rows[i].close - rows[i - 1].close;
+        if (change >= 0) gains += change;
+        else losses += Math.abs(change);
+      }
+      const avgGain = gains / 14;
+      const avgLoss = losses / 14;
+      const rsi = avgLoss === 0 ? 100 : 100 - (100 / (1 + (avgGain / avgLoss)));
+      result.push({ date: rows[index].date, rsi: Number(rsi.toFixed(2)) });
+    }
+    return result.slice(-120);
+  })();
+
   const relativeStrengthChartData = (() => {
     const rows = technicalSummary?.rs_chart;
     if (!Array.isArray(rows)) return [];
@@ -2427,32 +2485,62 @@ function App() {
               </div>
             </div>
 
-            <div className="dashboard-mini-chart">
-              <div className="dashboard-mini-chart-title">
-                <div><strong>{symbol} Price Chart</strong><span>{timeframe} • latest {Math.min(data.length, 120)} bars</span></div>
-                <div className="dashboard-mini-indicators">
-                  {["ema", "sma", "bollinger", "volume", "rs"].map((key) => (
-                    <button key={key} type="button" className={chartOverlays[key] ? "active" : ""} onClick={() => setChartOverlays((v) => ({ ...v, [key]: !v[key] }))}>
-                      {key === "bollinger" ? "BB" : key.toUpperCase()}
-                    </button>
-                  ))}
+            <div className="dashboard-chart-stack">
+              <div className="dashboard-mini-chart">
+                <div className="dashboard-mini-chart-title">
+                  <div><strong>{symbol} Price Chart</strong><span>{timeframe} • price + moving-average overlays</span></div>
+                  <div className="dashboard-mini-indicators">
+                    {["ema", "sma", "bollinger"].map((key) => (
+                      <button key={key} type="button" className={chartOverlays[key] ? "active" : ""} onClick={() => setChartOverlays((v) => ({ ...v, [key]: !v[key] }))}>
+                        {key === "bollinger" ? "BB" : key.toUpperCase()}
+                      </button>
+                    ))}
+                  </div>
                 </div>
+                {dashboardMiniChartData.length ? (
+                  <ResponsiveContainer width="100%" height={185}>
+                    <LineChart data={dashboardMiniChartData}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                      <XAxis dataKey="date" minTickGap={34} tick={{ fontSize: 10 }} />
+                      <YAxis domain={["auto", "auto"]} width={55} tick={{ fontSize: 10 }} />
+                      <Tooltip formatter={(value, name) => [Number(value).toFixed(2), String(name).toUpperCase()]} />
+                      <Line type="monotone" dataKey="close" name="Price" dot={false} strokeWidth={2} isAnimationActive={false} />
+                      {chartOverlays.ema && <Line type="monotone" dataKey="ema20" name="EMA20" dot={false} strokeWidth={1.5} connectNulls isAnimationActive={false} />}
+                      {chartOverlays.sma && <Line type="monotone" dataKey="sma20" name="SMA20" dot={false} strokeWidth={1.5} connectNulls isAnimationActive={false} />}
+                      {chartOverlays.bollinger && <Line type="monotone" dataKey="bbUpper" name="BB Upper" dot={false} strokeWidth={1} connectNulls isAnimationActive={false} />}
+                      {chartOverlays.bollinger && <Line type="monotone" dataKey="bbLower" name="BB Lower" dot={false} strokeWidth={1} connectNulls isAnimationActive={false} />}
+                    </LineChart>
+                  </ResponsiveContainer>
+                ) : <div className="dashboard-mini-empty">Select a stock from the table to load its chart.</div>}
               </div>
-              {data.length ? (
-                <ResponsiveContainer width="100%" height={190}>
-                  <LineChart data={data.slice(-120).map((row) => ({ date: String(row.date || "").slice(5), close: Number(row.close) }))}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                    <XAxis dataKey="date" minTickGap={34} tick={{ fontSize: 10 }} />
-                    <YAxis domain={["auto", "auto"]} width={55} tick={{ fontSize: 10 }} />
-                    <Tooltip formatter={(value) => [Number(value).toFixed(2), "Close"]} />
-                    <Line type="monotone" dataKey="close" dot={false} strokeWidth={2} isAnimationActive={false} />
-                  </LineChart>
-                </ResponsiveContainer>
-              ) : <div className="dashboard-mini-empty">Select a stock from the table to load its chart.</div>}
+
+              <div className="dashboard-mini-chart dashboard-indicator-chart">
+                <div className="dashboard-mini-chart-title">
+                  <div><strong>Indicator Chart — RSI 14</strong><span>Displayed together with the price chart as requested</span></div>
+                </div>
+                {dashboardRsiChartData.length ? (
+                  <ResponsiveContainer width="100%" height={125}>
+                    <LineChart data={dashboardRsiChartData}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                      <XAxis dataKey="date" minTickGap={34} tick={{ fontSize: 9 }} />
+                      <YAxis domain={[0, 100]} ticks={[30, 50, 70]} width={42} tick={{ fontSize: 9 }} />
+                      <Tooltip formatter={(value) => [Number(value).toFixed(2), "RSI 14"]} />
+                      <ReferenceLine y={70} strokeDasharray="4 4" />
+                      <ReferenceLine y={30} strokeDasharray="4 4" />
+                      <Line type="monotone" dataKey="rsi" name="RSI 14" dot={false} strokeWidth={2} isAnimationActive={false} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                ) : <div className="dashboard-mini-empty dashboard-indicator-empty">Not enough price history for RSI yet.</div>}
+              </div>
             </div>
           </div>
 
           {topCompositeError && <div className="message error-message">{topCompositeError}</div>}
+          {!topCompositeError && topComposite.enrichment_in_progress && (
+            <div className="message success-message">
+              Real provider ranking data cached for {topComposite.enrichment_cached_count}/{topComposite.enrichment_target_count || 200} candidates. Remaining {topComposite.enrichment_remaining_count} are being enriched automatically in the background.
+            </div>
+          )}
           <div className="composite-table-wrap">
             <table className="composite-ranking-table">
               <thead>

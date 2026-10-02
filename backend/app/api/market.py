@@ -10,7 +10,7 @@ from app.database import SessionLocal
 from app.services.providers.yahoo_provider import YahooProvider
 from app.services.ohlcv_sync import sync_ohlcv
 from app.services.fundamental_sync import sync_fundamental_data
-from app.models import Fundamental, Ownership, Company
+from app.models import Fundamental, Ownership, Company, RankingSnapshot
 from app.services.providers.bse_provider import BSEProvider
 from app.services.providers.india_shareholding_provider import IndiaShareholdingProvider
 from app.services.providers.sec_provider import SECFundamentalsProvider
@@ -40,6 +40,7 @@ router = APIRouter(prefix="/market", tags=["market"])
 _LIVE_ROW_CACHE = {}
 _LIVE_ROW_CACHE_TTL = 900
 _LIVE_SCREENER_SNAPSHOT_CACHE = {}
+_LIVE_BENCHMARK_CLOSE_CACHE = {}
 _RANKING_ENRICH_CACHE = {}
 _RANKING_ENRICH_TTL = 21600
 _RANKING_SEC_PROVIDER = None
@@ -214,6 +215,52 @@ def _live_close_history_for_candidates(rows):
                 if closes:
                     result[(ex, canonical)] = closes
     return result
+
+
+def _live_benchmark_closes(group_key):
+    """Fast exact-benchmark close series for Top-200 alpha/beta."""
+    group_key = str(group_key or "").upper()
+    ticker = "^GSPC" if group_key == "US" else "^CRSLDX" if group_key == "INDIA" else None
+    if not ticker:
+        return []
+    cached = _LIVE_BENCHMARK_CLOSE_CACHE.get(group_key)
+    now = time.time()
+    if cached and (now - cached[0]) < _LIVE_ROW_CACHE_TTL:
+        return cached[1]
+    closes = []
+    try:
+        frame = yf.download(
+            tickers=[ticker],
+            period="2y",
+            interval="1d",
+            auto_adjust=False,
+            progress=False,
+            threads=False,
+            group_by="ticker",
+        )
+        series = None
+        if frame is not None and not getattr(frame, "empty", True):
+            if hasattr(frame.columns, "nlevels") and frame.columns.nlevels > 1:
+                lvl0 = [str(x) for x in frame.columns.get_level_values(0)]
+                lvl1 = [str(x) for x in frame.columns.get_level_values(1)]
+                if ticker in lvl0:
+                    sub = frame[ticker]
+                    if "Close" in sub.columns:
+                        series = sub["Close"]
+                elif ticker in lvl1 and "Close" in lvl0:
+                    series = frame[("Close", ticker)]
+            elif "Close" in frame.columns:
+                series = frame["Close"]
+        if series is not None:
+            for value in series.tolist():
+                number = _finite_number(value)
+                if number is not None and number > 0:
+                    closes.append(number)
+    except Exception:
+        closes = []
+    if closes:
+        _LIVE_BENCHMARK_CLOSE_CACHE[group_key] = (now, closes)
+    return closes
 
 
 
@@ -413,8 +460,125 @@ def _apply_ranking_enrichment(rows, limit=None):
                     value = metadata.get(source_field)
                     if value not in (None, "", "N/A", "nan", "NaN", "-"):
                         row[target_field] = value
+    _persist_ranking_enrichment(result)
     return result
 
+
+
+def _ranking_snapshot_ttl_seconds():
+    try:
+        return max(3600, int(os.getenv("TOP200_SNAPSHOT_TTL_SECONDS", "86400") or 86400))
+    except Exception:
+        return 86400
+
+
+def _ranking_snapshot_payload(payload):
+    """Strip bulky statement history before persisting ranking enrichment."""
+    if not payload:
+        return {}
+    keep = {
+        "metadata",
+        "fundamental_score", "fundamental_rule_coverage",
+        "eps_score", "pat_score", "sales_score",
+        "eps_rule_coverage", "pat_rule_coverage", "sales_rule_coverage",
+        "eps_latest_yoy", "pat_latest_yoy", "sales_latest_yoy",
+        "eps_acceleration", "pat_acceleration", "sales_acceleration",
+    }
+    compact = {key: payload.get(key) for key in keep if key in payload}
+    metadata = compact.get("metadata") or {}
+    useful_metadata = any(value not in (None, "", "N/A", "nan", "NaN", "-") for value in metadata.values())
+    useful_score = any(compact.get(key) is not None for key in ("fundamental_score", "eps_score", "pat_score", "sales_score"))
+    return compact if (useful_metadata or useful_score) else {}
+
+
+def _persist_ranking_enrichment(payloads):
+    """Persist compact Top-200 enrichment so restarts do not lose it."""
+    if not payloads:
+        return
+    db = SessionLocal()
+    try:
+        for (exchange, symbol), payload in payloads.items():
+            compact = _ranking_snapshot_payload(payload)
+            if not compact:
+                continue
+            encoded = json.dumps(compact, default=str, separators=(",", ":"))
+            snap = (
+                db.query(RankingSnapshot)
+                .filter(
+                    RankingSnapshot.exchange == str(exchange).upper(),
+                    RankingSnapshot.symbol == str(symbol).upper(),
+                )
+                .first()
+            )
+            if snap is None:
+                snap = RankingSnapshot(
+                    exchange=str(exchange).upper(),
+                    symbol=str(symbol).upper(),
+                    payload_json=encoded,
+                )
+                db.add(snap)
+            else:
+                snap.payload_json = encoded
+                snap.updated_at = datetime.utcnow()
+        db.commit()
+    except Exception:
+        try:
+            db.rollback()
+        except Exception:
+            pass
+    finally:
+        db.close()
+
+
+def _load_persisted_ranking_enrichment(rows):
+    """Load compact persisted enrichment and fill metadata gaps."""
+    rows = list(rows or [])
+    if not rows:
+        return {}
+    wanted = {(str(r.get("exchange") or "").upper(), str(r.get("symbol") or "").upper()) for r in rows}
+    wanted.discard(("", ""))
+    if not wanted:
+        return {}
+    cutoff = datetime.utcnow() - timedelta(seconds=_ranking_snapshot_ttl_seconds())
+    db = SessionLocal()
+    try:
+        snapshots = db.query(RankingSnapshot).filter(RankingSnapshot.updated_at >= cutoff).all()
+    except Exception:
+        try:
+            db.rollback()
+        except Exception:
+            pass
+        snapshots = []
+    finally:
+        db.close()
+
+    result = {}
+    for snap in snapshots:
+        key = (str(snap.exchange or "").upper(), str(snap.symbol or "").upper())
+        if key not in wanted:
+            continue
+        try:
+            result[key] = json.loads(snap.payload_json or "{}") or {}
+        except Exception:
+            continue
+
+    mapping = {
+        "name": "name", "isin": "isin", "sector": "sector", "industry": "industry",
+        "market_cap": "market_cap", "trailing_eps": "trailing_eps", "forward_eps": "forward_eps",
+        "revenue": "revenue", "net_income": "net_income", "profit_margin": "profit_margin",
+        "return_on_equity": "return_on_equity", "return_on_assets": "return_on_assets",
+        "institution_percent": "institution_percent", "insider_percent": "insider_percent",
+        "shares_outstanding": "shares_outstanding", "float_shares": "float_shares",
+    }
+    for row in rows:
+        key = (str(row.get("exchange") or "").upper(), str(row.get("symbol") or "").upper())
+        metadata = (result.get(key) or {}).get("metadata") or {}
+        for target_field, source_field in mapping.items():
+            if row.get(target_field) in (None, "", "N/A"):
+                value = metadata.get(source_field)
+                if value not in (None, "", "N/A", "nan", "NaN", "-"):
+                    row[target_field] = value
+    return result
 
 
 def _apply_cached_ranking_enrichment(rows):
@@ -4600,18 +4764,45 @@ def get_top_composite_dashboard(
     preliminary.sort(key=lambda item: (-(item.get("pre_score") or -1), str((item.get("row") or {}).get("symbol") or "")))
     enrichment_rows = [item["row"] for item in preliminary]
     enrichment = {}
+    enrichment_remaining = []
     if _free_tier_mode():
-        # Reuse everything already warmed, synchronously enrich the strongest
-        # first-page candidates, then warm the remainder in the background.
+        # Load the compact persisted cache first. This survives Railway restarts
+        # and means Top 200 can return quickly instead of repeating dozens of
+        # statement-provider calls inside one HTTP request.
+        enrichment.update(_load_persisted_ranking_enrichment(enrichment_rows))
         enrichment.update(_apply_cached_ranking_enrichment(enrichment_rows))
-        fresh = _apply_ranking_enrichment(enrichment_rows)
-        enrichment.update(fresh)
-        enrichment.update(_apply_cached_ranking_enrichment(enrichment_rows))
+
+        missing_rows = []
+        for candidate_row in enrichment_rows:
+            candidate_key = (
+                str(candidate_row.get("exchange") or "").upper(),
+                str(candidate_row.get("symbol") or "").upper(),
+            )
+            if candidate_key not in enrichment:
+                missing_rows.append(candidate_row)
+
+        # Only a small first batch is synchronous. The old 50-stock cold fetch
+        # could exceed the browser/Railway timeout and forced the UI back to an
+        # older cached dashboard. The remainder is warmed and persisted by a
+        # daemon worker, so later refreshes gain coverage without growing OHLCV.
         try:
-            sync_limit = int(os.getenv("TOP200_LIVE_ENRICH_LIMIT", "50") or 50)
+            sync_limit = int(os.getenv("TOP200_SYNC_ENRICH_LIMIT", "10") or 10)
         except Exception:
-            sync_limit = 50
-        _warm_ranking_enrichment_background(enrichment_rows[max(0, sync_limit):200])
+            sync_limit = 10
+        sync_limit = max(0, min(20, sync_limit))
+        if missing_rows and sync_limit > 0:
+            enrichment.update(_apply_ranking_enrichment(missing_rows, limit=sync_limit))
+            enrichment.update(_apply_cached_ranking_enrichment(enrichment_rows))
+
+        enrichment_remaining = []
+        for candidate_row in enrichment_rows[:200]:
+            candidate_key = (
+                str(candidate_row.get("exchange") or "").upper(),
+                str(candidate_row.get("symbol") or "").upper(),
+            )
+            if candidate_key not in enrichment:
+                enrichment_remaining.append(candidate_row)
+        _warm_ranking_enrichment_background(enrichment_remaining)
     sector_stats = _sector_scores_from_enriched(enrichment_rows, enrichment) if enrichment else {}
 
     # Alpha/Beta use real daily return series versus the client's exact broad
@@ -4620,6 +4811,9 @@ def get_top_composite_dashboard(
     for ex in {str(row.get("exchange") or "").upper() for row in base_rows}:
         group_key = "US" if ex == "US" else "INDIA"
         if group_key in benchmark_closes:
+            continue
+        benchmark_closes[group_key] = _live_benchmark_closes(group_key)
+        if benchmark_closes[group_key]:
             continue
         try:
             bench_exchange = "US" if group_key == "US" else "NSE"
@@ -4742,8 +4936,12 @@ def get_top_composite_dashboard(
         "score_weights": {key: round(value, 2) for key, value in weights.items()},
         "entered_weight_total": round(entered_weight_total, 2),
         "rs_note": "RS percentiles on this dashboard use the bounded live candidate peer set and remain provisional until the full client 6,000/5,500-stock market universe is populated.",
-        "data_rule": "The free-tier dashboard live-enriches the strongest candidates with real provider statement history, sector metadata, EPS/PAT/Sales handwritten-rule scores and benchmark Alpha/Beta. Missing provider values remain N/A. Fundamental excludes ambiguous NPM/CFO point allocations, and sector/RS peer ranks remain Provisional until the full client universe is available.",
-        "live_enrichment_limit": int(os.getenv("TOP200_LIVE_ENRICH_LIMIT", "50") or 50) if _free_tier_mode() else 0,
+        "data_rule": "The free-tier dashboard uses a compact persisted real-provider enrichment cache for statement history, sector metadata and EPS/PAT/Sales handwritten-rule scores, while price history remains live and is never stored as a huge universe cache. Missing provider values remain N/A. Fundamental excludes ambiguous NPM/CFO point allocations, and sector/RS peer ranks remain Provisional until the full client universe is available.",
+        "enrichment_cached_count": len(enrichment) if _free_tier_mode() else len(base_rows),
+        "enrichment_target_count": min(200, len(enrichment_rows)),
+        "enrichment_remaining_count": len(enrichment_remaining) if _free_tier_mode() else 0,
+        "enrichment_in_progress": bool(enrichment_remaining) if _free_tier_mode() else False,
+        "sync_enrichment_limit": int(os.getenv("TOP200_SYNC_ENRICH_LIMIT", "10") or 10) if _free_tier_mode() else 0,
     })
 
 
