@@ -37,6 +37,7 @@ router = APIRouter(prefix="/market", tags=["market"])
 
 _LIVE_ROW_CACHE = {}
 _LIVE_ROW_CACHE_TTL = 900
+_LIVE_SCREENER_SNAPSHOT_CACHE = {}
 
 
 def _free_tier_mode() -> bool:
@@ -206,6 +207,135 @@ def _live_close_history_for_candidates(rows):
                 if closes:
                     result[(ex, canonical)] = closes
     return result
+
+
+def _live_screener_snapshots(rows):
+    """Return live one-year price snapshots for visible screener rows without DB writes.
+
+    This keeps LTP/52-week fields useful after the free-tier OHLCV cache is compacted.
+    Results are cached per symbol for the same 15-minute window as chart data.
+    """
+    now = time.time()
+    result = {}
+    missing = []
+    provider = YahooProvider()
+    for row in rows or []:
+        ex = str(row.get("exchange") or "").upper()
+        sym = str(row.get("symbol") or "").upper()
+        if not ex or not sym:
+            continue
+        key = (ex, sym)
+        cached = _LIVE_SCREENER_SNAPSHOT_CACHE.get(key)
+        if cached and (now - cached[0]) < _LIVE_ROW_CACHE_TTL:
+            result[key] = cached[1]
+        else:
+            missing.append((ex, sym))
+
+    by_exchange = {}
+    for ex, sym in missing:
+        by_exchange.setdefault(ex, []).append(sym)
+
+    for ex, symbols in by_exchange.items():
+        for offset in range(0, len(symbols), 80):
+            chunk = symbols[offset:offset + 80]
+            ticker_map = {provider.format_symbol(sym, ex): sym for sym in chunk}
+            tickers = list(ticker_map)
+            if not tickers:
+                continue
+            try:
+                frame = yf.download(
+                    tickers=tickers,
+                    period="1y",
+                    interval="1d",
+                    auto_adjust=False,
+                    progress=False,
+                    threads=True,
+                    group_by="ticker",
+                )
+            except Exception:
+                continue
+            if frame is None or getattr(frame, "empty", True):
+                continue
+
+            def series_for(ticker, field):
+                try:
+                    if hasattr(frame.columns, "nlevels") and frame.columns.nlevels > 1:
+                        lvl0 = [str(x) for x in frame.columns.get_level_values(0)]
+                        lvl1 = [str(x) for x in frame.columns.get_level_values(1)]
+                        if ticker in lvl0:
+                            sub = frame[ticker]
+                            return sub[field] if field in sub.columns else None
+                        if ticker in lvl1 and field in lvl0:
+                            return frame[(field, ticker)]
+                    elif len(tickers) == 1 and field in frame.columns:
+                        return frame[field]
+                except Exception:
+                    return None
+                return None
+
+            for ticker, canonical in ticker_map.items():
+                close_s = series_for(ticker, "Close")
+                high_s = series_for(ticker, "High")
+                low_s = series_for(ticker, "Low")
+                vol_s = series_for(ticker, "Volume")
+                if close_s is None:
+                    continue
+                valid = []
+                for idx, raw_close in close_s.items():
+                    try:
+                        close = float(raw_close)
+                        if not math.isfinite(close) or close <= 0:
+                            continue
+                        high = float(high_s.loc[idx]) if high_s is not None else close
+                        low = float(low_s.loc[idx]) if low_s is not None else close
+                        volume = float(vol_s.loc[idx]) if vol_s is not None else 0.0
+                        if not math.isfinite(high): high = close
+                        if not math.isfinite(low): low = close
+                        if not math.isfinite(volume): volume = 0.0
+                        valid.append((idx, close, high, low, volume))
+                    except Exception:
+                        continue
+                if not valid:
+                    continue
+                latest_idx, latest_close, _, _, latest_volume = valid[-1]
+                highs = [x[2] for x in valid]
+                lows = [x[3] for x in valid]
+                vols = [x[4] for x in valid if x[4] > 0]
+                high_52w = max(highs) if highs else None
+                low_52w = min(lows) if lows else None
+                avg_volume = (sum(vols) / len(vols)) if vols else None
+                latest_date_value = latest_idx.date() if hasattr(latest_idx, "date") else latest_idx
+                latest_date_text = latest_date_value.isoformat() if hasattr(latest_date_value, "isoformat") else str(latest_date_value)[:10]
+                snap = {
+                    "close": latest_close,
+                    "volume": latest_volume,
+                    "latest_date": latest_date_text,
+                    "distance_52w_high": ((high_52w - latest_close) / high_52w * 100.0) if high_52w else None,
+                    "distance_52w_low": ((latest_close - low_52w) / low_52w * 100.0) if low_52w else None,
+                    "volume_ratio": (latest_volume / avg_volume) if avg_volume else None,
+                }
+                key = (ex, canonical)
+                result[key] = snap
+                _LIVE_SCREENER_SNAPSHOT_CACHE[key] = (now, snap)
+    return result
+
+
+def _enrich_screener_rows_live(items):
+    if not items:
+        return items
+    snapshots = _live_screener_snapshots(items)
+    for item in items:
+        key = (str(item.get("exchange") or "").upper(), str(item.get("symbol") or "").upper())
+        snap = snapshots.get(key) or {}
+        for field in ("close", "volume", "latest_date", "distance_52w_high", "distance_52w_low", "volume_ratio"):
+            if item.get(field) is None and snap.get(field) is not None:
+                item[field] = snap[field]
+        # Recompute coverage after live LTP enrichment. Provider fundamentals stay untouched.
+        points = sum(1 for field in ("close", "market_cap", "trailing_eps", "revenue", "net_income", "profit_margin", "return_on_equity", "institution_percent") if item.get(field) is not None)
+        if item.get("sector") is not None or item.get("industry") is not None:
+            points += 1
+        item["data_coverage"] = round(points * 100.0 / 9.0, 2)
+    return items
 
 
 def _json_safe(value):
@@ -3699,15 +3829,17 @@ def _apply_screener_filters(
             query = query.filter(expr >= lower)
         if upper is not None:
             query = query.filter(expr <= upper)
+    # UI percent filters are entered as percentage points (20 means 20%),
+    # while provider fundamentals/ownership are stored as fractions (0.20).
     minimums = [
         ("trailing_eps", eps_min),
         ("revenue", revenue_min),
         ("net_income", net_income_min),
-        ("return_on_equity", roe_min),
-        ("return_on_assets", roa_min),
-        ("profit_margin", profit_margin_min),
-        ("institution_percent", institution_min),
-        ("insider_percent", insider_min),
+        ("return_on_equity", None if roe_min is None else roe_min / 100.0),
+        ("return_on_assets", None if roa_min is None else roa_min / 100.0),
+        ("profit_margin", None if profit_margin_min is None else profit_margin_min / 100.0),
+        ("institution_percent", None if institution_min is None else institution_min / 100.0),
+        ("insider_percent", None if insider_min is None else insider_min / 100.0),
         ("volume_ratio", volume_ratio_min),
     ]
     for key, value in minimums:
@@ -4228,18 +4360,23 @@ def get_universe_screener(
     sort_expr = expressions.get(sort_by, Company.symbol)
     order = sort_expr.desc() if (sort_dir or "asc").lower() == "desc" else sort_expr.asc()
     rows = query.order_by(order.nullslast(), Company.symbol.asc()).offset((page - 1) * page_size).limit(page_size).all()
+    row_items = [_screener_row_dict(row) for row in rows]
+    if _free_tier_mode():
+        # OHLCV is intentionally not persisted on the 500 MB tier. Enrich only
+        # the visible page with live one-year price statistics.
+        row_items = _enrich_screener_rows_live(row_items)
     return _json_safe({
         "market": market.upper(),
         "page": page,
         "page_size": page_size,
         "total": total,
         "pages": max(1, math.ceil(total / page_size)) if page_size else 1,
-        "rows": [_screener_row_dict(row) for row in rows],
+        "rows": row_items,
         "facets": _screener_facets(db, market),
         "coverage": universe_data_status(db, market),
         "columns": [{"key": key, "label": label} for key, label in SCREENER_COLUMN_LABELS.items()],
         "default_columns": SCREENER_DEFAULT_COLUMNS,
-        "data_rule": "Stored provider/database values only. Missing values remain N/A and are never fabricated.",
+        "data_rule": "Verified provider/database values only. On FREE_TIER_MODE, visible-page LTP/52-week statistics are fetched live without writing OHLCV to PostgreSQL; missing values remain N/A.",
     })
 
 
@@ -4298,9 +4435,19 @@ def export_universe_screener(
     ws.append([SCREENER_COLUMN_LABELS[c] for c in selected])
     for cell in ws[1]:
         cell.font = Font(bold=True)
+    fraction_percent_fields = {"profit_margin", "return_on_equity", "return_on_assets", "institution_percent", "insider_percent"}
     for row in rows:
         item = _screener_row_dict(row)
-        ws.append([item.get(c) for c in selected])
+        values = []
+        for c in selected:
+            value = item.get(c)
+            if c in fraction_percent_fields and value is not None:
+                try:
+                    value = float(value) * 100.0
+                except Exception:
+                    pass
+            values.append(value)
+        ws.append(values)
     ws.freeze_panes = "A2"
     ws.auto_filter.ref = ws.dimensions
     for idx, key in enumerate(selected, start=1):

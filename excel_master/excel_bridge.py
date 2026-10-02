@@ -312,6 +312,79 @@ def _direct_yahoo_payload(symbol: str, exchange: str, limit: int):
     }
 
 
+def _reset_chart_series(chart, book, title: str, series_defs, y_min=None, y_max=None, percent_axis=False):
+    """Rebind an existing Dashboard chart to exact Date/value series.
+
+    This prevents Excel from reinterpreting every date/row as a separate series
+    after a data refresh and forces missing SMA warm-up values to plot as gaps.
+    """
+    try:
+        api = chart.api[1]
+        api.HasTitle = True
+        api.ChartTitle.Text = title
+        api.DisplayBlanksAs = 1  # xlNotPlotted: gaps, never artificial zero-lines
+        collection = api.SeriesCollection()
+        while collection.Count:
+            collection.Item(1).Delete()
+        for name, sheet_name, category_range, value_range in series_defs:
+            series = collection.NewSeries()
+            series.Name = name
+            series.XValues = book.sheets[sheet_name].range(category_range).api
+            series.Values = book.sheets[sheet_name].range(value_range).api
+        api.HasLegend = True
+        try:
+            api.Legend.Position = -4107  # bottom
+        except Exception:
+            pass
+        try:
+            axis = api.Axes(2)
+            if y_min is not None:
+                axis.MinimumScaleIsAuto = False
+                axis.MinimumScale = float(y_min)
+            else:
+                axis.MinimumScaleIsAuto = True
+            if y_max is not None:
+                axis.MaximumScaleIsAuto = False
+                axis.MaximumScale = float(y_max)
+            else:
+                axis.MaximumScaleIsAuto = True
+            if percent_axis:
+                axis.TickLabels.NumberFormat = "0%"
+        except Exception:
+            pass
+    except Exception:
+        # Chart repair is presentation-only; never fail the data refresh for it.
+        pass
+
+
+def _refresh_dashboard_charts(book, row_count: int):
+    try:
+        ds = book.sheets["Dashboard"]
+        charts = list(ds.charts)
+        if len(charts) < 4 or row_count < 2:
+            return
+        last = row_count + 1
+        date_rng = f"A2:A{last}"
+        _reset_chart_series(charts[0], book, "Price + SMA50 + SMA200", [
+            ("Close", "History", date_rng, f"E2:E{last}"),
+            ("SMA50", "History", date_rng, f"H2:H{last}"),
+            ("SMA200", "History", date_rng, f"I2:I{last}"),
+        ])
+        _reset_chart_series(charts[1], book, "MACD", [
+            ("MACD", "History", date_rng, f"Q2:Q{last}"),
+            ("Signal", "History", date_rng, f"R2:R{last}"),
+        ])
+        _reset_chart_series(charts[2], book, "RSI 14", [
+            ("RSI14", "History", date_rng, f"M2:M{last}"),
+        ], y_min=0, y_max=100)
+        _reset_chart_series(charts[3], book, "Backtest: Buy & Hold vs Combined", [
+            ("Buy & Hold", "Backtest", date_rng, f"B2:B{last}"),
+            ("Combined", "Backtest", date_rng, f"H2:H{last}"),
+        ], percent_axis=True)
+    except Exception:
+        pass
+
+
 def update_workbook(workbook_path: str | Path | None = None, visible: bool = True):
     try:
         import xlwings as xw
@@ -465,11 +538,17 @@ def update_workbook(workbook_path: str | Path | None = None, visible: bool = Tru
             fundamental.get("market_cap"), fundamental.get("trailing_eps"), fundamental.get("forward_eps"),
             fundamental.get("revenue"), fundamental.get("net_income"), fundamental.get("profit_margin"), fundamental.get("return_on_equity"),
         ]]
+        fs.range("B4").number_format = "#,##0"
+        fs.range("B5:B6").number_format = "0.00"
+        fs.range("B7:B8").number_format = "#,##0"
+        fs.range("B9:B10").number_format = "0.00%"
         ownership = payload.get("ownership_snapshot") or {}
         osheet = book.sheets["Ownership"]
         osheet.range("B4:B7").value = [[v] for v in [
             ownership.get("insider_percent"), ownership.get("institution_percent"), ownership.get("shares_outstanding"), ownership.get("float_shares"),
         ]]
+        osheet.range("B4:B5").number_format = "0.00%"
+        osheet.range("B6:B7").number_format = "#,##0"
 
         # DASHBOARD SUMMARY
         ds = book.sheets["Dashboard"]
@@ -489,14 +568,17 @@ def update_workbook(workbook_path: str | Path | None = None, visible: bool = Tru
         ]]
         ds.range("I9").number_format = "0.00"
 
-        # Update chart titles; chart source ranges are already fixed to the same sheets.
+        # Rebind chart series after every refresh. This fixes the Excel issue where
+        # dates could appear as dozens of legend series and blank SMA warm-up
+        # periods were plotted as zero/diagonal lines.
+        _refresh_dashboard_charts(book, len(calc))
         try:
-            chart_titles = [
-                f"{symbol} Price + SMA50 + SMA200", f"{symbol} MACD", f"{symbol} RSI 14", f"{symbol} Backtest Total Return"
-            ]
-            for ch, title in zip(list(ds.charts), chart_titles):
-                ch.name = ch.name  # force COM object materialization
-                ch.api[1].ChartTitle.Text = title if ch.api[1].HasTitle else title
+            for ch, title in zip(list(ds.charts), [
+                f"{symbol} Price + SMA50 + SMA200", f"{symbol} MACD", f"{symbol} RSI 14", f"{symbol} Backtest: Buy & Hold vs Combined"
+            ]):
+                api = ch.api[1]
+                api.HasTitle = True
+                api.ChartTitle.Text = title
         except Exception:
             pass
 

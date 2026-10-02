@@ -63,6 +63,20 @@ const formatPctChange = (value) => {
   return `${prefix}${numeric.toFixed(2)}%`;
 };
 
+const formatFractionPercent = (value) => {
+  if (value === null || value === undefined || value === "") return "N/A";
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return "N/A";
+  return `${(numeric * 100).toFixed(2)}%`;
+};
+
+const formatScoreValue = (value, digits = 2) => {
+  if (value === null || value === undefined || value === "") return "N/A";
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return "N/A";
+  return Number(numeric.toFixed(digits)).toLocaleString(undefined, { maximumFractionDigits: digits });
+};
+
 const formatMarketMoney = (value, exchange) => {
   if (value === null || value === undefined || !Number.isFinite(Number(value))) return "-";
   const currency = exchange === "US" ? "USD" : "INR";
@@ -108,7 +122,12 @@ const emptyUniverseFilters = {
 
 const formatUniverseCell = (key, value, row) => {
   if (value === null || value === undefined || value === "") return "N/A";
-  if (["profit_margin", "return_on_equity", "return_on_assets", "institution_percent", "insider_percent", "distance_52w_high", "distance_52w_low", "data_coverage"].includes(key)) {
+  // Provider fundamentals/ownership are stored as fractions (0.276 = 27.6%).
+  if (["profit_margin", "return_on_equity", "return_on_assets", "institution_percent", "insider_percent"].includes(key)) {
+    return formatFractionPercent(value);
+  }
+  // 52-week distances and coverage are already returned in percentage points.
+  if (["distance_52w_high", "distance_52w_low", "data_coverage"].includes(key)) {
     return `${Number(value).toFixed(2)}%`;
   }
   if (["market_cap", "revenue", "net_income", "shares_outstanding", "float_shares"].includes(key)) {
@@ -2396,15 +2415,15 @@ function App() {
                 <span>{selectedCompany?.isin ? `ISIN ${selectedCompany.isin}` : "ISIN N/A"}</span>
               </div>
               <div className="dashboard-score-pills">
-                <span>Final <b>{dashboardView?.score ?? "N/A"}</b></span>
+                <span>Final <b>{formatScoreValue(dashboardView?.score)}</b></span>
                 {dashboardView?.score == null && dashboardView?.provisional_score != null && (
-                  <span>Provisional <b>{dashboardView.provisional_score}</b></span>
+                  <span>Provisional <b>{formatScoreValue(dashboardView.provisional_score)}</b></span>
                 )}
-                <span>Technical <b>{dashboardView?.score_components?.technical ?? "N/A"}</b></span>
-                <span>Fundamental <b>{dashboardView?.score_components?.fundamental ?? "N/A"}</b></span>
-                <span>Ownership <b>{dashboardView?.score_components?.ownership ?? "N/A"}</b></span>
-                <span>Sector <b>{dashboardView?.score_components?.sector ?? "N/A"}</b></span>
-                <span>RS <b>{dashboardView?.score_components?.relative_strength ?? "N/A"}</b></span>
+                <span>Technical <b>{formatScoreValue(dashboardView?.score_components?.technical)}</b></span>
+                <span>Fundamental <b>{formatScoreValue(dashboardView?.score_components?.fundamental)}</b></span>
+                <span>Ownership <b>{formatScoreValue(dashboardView?.score_components?.ownership)}</b></span>
+                <span>Sector <b>{formatScoreValue(dashboardView?.score_components?.sector)}</b></span>
+                <span>RS <b>{formatScoreValue(dashboardView?.score_components?.relative_strength)}</b></span>
               </div>
             </div>
 
@@ -2449,19 +2468,19 @@ function App() {
                     <td>{rowIndex + 1}</td>
                     <td><strong>{row.symbol}</strong><small>{row.name || row.symbol}</small></td>
                     <td>
-                      <b>{row.final_composite_score ?? row.provisional_composite_score ?? row.composite_score ?? "N/A"}</b>
+                      <b>{formatScoreValue(row.final_composite_score ?? row.provisional_composite_score ?? row.composite_score)}</b>
                       {row.score_status === "Provisional" && <small className="provisional-score-tag">P</small>}
                     </td>
-                    <td>{row.technical_score ?? "N/A"}</td>
-                    <td>{row.fundamental_score ?? "N/A"}</td>
-                    <td>{row.ownership_score ?? "N/A"}</td>
-                    <td>{row.sector_score ?? "N/A"}</td>
-                    <td>{row.rs_score ?? "N/A"}</td>
-                    <td>{row.eps_score ?? "N/A"}</td>
-                    <td>{row.pat_score ?? "N/A"}</td>
-                    <td>{row.sales_score ?? "N/A"}</td>
-                    <td>{row.alpha ?? "N/A"}</td>
-                    <td>{row.beta ?? "N/A"}</td>
+                    <td>{formatScoreValue(row.technical_score)}</td>
+                    <td>{formatScoreValue(row.fundamental_score)}</td>
+                    <td>{formatScoreValue(row.ownership_score)}</td>
+                    <td>{formatScoreValue(row.sector_score)}</td>
+                    <td>{formatScoreValue(row.rs_score)}</td>
+                    <td>{formatScoreValue(row.eps_score)}</td>
+                    <td>{formatScoreValue(row.pat_score)}</td>
+                    <td>{formatScoreValue(row.sales_score)}</td>
+                    <td>{formatScoreValue(row.alpha)}</td>
+                    <td>{formatScoreValue(row.beta)}</td>
                     <td>{row.score_coverage_percent != null ? `${Number(row.score_coverage_percent).toFixed(0)}%` : "N/A"}</td>
                   </tr>
                 )) : (
@@ -2785,7 +2804,7 @@ function App() {
           <section className="dashboard-summary">
             <div className="summary-score">
               <span>Overall Score</span>
-              <strong>{dashboardView?.score != null ? `${dashboardView.score}/100` : "N/A"}</strong>
+              <strong>{dashboardView?.score != null ? `${formatScoreValue(dashboardView.score)}/100` : "N/A"}</strong>
               <small>{dashboardView?.score_coverage_percent ?? 0}% metric coverage</small>
             </div>
             <div className={`summary-signal signal-${dashboardView?.signal?.toLowerCase()}`}>
