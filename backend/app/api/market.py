@@ -501,6 +501,27 @@ def _persist_ranking_enrichment(payloads):
             compact = _ranking_snapshot_payload(payload)
             if not compact:
                 continue
+
+            # Persist small identity/classification metadata as well as the
+            # compact ranking snapshot.  Top-200 enrichment previously filled
+            # `sector` only in the request-local row, so the selected-stock
+            # dashboard could still show Sector N/A on the very next request.
+            metadata = compact.get("metadata") or {}
+            company = (
+                db.query(Company)
+                .filter(
+                    Company.exchange == str(exchange).upper(),
+                    Company.symbol == str(symbol).upper(),
+                )
+                .first()
+            )
+            if company is not None:
+                for attr in ("name", "isin", "sector", "industry"):
+                    value = metadata.get(attr)
+                    if value not in (None, "", "N/A", "nan", "NaN", "-"):
+                        setattr(company, attr, str(value).strip())
+                company.is_active = 1
+
             encoded = json.dumps(compact, default=str, separators=(",", ":"))
             snap = (
                 db.query(RankingSnapshot)
@@ -697,6 +718,150 @@ def _sector_scores_from_enriched(rows, enrichment):
         available = [(v, w) for v, w in components if v is not None]
         item["score"] = round(sum(v * w for v, w in available) / sum(w for _v, w in available), 2) if available else None
     return stats
+
+
+def _selected_sector_component(db, company):
+    """Return a real, bounded sector-growth score for the selected stock.
+
+    Uses the same compact ranking snapshots produced by the Top-200 enrichment
+    pipeline.  This avoids storing universe OHLCV while allowing the selected
+    stock card to reuse real EPS/PAT/Sales growth history already fetched for
+    the ranking dashboard.  Nothing is fabricated: if there is not enough
+    cross-sector history, the component stays N/A.
+    """
+    if db is None or company is None:
+        return None, 0, None
+
+    exchange = str(company.exchange or "").upper()
+    symbol = str(company.symbol or "").upper()
+    if not exchange or not symbol:
+        return None, 0, None
+
+    # First recover classification from a fresh ranking snapshot when the
+    # company master predates enrichment.
+    cutoff = datetime.utcnow() - timedelta(seconds=_ranking_snapshot_ttl_seconds())
+    try:
+        selected_snap = (
+            db.query(RankingSnapshot)
+            .filter(
+                RankingSnapshot.exchange == exchange,
+                RankingSnapshot.symbol == symbol,
+                RankingSnapshot.updated_at >= cutoff,
+            )
+            .first()
+        )
+    except Exception:
+        selected_snap = None
+
+    if selected_snap is not None:
+        try:
+            selected_payload = json.loads(selected_snap.payload_json or "{}") or {}
+            metadata = selected_payload.get("metadata") or {}
+            changed = False
+            for attr in ("name", "isin", "sector", "industry"):
+                value = metadata.get(attr)
+                if value not in (None, "", "N/A", "nan", "NaN", "-") and not getattr(company, attr, None):
+                    setattr(company, attr, str(value).strip())
+                    changed = True
+            if changed:
+                db.commit()
+        except Exception:
+            try:
+                db.rollback()
+            except Exception:
+                pass
+
+    # If classification is still absent, make one bounded live metadata call
+    # for the selected stock.  This is tiny compared with a universe backfill.
+    if not getattr(company, "sector", None):
+        try:
+            metadata = YahooProvider().get_fundamentals(symbol, exchange) or {}
+            changed = False
+            for attr in ("name", "isin", "sector", "industry"):
+                value = metadata.get(attr)
+                if value not in (None, "", "N/A", "nan", "NaN", "-"):
+                    setattr(company, attr, str(value).strip())
+                    changed = True
+            if changed:
+                company.is_active = 1
+                db.commit()
+        except Exception:
+            try:
+                db.rollback()
+            except Exception:
+                pass
+
+    sector_name = str(getattr(company, "sector", None) or "").strip()
+    if not sector_name:
+        return None, 0, None
+
+    # Gather fresh compact snapshots across the same market.  Their metadata
+    # supplies sector labels and their derived fields supply real growth /
+    # acceleration metrics.  Cap the set to keep the free-tier request small.
+    try:
+        snaps = (
+            db.query(RankingSnapshot)
+            .filter(
+                RankingSnapshot.exchange == exchange,
+                RankingSnapshot.updated_at >= cutoff,
+            )
+            .order_by(RankingSnapshot.updated_at.desc())
+            .limit(300)
+            .all()
+        )
+    except Exception:
+        snaps = []
+
+    rows = []
+    enrichment = {}
+    seen = set()
+    for snap in snaps:
+        key = (str(snap.exchange or "").upper(), str(snap.symbol or "").upper())
+        if key in seen:
+            continue
+        try:
+            payload = json.loads(snap.payload_json or "{}") or {}
+        except Exception:
+            continue
+        metadata = payload.get("metadata") or {}
+        sector = str(metadata.get("sector") or "").strip()
+        if not sector:
+            continue
+        seen.add(key)
+        rows.append({"exchange": key[0], "symbol": key[1], "sector": sector})
+        enrichment[key] = payload
+
+    selected_key = (exchange, symbol)
+    if selected_key not in enrichment:
+        # Ensure the selected stock itself has a compact history payload. One
+        # synchronous symbol fetch is bounded and is persisted for later loads.
+        seed_row = {
+            "exchange": exchange,
+            "symbol": symbol,
+            "sector": sector_name,
+            "industry": getattr(company, "industry", None),
+        }
+        try:
+            fetched = _apply_ranking_enrichment([seed_row], limit=1)
+            enrichment.update(fetched)
+            if fetched.get(selected_key):
+                rows.append(seed_row)
+        except Exception:
+            pass
+
+    if not rows or selected_key not in enrichment:
+        return None, 0, sector_name
+
+    stats = _sector_scores_from_enriched(rows, enrichment)
+    info = stats.get(sector_name) or {}
+    peer_count = int(info.get("peer_count") or 0)
+    score = _finite_number(info.get("score"))
+
+    # Breadth/acceleration are peer metrics; require a minimum real peer sample
+    # before exposing a score on the selected-stock card.
+    if score is None or peer_count < 5:
+        return None, peer_count, sector_name
+    return round(float(score), 2), peer_count, sector_name
 
 
 def _alpha_beta_from_closes(stock_closes, benchmark_closes):
@@ -2703,6 +2868,32 @@ def get_dashboard_summary(
     if score is None:
         raise HTTPException(status_code=404, detail="Not enough data to calculate dashboard score")
 
+    # Reuse the compact Top-200 enrichment cache for the selected stock's real
+    # sector-growth component.  This closes the old gap where AAPL could have
+    # Technical/Fundamental/Ownership/RS but still show Sector N/A even after
+    # Top-200 had already fetched real sector metadata/history.
+    sector_component, sector_peer_count, sector_name = _selected_sector_component(db, company)
+    if sector_component is not None:
+        components["sector"] = sector_component
+
+        weighted_points = 0.0
+        available_weight = 0.0
+        for key, weight in normalized_weights.items():
+            value = components.get(key)
+            if value is None:
+                continue
+            weighted_points += float(value) * float(weight)
+            available_weight += float(weight)
+        if available_weight > 0:
+            score = max(0, min(100, round(weighted_points / available_weight)))
+            coverage = max(0, min(100, round(available_weight)))
+
+    # Refresh the ORM object after a snapshot/live classification repair.
+    try:
+        db.refresh(company)
+    except Exception:
+        pass
+
     # Do not present a seemingly complete Indian-market ranking when weighted
     # fundamental/ownership categories are unavailable. This directly exposes
     # the data-coverage limitation instead of silently re-normalizing it away.
@@ -2783,7 +2974,9 @@ def get_dashboard_summary(
         "industry_npm_peer_count": industry_npm_peer_count,
         "sector_rank": sector_rank,
         "industry_rank": industry_rank,
-        "method_note": "Milestone-2 composite follows the client note: Technical 30% + Fundamental 25% + Ownership 15% + Sector 20% + RS 10%. Sector is included only when its real growth-ranking component is available; it is never substituted with price RS. For NSE/BSE, a score is withheld when a positively weighted fundamental or ownership category is unavailable, rather than producing a misleading partial ranking."
+        "sector_score_peer_count": sector_peer_count,
+        "sector_score_status": "Real compact peer-history ranking" if components.get("sector") is not None else "Insufficient real peer history",
+        "method_note": "Milestone-2 composite follows the client note: Technical 30% + Fundamental 25% + Ownership 15% + Sector 20% + RS 10%. The selected-stock Sector component reuses real compact Top-200 EPS/PAT/Sales peer history and requires at least 5 real peers; it is never substituted with price RS. For NSE/BSE, a score is withheld when a positively weighted fundamental or ownership category is unavailable, rather than producing a misleading partial ranking."
     })
 
 

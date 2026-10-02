@@ -61,3 +61,6 @@ The free-tier Top 200 endpoint now live-enriches the strongest bounded candidate
 - Alpha/Beta first use a fast exact S&P 500 / NIFTY 500 live benchmark fetch, with the existing exact-benchmark fallback chain retained.
 - Dashboard now shows the price chart and an RSI indicator chart together, while Ascending/Descending remains clearly visible beside the sort selector.
 - Missing real provider values still remain N/A; no financial values are fabricated.
+
+## Selected-stock Sector N/A closeout (2026-10-02)
+The selected-stock dashboard now persists/reuses real sector metadata from the compact ranking cache and calculates the Sector component from real EPS/PAT/Sales peer-history metrics when at least 5 peer observations are available. It does not substitute price RS or fabricated sector values.
