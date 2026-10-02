@@ -1,4 +1,5 @@
 import logging
+import os
 import threading
 import time
 
@@ -32,6 +33,45 @@ app.include_router(market_router)
 app.include_router(companies_router)
 
 
+def _env_flag(name: str, default: bool = False) -> bool:
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    return str(raw).strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _free_tier_compact_if_needed():
+    """Reclaim an oversized OHLCV cache on Railway's small free volume.
+
+    OHLCV is a rebuildable cache. Company, fundamental and ownership tables are
+    preserved. The compact is only attempted in FREE_TIER_MODE and only when
+    the OHLCV relation itself is already large enough to threaten the 500 MB
+    volume. Live chart/Top-200 fallbacks keep the app usable without repopulating
+    multi-million-row history.
+    """
+    if not _env_flag("FREE_TIER_MODE", True):
+        return
+    if getattr(engine.dialect, "name", "") != "postgresql":
+        return
+    threshold_mb = max(50, int(os.getenv("FREE_TIER_OHLCV_COMPACT_MB", "180") or 180))
+    threshold_bytes = threshold_mb * 1024 * 1024
+    try:
+        with engine.begin() as conn:
+            exists = conn.execute(text("SELECT to_regclass('public.ohlcv')")).scalar()
+            if not exists:
+                return
+            size = conn.execute(text("SELECT pg_total_relation_size('public.ohlcv')")).scalar() or 0
+            if int(size) >= threshold_bytes:
+                logger.warning(
+                    "FREE_TIER_MODE: OHLCV cache is %.1f MB; truncating rebuildable cache to reclaim volume",
+                    int(size) / 1024 / 1024,
+                )
+                conn.execute(text("TRUNCATE TABLE ohlcv RESTART IDENTITY"))
+    except Exception:
+        # A failed compaction must not prevent the API process from starting.
+        logger.exception("FREE_TIER_MODE cache compaction failed")
+
+
 def _database_initialize_loop():
     """Initialize PostgreSQL without making the whole web process fail cold-start.
 
@@ -47,6 +87,7 @@ def _database_initialize_loop():
         if delay:
             time.sleep(delay)
         try:
+            _free_tier_compact_if_needed()
             Base.metadata.create_all(bind=engine)
             ensure_schema_compatibility()
 

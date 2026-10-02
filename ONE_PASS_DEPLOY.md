@@ -41,3 +41,11 @@ git add .
 git commit -m "Stabilize final Milestone 2 deployment and Excel refresh"
 git push
 ```
+
+## Free Railway 500 MB mode (2026-10-02)
+This build defaults to `FREE_TIER_MODE=1` so no paid PostgreSQL upgrade is required.
+On startup it checks the rebuildable `ohlcv` cache. If that relation is already oversized,
+it truncates only `ohlcv` to reclaim volume. Company, fundamental and ownership records are preserved.
+Charts, indicators and the Top-200 candidate technical/RS calculations use live provider data without
+repopulating the full-universe OHLCV cache. Full 4-5 year Excel history is also fetched live by the
+master Excel/Python workflow.

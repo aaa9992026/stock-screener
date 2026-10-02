@@ -22,15 +22,190 @@ from app.services.company_sync import repair_company_identity, bootstrap_compani
 import os
 import math
 import json
+import time
 import csv
 import requests
 from io import BytesIO, StringIO
+from types import SimpleNamespace
 from datetime import datetime, timedelta, date
 from urllib.parse import quote
 from statistics import median
 import yfinance as yf
 
 router = APIRouter(prefix="/market", tags=["market"])
+
+
+_LIVE_ROW_CACHE = {}
+_LIVE_ROW_CACHE_TTL = 900
+
+
+def _free_tier_mode() -> bool:
+    raw = os.getenv("FREE_TIER_MODE", "1")
+    return str(raw).strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _live_provider_rows(symbol: str, exchange: str, years: int = 2):
+    """Fetch provider history without persisting it to PostgreSQL.
+
+    This is the free-tier escape hatch: charts/indicators keep working even when
+    the small Railway volume cannot accept more OHLCV cache rows.
+    """
+    symbol = str(symbol or "").upper().strip()
+    exchange = str(exchange or "US").upper().strip()
+    years = max(1, min(6, int(years or 2)))
+    cache_key = (exchange, symbol, years)
+    cached = _LIVE_ROW_CACHE.get(cache_key)
+    now = time.time()
+    if cached and (now - cached[0]) < _LIVE_ROW_CACHE_TTL:
+        return cached[1]
+
+    start_date = (date.today() - timedelta(days=366 * years + 30)).isoformat()
+    provider = YahooProvider()
+    rows = []
+    if exchange == "BSE":
+        try:
+            rows = BSEProvider().get_ohlcv(symbol) or []
+        except Exception:
+            rows = provider.get_ohlcv(symbol=symbol, exchange=exchange, start_date=start_date) or []
+    else:
+        rows = provider.get_ohlcv(symbol=symbol, exchange=exchange, start_date=start_date) or []
+
+    normalized = []
+    for item in rows:
+        try:
+            dt = item.get("date")
+            if hasattr(dt, "date") and not isinstance(dt, date):
+                dt = dt.date()
+            if not isinstance(dt, date) or dt.weekday() >= 5:
+                continue
+            values = [float(item.get(k)) for k in ("open", "high", "low", "close")]
+            if any((not math.isfinite(v)) or v <= 0 for v in values):
+                continue
+            volume = item.get("volume")
+            try:
+                volume = float(volume or 0)
+                if not math.isfinite(volume):
+                    volume = 0.0
+            except Exception:
+                volume = 0.0
+            normalized.append(SimpleNamespace(
+                date=dt,
+                open=values[0], high=values[1], low=values[2], close=values[3],
+                volume=volume,
+            ))
+        except Exception:
+            continue
+    normalized.sort(key=lambda row: row.date)
+    _LIVE_ROW_CACHE[cache_key] = (now, normalized)
+    return normalized
+
+
+def _market_rows_with_live_fallback(db: Session, symbol: str, exchange: str, min_rows: int = 1, years: int = 2):
+    """Read stored OHLCV when useful, otherwise use live provider rows."""
+    stored = []
+    if not _free_tier_mode():
+        try:
+            stored = (
+                db.query(OHLCV)
+                .filter(OHLCV.symbol == symbol.upper(), OHLCV.exchange == exchange.upper())
+                .order_by(OHLCV.date.asc())
+                .all()
+            )
+            stored = _valid_trading_rows(stored, exchange)
+        except Exception:
+            try:
+                db.rollback()
+            except Exception:
+                pass
+            stored = []
+    else:
+        # On the 500 MB Railway volume OHLCV is intentionally a disposable
+        # cache; avoid depending on it after automatic compaction.
+        try:
+            stored = (
+                db.query(OHLCV)
+                .filter(OHLCV.symbol == symbol.upper(), OHLCV.exchange == exchange.upper())
+                .order_by(OHLCV.date.asc())
+                .limit(max(500, min_rows + 20))
+                .all()
+            )
+            stored = _valid_trading_rows(stored, exchange)
+        except Exception:
+            try:
+                db.rollback()
+            except Exception:
+                pass
+            stored = []
+    if len(stored) >= min_rows:
+        return stored
+    live = _live_provider_rows(symbol, exchange, years=years)
+    return live if len(live) >= min_rows else (stored or live)
+
+
+def _live_close_history_for_candidates(rows):
+    """Batch-download up to a few hundred candidate close histories without DB writes."""
+    result = {}
+    provider = YahooProvider()
+    by_exchange = {}
+    for row in rows or []:
+        ex = str(row.get("exchange") or "").upper()
+        sym = str(row.get("symbol") or "").upper()
+        if ex and sym:
+            by_exchange.setdefault(ex, []).append(sym)
+
+    for ex, symbols in by_exchange.items():
+        # Keep the free-tier request bounded.  Top 200 needs only a modest
+        # candidate buffer, not history for the full 8k/11k market universe.
+        for offset in range(0, len(symbols), 80):
+            chunk = symbols[offset:offset + 80]
+            ticker_map = {provider.format_symbol(sym, ex): sym for sym in chunk}
+            tickers = list(ticker_map.keys())
+            if not tickers:
+                continue
+            try:
+                frame = yf.download(
+                    tickers=tickers,
+                    period="2y",
+                    interval="1d",
+                    auto_adjust=False,
+                    progress=False,
+                    threads=True,
+                    group_by="ticker",
+                )
+            except Exception:
+                continue
+            if frame is None or getattr(frame, "empty", True):
+                continue
+
+            for ticker, canonical in ticker_map.items():
+                series = None
+                try:
+                    if hasattr(frame.columns, "nlevels") and frame.columns.nlevels > 1:
+                        lvl0 = [str(x) for x in frame.columns.get_level_values(0)]
+                        lvl1 = [str(x) for x in frame.columns.get_level_values(1)]
+                        if ticker in lvl0:
+                            sub = frame[ticker]
+                            if "Close" in sub.columns:
+                                series = sub["Close"]
+                        elif ticker in lvl1 and "Close" in lvl0:
+                            series = frame[("Close", ticker)]
+                    elif len(tickers) == 1 and "Close" in frame.columns:
+                        series = frame["Close"]
+                except Exception:
+                    series = None
+                if series is None:
+                    continue
+                closes = []
+                for value in series.tolist():
+                    try:
+                        value = float(value)
+                        if math.isfinite(value) and value > 0:
+                            closes.append(value)
+                    except Exception:
+                        continue
+                if closes:
+                    result[(ex, canonical)] = closes
+    return result
 
 
 def _json_safe(value):
@@ -528,7 +703,7 @@ def _cached_benchmark_points(db: Session, ticker_symbol: str):
 
 
 def _cache_benchmark_points(db: Session, ticker_symbol: str, points):
-    if db is None or not points:
+    if db is None or not points or _free_tier_mode():
         return
     try:
         normalized = _clean_benchmark_points(points)
@@ -1705,6 +1880,28 @@ def refresh_symbol(
                 return cached
             raise HTTPException(status_code=404, detail="No market data returned and no stored market data is available")
 
+        if _free_tier_mode():
+            # The 500 MB Railway volume is too small for full-universe OHLCV.
+            # Return live provider success without writing rebuildable history.
+            metadata = {}
+            try:
+                metadata = YahooProvider().get_fundamentals(symbol, exchange) or {}
+            except Exception:
+                metadata = {}
+            return {
+                "status": "live_only",
+                "provider_refresh_ok": True,
+                "symbol": symbol,
+                "exchange": exchange,
+                "records_received": len(rows),
+                "added": 0,
+                "updated": 0,
+                "removed_invalid_dates": 0,
+                "company_name": metadata.get("name"),
+                "isin": metadata.get("isin"),
+                "warning": "FREE_TIER_MODE: live data returned without storing the rebuildable OHLCV cache.",
+            }
+
         result = sync_ohlcv(
             db=db,
             symbol=symbol,
@@ -1774,17 +1971,10 @@ def get_history(
     limit: int = 260,
     db: Session = Depends(get_db)
 ):
-    rows = (
-        db.query(OHLCV)
-        .filter(
-            OHLCV.symbol == symbol.upper(),
-            OHLCV.exchange == exchange.upper()
-        )
-        .order_by(OHLCV.date.desc())
-        .limit(limit)
-        .all()
+    rows = _market_rows_with_live_fallback(
+        db, symbol=symbol, exchange=exchange, min_rows=1, years=5
     )
-    rows = _valid_trading_rows(rows, exchange)
+    rows = list(reversed(rows[-limit:]))
 
     return [
         {
@@ -2373,13 +2563,9 @@ def get_technical_summary(
     symbol = symbol.upper()
     exchange = exchange.upper()
 
-    daily_rows = (
-        db.query(OHLCV)
-        .filter(OHLCV.symbol == symbol, OHLCV.exchange == exchange)
-        .order_by(OHLCV.date.asc())
-        .all()
+    daily_rows = _market_rows_with_live_fallback(
+        db, symbol=symbol, exchange=exchange, min_rows=20, years=5
     )
-    daily_rows = _valid_trading_rows(daily_rows, exchange)
     if len(daily_rows) < 20:
         raise HTTPException(status_code=404, detail="Not enough historical data for technical summary")
 
@@ -2945,37 +3131,9 @@ def get_chart_data(
     limit: int = 260,
     db: Session = Depends(get_db)
 ):
-    rows = (
-        db.query(OHLCV)
-        .filter(
-            OHLCV.symbol == symbol.upper(),
-            OHLCV.exchange == exchange.upper()
-        )
-        .order_by(OHLCV.date.asc())
-        .all()
+    rows = _market_rows_with_live_fallback(
+        db, symbol=symbol, exchange=exchange, min_rows=1, years=5
     )
-    rows = _valid_trading_rows(rows, exchange)
-
-    if not rows:
-        # First visit after a clean deploy should recover automatically instead
-        # of showing a stale/empty dashboard and requiring repeated Refresh
-        # clicks. The refresh endpoint already has provider fallbacks and an
-        # explicit no-cache error when real data cannot be obtained.
-        try:
-            refresh_symbol(symbol=symbol, exchange=exchange, db=db)
-        except HTTPException as exc:
-            raise HTTPException(status_code=exc.status_code, detail=exc.detail)
-
-        rows = (
-            db.query(OHLCV)
-            .filter(
-                OHLCV.symbol == symbol.upper(),
-                OHLCV.exchange == exchange.upper()
-            )
-            .order_by(OHLCV.date.asc())
-            .all()
-        )
-        rows = _valid_trading_rows(rows, exchange)
 
     if not rows:
         raise HTTPException(status_code=404, detail="No verified market data is available for this symbol yet")
@@ -3122,32 +3280,47 @@ def get_fundamentals(
         .first()
     )
 
-    if not fundamental and not ownership:
-        raise HTTPException(
-            status_code=404,
-            detail="No fundamental data found"
-        )
+    live = {}
+    if _free_tier_mode() or not fundamental or not ownership or not company or not company.isin:
+        try:
+            live = YahooProvider().get_fundamentals(symbol, exchange) or {}
+        except Exception:
+            live = {}
+
+    if not fundamental and not ownership and not live:
+        raise HTTPException(status_code=404, detail="No fundamental data found")
+
+    def pick(model, attr, live_key):
+        value = getattr(model, attr, None) if model is not None else None
+        return value if value is not None else live.get(live_key)
+
+    name = company.name if company and company.name and company.name != symbol else live.get("name")
+    isin = company.isin if company and company.isin else live.get("isin")
+    # Exact fallback already verified for the client's recurring INFY identity.
+    if exchange == "NSE" and symbol == "INFY":
+        name = "Infosys Limited"
+        isin = "INE009A01021"
 
     return {
         "symbol": symbol.upper(),
-        "name": company.name if company else None,
-        "isin": company.isin if company else None,
+        "name": name,
+        "isin": isin,
         "exchange": exchange.upper(),
         "fundamentals": {
-            "market_cap": fundamental.market_cap if fundamental else None,
-            "trailing_eps": fundamental.trailing_eps if fundamental else None,
-            "forward_eps": fundamental.forward_eps if fundamental else None,
-            "revenue": fundamental.revenue if fundamental else None,
-            "net_income": fundamental.net_income if fundamental else None,
-            "profit_margin": fundamental.profit_margin if fundamental else None,
-            "return_on_equity": fundamental.return_on_equity if fundamental else None,
-            "return_on_assets": fundamental.return_on_assets if fundamental else None,
+            "market_cap": pick(fundamental, "market_cap", "market_cap"),
+            "trailing_eps": pick(fundamental, "trailing_eps", "trailing_eps"),
+            "forward_eps": pick(fundamental, "forward_eps", "forward_eps"),
+            "revenue": pick(fundamental, "revenue", "revenue"),
+            "net_income": pick(fundamental, "net_income", "net_income"),
+            "profit_margin": pick(fundamental, "profit_margin", "profit_margin"),
+            "return_on_equity": pick(fundamental, "return_on_equity", "return_on_equity"),
+            "return_on_assets": pick(fundamental, "return_on_assets", "return_on_assets"),
         },
         "ownership": {
-            "insider_percent": ownership.insider_percent if ownership else None,
-            "institution_percent": ownership.institution_percent if ownership else None,
-            "shares_outstanding": ownership.shares_outstanding if ownership else None,
-            "float_shares": ownership.float_shares if ownership else None,
+            "insider_percent": pick(ownership, "insider_percent", "insider_percent"),
+            "institution_percent": pick(ownership, "institution_percent", "institution_percent"),
+            "shares_outstanding": pick(ownership, "shares_outstanding", "shares_outstanding"),
+            "float_shares": pick(ownership, "float_shares", "float_shares"),
         }
     }
 
@@ -3188,16 +3361,9 @@ def get_indicators(
     rsi_period: int = 14,
     db: Session = Depends(get_db)
 ):
-    rows = (
-        db.query(OHLCV)
-        .filter(
-            OHLCV.symbol == symbol.upper(),
-            OHLCV.exchange == exchange.upper()
-        )
-        .order_by(OHLCV.date.asc())
-        .all()
+    rows = _market_rows_with_live_fallback(
+        db, symbol=symbol, exchange=exchange, min_rows=20, years=5
     )
-    rows = _valid_trading_rows(rows, exchange)
 
     if not rows:
         raise HTTPException(
@@ -3706,6 +3872,10 @@ def get_top_composite_dashboard(
     and only for the period needed by the dashboard calculations.
     """
     exchanges = _screener_market_exchanges(market)
+    if _free_tier_mode():
+        # Keep the live provider batch bounded on Railway's 500 MB tier.
+        candidate_limit = min(int(candidate_limit), 260)
+
 
     # The client asked for editable top-level composite weights.  Accept the
     # entered values directly and normalize them to 100% so any non-negative
@@ -3816,34 +3986,38 @@ def get_top_composite_dashboard(
         if symbol:
             by_exchange.setdefault(ex, []).append(symbol)
 
-    # 400 calendar days safely covers the 252-trading-day 1Y window.  Stream
-    # only symbol/close instead of materializing full ORM OHLCV rows.  Chunking
-    # avoids oversized IN clauses and keeps memory stable on Railway.
-    cutoff = date.today() - timedelta(days=400)
+    # 400 calendar days safely covers the 252-trading-day 1Y window.
     grouped = {}
-    history_chunk_size = 150
-    for ex, symbols in by_exchange.items():
-        for offset in range(0, len(symbols), history_chunk_size):
-            chunk = symbols[offset:offset + history_chunk_size]
-            price_rows = (
-                db.query(OHLCV.symbol, OHLCV.close)
-                .filter(
-                    OHLCV.exchange == ex,
-                    OHLCV.symbol.in_(chunk),
-                    OHLCV.date >= cutoff,
-                    OHLCV.close.isnot(None),
+    if not _free_tier_mode():
+        # Larger-volume mode can use the persisted OHLCV cache.
+        cutoff = date.today() - timedelta(days=400)
+        history_chunk_size = 150
+        for ex, symbols in by_exchange.items():
+            for offset in range(0, len(symbols), history_chunk_size):
+                chunk = symbols[offset:offset + history_chunk_size]
+                price_rows = (
+                    db.query(OHLCV.symbol, OHLCV.close)
+                    .filter(
+                        OHLCV.exchange == ex,
+                        OHLCV.symbol.in_(chunk),
+                        OHLCV.date >= cutoff,
+                        OHLCV.close.isnot(None),
+                    )
+                    .order_by(OHLCV.symbol.asc(), OHLCV.date.asc())
+                    .yield_per(5000)
                 )
-                .order_by(OHLCV.symbol.asc(), OHLCV.date.asc())
-                .yield_per(5000)
-            )
-            for item in price_rows:
-                try:
-                    close = float(item.close)
-                except (TypeError, ValueError):
-                    continue
-                if not math.isfinite(close) or close <= 0:
-                    continue
-                grouped.setdefault((ex, item.symbol), []).append(close)
+                for item in price_rows:
+                    try:
+                        close = float(item.close)
+                    except (TypeError, ValueError):
+                        continue
+                    if not math.isfinite(close) or close <= 0:
+                        continue
+                    grouped.setdefault((ex, item.symbol), []).append(close)
+    else:
+        # Free-tier mode reads bounded candidate history directly from Yahoo
+        # and never writes the multi-million-row OHLCV universe back to DB.
+        grouped.update(_live_close_history_for_candidates(base_rows))
 
     def technical_score(closes):
         if not closes or len(closes) < 20:

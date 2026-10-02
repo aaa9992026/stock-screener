@@ -163,6 +163,8 @@ def start_scheduler():
     if scheduler.running:
         return
 
+    free_tier_mode = _env_flag("FREE_TIER_MODE", True)
+
     scheduler.add_job(
         cleanup_legacy_universe,
         "interval",
@@ -186,7 +188,7 @@ def start_scheduler():
     )
 
     refresh_hours = max(1, int(os.getenv("AUTO_REFRESH_HOURS", "6") or 6))
-    if configured_refresh_symbols():
+    if (not free_tier_mode) and configured_refresh_symbols():
         scheduler.add_job(
             refresh_configured_market_data,
             "interval",
@@ -197,7 +199,7 @@ def start_scheduler():
             coalesce=True,
         )
 
-    if _env_flag("RS_BACKFILL_ENABLED", True):
+    if (not free_tier_mode) and _env_flag("RS_BACKFILL_ENABLED", True):
         interval_minutes = max(5, int(os.getenv("RS_BACKFILL_INTERVAL_MINUTES", "10") or 10))
         scheduler.add_job(
             refresh_rs_universe_history,
@@ -210,7 +212,7 @@ def start_scheduler():
             next_run_time=datetime.now() + timedelta(minutes=10),
         )
 
-    if _env_flag("FUNDAMENTAL_BACKFILL_ENABLED", True):
+    if (not free_tier_mode) and _env_flag("FUNDAMENTAL_BACKFILL_ENABLED", True):
         fundamental_interval = max(5, int(os.getenv("FUNDAMENTAL_BACKFILL_INTERVAL_MINUTES", "10") or 10))
         scheduler.add_job(
             refresh_universe_fundamentals,
