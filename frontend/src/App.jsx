@@ -2879,8 +2879,12 @@ function App() {
                   <span><b>Volume:</b> candle direction</span>
                 </div>
                 <div className="indicator-color-key framework-ema-color-key" aria-label="EMA color legend">
+                  <span className="ema-legend-title">EMA line colors:</span>
                   {Object.entries(FRAMEWORK_EMA_COLORS).map(([period, color]) => (
-                    <span key={period}><i style={{ background: color }} />EMA {period}</span>
+                    <span key={period} className="framework-ema-legend-item" style={{ borderColor: color }}>
+                      <i style={{ background: color }} />
+                      <b style={{ color }}>EMA {period}</b>
+                    </span>
                   ))}
                 </div>
                 {data?.length ? (
@@ -3883,18 +3887,11 @@ function App() {
 
           {!dataStale && chartOverlays.ema && (
             <div className="ema-color-legend" aria-label="EMA color legend">
-              {[
-                [10, "#2563eb"],
-                [20, "#0f766e"],
-                [34, "#f59e0b"],
-                [50, "#7c3aed"],
-                [100, "#0891b2"],
-                [150, "#db2777"],
-                [200, "#92400e"],
-              ].map(([period, color]) => (
-                <span key={period} className="ema-legend-item">
+              <span className="ema-legend-title">EMA line colors:</span>
+              {Object.entries(FRAMEWORK_EMA_COLORS).map(([period, color]) => (
+                <span key={period} className="ema-legend-item" style={{ borderColor: color }}>
                   <span className="ema-legend-swatch" style={{ backgroundColor: color }} />
-                  EMA {period}
+                  <strong style={{ color }}>EMA {period}</strong>
                 </span>
               ))}
               {chartOverlays.volume && (
