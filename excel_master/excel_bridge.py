@@ -202,6 +202,116 @@ def _write_matrix(sheet, start_cell: str, matrix):
     sheet.range(start_cell).value = matrix
 
 
+
+
+def _direct_yahoo_payload(symbol: str, exchange: str, limit: int):
+    """Fallback used only when the deployed API is unreachable.
+
+    It keeps the client's one-workbook workflow usable by reading the same
+    Yahoo Finance source directly from Python. No synthetic values are added.
+    """
+    try:
+        import yfinance as yf
+    except ImportError as exc:
+        raise RuntimeError("Backend API is unavailable and yfinance fallback is not installed. Run INSTALL_MASTER_EXCEL.bat once.") from exc
+
+    exchange = str(exchange or "US").upper()
+    symbol = str(symbol or "").upper()
+    provider_symbol = symbol
+    if exchange == "NSE":
+        provider_symbol = f"{symbol}.NS"
+    elif exchange == "BSE":
+        provider_symbol = f"{symbol}.BO"
+    elif exchange == "US":
+        provider_symbol = symbol.replace(".", "-").replace("/", "-")
+
+    ticker = yf.Ticker(provider_symbol)
+    hist = ticker.history(period="5y", interval="1d", auto_adjust=False)
+    if hist is None or hist.empty:
+        raise RuntimeError(f"Yahoo Finance returned no daily history for {exchange}:{symbol}.")
+
+    rows = []
+    for dt, row in hist.tail(limit).iterrows():
+        def num(name):
+            value = row.get(name)
+            try:
+                value = float(value)
+                return value if np.isfinite(value) else None
+            except Exception:
+                return None
+        close = num("Close")
+        if close is None or close <= 0:
+            continue
+        rows.append({
+            "date": pd.Timestamp(dt).date().isoformat(),
+            "open": num("Open"), "high": num("High"), "low": num("Low"),
+            "close": close, "volume": num("Volume"),
+        })
+
+    try:
+        info = ticker.info or {}
+    except Exception:
+        info = {}
+    isin = info.get("isin")
+    if not isin:
+        try:
+            raw_isin = getattr(ticker, "isin", None)
+            if callable(raw_isin):
+                raw_isin = raw_isin()
+            if raw_isin and str(raw_isin).strip() not in {"-", "None", "nan"}:
+                isin = str(raw_isin).strip()
+        except Exception:
+            isin = None
+
+    earliest = rows[0]["date"] if rows else None
+    latest = rows[-1]["date"] if rows else None
+    requirement_met = False
+    if earliest:
+        try:
+            requirement_met = pd.Timestamp(earliest).date() <= (pd.Timestamp.now().date() - pd.Timedelta(days=366 * 4))
+        except Exception:
+            requirement_met = False
+
+    return {
+        "symbol": symbol,
+        "exchange": exchange,
+        "generated_at": pd.Timestamp.utcnow().isoformat(),
+        "history": {
+            "earliest_date": earliest,
+            "latest_date": latest,
+            "stored_rows": len(rows),
+            "required_years": 4,
+            "requested_years": 5,
+            "requirement_met": bool(requirement_met),
+            "backfill_attempted": True,
+            "warning": "Loaded directly from Yahoo Finance because the deployed API was unavailable.",
+        },
+        "company": {
+            "name": info.get("longName") or info.get("shortName") or symbol,
+            "isin": isin,
+            "sector": info.get("sector"),
+            "industry": info.get("industry"),
+        },
+        "fundamental_snapshot": {
+            "market_cap": info.get("marketCap"),
+            "trailing_eps": info.get("trailingEps"),
+            "forward_eps": info.get("forwardEps"),
+            "revenue": info.get("totalRevenue"),
+            "net_income": info.get("netIncomeToCommon"),
+            "profit_margin": info.get("profitMargins"),
+            "return_on_equity": info.get("returnOnEquity"),
+            "return_on_assets": info.get("returnOnAssets"),
+        },
+        "ownership_snapshot": {
+            "insider_percent": info.get("heldPercentInsiders"),
+            "institution_percent": info.get("heldPercentInstitutions"),
+            "shares_outstanding": info.get("sharesOutstanding"),
+            "float_shares": info.get("floatShares"),
+        },
+        "ohlcv": rows,
+    }
+
+
 def update_workbook(workbook_path: str | Path | None = None, visible: bool = True):
     try:
         import xlwings as xw
@@ -263,13 +373,18 @@ def update_workbook(workbook_path: str | Path | None = None, visible: bool = Tru
         except Exception as exc:
             refresh_warning = f"Latest refresh unavailable ({exc}); continuing with verified stored data."
 
-        response = requests.get(
-            f"{api_base}/market/excel-feed/{symbol}",
-            params={"exchange": exchange, "limit": limit},
-            timeout=240,
-        )
-        response.raise_for_status()
-        payload = response.json()
+        api_warning = None
+        try:
+            response = requests.get(
+                f"{api_base}/market/excel-feed/{symbol}",
+                params={"exchange": exchange, "limit": limit},
+                timeout=90,
+            )
+            response.raise_for_status()
+            payload = response.json()
+        except Exception as exc:
+            api_warning = f"Deployed API unavailable ({exc}); Excel used direct Yahoo Finance fallback."
+            payload = _direct_yahoo_payload(symbol, exchange, limit)
         rows = payload.get("ohlcv") or []
         if not rows:
             raise RuntimeError(f"No verified OHLCV rows returned for {exchange}:{symbol}.")
@@ -391,7 +506,7 @@ def update_workbook(workbook_path: str | Path | None = None, visible: bool = Tru
             pass
 
         history = payload.get("history") or {}
-        warn_parts = [x for x in [refresh_warning, history.get("warning")] if x]
+        warn_parts = [x for x in [refresh_warning, api_warning, history.get("warning")] if x]
         warning_text = " | ".join(warn_parts)
         status_message = (
             f"Updated {exchange}:{symbol} — {company.get('name') or symbol} | "

@@ -4,7 +4,33 @@ from sqlalchemy.orm import sessionmaker, declarative_base
 from .config import settings
 
 
-engine = create_engine(settings.database_url)
+def _normalize_database_url(url: str) -> str:
+    """Accept both modern SQLAlchemy and legacy Railway/Postgres URL forms."""
+    value = str(url or "").strip()
+    if value.startswith("postgres://"):
+        value = "postgresql://" + value[len("postgres://"):]
+    return value
+
+
+DATABASE_URL = _normalize_database_url(settings.database_url)
+
+engine_kwargs = {
+    # Railway/Postgres can close idle connections. Validate every pooled
+    # connection before using it so a stale socket does not blank the UI.
+    "pool_pre_ping": True,
+}
+if DATABASE_URL.startswith("postgresql"):
+    engine_kwargs.update({
+        "pool_recycle": 300,
+        "pool_size": 5,
+        "max_overflow": 10,
+        "pool_timeout": 20,
+        "connect_args": {"connect_timeout": 10},
+    })
+elif DATABASE_URL.startswith("sqlite"):
+    engine_kwargs["connect_args"] = {"check_same_thread": False}
+
+engine = create_engine(DATABASE_URL, **engine_kwargs)
 
 SessionLocal = sessionmaker(
     autocommit=False,
@@ -13,6 +39,17 @@ SessionLocal = sessionmaker(
 )
 
 Base = declarative_base()
+
+
+def database_ping() -> bool:
+    """Return True only when the configured database accepts a simple query."""
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+        return True
+    except Exception:
+        return False
+
 
 def ensure_schema_compatibility():
     """Add small backwards-compatible columns required by newer deployments.

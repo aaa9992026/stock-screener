@@ -17,7 +17,41 @@ import {
 } from "recharts";
 import "./App.css";
 
-const API = "/api";
+const DEFAULT_API_BASE = "https://stock-screener-production-d90e.up.railway.app";
+const API = String(import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE).replace(/\/$/, "");
+
+const readSessionCache = (key) => {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : null;
+  } catch {
+    return null;
+  }
+};
+
+const writeSessionCache = (key, value) => {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // Cache is only a UI resilience aid; never block live data on storage errors.
+  }
+};
+
+const waitForApiReady = async (maxWaitMs = 12000) => {
+  const started = Date.now();
+  while (Date.now() - started < maxWaitMs) {
+    try {
+      const res = await axios.get(`${API}/health`, { timeout: 5000 });
+      if (res.data?.database === "ready") return true;
+    } catch {
+      // Cold starts and short reconnect windows are expected; retry below.
+    }
+    await new Promise((resolve) => window.setTimeout(resolve, 1200));
+  }
+  return false;
+};
 
 const chartLimitForTimeframe = (timeframe) => timeframe === "daily" ? 1040 : timeframe === "weekly" ? 260 : 300;
 
@@ -622,6 +656,8 @@ function App() {
       return;
     }
 
+    await waitForApiReady(12000);
+
     const requestComposite = (candidateLimit, timeout) =>
       axios.get(`${API}/market/top-composite`, {
         params: {
@@ -637,32 +673,39 @@ function App() {
         timeout,
       });
 
+    const cacheKey = `demo1:top200:${marketOverride || "ALL"}:${JSON.stringify(safeWeights)}`;
     try {
       let res;
       try {
-        // Normal full candidate pass. Backend is optimized to stream only the
-        // history required for these candidates.
-        res = await requestComposite(700, 60000);
+        // Keep the dashboard request bounded for Railway.  A 320-stock candidate
+        // pool is enough to return the requested top 200 while avoiding the
+        // previous 700-symbol cold-start query.
+        res = await requestComposite(320, 45000);
       } catch (firstError) {
-        // One bounded recovery pass protects the dashboard from a transient
-        // cold-start/database timeout without requiring another deployment.
-        res = await requestComposite(350, 45000);
+        await new Promise((resolve) => window.setTimeout(resolve, 1200));
+        res = await requestComposite(220, 35000);
       }
 
-      setTopComposite({
+      const next = {
         rows: res.data.rows || [],
         candidate_count: res.data.candidate_count || 0,
         formula: res.data.formula || "",
         data_rule: res.data.data_rule || "",
         rs_note: res.data.rs_note || "",
-      });
+      };
+      setTopComposite(next);
+      writeSessionCache(cacheKey, { saved_at: new Date().toISOString(), data: next });
     } catch (error) {
-      // Keep any previously verified rows on screen instead of erasing them on
-      // a transient refresh failure.
-      setTopCompositeError(
-        error?.response?.data?.detail ||
-        "Top 200 data is temporarily unavailable. Please press Refresh Top 200 once more."
-      );
+      const cached = readSessionCache(cacheKey);
+      if (cached?.data?.rows?.length) {
+        setTopComposite(cached.data);
+        setTopCompositeError(`Live Top 200 refresh is temporarily unavailable. Showing the last verified dashboard saved ${cached.saved_at || "earlier"}.`);
+      } else {
+        setTopCompositeError(
+          error?.response?.data?.detail ||
+          "Top 200 data is temporarily unavailable. The backend is reconnecting; please retry shortly."
+        );
+      }
     } finally {
       setTopCompositeLoading(false);
     }
@@ -756,11 +799,17 @@ function App() {
   };
 
   useEffect(() => {
-    // One guarded load is enough. loadUniverseScreener itself retries once on
-    // a transient backend failure. A second unconditional delayed request used
-    // to overwrite a successful first response with an error/empty table.
-    loadUniverseScreener(1);
-    loadTopComposite("ALL");
+    let cancelled = false;
+    const loadInitialDashboard = async () => {
+      await waitForApiReady(15000);
+      if (cancelled) return;
+      await Promise.allSettled([
+        loadUniverseScreener(1),
+        loadTopComposite("ALL"),
+      ]);
+    };
+    loadInitialDashboard();
+    return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -1047,52 +1096,77 @@ function App() {
 
   const loadChart = async () => {
     const requestKey = `${exchange}:${symbol}:${timeframe}`;
+    const cacheKey = `demo1:chart:${requestKey}`;
+    const chartUrl = `${API}/market/chart/${symbol}?exchange=${exchange}&timeframe=${timeframe}&limit=${chartLimitForTimeframe(timeframe)}`;
+
+    const validRows = (payload) => (payload?.data || []).filter((row) => (
+      Number(row.open) > 0 &&
+      Number(row.high) > 0 &&
+      Number(row.low) > 0 &&
+      Number(row.close) > 0
+    ));
+
     try {
       setLoading(true);
-      if (activeSelectionRef.current === requestKey) {
-        setDataStatus("loading");
+      if (activeSelectionRef.current === requestKey) setDataStatus("loading");
+
+      await waitForApiReady(10000);
+
+      let rows = [];
+      let lastError = null;
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        try {
+          const res = await axios.get(chartUrl, { timeout: 25000 });
+          rows = validRows(res.data);
+          if (rows.length) break;
+          lastError = new Error("No stored market data");
+        } catch (error) {
+          lastError = error;
+        }
+        if (attempt === 0) await new Promise((resolve) => window.setTimeout(resolve, 800));
       }
 
-      const res = await axios.get(
-        `${API}/market/chart/${symbol}?exchange=${exchange}&timeframe=${timeframe}&limit=${chartLimitForTimeframe(timeframe)}`
-      );
-
-      const rows = (res.data.data || []).filter((row) => (
-        Number(row.open) > 0 &&
-        Number(row.high) > 0 &&
-        Number(row.low) > 0 &&
-        Number(row.close) > 0
-      ));
+      // Only trigger a provider refresh when the API is reachable but the
+      // symbol genuinely has no stored rows. Do not hammer an unavailable API.
+      if (!rows.length && (lastError?.message === "No stored market data" || lastError?.response?.status === 404)) {
+        try {
+          await axios.post(`${API}/market/refresh/${symbol}?exchange=${exchange}`, null, { timeout: 60000 });
+          const retry = await axios.get(chartUrl, { timeout: 25000 });
+          rows = validRows(retry.data);
+        } catch (refreshError) {
+          lastError = refreshError;
+        }
+      }
 
       if (activeSelectionRef.current !== requestKey) return;
-      setData(rows);
-
-      if (rows.length > 0) {
+      if (rows.length) {
+        setData(rows);
         setDataStale(false);
         setDataStatus("fresh");
         setMessage("");
-      } else {
-        setDataStale(true);
-        setDataStatus("stale");
-        setMessage("No market data is currently available.");
+        writeSessionCache(cacheKey, { saved_at: new Date().toISOString(), rows });
+        return;
       }
+      throw lastError || new Error("No market data is currently available.");
 
     } catch (err) {
       console.error("Chart load error:", err);
-
       if (activeSelectionRef.current !== requestKey) return;
-      setData([]);
-      setDataStale(true);
-      setDataStatus("stale");
 
-      setMessage(
-        err.response?.data?.detail ||
-        "Market data could not be loaded."
-      );
-    } finally {
-      if (activeSelectionRef.current === requestKey) {
-        setLoading(false);
+      const cached = readSessionCache(cacheKey);
+      if (cached?.rows?.length) {
+        setData(cached.rows);
+        setDataStale(false);
+        setDataStatus("cached");
+        setMessage(`Live market data is temporarily unavailable. Showing the last verified chart saved ${cached.saved_at || "earlier"}.`);
+      } else {
+        setData([]);
+        setDataStale(true);
+        setDataStatus("stale");
+        setMessage(err?.response?.data?.detail || "Market data could not be loaded. The backend is reconnecting; please retry shortly.");
       }
+    } finally {
+      if (activeSelectionRef.current === requestKey) setLoading(false);
     }
   };
 
@@ -1214,22 +1288,26 @@ function App() {
   };
 
   useEffect(() => {
-    loadCompanyProfile();
-    loadChart();
-    loadIndicators();
-    loadBenchmark();
-    loadDashboard();
-    loadTechnicalSummary();
-    loadOwnershipDetails();
-    loadIndiaShareholding();
-
-    loadFundamentals();
-    loadFundamentalHistory();
-    if (exchange === "US") {
-      loadSecEdgar();
-    } else {
-      setSecEdgar(null);
-    }
+    let cancelled = false;
+    const loadSelection = async () => {
+      await waitForApiReady(12000);
+      if (cancelled) return;
+      await Promise.allSettled([
+        loadCompanyProfile(),
+        loadChart(),
+        loadIndicators(),
+        loadBenchmark(),
+        loadDashboard(),
+        loadTechnicalSummary(),
+        loadOwnershipDetails(),
+        loadIndiaShareholding(),
+        loadFundamentals(),
+        loadFundamentalHistory(),
+        exchange === "US" ? loadSecEdgar() : Promise.resolve(setSecEdgar(null)),
+      ]);
+    };
+    loadSelection();
+    return () => { cancelled = true; };
   }, [symbol, timeframe, exchange]);
 
   useEffect(() => {

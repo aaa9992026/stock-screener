@@ -43,3 +43,10 @@ DATA RULE
 ---------
 Provider/verified data only. Missing values remain blank/N/A; nothing is fabricated.
 Signals and backtests are analytical aids, not investment advice.
+
+BACKEND-OUTAGE FALLBACK
+-----------------------
+The updater first uses the deployed Stock Screener API. If that API is temporarily unreachable,
+Python automatically falls back to the same Yahoo Finance provider for 5-year OHLCV + current
+fundamental/ownership fields, so the History, Indicators, Backtest and Dashboard sheets can still refresh.
+Provider-missing values remain blank/N/A; nothing is fabricated.

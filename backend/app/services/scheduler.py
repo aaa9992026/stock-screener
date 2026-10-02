@@ -171,7 +171,7 @@ def start_scheduler():
         replace_existing=True,
         max_instances=1,
         coalesce=True,
-        next_run_time=datetime.now() + timedelta(seconds=5),
+        next_run_time=datetime.now() + timedelta(minutes=3),
     )
 
     scheduler.add_job(
@@ -182,7 +182,7 @@ def start_scheduler():
         replace_existing=True,
         max_instances=1,
         coalesce=True,
-        next_run_time=datetime.now() + timedelta(seconds=3),
+        next_run_time=datetime.now() + timedelta(minutes=5),
     )
 
     refresh_hours = max(1, int(os.getenv("AUTO_REFRESH_HOURS", "6") or 6))
@@ -207,7 +207,7 @@ def start_scheduler():
             replace_existing=True,
             max_instances=1,
             coalesce=True,
-            next_run_time=datetime.now() + timedelta(minutes=2),
+            next_run_time=datetime.now() + timedelta(minutes=10),
         )
 
     if _env_flag("FUNDAMENTAL_BACKFILL_ENABLED", True):
@@ -220,7 +220,7 @@ def start_scheduler():
             replace_existing=True,
             max_instances=1,
             coalesce=True,
-            next_run_time=datetime.now() + timedelta(minutes=3),
+            next_run_time=datetime.now() + timedelta(minutes=12),
         )
 
     scheduler.start()
