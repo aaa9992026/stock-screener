@@ -38,7 +38,7 @@ The Excel updater now fetches up to 20 years of verified Yahoo Finance OHLCV dir
 ## Git
 ```bash
 git add .
-git commit -m "Add ATR ADR BB width metrics standard deviation and sorting"
+git commit -m "Add fundamental RS filters bounded RS score and EMA color legend"
 git push
 ```
 
@@ -83,3 +83,11 @@ The current client-review target is the framework, not another data correction p
 - ATR/ADR periods are editable; ADR Ratio is current daily range divided by rolling ADR.
 - Top-200 now exposes Standard Deviation directly beside Beta. The value is annualized standard deviation of daily returns (%) over up to 252 sessions.
 - Sort controls are visibly labeled **Sort by** and **Order**, with explicit Ascending/Descending choices; Standard Deviation is also sortable.
+
+
+## Final fundamental framework polish (2026-10-02)
+- Fundamental rules show editable compare/value/weight/on-off controls and an RS Score column.
+- Fundamental Score is displayed immediately below the filter table, followed by the qualifying-stock list.
+- Qualifying rows require Fundamental Score 100/100 plus complete rule coverage; missing data is never converted into a pass.
+- Indicator RS is bounded to 0–100 and the RS chart axis is fixed at 0–100.
+- EMA 10/20/34/50/100/150/200 now have a visible color legend with each EMA name.

@@ -135,3 +135,12 @@ Per the latest client direction, the Top-200 page is now arranged for framework 
 
 ### Final client framework metrics
 The client framework now includes ATR%, ADR%, ADR Ratio, BB Width%, and a Top-200 Standard Deviation column beside Beta. Top-200 sort order is explicitly selectable as ascending or descending, including Standard Deviation.
+
+## 2026-10-02 final fundamental-filter / RS / EMA polish
+
+- Fundamental filter table now labels each rule result as **RS Score** and keeps compare sign, threshold/value, weight and enable/disable editable.
+- EPS, PAT, Sales, NPM, CFO and the additional ROE/ROCE/share filters remain grouped exactly as the client's handwritten framework.
+- An explicit **Fundamental Score** is shown below the rule table together with the subgroup RS scores.
+- A **Stocks Qualifying the Fundamental Criteria** table is placed directly below the Fundamental Score. It only lists rows with 100/100 Fundamental Score and complete rule coverage; missing provider history never counts as a pass.
+- Indicator RS is now a bounded **0–100 RS Score** and cannot exceed 100. The separate price-chart RS overlay remains the requested stock/benchmark price-relative line.
+- The candlestick section now shows a clear color key beside the EMA names for EMA 10/20/34/50/100/150/200.

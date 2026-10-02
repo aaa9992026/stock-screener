@@ -1463,7 +1463,7 @@ th {
 .compact-enable-toggle input { accent-color: #2563eb; }
 .fundamental-score-strip {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 8px;
   padding: 12px;
   background: #f8fafc;
@@ -3277,6 +3277,92 @@ button:disabled {
 @media (max-width: 620px) {
   .framework-mode-banner {
     align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+/* Final client framework polish: explicit overall fundamental score + qualifying list */
+.fundamental-total-score {
+  border-color: #93c5fd !important;
+  background: #eff6ff !important;
+}
+.fundamental-total-score strong {
+  color: #1d4ed8;
+  font-size: 16px;
+}
+
+.fundamental-qualified-panel {
+  border: 1px solid #dbe4f0;
+  border-radius: 12px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.fundamental-qualified-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  padding: 13px 15px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.fundamental-qualified-head > div {
+  display: grid;
+  gap: 3px;
+}
+
+.fundamental-qualified-head strong {
+  color: #0f172a;
+  font-size: 14px;
+}
+
+.fundamental-qualified-head span:not(.qualification-count) {
+  color: #64748b;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.qualification-count {
+  flex: 0 0 auto;
+  border: 1px solid #86efac;
+  background: #f0fdf4;
+  color: #166534;
+  border-radius: 999px;
+  padding: 5px 9px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.fundamental-qualified-table td,
+.fundamental-qualified-table th {
+  white-space: nowrap;
+}
+
+.qualified-empty {
+  color: #64748b;
+  text-align: center;
+  padding: 18px !important;
+  white-space: normal !important;
+}
+
+.framework-ema-color-key {
+  margin: 0 0 9px;
+  padding: 7px 9px;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  background: #f8fafc;
+  font-size: 10px;
+}
+
+.framework-ema-color-key i {
+  width: 14px;
+  height: 4px;
+}
+
+@media (max-width: 720px) {
+  .fundamental-qualified-head {
     flex-direction: column;
   }
 }

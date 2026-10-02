@@ -102,6 +102,16 @@ const defaultRsWeights = { "1w": 30, "2w": 0, "1m": 25, "2m": 0, "3m": 20, "6m":
 const SCORE_WEIGHTS_STORAGE_VERSION = "m2-client-dashboard-composite-v3-correct-formula";
 const RS_WEIGHTS_STORAGE_VERSION = "m2-rs-client-5000-v3";
 
+const FRAMEWORK_EMA_COLORS = {
+  10: "#2563eb",
+  20: "#0f766e",
+  34: "#f59e0b",
+  50: "#7c3aed",
+  100: "#0891b2",
+  150: "#db2777",
+  200: "#92400e",
+};
+
 
 const universeColumnOptions = [
   ["symbol", "Symbol"], ["name", "Company"], ["isin", "ISIN"], ["exchange", "Exchange"],
@@ -819,6 +829,15 @@ function App() {
     return topCompositeSortDir === "asc" ? cmp : -cmp;
   });
 
+  const fundamentalQualifiedRows = topCompositeDisplayRows
+    .filter((row) => {
+      const score = Number(row.fundamental_score);
+      const coverage = Number(row.fundamental_rule_coverage_percent);
+      return Number.isFinite(score) && score >= 99.999 && Number.isFinite(coverage) && coverage >= 99.9;
+    })
+    .sort((a, b) => Number(b.fundamental_score || 0) - Number(a.fundamental_score || 0))
+    .slice(0, 30);
+
   const resetUniverseFilters = () => {
     const next = { ...emptyUniverseFilters };
     setUniverseFilters(next);
@@ -1458,21 +1477,11 @@ function App() {
     };
 
     if (chartOverlays.ema) {
-      const emaColors = {
-        10: "#2563eb",
-        20: "#0f766e",
-        34: "#f59e0b",
-        50: "#7c3aed",
-        100: "#0891b2",
-        150: "#db2777",
-        200: "#92400e",
-      };
-
       [10, 20, 34, 50, 100, 150, 200].forEach((period) => {
         const values = calculateEmaSeries(candleData, period);
         if (!values.length) return;
         const series = chart.addSeries(LineSeries, {
-          color: emaColors[period],
+          color: FRAMEWORK_EMA_COLORS[period],
           lineWidth: period <= 50 ? 2 : 1,
           priceLineVisible: false,
           lastValueVisible: false,
@@ -1719,11 +1728,10 @@ function App() {
     };
 
     if (chartOverlays.ema) {
-      const colors = { 10: "#2563eb", 20: "#0f766e", 34: "#f59e0b", 50: "#7c3aed", 100: "#0891b2", 150: "#db2777", 200: "#92400e" };
       [10, 20, 34, 50, 100, 150, 200].forEach((period) => {
         const values = emaSeries(period);
         if (!values.length) return;
-        const line = chart.addSeries(LineSeries, { color: colors[period], lineWidth: period <= 34 ? 2 : 1, priceLineVisible: false, lastValueVisible: false, title: `EMA ${period}` });
+        const line = chart.addSeries(LineSeries, { color: FRAMEWORK_EMA_COLORS[period], lineWidth: period <= 34 ? 2 : 1, priceLineVisible: false, lastValueVisible: false, title: `EMA ${period}` });
         line.setData(values);
       });
     }
@@ -2356,12 +2364,27 @@ function App() {
   const relativeStrengthChartData = (() => {
     const rows = technicalSummary?.rs_chart;
     if (!Array.isArray(rows)) return [];
-    return rows
+    const raw = rows
       .map((row) => ({
         date: String(row.date).slice(0, 10),
-        rs: Number(row.rs),
+        ratioIndex: Number(row.rs),
       }))
-      .filter((row) => Number.isFinite(row.rs) && row.rs > 0);
+      .filter((row) => Number.isFinite(row.ratioIndex) && row.ratioIndex > 0);
+
+    // Client correction: the indicator RS line is a bounded 0-100 score.
+    // Convert the stock/benchmark relative-strength ratio into an expanding
+    // percentile rank so the indicator can never exceed 100. The price-chart
+    // RS overlay remains the visual stock/benchmark ratio requested separately.
+    return raw.map((row, index) => {
+      const sample = raw.slice(0, index + 1).map((item) => item.ratioIndex);
+      const lower = sample.filter((value) => value < row.ratioIndex).length;
+      const equal = sample.filter((value) => value === row.ratioIndex).length;
+      const percentile = sample.length ? ((lower + (0.5 * equal)) * 100) / sample.length : null;
+      return {
+        date: row.date,
+        rsScore: percentile == null ? null : Math.max(0, Math.min(100, Number(percentile.toFixed(2)))),
+      };
+    }).filter((row) => Number.isFinite(row.rsScore));
   })();
 
   const changeExchange = (value) => {
@@ -2470,7 +2493,7 @@ function App() {
             <p>{subtitle}</p>
           </div>
           <div className="compact-filter-score">
-            <span>Group score</span>
+            <span>{group === "fundamental" ? "Fundamental score" : "Group score"}</span>
             <strong>{filterScoreText(factorEvaluationRows.groupScores?.[group])}</strong>
           </div>
         </div>
@@ -2484,7 +2507,7 @@ function App() {
                 <th>Value / target</th>
                 <th>Current</th>
                 <th>Weight</th>
-                <th>Filter score</th>
+                <th>RS score</th>
                 <th>Use</th>
               </tr>
             </thead>
@@ -2581,8 +2604,9 @@ function App() {
         {group === "fundamental" && (
           <div className="fundamental-score-strip">
             {Object.entries(factorEvaluationRows.fundamentalGroupScores || {}).map(([name, score]) => (
-              <div key={name}><span>{name} score</span><strong>{filterScoreText(score)}</strong></div>
+              <div key={name}><span>{name} RS score</span><strong>{filterScoreText(score)}</strong></div>
             ))}
+            <div className="fundamental-total-score"><span>Fundamental score</span><strong>{filterScoreText(factorEvaluationRows.groupScores?.fundamental)}</strong></div>
           </div>
         )}
       </div>
@@ -2854,6 +2878,11 @@ function App() {
                   <span><b>EPS:</b> quarterly line</span>
                   <span><b>Volume:</b> candle direction</span>
                 </div>
+                <div className="indicator-color-key framework-ema-color-key" aria-label="EMA color legend">
+                  {Object.entries(FRAMEWORK_EMA_COLORS).map(([period, color]) => (
+                    <span key={period}><i style={{ background: color }} />EMA {period}</span>
+                  ))}
+                </div>
                 {data?.length ? (
                   <div ref={dashboardCandlestickRef} className="dashboard-candlestick-canvas" />
                 ) : <div className="dashboard-mini-empty">Select a stock from the Top 200 table to load its candlestick chart.</div>}
@@ -2890,7 +2919,6 @@ function App() {
                   <label>Vol Long <input type="number" min="3" max="180" value={frameworkIndicatorSettings.volumeLong} onChange={(e) => setFrameworkIndicatorSettings((prev) => ({ ...prev, volumeLong: Number(e.target.value) || 30 }))} /></label>
                   <label>Dry-Up <input type="number" min="2" max="250" value={frameworkIndicatorSettings.volumeDryUp} onChange={(e) => setFrameworkIndicatorSettings((prev) => ({ ...prev, volumeDryUp: Number(e.target.value) || 50 }))} /></label>
                   <label>Delivery <input type="number" min="1" max="60" value={frameworkIndicatorSettings.delivery} onChange={(e) => setFrameworkIndicatorSettings((prev) => ({ ...prev, delivery: Number(e.target.value) || 5 }))} /></label>
-                  <label>RS <input type="number" min="2" max="100" value={frameworkIndicatorSettings.rsScore} onChange={(e) => setFrameworkIndicatorSettings((prev) => ({ ...prev, rsScore: Number(e.target.value) || 14 }))} /></label>
                   <label className="macd-period-inputs">MACD
                     <input aria-label="MACD fast" type="number" min="2" max="100" value={frameworkIndicatorSettings.macdFast} onChange={(e) => setFrameworkIndicatorSettings((prev) => ({ ...prev, macdFast: Number(e.target.value) || 12 }))} />
                     <span>/</span>
@@ -3094,14 +3122,15 @@ function App() {
 
                     {frameworkIndicatorVisibility.rsScore && (
                       <div className="dashboard-mini-chart dashboard-indicator-chart">
-                        <strong>RS Line / Score ({frameworkIndicatorSettings.rsScore})</strong>
+                        <strong>RS Score (0-100)</strong>
                         {relativeStrengthChartData.length > 1 ? (
                           <ResponsiveContainer width="100%" height={135}>
                             <LineChart data={relativeStrengthChartData.slice(-160)}>
                               <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                              <XAxis dataKey="date" minTickGap={38} tick={{ fontSize: 8 }} tickFormatter={formatChartDate} /><YAxis width={42} tick={{ fontSize: 8 }} />
-                              <Tooltip labelFormatter={formatChartDate} formatter={(value) => [Number(value).toFixed(2), "RS"]} />
-                              <Line type="monotone" dataKey="rs" name="RS" stroke="#111827" dot={false} strokeWidth={1.9} connectNulls isAnimationActive={false} />
+                              <XAxis dataKey="date" minTickGap={38} tick={{ fontSize: 8 }} tickFormatter={formatChartDate} /><YAxis domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} width={42} tick={{ fontSize: 8 }} />
+                              <Tooltip labelFormatter={formatChartDate} formatter={(value) => [`${Number(value).toFixed(2)}`, "RS Score"]} />
+                              <ReferenceLine y={100} stroke="#94a3b8" strokeDasharray="3 3" />
+                              <Line type="monotone" dataKey="rsScore" name="RS Score" stroke="#111827" dot={false} strokeWidth={1.9} connectNulls isAnimationActive={false} />
                             </LineChart>
                           </ResponsiveContainer>
                         ) : <div className="framework-placeholder">RS framework ready — benchmark series will populate when available.</div>}
@@ -3314,6 +3343,36 @@ function App() {
                     loadDashboard();
                   }}>Apply Fundamental Rules</button>
                   <span>Settings are shared with the Milestone 2 ranking / qualification engine.</span>
+                </div>
+
+                <div className="fundamental-qualified-panel">
+                  <div className="fundamental-qualified-head">
+                    <div>
+                      <strong>Stocks Qualifying the Fundamental Criteria</strong>
+                      <span>Displayed after the filters and Fundamental Score, as requested. A stock is listed only when its current Fundamental Score is 100/100 with complete rule coverage; missing data is never treated as a pass.</span>
+                    </div>
+                    <span className="qualification-count">{fundamentalQualifiedRows.length} qualified</span>
+                  </div>
+                  <div className="compact-table-scroll">
+                    <table className="filter-config-table fundamental-qualified-table">
+                      <thead><tr><th>#</th><th>Stock</th><th>Fundamental Score</th><th>EPS RS</th><th>PAT RS</th><th>Sales RS</th><th>Coverage</th></tr></thead>
+                      <tbody>
+                        {fundamentalQualifiedRows.length ? fundamentalQualifiedRows.map((row, index) => (
+                          <tr key={`${row.exchange}:${row.symbol}`}>
+                            <td>{index + 1}</td>
+                            <td className="filter-name-cell"><strong>{row.symbol}</strong><small>{row.name || row.exchange}</small></td>
+                            <td><span className="filter-score-badge is-pass">{filterScoreText(row.fundamental_score)}</span></td>
+                            <td>{filterScoreText(row.eps_score)}</td>
+                            <td>{filterScoreText(row.pat_score)}</td>
+                            <td>{filterScoreText(row.sales_score)}</td>
+                            <td>{Number.isFinite(Number(row.fundamental_rule_coverage_percent)) ? `${Number(row.fundamental_rule_coverage_percent).toFixed(0)}%` : "N/A"}</td>
+                          </tr>
+                        )) : (
+                          <tr><td colSpan="7" className="qualified-empty">No fully qualified stocks in the currently loaded data yet. The framework is ready and the list will populate automatically as complete provider history is available.</td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
             )}
@@ -4045,16 +4104,17 @@ function App() {
           )}
 
           <div className="chart-note">
-            RS line = stock price / broad-market benchmark, rebased to 100 for charting only. Relative Return = Stock Return % - Benchmark Return % and is independent of the editable RS weights. The weights change only the Final RS Score. Each stock percentile uses the client-required market universe: {"5,000 stocks"}. Formula: [(stocks with lower relative return) + 0.5 × (stocks with equal relative return)] × 100 / {"5000"}. Final RS Score uses the enabled weighted percentile components. Default period weights remain 1W×0.30 + 1M×0.25 + 3M×0.20 + 6M×0.15 + 12M×0.10. 2W, 2M, and Sector RS are optional with default weight 0.
+            Price-chart RS overlay = stock price / broad-market benchmark and is visually rebased only to share the price scale. The indicator RS Score is separately bounded from 0 to 100 and never crosses 100. Relative Return = Stock Return % - Benchmark Return % and is independent of the editable RS weights. The weights change only the Final RS Score. Each stock percentile uses the client-required market universe: {"5,000 stocks"}. Formula: [(stocks with lower relative return) + 0.5 × (stocks with equal relative return)] × 100 / {"5000"}. Final RS Score uses the enabled weighted percentile components. Default period weights remain 1W×0.30 + 1M×0.25 + 3M×0.20 + 6M×0.15 + 12M×0.10. 2W, 2M, and Sector RS are optional with default weight 0.
           </div>
           {technicalSummary?.rs_available && relativeStrengthChartData.length > 1 ? (
             <ResponsiveContainer width="100%" height={230}>
               <LineChart data={relativeStrengthChartData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="date" minTickGap={35} tickFormatter={formatChartDate} />
-                <YAxis domain={["auto", "auto"]} />
-                <Tooltip labelFormatter={formatChartDate} formatter={(value) => [Number(value).toFixed(2), "RS"]} />
-                <Line type="monotone" dataKey="rs" strokeWidth={2} dot={false} />
+                <YAxis domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} />
+                <Tooltip labelFormatter={formatChartDate} formatter={(value) => [Number(value).toFixed(2), "RS Score"]} />
+                <ReferenceLine y={100} stroke="#94a3b8" strokeDasharray="3 3" />
+                <Line type="monotone" dataKey="rsScore" name="RS Score" strokeWidth={2} dot={false} />
               </LineChart>
             </ResponsiveContainer>
           ) : (
