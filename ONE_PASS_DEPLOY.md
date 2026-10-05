@@ -115,3 +115,24 @@ The qualified list now follows the active Fundamental Filters immediately. Examp
 
 Deploy this package normally. After Vercel/Railway deploy, hard-refresh the browser (Ctrl+Shift+R). Verify Technical Filters, Ownership Filters, dynamic Fundamental qualified-stock columns, OHLCV display, RS Score, and the corrected percentile formula.
 
+
+## Ranking client-feedback closeout (2026-10-05)
+
+After deployment, hard-refresh the Vercel page and verify the following in order:
+
+1. Move the cursor across different candlesticks and confirm Date/O/H/L/C/V changes for the hovered candle.
+2. Confirm the Indicator section visibly shows the current RS Score.
+3. Confirm Sort by / Order controls are directly above the Top-200 list and change its order.
+4. Search a different symbol and use **Excel — Current Stock**; the export/feed must use that selected symbol.
+5. Confirm current EMA, BB Upper/Lower, EPS and RS values are visible around the price-chart framework and the plotted lines expose last values.
+6. In Fundamental Filters, enable a rule such as EPS growth YoY and click **Apply Fundamental Rules**. The request now targets the complete eligible company universe rather than the Top-200 ranking slice. The progress strip explicitly shows how many provider histories have been evaluated and how many remain.
+7. Confirm historical ownership rules with unavailable provider series say **N/A — provider history unavailable**, not `Pending`.
+
+The full-universe scan never invents missing fundamentals. Cold provider histories are warmed progressively in the background and become eligible on subsequent refreshes.
+
+### Git
+```bash
+git add .
+git commit -m "Fix ranking hover RS sorting Excel and full-universe filters"
+git push
+```

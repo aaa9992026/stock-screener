@@ -46,6 +46,8 @@ _RANKING_ENRICH_TTL = 21600
 _RANKING_SEC_PROVIDER = None
 _RANKING_WARM_LOCK = threading.Lock()
 _RANKING_WARM_ACTIVE = False
+_QUALIFIED_UNIVERSE_WARM_LOCK = threading.Lock()
+_QUALIFIED_UNIVERSE_WARM_ACTIVE = False
 
 
 def _free_tier_mode() -> bool:
@@ -3281,6 +3283,23 @@ def get_excel_feed(symbol: str, exchange: str = "US", limit: int = Query(EXCEL_D
         .all()
     )
     rows = list(reversed(_valid_trading_rows(rows, exchange)))
+    live_rows = []
+    if _free_tier_mode():
+        try:
+            live_rows = (_live_provider_rows(symbol, exchange, years=6) or [])[-limit:]
+        except Exception:
+            live_rows = []
+    if live_rows:
+        live_dates = [str(r.get("date")) for r in live_rows if r.get("date")]
+        if live_dates:
+            history_status = {
+                **history_status,
+                "earliest_date": min(live_dates),
+                "latest_date": max(live_dates),
+                "stored_rows": len(live_rows),
+                "live_provider_rows": len(live_rows),
+                "warning": "Free-tier mode: Excel feed is using live provider OHLCV for the selected stock; the Master Excel bridge still fetches up to 20 years directly.",
+            }
     fundamental = db.query(Fundamental).filter(Fundamental.symbol == symbol, Fundamental.exchange == exchange).first()
     ownership = db.query(Ownership).filter(Ownership.symbol == symbol, Ownership.exchange == exchange).first()
     return _json_safe({
@@ -3310,10 +3329,15 @@ def get_excel_feed(symbol: str, exchange: str = "US", limit: int = Query(EXCEL_D
             "shares_outstanding": ownership.shares_outstanding if ownership else None,
             "float_shares": ownership.float_shares if ownership else None,
         },
-        "ohlcv": [
-            {"date": r.date.isoformat(), "open": r.open, "high": r.high, "low": r.low, "close": r.close, "volume": r.volume}
-            for r in rows
-        ],
+        "ohlcv": (
+            [
+                {"date": str(r.get("date")), "open": r.get("open"), "high": r.get("high"), "low": r.get("low"), "close": r.get("close"), "volume": r.get("volume")}
+                for r in live_rows
+            ] if live_rows else [
+                {"date": r.date.isoformat(), "open": r.open, "high": r.high, "low": r.low, "close": r.close, "volume": r.volume}
+                for r in rows
+            ]
+        ),
         "ranking_spec": get_client_ranking_spec(),
         "excel_note": "Master Excel uses compact API snapshots plus direct real-provider history for up to 20-year backtesting in free-tier mode; missing provider data remains N/A.",
     })
@@ -4025,6 +4049,8 @@ def get_technical_summary(
         "average_atr_percent_10": round(avg_atr_percent_10, 2) if avg_atr_percent_10 is not None else None,
         "average_atr_percent_20": round(avg_atr_percent_20, 2) if avg_atr_percent_20 is not None else None,
         "rsi_14": round(rsi14, 2) if rsi14 is not None else None,
+        "bollinger_upper": round(bb_upper, 2) if bb_upper is not None else None,
+        "bollinger_lower": round(bb_lower, 2) if bb_lower is not None else None,
         "bollinger_width_percent": round(bb_width, 2) if bb_width is not None else None,
         "range_20d_percent": round(range20, 2) if range20 is not None else None,
         "technical_metric_series": metric_series[-260:],
@@ -5314,6 +5340,185 @@ def get_top_composite_dashboard(
         "enrichment_remaining_count": len(enrichment_remaining) if _free_tier_mode() else 0,
         "enrichment_in_progress": bool(enrichment_remaining) if _free_tier_mode() else False,
         "sync_enrichment_limit": int(os.getenv("TOP200_SYNC_ENRICH_LIMIT", "20") or 20) if _free_tier_mode() else 0,
+    })
+
+
+
+def _qualified_rule_compare(value, comparator, threshold):
+    """Evaluate one client filter without inventing unavailable values."""
+    value = _finite_number(value)
+    threshold = _finite_number(threshold)
+    if value is None or threshold is None:
+        return None
+    comparator = str(comparator or ">").strip()
+    if comparator == ">":
+        return value > threshold
+    if comparator == ">=":
+        return value >= threshold
+    if comparator == "<":
+        return value < threshold
+    if comparator == "<=":
+        return value <= threshold
+    return None
+
+
+def _warm_full_qualified_universe(rows):
+    """Incrementally fill persisted ranking snapshots for the complete universe.
+
+    The work runs outside the request so a full 5k+ symbol history crawl does not
+    time out Railway/Vercel. Every completed symbol is persisted in
+    RankingSnapshot and immediately participates in the next qualification call.
+    """
+    global _QUALIFIED_UNIVERSE_WARM_ACTIVE
+    rows = list(rows or [])
+    if not rows:
+        return
+    with _QUALIFIED_UNIVERSE_WARM_LOCK:
+        if _QUALIFIED_UNIVERSE_WARM_ACTIVE:
+            return
+        _QUALIFIED_UNIVERSE_WARM_ACTIVE = True
+
+    def runner():
+        global _QUALIFIED_UNIVERSE_WARM_ACTIVE
+        try:
+            for offset in range(0, len(rows), 20):
+                chunk = rows[offset:offset + 20]
+                try:
+                    _apply_ranking_enrichment(chunk, limit=len(chunk))
+                except Exception:
+                    continue
+        finally:
+            with _QUALIFIED_UNIVERSE_WARM_LOCK:
+                _QUALIFIED_UNIVERSE_WARM_ACTIVE = False
+
+    threading.Thread(target=runner, name="qualified-universe-warm", daemon=True).start()
+
+
+@router.post("/fundamental-qualified")
+def get_fundamental_qualified(payload: dict, db: Session = Depends(get_db)):
+    """Return qualifying stocks from the COMPLETE stored company universe.
+
+    This endpoint intentionally does not use the Top-200 candidate list. It
+    evaluates the client's currently enabled fundamental rules against compact
+    persisted real-provider ranking snapshots for every eligible company. Missing
+    histories are never treated as passes; they are warmed in the background and
+    coverage is returned explicitly so the UI can show scan progress.
+    """
+    market = str(payload.get("market") or "ALL").upper()
+    rules = list(payload.get("rules") or [])
+    limit = max(1, min(int(payload.get("limit") or 5000), 10000))
+    sort_by = str(payload.get("sort_by") or "fundamental")
+    sort_dir = str(payload.get("sort_dir") or "desc").lower()
+
+    active_rules = []
+    for rule in rules:
+        key = str(rule.get("key") or "").strip()
+        if not key or rule.get("enabled") is False or float(rule.get("weight") or 0) <= 0:
+            continue
+        active_rules.append({
+            "key": key,
+            "comparator": str(rule.get("comparator") or ">"),
+            "threshold": rule.get("threshold"),
+        })
+    if not active_rules:
+        return {"rows": [], "qualified_total": 0, "evaluated": 0, "universe_total": 0, "scan_remaining": 0, "complete": True, "message": "No active fundamental rules."}
+
+    exchanges = _screener_market_exchanges(market)
+    company_query = db.query(Company).filter(Company.is_active == 1, Company.exchange.in_(exchanges))
+    company_query = apply_eligible_equity_filter(company_query, exchanges)
+    companies = company_query.order_by(Company.exchange.asc(), Company.symbol.asc()).all()
+    company_map = {(str(c.exchange).upper(), str(c.symbol).upper()): c for c in companies}
+
+    # Use every persisted real-provider snapshot for qualification instead of
+    # dropping a stock merely because its compact history snapshot is older than
+    # the Top-200 display TTL. The background warmer refreshes missing/stale
+    # histories progressively; stored values are never fabricated.
+    snapshots = db.query(RankingSnapshot).filter(
+        RankingSnapshot.exchange.in_(exchanges),
+    ).all()
+    snapshot_map = {}
+    for snap in snapshots:
+        key = (str(snap.exchange or "").upper(), str(snap.symbol or "").upper())
+        if key not in company_map:
+            continue
+        try:
+            snapshot_map[key] = json.loads(snap.payload_json or "{}") or {}
+        except Exception:
+            continue
+
+    qualified = []
+    evaluated = 0
+    missing_rows = []
+    for key, company in company_map.items():
+        snap = snapshot_map.get(key) or {}
+        values = snap.get("fundamental_rule_values") or {}
+        passed_all = True
+        complete_row = True
+        for rule in active_rules:
+            # Industry-comparison rules need a real peer median. Until a verified
+            # median is present in the stored snapshot they remain unavailable.
+            if rule["comparator"] == "industry":
+                complete_row = False
+                passed_all = False
+                break
+            value = values.get(rule["key"])
+            verdict = _qualified_rule_compare(value, rule["comparator"], rule["threshold"])
+            if verdict is None:
+                complete_row = False
+                passed_all = False
+                break
+            if verdict is not True:
+                passed_all = False
+                break
+        if complete_row:
+            evaluated += 1
+        else:
+            metadata = snap.get("metadata") or {}
+            missing_rows.append({
+                "symbol": company.symbol, "exchange": company.exchange, "name": company.name,
+                "isin": company.isin, "sector": company.sector, "industry": company.industry,
+                **{k: metadata.get(k) for k in ("market_cap", "trailing_eps", "forward_eps", "revenue", "net_income", "profit_margin", "return_on_equity", "return_on_assets", "institution_percent", "insider_percent", "shares_outstanding", "float_shares")},
+            })
+        if complete_row and passed_all:
+            qualified.append({
+                "symbol": company.symbol,
+                "exchange": company.exchange,
+                "name": company.name,
+                "isin": company.isin,
+                "sector": company.sector,
+                "industry": company.industry,
+                "fundamental_rule_values": {r["key"]: values.get(r["key"]) for r in active_rules},
+                "current_fundamental_score": 100.0,
+                "current_fundamental_coverage_percent": 100.0,
+            })
+
+    # Keep full-universe history acquisition progressing after the response.
+    if missing_rows:
+        _warm_full_qualified_universe(missing_rows)
+
+    def sort_value(row):
+        if sort_by == "symbol":
+            return str(row.get("symbol") or "")
+        if sort_by == "fundamental":
+            return float(row.get("current_fundamental_score") or 0)
+        value = _finite_number((row.get("fundamental_rule_values") or {}).get(sort_by))
+        return float("-inf") if value is None else value
+
+    reverse = sort_dir != "asc"
+    if sort_by == "symbol":
+        qualified.sort(key=sort_value, reverse=reverse)
+    else:
+        qualified.sort(key=lambda row: (sort_value(row), str(row.get("symbol") or "")), reverse=reverse)
+
+    universe_total = len(company_map)
+    return _json_safe({
+        "rows": qualified[:limit],
+        "qualified_total": len(qualified),
+        "evaluated": evaluated,
+        "universe_total": universe_total,
+        "scan_remaining": max(0, universe_total - evaluated),
+        "complete": evaluated >= universe_total,
+        "message": "Full company universe is used; no Top-200 cap is applied. Missing real-provider histories are excluded until evaluated and are warmed automatically in the background.",
     })
 
 

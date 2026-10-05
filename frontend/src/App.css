@@ -3554,3 +3554,49 @@ button:disabled {
 }
 .standalone-technical-filters .section-eyebrow { color: #0f766e; }
 .standalone-ownership-filters .section-eyebrow { color: #7c3aed; }
+
+/* Final client closeout: make active sorting, full-universe coverage and current chart values unmistakable. */
+.top200-sort-toolbar {
+  margin: 14px 0 10px;
+  padding: 10px 12px;
+  border: 1px solid #dbe5f2;
+  border-radius: 12px;
+  background: #f8fbff;
+}
+.framework-current-values {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px 12px;
+  margin: 8px 0 10px;
+  padding: 8px 10px;
+  border: 1px solid #dbe5f2;
+  border-radius: 10px;
+  background: #fbfdff;
+  font-size: 12px;
+  color: #475569;
+}
+.framework-current-values > b { color: #0f172a; }
+.framework-current-values span strong { color: #0f172a; }
+.indicator-rs-current {
+  display: inline-block;
+  margin-top: 5px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #3730a3;
+  font-weight: 600;
+}
+.full-universe-status {
+  margin: 9px 0;
+  padding: 9px 11px;
+  border-radius: 9px;
+  font-size: 12px;
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  color: #1e3a8a;
+}
+.full-universe-status.is-complete {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+  color: #166534;
+}

@@ -184,3 +184,21 @@ This build adds the latest client-requested ranking-system corrections:
 - RS Score remains a dedicated 0–100 indicator chart.
 - RS percentile calculation now follows the latest client formula: [lower + (same - 1)/2] / (total - 1) × 100.
 - Any unconfirmed handwritten definition/threshold is left disabled/N/A or editable instead of guessed.
+
+## 2026-10-05 ranking client-feedback closeout
+
+This revision addresses the client's latest Ranking System review without starting the untouched Sector Analysis, Portfolio Management, or 20-year Backtesting workstreams.
+
+- Candlestick OHLCV now follows the hovered candle instead of always showing the latest bar.
+- The indicator area shows a visible current **RS Score** badge, while the existing RS chart remains available.
+- A visible **Sort by / Order** toolbar is placed directly above the Top-200 list.
+- The selected-stock Excel action now exports the stock currently searched/selected; free-tier Excel feed can fetch live provider OHLCV even when that symbol has not yet been cached in PostgreSQL.
+- The candlestick section exposes current EMA 10/20/34/50/100/150/200, Bollinger upper/lower, EPS, and RS values, and line last-value labels are enabled.
+- Fundamental qualification is no longer restricted to Top-200 rows. `POST /market/fundamental-qualified` evaluates the complete eligible company universe from persisted real-provider ranking snapshots and automatically warms missing histories in the background. The UI reports evaluated/universe/remaining counts so incomplete provider coverage is never presented as a complete result.
+- Full-universe qualified results can return up to 10,000 rows; active filter columns and sorting remain dynamic.
+- Ownership rules that cannot be calculated because historical provider series are unavailable now show **N/A — provider history unavailable**, not the ambiguous status `Pending`.
+- Missing provider values are never fabricated or treated as passes.
+
+### Important scope note
+
+The current focus remains the **Ranking System**. Per client clarification, Sector Analysis, Portfolio Management, and 20-year Backtesting are separate Milestone-II parts and remain untouched in this closeout build.

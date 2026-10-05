@@ -603,6 +603,7 @@ function App() {
   const [ownershipDetails, setOwnershipDetails] = useState(null);
   const [indiaShareholding, setIndiaShareholding] = useState(null);
   const [chartInfo, setChartInfo] = useState(null);
+  const [dashboardChartInfo, setDashboardChartInfo] = useState(null);
   const [selectedCompany, setSelectedCompany] = useState({ name: "Apple Inc.", isin: null });
   const [scoreWeights, setScoreWeights] = useState(() => {
     try {
@@ -672,6 +673,11 @@ function App() {
   const [topCompositeSortDir, setTopCompositeSortDir] = useState("desc");
   const [qualifiedSortBy, setQualifiedSortBy] = useState("fundamental");
   const [qualifiedSortDir, setQualifiedSortDir] = useState("desc");
+  const [fundamentalUniverseQualified, setFundamentalUniverseQualified] = useState([]);
+  const [fundamentalUniverseMeta, setFundamentalUniverseMeta] = useState({ evaluated: 0, universe_total: 0, scan_remaining: 0, complete: false, qualified_total: 0 });
+  const [fundamentalUniverseLoaded, setFundamentalUniverseLoaded] = useState(false);
+  const [fundamentalUniverseLoading, setFundamentalUniverseLoading] = useState(false);
+  const [fundamentalUniverseError, setFundamentalUniverseError] = useState("");
   const [chartOverlays, setChartOverlays] = useState({
     ema: true, sma: true, bollinger: true, volume: true, eps: true, rs: true
   });
@@ -965,7 +971,9 @@ function App() {
     })
     .map(([key, label, , , category]) => ({ key, label, category: category || "Other" }));
 
-  const sortedFundamentalQualifiedRows = [...fundamentalQualifiedRows].sort((a, b) => {
+  const displayFundamentalQualifiedRows = fundamentalUniverseLoaded ? fundamentalUniverseQualified : fundamentalQualifiedRows;
+
+  const sortedFundamentalQualifiedRows = [...displayFundamentalQualifiedRows].sort((a, b) => {
     const getValue = (row) => {
       if (qualifiedSortBy === "symbol") return String(row.symbol || "");
       if (qualifiedSortBy === "fundamental") return Number(row.current_fundamental_score);
@@ -980,7 +988,7 @@ function App() {
     if (bMissing) return -1;
     const cmp = qualifiedSortBy === "symbol" ? String(av).localeCompare(String(bv)) : av - bv;
     return qualifiedSortDir === "asc" ? cmp : -cmp;
-  }).slice(0, 50);
+  });
 
   const technicalQualifiedRows = topCompositeDisplayRows
     .filter((row) => Number.isFinite(Number(row.technical_score)) && Number(row.technical_score) >= 99.999)
@@ -991,6 +999,45 @@ function App() {
     .filter((row) => Number.isFinite(Number(row.ownership_score)) && Number(row.ownership_score) >= 99.999)
     .sort((a, b) => Number(b.ownership_score) - Number(a.ownership_score))
     .slice(0, 50);
+
+  const loadFundamentalQualifiedUniverse = async () => {
+    const rules = (handwrittenFactorMeta.fundamental || []).map(([key]) => {
+      const cfg = handwrittenFactors.fundamental?.[key] || {};
+      return {
+        key,
+        comparator: cfg.comparator || ">",
+        threshold: cfg.threshold,
+        weight: Math.max(0, Number(cfg.weight) || 0),
+        enabled: cfg.enabled !== false,
+      };
+    }).filter((rule) => rule.enabled && rule.weight > 0);
+
+    setFundamentalUniverseLoading(true);
+    setFundamentalUniverseError("");
+    try {
+      const res = await axios.post(`${API}/market/fundamental-qualified`, {
+        market: universeFilters.market || "ALL",
+        rules,
+        sort_by: qualifiedSortBy,
+        sort_dir: qualifiedSortDir,
+        limit: 10000,
+      }, { timeout: 60000 });
+      setFundamentalUniverseQualified(res.data.rows || []);
+      setFundamentalUniverseMeta({
+        evaluated: Number(res.data.evaluated || 0),
+        universe_total: Number(res.data.universe_total || 0),
+        scan_remaining: Number(res.data.scan_remaining || 0),
+        complete: Boolean(res.data.complete),
+        qualified_total: Number(res.data.qualified_total || 0),
+        message: res.data.message || "",
+      });
+      setFundamentalUniverseLoaded(true);
+    } catch (error) {
+      setFundamentalUniverseError(error?.response?.data?.detail || "Full-universe fundamental qualification could not be refreshed.");
+    } finally {
+      setFundamentalUniverseLoading(false);
+    }
+  };
 
   const resetUniverseFilters = () => {
     const next = { ...emptyUniverseFilters };
@@ -1638,7 +1685,7 @@ function App() {
           color: FRAMEWORK_EMA_COLORS[period],
           lineWidth: period <= 50 ? 2 : 1,
           priceLineVisible: false,
-          lastValueVisible: false,
+          lastValueVisible: true,
           title: `EMA ${period}`,
         });
         series.setData(values);
@@ -1681,8 +1728,8 @@ function App() {
         upper.push({ time: candleData[i].time, value: mean + (2 * sd) });
         lower.push({ time: candleData[i].time, value: mean - (2 * sd) });
       }
-      const bbUpper = chart.addSeries(LineSeries, { lineWidth: 1, priceLineVisible: false, lastValueVisible: false });
-      const bbLower = chart.addSeries(LineSeries, { lineWidth: 1, priceLineVisible: false, lastValueVisible: false });
+      const bbUpper = chart.addSeries(LineSeries, { lineWidth: 1, priceLineVisible: false, lastValueVisible: true, title: "BB Upper" });
+      const bbLower = chart.addSeries(LineSeries, { lineWidth: 1, priceLineVisible: false, lastValueVisible: true, title: "BB Lower" });
       bbUpper.setData(upper);
       bbLower.setData(lower);
     }
@@ -1757,7 +1804,8 @@ function App() {
         const rsSeries = chart.addSeries(LineSeries, {
           lineWidth: 2,
           priceLineVisible: false,
-          lastValueVisible: false,
+          lastValueVisible: true,
+          title: "RS Price Line",
         });
         rsSeries.setData(rsRaw.map((row) => ({
           time: row.time,
@@ -1801,6 +1849,8 @@ function App() {
           pointMarkersVisible: true,
           pointMarkersRadius: 4,
           priceLineVisible: false,
+          lastValueVisible: true,
+          title: "EPS",
         });
         epsSeries.setData(unique);
         chart.priceScale("eps").applyOptions({ scaleMargins: { top: 0.05, bottom: 0.78 } });
@@ -1810,7 +1860,7 @@ function App() {
     const latestRow = data[data.length - 1];
     setChartInfo(latestRow ? {
       date: String(latestRow.date).slice(0, 10),
-      open: Number(latestRow.open), high: Number(latestRow.high), low: Number(latestRow.low), close: Number(latestRow.close),
+      open: Number(latestRow.open), high: Number(latestRow.high), low: Number(latestRow.low), close: Number(latestRow.close), volume: Number(latestRow.volume || 0),
     } : null);
 
     chart.subscribeCrosshairMove((param) => {
@@ -1819,6 +1869,7 @@ function App() {
         setChartInfo({
           date: typeof param.time === "string" ? param.time : String(param.time ?? ""),
           open: Number(point.open), high: Number(point.high), low: Number(point.low), close: Number(point.close),
+          volume: Number((data || []).find((row) => String(row.date).slice(0, 10) === String(param.time).slice(0, 10))?.volume || 0),
         });
       }
     });
@@ -1885,7 +1936,7 @@ function App() {
       [10, 20, 34, 50, 100, 150, 200].forEach((period) => {
         const values = emaSeries(period);
         if (!values.length) return;
-        const line = chart.addSeries(LineSeries, { color: FRAMEWORK_EMA_COLORS[period], lineWidth: period <= 34 ? 2 : 1, priceLineVisible: false, lastValueVisible: false, title: `EMA ${period}` });
+        const line = chart.addSeries(LineSeries, { color: FRAMEWORK_EMA_COLORS[period], lineWidth: period <= 34 ? 2 : 1, priceLineVisible: false, lastValueVisible: true, title: `EMA ${period}` });
         line.setData(values);
       });
     }
@@ -1901,8 +1952,8 @@ function App() {
         upper.push({ time: compactRows[i].time, value: mean + (2 * sd) });
         lower.push({ time: compactRows[i].time, value: mean - (2 * sd) });
       }
-      const upperLine = chart.addSeries(LineSeries, { color: "#64748b", lineWidth: 1, priceLineVisible: false, lastValueVisible: false, title: "BB Upper" });
-      const lowerLine = chart.addSeries(LineSeries, { color: "#94a3b8", lineWidth: 1, priceLineVisible: false, lastValueVisible: false, title: "BB Lower" });
+      const upperLine = chart.addSeries(LineSeries, { color: "#64748b", lineWidth: 1, priceLineVisible: false, lastValueVisible: true, title: "BB Upper" });
+      const lowerLine = chart.addSeries(LineSeries, { color: "#94a3b8", lineWidth: 1, priceLineVisible: false, lastValueVisible: true, title: "BB Lower" });
       upperLine.setData(upper);
       lowerLine.setData(lower);
     }
@@ -1922,7 +1973,7 @@ function App() {
       if (raw.length) {
         const firstRatio = raw[0].ratio;
         const firstClose = raw[0].close;
-        const rs = chart.addSeries(LineSeries, { color: "#111827", lineWidth: 2, priceLineVisible: false, lastValueVisible: false, title: "RS Price Line" });
+        const rs = chart.addSeries(LineSeries, { color: "#111827", lineWidth: 2, priceLineVisible: false, lastValueVisible: true, title: "RS Price Line" });
         rs.setData(raw.map((row) => ({ time: row.time, value: (row.ratio / firstRatio) * firstClose })));
       }
     }
@@ -1950,11 +2001,27 @@ function App() {
         else unique.push(row);
       });
       if (unique.length) {
-        const eps = chart.addSeries(LineSeries, { priceScaleId: "framework-eps", color: "#ec4899", lineWidth: 2, pointMarkersVisible: true, pointMarkersRadius: 3, priceLineVisible: false, lastValueVisible: false, title: "EPS" });
+        const eps = chart.addSeries(LineSeries, { priceScaleId: "framework-eps", color: "#ec4899", lineWidth: 2, pointMarkersVisible: true, pointMarkersRadius: 3, priceLineVisible: false, lastValueVisible: true, title: "EPS" });
         eps.setData(unique);
         chart.priceScale("framework-eps").applyOptions({ scaleMargins: { top: 0.04, bottom: 0.84 } });
       }
     }
+
+    const compactByDate = new Map(compactRows.map((row) => [row.time, row]));
+    const latestCompact = compactRows[compactRows.length - 1];
+    setDashboardChartInfo(latestCompact || null);
+    chart.subscribeCrosshairMove((param) => {
+      const point = param.seriesData?.get(candleSeries);
+      const dateKey = typeof param.time === "string" ? param.time : String(param.time ?? "").slice(0, 10);
+      const raw = compactByDate.get(dateKey);
+      if (point && "open" in point) {
+        setDashboardChartInfo({
+          time: dateKey,
+          open: Number(point.open), high: Number(point.high), low: Number(point.low), close: Number(point.close),
+          volume: Number(raw?.volume || 0),
+        });
+      }
+    });
 
     chart.timeScale().fitContent();
     const resize = () => chart.applyOptions({ width: container.clientWidth });
@@ -2303,6 +2370,30 @@ function App() {
     link.remove();
     setExcelCopyMessage("Master Excel + Python package downloaded. Use the same workbook for every stock.");
     window.setTimeout(() => setExcelCopyMessage(""), 6000);
+  };
+
+  const downloadCurrentStockExcel = async () => {
+    try {
+      setExcelCopyMessage(`Preparing Excel for ${exchange}:${symbol}…`);
+      const res = await axios.get(`${API}/market/excel-export/${encodeURIComponent(symbol)}`, {
+        params: { exchange, limit: 5000 },
+        responseType: "blob",
+        timeout: 120000,
+      });
+      const blob = new Blob([res.data], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `${symbol}_${exchange}_screener.xlsx`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+      setExcelCopyMessage(`Excel refreshed for ${exchange}:${symbol}. Searching another stock and downloading again now uses that stock.`);
+      window.setTimeout(() => setExcelCopyMessage(""), 7000);
+    } catch (error) {
+      setExcelCopyMessage(error?.response?.data?.detail || `Excel export failed for ${exchange}:${symbol}.`);
+    }
   };
 
   const dashboardMiniChartData = (() => {
@@ -2686,7 +2777,7 @@ function App() {
                       ) : <span>{weight}%</span>}
                     </td>
                     <td><span className="filter-score-badge is-na">N/A</span></td>
-                    <td><span className="compact-enable-toggle"><span>{row.actual != null ? "On" : "Pending"}</span></span></td>
+                    <td><span className="compact-enable-toggle"><span>{row.actual != null ? "On" : "N/A — provider history unavailable"}</span></span></td>
                   </tr>
                 );
               })}
@@ -2978,8 +3069,8 @@ function App() {
             Refresh Data
           </button>
 
-          <button type="button" className="excel-live-top" onClick={downloadMasterExcelBundle}>
-            Master Excel + Python
+          <button type="button" className="excel-live-top" onClick={downloadCurrentStockExcel}>
+            Excel — Current Stock
           </button>
         </section>
 
@@ -3093,20 +3184,17 @@ function App() {
                   <span><b>EPS:</b> quarterly line</span>
                   <span><b>Volume:</b> candle direction</span>
                 </div>
-                {data?.length > 0 && (() => {
-                  const candle = data[data.length - 1];
-                  return (
-                    <div className="framework-ohlcv-strip">
-                      <b>OHLCV</b>
-                      <span>{formatChartDate(candle.date)}</span>
-                      <span>O {Number(candle.open).toFixed(2)}</span>
-                      <span>H {Number(candle.high).toFixed(2)}</span>
-                      <span>L {Number(candle.low).toFixed(2)}</span>
-                      <span>C {Number(candle.close).toFixed(2)}</span>
-                      <span>V {Number(candle.volume || 0).toLocaleString()}</span>
-                    </div>
-                  );
-                })()}
+                {dashboardChartInfo && (
+                  <div className="framework-ohlcv-strip">
+                    <b>OHLCV — hover candle</b>
+                    <span>{formatChartDate(dashboardChartInfo.time || dashboardChartInfo.date)}</span>
+                    <span>O {Number(dashboardChartInfo.open).toFixed(2)}</span>
+                    <span>H {Number(dashboardChartInfo.high).toFixed(2)}</span>
+                    <span>L {Number(dashboardChartInfo.low).toFixed(2)}</span>
+                    <span>C {Number(dashboardChartInfo.close).toFixed(2)}</span>
+                    <span>V {Number(dashboardChartInfo.volume || 0).toLocaleString()}</span>
+                  </div>
+                )}
                 <div className="indicator-color-key framework-ema-color-key" aria-label="EMA color legend">
                   <span className="ema-legend-title">EMA line colors:</span>
                   {Object.entries(FRAMEWORK_EMA_COLORS).map(([period, color]) => (
@@ -3115,6 +3203,17 @@ function App() {
                       <b style={{ color }}>EMA {period}</b>
                     </span>
                   ))}
+                </div>
+                <div className="framework-current-values">
+                  <b>Current chart values:</b>
+                  {[10,20,34,50,100,150,200].map((period) => {
+                    const em = technicalSummary?.ema?.[`ema_${period}`] ?? technicalSummary?.ema?.[period] ?? technicalSummary?.ema?.[`ema${period}`];
+                    return <span key={period}>EMA {period}: <strong>{Number.isFinite(Number(em)) ? Number(em).toFixed(2) : "N/A"}</strong></span>;
+                  })}
+                  <span>BB Upper: <strong>{Number.isFinite(Number(technicalSummary?.bollinger_upper)) ? Number(technicalSummary.bollinger_upper).toFixed(2) : "N/A"}</strong></span>
+                  <span>BB Lower: <strong>{Number.isFinite(Number(technicalSummary?.bollinger_lower)) ? Number(technicalSummary.bollinger_lower).toFixed(2) : "N/A"}</strong></span>
+                  <span>EPS: <strong>{fundamentalHistory?.quarterly?.[0]?.eps != null ? Number(fundamentalHistory.quarterly[0].eps).toFixed(2) : "N/A"}</strong></span>
+                  <span>RS Score: <strong>{Number.isFinite(Number(technicalSummary?.rs_rating ?? dashboardView?.score_components?.relative_strength)) ? Number(technicalSummary?.rs_rating ?? dashboardView?.score_components?.relative_strength).toFixed(2) : "N/A"}</strong></span>
                 </div>
                 {data?.length ? (
                   <div ref={dashboardCandlestickRef} className="dashboard-candlestick-canvas" />
@@ -3126,6 +3225,7 @@ function App() {
                   <div>
                     <strong>Customizable Indicator Basket</strong>
                     <span>Enable/disable each chart and edit the periods before the data-scoring stage.</span>
+                    <span className="indicator-rs-current">RS Score: <b>{Number.isFinite(Number(technicalSummary?.rs_rating ?? dashboardView?.score_components?.relative_strength)) ? Number(technicalSummary?.rs_rating ?? dashboardView?.score_components?.relative_strength).toFixed(2) : "N/A"}</b></span>
                   </div>
                   <div className="indicator-basket-toggles">
                     {[
@@ -3443,6 +3543,22 @@ function App() {
               Real provider ranking data cached for {topComposite.enrichment_cached_count}/{topComposite.enrichment_target_count || 200} candidates. Remaining {topComposite.enrichment_remaining_count} are being enriched automatically in the background.
             </div>
           )}
+          <div className="qualified-list-toolbar top200-sort-toolbar">
+            <label><span>Sort by</span>
+              <select value={topCompositeSortBy} onChange={(e) => setTopCompositeSortBy(e.target.value)}>
+                <option value="composite">Composite</option><option value="symbol">Symbol</option><option value="technical">Technical</option>
+                <option value="fundamental">Fundamental</option><option value="ownership">Ownership</option><option value="sector">Sector</option>
+                <option value="rs">RS</option><option value="eps">EPS</option><option value="pat">PAT</option><option value="sales">Sales</option>
+                <option value="alpha">Alpha</option><option value="beta">Beta</option><option value="stddev">Std Deviation</option><option value="coverage">Coverage</option>
+              </select>
+            </label>
+            <label><span>Order</span>
+              <select value={topCompositeSortDir} onChange={(e) => setTopCompositeSortDir(e.target.value)}>
+                <option value="desc">Descending ↓</option><option value="asc">Ascending ↑</option>
+              </select>
+            </label>
+            <small>Sorting is applied directly to the Top-200 list below.</small>
+          </div>
           <div className="composite-table-wrap">
             <table className="composite-ranking-table">
               <thead>
@@ -3508,7 +3624,8 @@ function App() {
               localStorage.setItem("handwrittenFactors", JSON.stringify(handwrittenFactors));
               loadDashboard();
               loadTopComposite(undefined, scoreWeights);
-            }}>Apply Fundamental Rules</button>
+              loadFundamentalQualifiedUniverse();
+            }}>{fundamentalUniverseLoading ? "Scanning Full Universe…" : "Apply Fundamental Rules"}</button>
             <span>These settings feed the same Fundamental Score used by the ranking framework.</span>
           </div>
 
@@ -3518,8 +3635,15 @@ function App() {
                 <strong>Stocks Qualifying the Fundamental Criteria</strong>
                 <span>Shown directly below the Fundamental Score. This list recalculates from the currently enabled rules and thresholds. A stock appears only when all active rules pass with real provider data.</span>
               </div>
-              <span className="qualification-count">{fundamentalQualifiedRows.length} qualified</span>
+              <span className="qualification-count">{fundamentalUniverseLoaded ? fundamentalUniverseMeta.qualified_total : displayFundamentalQualifiedRows.length} qualified</span>
             </div>
+            {fundamentalUniverseLoaded && (
+              <div className={`full-universe-status ${fundamentalUniverseMeta.complete ? "is-complete" : "is-scanning"}`}>
+                <strong>Complete universe filter:</strong> {fundamentalUniverseMeta.evaluated.toLocaleString()} / {fundamentalUniverseMeta.universe_total.toLocaleString()} stocks evaluated
+                {fundamentalUniverseMeta.complete ? " • complete" : ` • ${fundamentalUniverseMeta.scan_remaining.toLocaleString()} histories still being evaluated automatically`}
+              </div>
+            )}
+            {fundamentalUniverseError && <div className="message error-message">{fundamentalUniverseError}</div>}
             <div className="qualified-list-toolbar">
               <label><span>Sort by</span>
                 <select value={qualifiedSortBy} onChange={(e) => setQualifiedSortBy(e.target.value)}>
@@ -3558,7 +3682,7 @@ function App() {
                       <td>{Number.isFinite(Number(row.current_fundamental_coverage_percent)) ? `${Number(row.current_fundamental_coverage_percent).toFixed(0)}%` : "N/A"}</td>
                     </tr>
                   )) : (
-                    <tr><td colSpan={4 + activeFundamentalColumns.length} className="qualified-empty">No stocks currently pass every enabled Fundamental rule with complete real provider data.</td></tr>
+                    <tr><td colSpan={4 + activeFundamentalColumns.length} className="qualified-empty">No evaluated stocks currently pass every enabled Fundamental rule. Apply Fundamental Rules to scan the complete stock universe.</td></tr>
                   )}
                 </tbody>
               </table>
@@ -3735,7 +3859,8 @@ function App() {
                   <button type="button" className="ranking-primary-button" onClick={() => {
                     localStorage.setItem("handwrittenFactors", JSON.stringify(handwrittenFactors));
                     loadDashboard();
-                  }}>Apply Fundamental Rules</button>
+                    loadFundamentalQualifiedUniverse();
+                  }}>{fundamentalUniverseLoading ? "Scanning Full Universe…" : "Apply Fundamental Rules"}</button>
                   <span>Settings are shared with the Milestone 2 ranking / qualification engine.</span>
                 </div>
 
@@ -3745,9 +3870,16 @@ function App() {
                       <strong>Stocks Qualifying the Fundamental Criteria</strong>
                       <span>Displayed after the filters and Fundamental Score, as requested. A stock is listed only when its current Fundamental Score is 100/100 with complete rule coverage; missing data is never treated as a pass.</span>
                     </div>
-                    <span className="qualification-count">{fundamentalQualifiedRows.length} qualified</span>
+                    <span className="qualification-count">{fundamentalUniverseLoaded ? fundamentalUniverseMeta.qualified_total : displayFundamentalQualifiedRows.length} qualified</span>
                   </div>
-                  <div className="qualified-list-toolbar">
+                  {fundamentalUniverseLoaded && (
+              <div className={`full-universe-status ${fundamentalUniverseMeta.complete ? "is-complete" : "is-scanning"}`}>
+                <strong>Complete universe filter:</strong> {fundamentalUniverseMeta.evaluated.toLocaleString()} / {fundamentalUniverseMeta.universe_total.toLocaleString()} stocks evaluated
+                {fundamentalUniverseMeta.complete ? " • complete" : ` • ${fundamentalUniverseMeta.scan_remaining.toLocaleString()} histories still being evaluated automatically`}
+              </div>
+            )}
+            {fundamentalUniverseError && <div className="message error-message">{fundamentalUniverseError}</div>}
+            <div className="qualified-list-toolbar">
                     <label><span>Sort by</span>
                       <select value={qualifiedSortBy} onChange={(e) => setQualifiedSortBy(e.target.value)}>
                         <option value="fundamental">Fundamental Score</option>
@@ -3779,7 +3911,7 @@ function App() {
                             <td>{Number.isFinite(Number(row.current_fundamental_coverage_percent)) ? `${Number(row.current_fundamental_coverage_percent).toFixed(0)}%` : "N/A"}</td>
                           </tr>
                         )) : (
-                          <tr><td colSpan={4 + activeFundamentalColumns.length} className="qualified-empty">No stocks currently pass every enabled Fundamental rule with complete real provider data.</td></tr>
+                          <tr><td colSpan={4 + activeFundamentalColumns.length} className="qualified-empty">No evaluated stocks currently pass every enabled Fundamental rule. Apply Fundamental Rules to scan the complete stock universe.</td></tr>
                         )}
                       </tbody>
                     </table>
