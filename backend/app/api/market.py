@@ -2283,23 +2283,24 @@ def _rs_percentile_total(exchange: str) -> int:
     return RS_PERCENTILE_TARGETS[_rs_market_group(exchange)]
 
 def _percentile_rank(values, target_value, total_count=None):
-    """Client percentile: (lower + 0.5 * equal) * 100 / total.
+    """Client percentile formula from the latest handwritten note.
 
-    Stock RS uses the client-defined fixed 5,000-stock denominator for both
-    US and Indian (NSE/BSE) market scoring. Other
-    percentile uses (for example sector-to-sector comparisons) can leave
-    ``total_count`` unset and use the actual sample size.
+    Percentile = [lower + (same - 1) / 2] / (total - 1) * 100.
+
+    For stock RS, ``total_count`` can be the client-required universe target.
+    Other percentile uses can omit it and use the actual available sample.
     """
     values = [float(v) for v in values if v is not None and math.isfinite(float(v))]
     if target_value is None or not values:
         return None
     tolerance = 1e-9
     lower = sum(1 for value in values if value < target_value - tolerance)
-    equal = sum(1 for value in values if abs(value - target_value) <= tolerance)
-    denominator = int(total_count) if total_count is not None else len(values)
+    same = sum(1 for value in values if abs(value - target_value) <= tolerance)
+    total = int(total_count) if total_count is not None else len(values)
+    denominator = total - 1
     if denominator <= 0:
-        return None
-    percentile = ((lower + 0.5 * equal) * 100.0) / denominator
+        return 100.0
+    percentile = ((lower + ((max(1, same) - 1) / 2.0)) / denominator) * 100.0
     return round(max(0.0, min(100.0, percentile)), 2)
 
 
@@ -4071,12 +4072,12 @@ def get_technical_summary(
             "period_return": "((current close / current period candle open) - 1) * 100",
             "relative_return": "stock return % - benchmark return %",
             "relative_return_uses_editable_weights": False,
-            "stock_percentile": f"((lower stocks + 0.5 * equal stocks) * 100) / {_rs_percentile_total(exchange)}",
+            "stock_percentile": f"((lower stocks + (same-return stocks - 1) / 2) / ({_rs_percentile_total(exchange)} - 1)) * 100",
             "stock_percentile_denominator": _rs_percentile_total(exchange),
             "final_rs_score": "sum(period percentile * enabled weight) / sum(enabled weights)",
             "default_weights": {"1w": 30, "1m": 25, "3m": 20, "6m": 15, "1y": 10, "2w": 0, "2m": 0, "sector": 0},
         },
-        "rs_note": f"Relative Strength: period relative returns are raw market calculations and never change when RS score weights change. Each period uses TradingView-style current period candle return (period open to current close); relative return = stock return % - benchmark return %. Stock percentiles use the client-required fixed denominator of {_rs_percentile_total(exchange):,} stocks for {_rs_market_group(exchange)}: [(lower stocks + 0.5 x equal stocks) x 100 / {_rs_percentile_total(exchange)}]. Final RS Score uses weighted percentile components. Default weights are 1W x 30% + 1M x 25% + 3M x 20% + 6M x 15% + 12M x 10%. 2W/2M and Sector RS are optional components with zero default weight; Sector RS is included only when its weight is greater than 0.",
+        "rs_note": f"Relative Strength: period relative returns are raw market calculations and never change when RS score weights change. Each period uses TradingView-style current period candle return (period open to current close); relative return = stock return % - benchmark return %. Stock percentiles use the client formula [lower + (same-1)/2] / (total-1) × 100 with the client-required {_rs_percentile_total(exchange):,}-stock universe for {_rs_market_group(exchange)}: [(lower stocks + 0.5 x equal stocks) x 100 / {_rs_percentile_total(exchange)}]. Final RS Score uses weighted percentile components. Default weights are 1W x 30% + 1M x 25% + 3M x 20% + 6M x 15% + 12M x 10%. 2W/2M and Sector RS are optional components with zero default weight; Sector RS is included only when its weight is greater than 0.",
         "criteria_note": f"Metrics use the selected {timeframe} timeframe. For a detected VCP, Pivot = highest high of the final contraction; otherwise it is the recent consolidation high. Near Pivot = 95%-102% of pivot. Confirmed breakout requires close > pivot by 0.3%, volume >= 1.4x 50-period average, close > open, and close in the upper half of the period's range. VCP requires successive price-depth, ATR%, standard-deviation, and average-volume contractions."
     })
 

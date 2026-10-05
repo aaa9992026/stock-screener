@@ -202,15 +202,29 @@ const defaultRankingSubweights = {
 // editable; unavailable source data is never estimated.
 const defaultHandwrittenFactors = {
   technical: {
-    bb_width: { weight: 10, threshold: 10, comparator: "<=" },
-    atr5_lt20: { weight: 10, comparator: "<" },
-    atr10_lt20: { weight: 5, comparator: "<" },
-    rsi14: { weight: 5, enabled: true, t1: 30, t2: 40, t3: 50, p1: 2, p2: 3, p3: 4, p4: 5 },
-    volume10_lt20: { weight: 10, comparator: "<" },
-    volume20_lt40: { weight: 5, comparator: "<" },
-    distance52: { weight: 10, t1: 10, t2: 17, t3: 20, p1: 10, p2: 8, p3: 6, p4: 3 },
+    price_gt_ema20: { weight: 0, threshold: 0, comparator: ">", enabled: true },
+    price_gt_ema34: { weight: 0, threshold: 0, comparator: ">", enabled: true },
     ema20_gt50: { weight: 8, comparator: ">" },
     ema50_gt150: { weight: 4, comparator: ">" },
+    distance52: { weight: 10, t1: 10, t2: 17, t3: 20, p1: 10, p2: 8, p3: 6, p4: 3 },
+    distance52_low: { weight: 0, threshold: 0, comparator: ">", enabled: true },
+    rs_score: { weight: 0, threshold: 0, comparator: ">", enabled: true },
+    roc20: { weight: 0, threshold: 0, comparator: ">", enabled: true },
+    adx14: { weight: 0, threshold: 25, comparator: ">", enabled: true },
+    rsi14: { weight: 5, enabled: true, t1: 30, t2: 40, t3: 50, p1: 2, p2: 3, p3: 4, p4: 5 },
+    bb_width: { weight: 10, threshold: 10, comparator: "<=" },
+    atr_percent: { weight: 0, threshold: 15, comparator: "<", enabled: true },
+    rvol: { weight: 0, threshold: 1, comparator: ">", enabled: true },
+    avg_volume_10: { weight: 0, threshold: 0, comparator: ">", enabled: true },
+    price_breadth: { weight: 0, threshold: 0, comparator: ">", enabled: false },
+    volume_dry_up: { weight: 0, threshold: 30, comparator: ">", enabled: true },
+    volume_contraction: { weight: 0, threshold: 15, comparator: "<", enabled: true },
+    di_spread: { weight: 0, threshold: 10, comparator: ">", enabled: true },
+    pivot_breakout: { weight: 0, threshold: 0, comparator: ">", enabled: true },
+    atr5_lt20: { weight: 10, comparator: "<" },
+    atr10_lt20: { weight: 5, comparator: "<" },
+    volume10_lt20: { weight: 10, comparator: "<" },
+    volume20_lt40: { weight: 5, comparator: "<" },
   },
   fundamental: {
     q_eps_yoy_latest: { weight: 10, threshold: 20, comparator: ">" },
@@ -283,15 +297,29 @@ const defaultHandwrittenFactors = {
 
 const handwrittenFactorMeta = {
   technical: [
-    ["bb_width", "Upper BB - Lower BB", "BB width ≤ editable threshold", ["threshold"]],
-    ["atr5_lt20", "5-day ATR% average < 20-day ATR% average", "ATR contraction", []],
-    ["atr10_lt20", "10-day ATR% average < 20-day ATR% average", "ATR contraction", []],
-    ["rsi14", "RSI (14)", "RSI > 50 = 5 points; 40-50 = 4; 30-40 = 3; below 30 = 2", ["t1", "t2", "t3", "p1", "p2", "p3", "p4"]],
-    ["volume10_lt20", "10-day volume average < 20-day volume average", "Volume contraction", []],
-    ["volume20_lt40", "20-day volume average < 40-day volume average", "Longer-volume comparison", []],
-    ["distance52", "Distance from 52-week high", "Handwritten 10 / 17 / 20% distance bands", ["t1", "t2", "t3"]],
+    ["price_gt_ema20", "Price > 20 EMA", "Client technical trend filter. Weight is editable; unclear handwritten weight is not guessed.", []],
+    ["price_gt_ema34", "Price > 34 EMA", "Client technical trend filter. Weight is editable; unclear handwritten weight is not guessed.", []],
     ["ema20_gt50", "20 EMA > 50 EMA", "EMA trend factor", []],
     ["ema50_gt150", "50 EMA > 150 EMA", "EMA trend factor", []],
+    ["distance52", "Distance from 52-week high", "Handwritten 10 / 17 / 20% distance bands", ["t1", "t2", "t3"]],
+    ["distance52_low", "Distance from 52-week low", "Client technical filter; threshold/weight remain editable.", ["threshold"]],
+    ["rs_score", "RS Score", "Client percentile RS score, bounded 0–100.", ["threshold"]],
+    ["roc20", "ROC (20)", "20-period / approximately 1-month rate of change.", ["threshold"]],
+    ["adx14", "ADX (14)", "ADX > editable threshold.", ["threshold"]],
+    ["rsi14", "RSI (14)", "RSI > 50 = 5 points; 40-50 = 4; 30-40 = 3; below 30 = 2", ["t1", "t2", "t3", "p1", "p2", "p3", "p4"]],
+    ["bb_width", "BB Width %", "Bollinger Band width percentage.", ["threshold"]],
+    ["atr_percent", "ATR % (14)", "ATR percentage filter.", ["threshold"]],
+    ["rvol", "RVOL", "Relative volume / benchmark volume ratio.", ["threshold"]],
+    ["avg_volume_10", "10-day average volume", "Current 10-day average volume.", ["threshold"]],
+    ["price_breadth", "Price Breadth", "Client requested price-breadth filter. Provider definition not confirmed, so disabled/N/A instead of guessed.", ["threshold"]],
+    ["volume_dry_up", "Volume Dry-Up %", "10-day average volume versus 50-day average volume.", ["threshold"]],
+    ["volume_contraction", "Price / Volume Contraction %", "20-period price range contraction proxy; exact handwritten definition remains editable.", ["threshold"]],
+    ["di_spread", "DI Spread", "+DI minus -DI.", ["threshold"]],
+    ["pivot_breakout", "Pivot Point Breakout", "Latest price relative to the calculated pivot point.", []],
+    ["atr5_lt20", "5-day ATR% average < 20-day ATR% average", "ATR contraction", []],
+    ["atr10_lt20", "10-day ATR% average < 20-day ATR% average", "ATR contraction", []],
+    ["volume10_lt20", "10-day volume average < 20-day volume average", "Volume contraction", []],
+    ["volume20_lt40", "20-day volume average < 40-day volume average", "Longer-volume comparison", []],
   ],
   fundamental: [
     ["q_eps_yoy_latest", "EPS 1 — Latest quarter EPS growth (YoY)", "Latest Q EPS YoY > 20%", ["threshold"], "EPS"],
@@ -642,6 +670,8 @@ function App() {
   const [topCompositeError, setTopCompositeError] = useState("");
   const [topCompositeSortBy, setTopCompositeSortBy] = useState("composite");
   const [topCompositeSortDir, setTopCompositeSortDir] = useState("desc");
+  const [qualifiedSortBy, setQualifiedSortBy] = useState("fundamental");
+  const [qualifiedSortDir, setQualifiedSortDir] = useState("desc");
   const [chartOverlays, setChartOverlays] = useState({
     ema: true, sma: true, bollinger: true, volume: true, eps: true, rs: true
   });
@@ -926,7 +956,41 @@ function App() {
     })
     .filter((row) => row.qualified_current_rules)
     .sort((a, b) => Number(b.current_fundamental_score || 0) - Number(a.current_fundamental_score || 0))
-    .slice(0, 30);
+    .slice(0, 200);
+
+  const activeFundamentalColumns = (handwrittenFactorMeta.fundamental || [])
+    .filter(([key]) => {
+      const cfg = handwrittenFactors.fundamental?.[key];
+      return cfg && cfg.enabled !== false && Math.max(0, Number(cfg.weight) || 0) > 0;
+    })
+    .map(([key, label, , , category]) => ({ key, label, category: category || "Other" }));
+
+  const sortedFundamentalQualifiedRows = [...fundamentalQualifiedRows].sort((a, b) => {
+    const getValue = (row) => {
+      if (qualifiedSortBy === "symbol") return String(row.symbol || "");
+      if (qualifiedSortBy === "fundamental") return Number(row.current_fundamental_score);
+      return Number(row.fundamental_rule_values?.[qualifiedSortBy]);
+    };
+    const av = getValue(a);
+    const bv = getValue(b);
+    const aMissing = qualifiedSortBy !== "symbol" && !Number.isFinite(av);
+    const bMissing = qualifiedSortBy !== "symbol" && !Number.isFinite(bv);
+    if (aMissing && bMissing) return String(a.symbol || "").localeCompare(String(b.symbol || ""));
+    if (aMissing) return 1;
+    if (bMissing) return -1;
+    const cmp = qualifiedSortBy === "symbol" ? String(av).localeCompare(String(bv)) : av - bv;
+    return qualifiedSortDir === "asc" ? cmp : -cmp;
+  }).slice(0, 50);
+
+  const technicalQualifiedRows = topCompositeDisplayRows
+    .filter((row) => Number.isFinite(Number(row.technical_score)) && Number(row.technical_score) >= 99.999)
+    .sort((a, b) => Number(b.technical_score) - Number(a.technical_score))
+    .slice(0, 50);
+
+  const ownershipQualifiedRows = topCompositeDisplayRows
+    .filter((row) => Number.isFinite(Number(row.ownership_score)) && Number(row.ownership_score) >= 99.999)
+    .sort((a, b) => Number(b.ownership_score) - Number(a.ownership_score))
+    .slice(0, 50);
 
   const resetUniverseFilters = () => {
     const next = { ...emptyUniverseFilters };
@@ -2082,7 +2146,47 @@ function App() {
       const maxPoints = Math.max(Number(cfg.p1) || 0, Number(cfg.p2) || 0, Number(cfg.p3) || 0, Number(cfg.p4) || 0);
       rsiScore = maxPoints > 0 ? (rawPoints / maxPoints) * 100 : null;
     }
+    const latestPrice = finite(technicalSummary?.client_technical_filters?.trend?.price) ?? finite(data?.[data.length - 1]?.close);
+    const ema20 = finite(em["20"]);
+    const ema34 = finite(em["34"]);
+    const ema50 = finite(em["50"]);
+    const ema150 = finite(em["150"]);
+    const distance52Low = (() => {
+      const closes = (data || []).slice(-260).map((item) => finite(item?.low ?? item?.close)).filter((value) => value != null && value > 0);
+      if (!closes.length || latestPrice == null) return null;
+      const low52 = Math.min(...closes);
+      return low52 > 0 ? ((latestPrice - low52) / low52) * 100 : null;
+    })();
+    const rsScoreCurrent = finite(technicalSummary?.rs_rating);
+    const roc20Current = finite(technicalSummary?.client_technical_filters?.momentum?.roc_1m_percent);
+    const adxCurrent = finite(technicalSummary?.client_technical_filters?.strength?.adx_14);
+    const diSpreadCurrent = finite(technicalSummary?.client_technical_filters?.strength?.di_spread);
+    const atrPercentCurrent = finite(technicalSummary?.atr_percent);
+    const rvolCurrent = finite(technicalSummary?.volume_ratio);
+    const avgVolume10Current = finite(technicalSummary?.average_volume_10);
+    const avgVolume20Current = finite(technicalSummary?.average_volume_20);
+    const avgVolume50Current = finite(technicalSummary?.average_volume_50);
+    const volumeDryUpPercent = avgVolume10Current == null || avgVolume50Current == null || avgVolume50Current === 0
+      ? null
+      : (1 - (avgVolume10Current / avgVolume50Current)) * 100;
+    const range20Current = finite(technicalSummary?.range_20d_percent);
+    const pivotCurrent = finite(technicalSummary?.pivot);
+
     const technical = {
+      price_gt_ema20: resultRow(latestPrice, latestPrice == null || ema20 == null ? null : (latestPrice > ema20 ? 100 : 0), ema20),
+      price_gt_ema34: resultRow(latestPrice, latestPrice == null || ema34 == null ? null : (latestPrice > ema34 ? 100 : 0), ema34),
+      distance52_low: resultRow(distance52Low, passScore(distance52Low, tech.distance52_low)),
+      rs_score: resultRow(rsScoreCurrent, passScore(rsScoreCurrent, tech.rs_score)),
+      roc20: resultRow(roc20Current, passScore(roc20Current, tech.roc20)),
+      adx14: resultRow(adxCurrent, passScore(adxCurrent, tech.adx14)),
+      atr_percent: resultRow(atrPercentCurrent, passScore(atrPercentCurrent, tech.atr_percent)),
+      rvol: resultRow(rvolCurrent, passScore(rvolCurrent, tech.rvol)),
+      avg_volume_10: resultRow(avgVolume10Current, passScore(avgVolume10Current, tech.avg_volume_10)),
+      price_breadth: resultRow(null, null, "Definition/provider input needs confirmation"),
+      volume_dry_up: resultRow(volumeDryUpPercent, passScore(volumeDryUpPercent, tech.volume_dry_up), avgVolume50Current),
+      volume_contraction: resultRow(range20Current, passScore(range20Current, tech.volume_contraction)),
+      di_spread: resultRow(diSpreadCurrent, passScore(diSpreadCurrent, tech.di_spread)),
+      pivot_breakout: resultRow(latestPrice, latestPrice == null || pivotCurrent == null ? null : (latestPrice > pivotCurrent ? 100 : 0), pivotCurrent),
       bb_width: resultRow(finite(technicalSummary?.bollinger_width_percent), passScore(technicalSummary?.bollinger_width_percent, tech.bb_width)),
       atr5_lt20: resultRow(finite(technicalSummary?.average_atr_percent_5), finite(technicalSummary?.average_atr_percent_5) == null || finite(technicalSummary?.average_atr_percent_20) == null ? null : (Number(technicalSummary.average_atr_percent_5) < Number(technicalSummary.average_atr_percent_20) ? 100 : 0), finite(technicalSummary?.average_atr_percent_20)),
       atr10_lt20: resultRow(finite(technicalSummary?.average_atr_percent_10), finite(technicalSummary?.average_atr_percent_10) == null || finite(technicalSummary?.average_atr_percent_20) == null ? null : (Number(technicalSummary.average_atr_percent_10) < Number(technicalSummary.average_atr_percent_20) ? 100 : 0), finite(technicalSummary?.average_atr_percent_20)),
@@ -2529,32 +2633,63 @@ function App() {
   };
 
   const renderUSOwnershipTable = () => {
-    const institution = fundamentals?.ownership?.institution_percent != null ? Number(fundamentals.ownership.institution_percent) * 100 : null;
-    const insider = fundamentals?.ownership?.insider_percent != null ? Number(fundamentals.ownership.insider_percent) * 100 : null;
+    const toPercent = (value) => {
+      if (value === null || value === undefined || value === "") return null;
+      const n = Number(value);
+      if (!Number.isFinite(n)) return null;
+      return n <= 1 ? n * 100 : n;
+    };
+    const institution = toPercent(fundamentals?.ownership?.institution_percent);
+    const insider = toPercent(fundamentals?.ownership?.insider_percent);
     const retail = institution != null && insider != null ? Math.max(0, 100 - institution - insider) : null;
     const rows = [
-      ["Institutional Ownership", institution, rankingSubweights.ownership.institution, "Provider aggregate"],
-      ["Insider Ownership", insider, rankingSubweights.ownership.insider, "Provider aggregate"],
-      ["Retail / Public Investors", retail, 0, "100% - institutional - insider"],
+      { key: "insider_current", label: "Insider Ownership — Current", compare: "—", target: "Provider aggregate", actual: insider, weightKey: "insider", note: "Current aggregate only" },
+      { key: "insider_qoq_latest", label: "Insider — Latest Q minus Previous Q", compare: ">", target: "Needs provider history", actual: null, weight: 20, note: "Historical US ownership series unavailable from current provider" },
+      { key: "insider_qoq_prior", label: "Insider — Previous Q minus 2nd Prior Q", compare: ">", target: "Needs provider history", actual: null, weight: 20, note: "Historical US ownership series unavailable from current provider" },
+      { key: "insider_yoy", label: "Insider — Latest Q YoY", compare: ">", target: "Needs provider history", actual: null, weight: 10, note: "Threshold is left unconfirmed rather than guessed" },
+      { key: "institution_current", label: "Institutional Ownership — Current", compare: "—", target: "Provider aggregate", actual: institution, weightKey: "institution", note: "Current aggregate only" },
+      { key: "institution_qoq_latest", label: "Institution — Latest Q minus Previous Q", compare: ">", target: "Needs provider history", actual: null, weight: 25, note: "Historical US ownership series unavailable from current provider" },
+      { key: "institution_qoq_prior", label: "Institution — Previous Q minus 2nd Prior Q", compare: ">", target: "Needs provider history", actual: null, weight: 25, note: "Historical US ownership series unavailable from current provider" },
+      { key: "retail", label: "Retail / Public Investors", compare: "—", target: "100% - institution - insider", actual: retail, weight: 0, note: "Residual, not a scored historical rule" },
     ];
     return (
       <div className="compact-filter-card">
         <div className="compact-filter-header">
-          <div><h3>Ownership Filters (US)</h3><p>US-market ownership categories. Missing provider values remain N/A.</p></div>
-          <div className="compact-filter-score"><span>Group score</span><strong>{filterScoreText(dashboardView?.score_components?.ownership)}</strong></div>
+          <div><h3>Ownership Filters (US)</h3><p>Same layout as Fundamental/Technical filters. Missing historical provider values stay N/A; unclear thresholds are not guessed.</p></div>
+          <div className="compact-filter-score"><span>Ownership Score</span><strong>{filterScoreText(dashboardView?.score_components?.ownership)}</strong></div>
         </div>
         <div className="compact-table-scroll">
           <table className="filter-config-table">
-            <thead><tr><th>Ownership type</th><th>Current</th><th>Weight</th><th>Source / method</th></tr></thead>
+            <thead><tr><th>Filter name</th><th>Compare</th><th>Value / target</th><th>Actual Value</th><th>Weight</th><th>RS score</th><th>Use</th></tr></thead>
             <tbody>
-              {rows.map(([label, value, weight, source]) => (
-                <tr key={label}>
-                  <td className="filter-name-cell"><strong>{label}</strong></td>
-                  <td>{value != null && Number.isFinite(Number(value)) ? `${Number(value).toFixed(2)}%` : "N/A"}</td>
-                  <td>{weight}%</td>
-                  <td><span className="filter-target-text">{source}</span></td>
-                </tr>
-              ))}
+              {rows.map((row) => {
+                const weight = row.weightKey ? Number(rankingSubweights.ownership?.[row.weightKey] || 0) : Number(row.weight || 0);
+                return (
+                  <tr key={row.key}>
+                    <td className="filter-name-cell"><strong>{row.label}</strong><small>{row.note}</small></td>
+                    <td><span className="fixed-compare">{row.compare}</span></td>
+                    <td><span className="filter-target-text">{row.target}</span></td>
+                    <td>{row.actual != null ? `${Number(row.actual).toFixed(2)}%` : "N/A"}</td>
+                    <td>
+                      {row.weightKey ? (
+                        <input
+                          className="filter-weight-input"
+                          type="number"
+                          min="0"
+                          step="1"
+                          value={weight}
+                          onChange={(e) => setRankingSubweights((prev) => ({
+                            ...prev,
+                            ownership: { ...prev.ownership, [row.weightKey]: Math.max(0, Number(e.target.value) || 0) },
+                          }))}
+                        />
+                      ) : <span>{weight}%</span>}
+                    </td>
+                    <td><span className="filter-score-badge is-na">N/A</span></td>
+                    <td><span className="compact-enable-toggle"><span>{row.actual != null ? "On" : "Pending"}</span></span></td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -2595,7 +2730,7 @@ function App() {
                 <th>Filter name</th>
                 <th>Compare</th>
                 <th>Value / target</th>
-                <th>Current</th>
+                <th>Actual Value</th>
                 <th>Weight</th>
                 <th>RS score</th>
                 <th>Use</th>
@@ -2901,19 +3036,6 @@ function App() {
                   <option value="BSE">BSE Only</option>
                 </select>
               </label>
-              <label className="dashboard-sort-control"><span>Sort by</span>
-                <select aria-label="Top 200 sort field" value={topCompositeSortBy} onChange={(e) => setTopCompositeSortBy(e.target.value)}>
-                  <option value="composite">Composite</option><option value="technical">Technical</option><option value="fundamental">Fundamental</option>
-                  <option value="ownership">Ownership</option><option value="sector">Sector</option><option value="rs">RS</option>
-                  <option value="eps">EPS</option><option value="pat">PAT</option><option value="sales">Sales</option>
-                  <option value="alpha">Alpha</option><option value="beta">Beta</option><option value="stddev">Std Deviation</option><option value="coverage">Coverage</option><option value="symbol">Symbol</option>
-                </select>
-              </label>
-              <label className="dashboard-sort-control"><span>Order</span>
-                <select aria-label="Top 200 sort direction" value={topCompositeSortDir} onChange={(e) => setTopCompositeSortDir(e.target.value)}>
-                  <option value="desc">Descending ↓</option><option value="asc">Ascending ↑</option>
-                </select>
-              </label>
               <button type="button" onClick={() => loadTopComposite()} disabled={topCompositeLoading}>
                 {topCompositeLoading ? "Refreshing…" : "Refresh Top 200"}
               </button>
@@ -2971,6 +3093,20 @@ function App() {
                   <span><b>EPS:</b> quarterly line</span>
                   <span><b>Volume:</b> candle direction</span>
                 </div>
+                {data?.length > 0 && (() => {
+                  const candle = data[data.length - 1];
+                  return (
+                    <div className="framework-ohlcv-strip">
+                      <b>OHLCV</b>
+                      <span>{formatChartDate(candle.date)}</span>
+                      <span>O {Number(candle.open).toFixed(2)}</span>
+                      <span>H {Number(candle.high).toFixed(2)}</span>
+                      <span>L {Number(candle.low).toFixed(2)}</span>
+                      <span>C {Number(candle.close).toFixed(2)}</span>
+                      <span>V {Number(candle.volume || 0).toLocaleString()}</span>
+                    </div>
+                  );
+                })()}
                 <div className="indicator-color-key framework-ema-color-key" aria-label="EMA color legend">
                   <span className="ema-legend-title">EMA line colors:</span>
                   {Object.entries(FRAMEWORK_EMA_COLORS).map(([period, color]) => (
@@ -3384,23 +3520,128 @@ function App() {
               </div>
               <span className="qualification-count">{fundamentalQualifiedRows.length} qualified</span>
             </div>
+            <div className="qualified-list-toolbar">
+              <label><span>Sort by</span>
+                <select value={qualifiedSortBy} onChange={(e) => setQualifiedSortBy(e.target.value)}>
+                  <option value="fundamental">Fundamental Score</option>
+                  <option value="symbol">Symbol</option>
+                  {activeFundamentalColumns.map((column) => <option key={column.key} value={column.key}>{column.label}</option>)}
+                </select>
+              </label>
+              <label><span>Order</span>
+                <select value={qualifiedSortDir} onChange={(e) => setQualifiedSortDir(e.target.value)}>
+                  <option value="desc">Descending ↓</option>
+                  <option value="asc">Ascending ↑</option>
+                </select>
+              </label>
+              <small>Columns below match the currently applied Fundamental filters.</small>
+            </div>
             <div className="compact-table-scroll">
               <table className="filter-config-table fundamental-qualified-table">
-                <thead><tr><th>#</th><th>Stock</th><th>Fundamental Score</th><th>EPS RS</th><th>PAT RS</th><th>Sales RS</th><th>Coverage</th></tr></thead>
+                <thead>
+                  <tr>
+                    <th>#</th><th>Stock</th><th>Fundamental Score</th>
+                    {activeFundamentalColumns.map((column) => <th key={column.key}>{column.label}</th>)}
+                    <th>Coverage</th>
+                  </tr>
+                </thead>
                 <tbody>
-                  {fundamentalQualifiedRows.length ? fundamentalQualifiedRows.map((row, index) => (
+                  {sortedFundamentalQualifiedRows.length ? sortedFundamentalQualifiedRows.map((row, index) => (
                     <tr key={`standalone-${row.exchange}:${row.symbol}`} onClick={() => openUniverseStock(row)} className="qualified-stock-row">
                       <td>{index + 1}</td>
                       <td className="filter-name-cell"><strong>{row.symbol}</strong><small>{row.name || row.exchange}</small></td>
                       <td><span className="filter-score-badge is-pass">{filterScoreText(row.current_fundamental_score)}</span></td>
-                      <td>{filterScoreText(row.current_eps_score)}</td>
-                      <td>{filterScoreText(row.current_pat_score)}</td>
-                      <td>{filterScoreText(row.current_sales_score)}</td>
+                      {activeFundamentalColumns.map((column) => {
+                        const value = row.fundamental_rule_values?.[column.key];
+                        return <td key={column.key}>{value == null || !Number.isFinite(Number(value)) ? "N/A" : formatFilterCurrent(column.key, Number(value))}</td>;
+                      })}
                       <td>{Number.isFinite(Number(row.current_fundamental_coverage_percent)) ? `${Number(row.current_fundamental_coverage_percent).toFixed(0)}%` : "N/A"}</td>
                     </tr>
                   )) : (
-                    <tr><td colSpan="7" className="qualified-empty">No fully qualified stocks in the currently loaded data yet. The framework is visible and ready; the list populates automatically when complete provider history is available.</td></tr>
+                    <tr><td colSpan={4 + activeFundamentalColumns.length} className="qualified-empty">No stocks currently pass every enabled Fundamental rule with complete real provider data.</td></tr>
                   )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section className="standalone-fundamental-filters standalone-technical-filters" id="technical-filters">
+          <div className="standalone-fundamental-header">
+            <div>
+              <span className="section-eyebrow">Client Technical Framework</span>
+              <h2>Technical Filters</h2>
+              <p>Same structure as Fundamental Filters: editable compare/value/weight/use, Actual Value, RS score, Technical Score, then the qualified-stock list.</p>
+            </div>
+            <div className="standalone-fundamental-score">
+              <span>Technical Score</span>
+              <strong>{filterScoreText(factorEvaluationRows.groupScores?.technical)}</strong>
+            </div>
+          </div>
+          {renderFilterTable("technical", "Technical Filters", "EMA trend, 52-week distance, RS, ROC, ADX, RSI, BB Width, ATR%, RVOL, volume, DI spread and pivot breakout. Unclear definitions stay N/A/disabled instead of being guessed.")}
+          <div className="fundamental-qualified-panel standalone-qualified-panel">
+            <div className="fundamental-qualified-head">
+              <div>
+                <strong>Stocks Qualifying the Technical Criteria</strong>
+                <span>Top-200 rows with a complete Technical component score of 100/100 are shown here. Missing technical inputs never count as a pass.</span>
+              </div>
+              <span className="qualification-count">{technicalQualifiedRows.length} qualified</span>
+            </div>
+            <div className="compact-table-scroll">
+              <table className="filter-config-table fundamental-qualified-table">
+                <thead><tr><th>#</th><th>Stock</th><th>Technical Score</th><th>RS Score</th><th>Coverage</th></tr></thead>
+                <tbody>
+                  {technicalQualifiedRows.length ? technicalQualifiedRows.map((row, index) => (
+                    <tr key={`tech-${row.exchange}:${row.symbol}`} onClick={() => openUniverseStock(row)} className="qualified-stock-row">
+                      <td>{index + 1}</td>
+                      <td className="filter-name-cell"><strong>{row.symbol}</strong><small>{row.name || row.exchange}</small></td>
+                      <td><span className="filter-score-badge is-pass">{filterScoreText(row.technical_score)}</span></td>
+                      <td>{filterScoreText(row.rs_score)}</td>
+                      <td>{row.display_coverage_percent != null ? `${Number(row.display_coverage_percent).toFixed(0)}%` : "N/A"}</td>
+                    </tr>
+                  )) : <tr><td colSpan="5" className="qualified-empty">No fully qualified technical rows are available in the loaded Top-200 data yet.</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section className="standalone-fundamental-filters standalone-ownership-filters" id="ownership-filters">
+          <div className="standalone-fundamental-header">
+            <div>
+              <span className="section-eyebrow">Client Ownership Framework</span>
+              <h2>Ownership Filters</h2>
+              <p>Ownership filters use the same scoring layout. US provider history that is not available is shown as N/A rather than fabricated.</p>
+            </div>
+            <div className="standalone-fundamental-score">
+              <span>Ownership Score</span>
+              <strong>{filterScoreText(dashboardView?.score_components?.ownership ?? factorEvaluationRows.groupScores?.ownership)}</strong>
+            </div>
+          </div>
+          {exchange === "US"
+            ? renderUSOwnershipTable()
+            : renderFilterTable("ownership", "Ownership Filters", "Promoter / FII / DII-MF / pledge / insider rules from the handwritten ownership sheet.")}
+          <div className="fundamental-qualified-panel standalone-qualified-panel">
+            <div className="fundamental-qualified-head">
+              <div>
+                <strong>Stocks Qualifying the Ownership Criteria</strong>
+                <span>Top-200 rows with a complete Ownership component score of 100/100 are shown here; N/A provider fields are excluded from qualification.</span>
+              </div>
+              <span className="qualification-count">{ownershipQualifiedRows.length} qualified</span>
+            </div>
+            <div className="compact-table-scroll">
+              <table className="filter-config-table fundamental-qualified-table">
+                <thead><tr><th>#</th><th>Stock</th><th>Ownership Score</th><th>Institutional</th><th>Insider</th></tr></thead>
+                <tbody>
+                  {ownershipQualifiedRows.length ? ownershipQualifiedRows.map((row, index) => (
+                    <tr key={`own-${row.exchange}:${row.symbol}`} onClick={() => openUniverseStock(row)} className="qualified-stock-row">
+                      <td>{index + 1}</td>
+                      <td className="filter-name-cell"><strong>{row.symbol}</strong><small>{row.name || row.exchange}</small></td>
+                      <td><span className="filter-score-badge is-pass">{filterScoreText(row.ownership_score)}</span></td>
+                      <td>{row.institution_percent == null ? "N/A" : `${(Number(row.institution_percent) <= 1 ? Number(row.institution_percent) * 100 : Number(row.institution_percent)).toFixed(2)}%`}</td>
+                      <td>{row.insider_percent == null ? "N/A" : `${(Number(row.insider_percent) <= 1 ? Number(row.insider_percent) * 100 : Number(row.insider_percent)).toFixed(2)}%`}</td>
+                    </tr>
+                  )) : <tr><td colSpan="5" className="qualified-empty">No fully qualified ownership rows are available in the loaded Top-200 data yet.</td></tr>}
                 </tbody>
               </table>
             </div>
@@ -3506,22 +3747,39 @@ function App() {
                     </div>
                     <span className="qualification-count">{fundamentalQualifiedRows.length} qualified</span>
                   </div>
+                  <div className="qualified-list-toolbar">
+                    <label><span>Sort by</span>
+                      <select value={qualifiedSortBy} onChange={(e) => setQualifiedSortBy(e.target.value)}>
+                        <option value="fundamental">Fundamental Score</option>
+                        <option value="symbol">Symbol</option>
+                        {activeFundamentalColumns.map((column) => <option key={column.key} value={column.key}>{column.label}</option>)}
+                      </select>
+                    </label>
+                    <label><span>Order</span>
+                      <select value={qualifiedSortDir} onChange={(e) => setQualifiedSortDir(e.target.value)}>
+                        <option value="desc">Descending ↓</option>
+                        <option value="asc">Ascending ↑</option>
+                      </select>
+                    </label>
+                    <small>Filtered-stock columns mirror the active Fundamental filters.</small>
+                  </div>
                   <div className="compact-table-scroll">
                     <table className="filter-config-table fundamental-qualified-table">
-                      <thead><tr><th>#</th><th>Stock</th><th>Fundamental Score</th><th>EPS RS</th><th>PAT RS</th><th>Sales RS</th><th>Coverage</th></tr></thead>
+                      <thead><tr><th>#</th><th>Stock</th><th>Fundamental Score</th>{activeFundamentalColumns.map((column) => <th key={column.key}>{column.label}</th>)}<th>Coverage</th></tr></thead>
                       <tbody>
-                        {fundamentalQualifiedRows.length ? fundamentalQualifiedRows.map((row, index) => (
-                          <tr key={`${row.exchange}:${row.symbol}`}>
+                        {sortedFundamentalQualifiedRows.length ? sortedFundamentalQualifiedRows.map((row, index) => (
+                          <tr key={`${row.exchange}:${row.symbol}`} onClick={() => openUniverseStock(row)} className="qualified-stock-row">
                             <td>{index + 1}</td>
                             <td className="filter-name-cell"><strong>{row.symbol}</strong><small>{row.name || row.exchange}</small></td>
                             <td><span className="filter-score-badge is-pass">{filterScoreText(row.current_fundamental_score)}</span></td>
-                            <td>{filterScoreText(row.current_eps_score)}</td>
-                            <td>{filterScoreText(row.current_pat_score)}</td>
-                            <td>{filterScoreText(row.current_sales_score)}</td>
+                            {activeFundamentalColumns.map((column) => {
+                              const value = row.fundamental_rule_values?.[column.key];
+                              return <td key={column.key}>{value == null || !Number.isFinite(Number(value)) ? "N/A" : formatFilterCurrent(column.key, Number(value))}</td>;
+                            })}
                             <td>{Number.isFinite(Number(row.current_fundamental_coverage_percent)) ? `${Number(row.current_fundamental_coverage_percent).toFixed(0)}%` : "N/A"}</td>
                           </tr>
                         )) : (
-                          <tr><td colSpan="7" className="qualified-empty">No fully qualified stocks in the currently loaded data yet. The framework is ready and the list will populate automatically as complete provider history is available.</td></tr>
+                          <tr><td colSpan={4 + activeFundamentalColumns.length} className="qualified-empty">No stocks currently pass every enabled Fundamental rule with complete real provider data.</td></tr>
                         )}
                       </tbody>
                     </table>
@@ -4008,7 +4266,8 @@ function App() {
             <div className="chart-note">
               {new Date(`${chartInfo.date}T00:00:00`).toLocaleDateString("en-GB")} &nbsp;
               O {chartInfo.open.toFixed(2)} &nbsp; H {chartInfo.high.toFixed(2)} &nbsp;
-              L {chartInfo.low.toFixed(2)} &nbsp; C {chartInfo.close.toFixed(2)}
+              L {chartInfo.low.toFixed(2)} &nbsp; C {chartInfo.close.toFixed(2)} &nbsp;
+              V {Number(chartInfo.volume || 0).toLocaleString()}
             </div>
           )}
 
@@ -4685,7 +4944,7 @@ function App() {
               <div className="history-table-wrapper">
                 <table className="history-table ownership-matrix-table">
                   <thead>
-                    <tr><th>Ownership Type</th><th>Current</th><th>Source / Method</th></tr>
+                    <tr><th>Ownership Type</th><th>Actual Value</th><th>Source / Method</th></tr>
                   </thead>
                   <tbody>
                     {ownershipRows.map((row) => (

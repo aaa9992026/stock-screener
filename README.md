@@ -169,3 +169,18 @@ The Fundamental Filters framework is now displayed as its own always-visible sec
 ## Fundamental Qualified Stocks live-filter fix (2026-10-02)
 
 The qualified-stock list now recalculates from the currently enabled Fundamental Filters and their current compare signs / thresholds instead of using a stale aggregate score. Per-rule real provider values are returned with Top-200 rows, and older persisted ranking snapshots remain compatible for latest EPS/PAT/Sales YoY rules while the remaining rule-value cache refreshes. Missing provider values remain N/A and never count as a pass.
+
+
+## 2026-10-05 client ranking-framework corrections
+
+This build adds the latest client-requested ranking-system corrections:
+
+- Technical Filters now follow the same table structure as Fundamental Filters: Filter Name, Compare, Value/Target, Actual Value, Weight, RS Score, Use.
+- Added requested technical framework rows for Price/EMA, 52-week distances, RS, ROC, ADX, RSI, BB Width %, ATR %, RVOL, 10-day average volume, volume dry-up/contraction, DI spread and pivot breakout.
+- Technical Score and a qualified-stock list are shown directly below the Technical Filters.
+- Ownership Filters are shown as a separate section with Ownership Score and qualified-stock list. Missing US historical ownership series are explicitly N/A rather than fabricated.
+- Fundamental qualified-stock columns now mirror the currently enabled Fundamental filters. Sort By / Order controls were moved directly above this filtered list.
+- Candlestick framework now displays OHLCV (including Volume).
+- RS Score remains a dedicated 0–100 indicator chart.
+- RS percentile calculation now follows the latest client formula: [lower + (same - 1)/2] / (total - 1) × 100.
+- Any unconfirmed handwritten definition/threshold is left disabled/N/A or editable instead of guessed.

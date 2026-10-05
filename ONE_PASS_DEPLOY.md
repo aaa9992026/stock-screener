@@ -109,3 +109,9 @@ The Top-200 Market selector is now labeled and vertically aligned with Sort by, 
 
 ### Latest fix: Fundamental Qualified Stocks
 The qualified list now follows the active Fundamental Filters immediately. Example: if only `Latest quarter EPS growth (YoY) > 20%` is enabled, the list is rebuilt from that rule rather than the old aggregate fundamental score.
+
+
+## Latest ranking-framework update (2026-10-05)
+
+Deploy this package normally. After Vercel/Railway deploy, hard-refresh the browser (Ctrl+Shift+R). Verify Technical Filters, Ownership Filters, dynamic Fundamental qualified-stock columns, OHLCV display, RS Score, and the corrected percentile formula.
+
