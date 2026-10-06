@@ -136,3 +136,14 @@ git add .
 git commit -m "Fix ranking hover RS sorting Excel and full-universe filters"
 git push
 ```
+
+## Dynamic EMA / BB / EPS / RS hover patch (2026-10-05)
+
+After deployment, hard-refresh the Vercel page. Move the cursor from candle to candle and verify that OHLCV, EMA 10/20/34/50/100/150/200, BB Upper/Middle/Lower, EPS, and RS (Price/Benchmark) all follow the hovered date. The indicator RS Score remains the separate 0–100 ranking metric.
+
+### Git
+```bash
+git add .
+git commit -m "Make EMA BB EPS and RS values follow chart crosshair"
+git push
+```

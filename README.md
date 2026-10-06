@@ -202,3 +202,12 @@ This revision addresses the client's latest Ranking System review without starti
 ### Important scope note
 
 The current focus remains the **Ranking System**. Per client clarification, Sector Analysis, Portfolio Management, and 20-year Backtesting are separate Milestone-II parts and remain untouched in this closeout build.
+
+## 2026-10-05 dynamic price-chart hover values
+
+- EMA 10/20/34/50/100/150/200 values now follow the hovered candle date instead of always showing the latest technical summary.
+- Bollinger Upper, Middle, and Lower values are calculated per candle and update with the crosshair.
+- EPS is carried forward from the most recently available quarterly EPS and displayed for each hovered daily candle; it changes when a new quarterly EPS becomes effective in the plotted history.
+- Price/benchmark RS is calculated per candle and updates with the crosshair.
+- OHLCV and overlay values use the same normalized candle date, including Lightweight Charts `BusinessDay` crosshair values, so moving the cursor between candles updates the complete value strip reliably.
+- The static indicator **RS Score (0–100)** remains separate from the dynamic price-chart RS ratio.

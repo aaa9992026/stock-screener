@@ -1920,6 +1920,21 @@ function App() {
     });
     candleSeries.setData(compactRows.map(({ time, open, high, low, close }) => ({ time, open, high, low, close })));
 
+    // Keep every plotted value indexed by candle date so the values shown above
+    // the chart follow the crosshair instead of always showing the latest row.
+    const metricsByDate = new Map(compactRows.map((row) => [row.time, {
+      ...row, ema: {}, bbUpper: null, bbMiddle: null, bbLower: null, eps: null, rs: null,
+    }]));
+    const normalizeChartTime = (time) => {
+      if (time == null) return "";
+      if (typeof time === "string") return time.slice(0, 10);
+      if (typeof time === "number") return new Date(time * 1000).toISOString().slice(0, 10);
+      if (typeof time === "object" && time.year && time.month && time.day) {
+        return `${time.year}-${String(time.month).padStart(2, "0")}-${String(time.day).padStart(2, "0")}`;
+      }
+      return String(time).slice(0, 10);
+    };
+
     const emaSeries = (period) => {
       if (compactRows.length < period) return [];
       const multiplier = 2 / (period + 1);
@@ -1938,23 +1953,36 @@ function App() {
         if (!values.length) return;
         const line = chart.addSeries(LineSeries, { color: FRAMEWORK_EMA_COLORS[period], lineWidth: period <= 34 ? 2 : 1, priceLineVisible: false, lastValueVisible: true, title: `EMA ${period}` });
         line.setData(values);
+        values.forEach((row) => {
+          const metric = metricsByDate.get(row.time);
+          if (metric) metric.ema[period] = Number(row.value);
+        });
       });
     }
 
     if (chartOverlays.bollinger && compactRows.length >= 20) {
       const upper = [];
+      const middle = [];
       const lower = [];
       for (let i = 19; i < compactRows.length; i += 1) {
         const values = compactRows.slice(i - 19, i + 1).map((row) => row.close);
         const mean = values.reduce((sum, value) => sum + value, 0) / values.length;
         const variance = values.reduce((sum, value) => sum + ((value - mean) ** 2), 0) / values.length;
         const sd = Math.sqrt(variance);
-        upper.push({ time: compactRows[i].time, value: mean + (2 * sd) });
-        lower.push({ time: compactRows[i].time, value: mean - (2 * sd) });
+        const time = compactRows[i].time;
+        const upperValue = mean + (2 * sd);
+        const lowerValue = mean - (2 * sd);
+        upper.push({ time, value: upperValue });
+        middle.push({ time, value: mean });
+        lower.push({ time, value: lowerValue });
+        const metric = metricsByDate.get(time);
+        if (metric) { metric.bbUpper = upperValue; metric.bbMiddle = mean; metric.bbLower = lowerValue; }
       }
       const upperLine = chart.addSeries(LineSeries, { color: "#64748b", lineWidth: 1, priceLineVisible: false, lastValueVisible: true, title: "BB Upper" });
+      const middleLine = chart.addSeries(LineSeries, { color: "#94a3b8", lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false, title: "BB Middle" });
       const lowerLine = chart.addSeries(LineSeries, { color: "#94a3b8", lineWidth: 1, priceLineVisible: false, lastValueVisible: true, title: "BB Lower" });
       upperLine.setData(upper);
+      middleLine.setData(middle);
       lowerLine.setData(lower);
     }
 
@@ -1975,6 +2003,10 @@ function App() {
         const firstClose = raw[0].close;
         const rs = chart.addSeries(LineSeries, { color: "#111827", lineWidth: 2, priceLineVisible: false, lastValueVisible: true, title: "RS Price Line" });
         rs.setData(raw.map((row) => ({ time: row.time, value: (row.ratio / firstRatio) * firstClose })));
+        raw.forEach((row) => {
+          const metric = metricsByDate.get(row.time);
+          if (metric) metric.rs = Number(row.ratio);
+        });
       }
     }
 
@@ -2001,24 +2033,43 @@ function App() {
         else unique.push(row);
       });
       if (unique.length) {
-        const eps = chart.addSeries(LineSeries, { priceScaleId: "framework-eps", color: "#ec4899", lineWidth: 2, pointMarkersVisible: true, pointMarkersRadius: 3, priceLineVisible: false, lastValueVisible: true, title: "EPS" });
-        eps.setData(unique);
+        // EPS is quarterly, so carry the most recently known quarter forward
+        // across daily candles. That makes the value under the crosshair explicit
+        // for every candle while changing only when a new quarterly EPS appears.
+        const sortedQuarterly = unique.slice().sort((a, b) => a.time.localeCompare(b.time));
+        const denseEps = [];
+        let quarterIndex = 0;
+        let currentEps = null;
+        compactRows.forEach((row) => {
+          while (quarterIndex < sortedQuarterly.length && sortedQuarterly[quarterIndex].time <= row.time) {
+            currentEps = Number(sortedQuarterly[quarterIndex].value);
+            quarterIndex += 1;
+          }
+          if (Number.isFinite(currentEps)) {
+            denseEps.push({ time: row.time, value: currentEps });
+            const metric = metricsByDate.get(row.time);
+            if (metric) metric.eps = currentEps;
+          }
+        });
+        const eps = chart.addSeries(LineSeries, { priceScaleId: "framework-eps", color: "#ec4899", lineWidth: 2, pointMarkersVisible: false, priceLineVisible: false, lastValueVisible: true, title: "EPS" });
+        eps.setData(denseEps);
         chart.priceScale("framework-eps").applyOptions({ scaleMargins: { top: 0.04, bottom: 0.84 } });
       }
     }
 
-    const compactByDate = new Map(compactRows.map((row) => [row.time, row]));
     const latestCompact = compactRows[compactRows.length - 1];
-    setDashboardChartInfo(latestCompact || null);
+    const latestMetrics = latestCompact ? metricsByDate.get(latestCompact.time) : null;
+    setDashboardChartInfo(latestMetrics ? { ...latestMetrics, time: latestCompact.time } : latestCompact || null);
     chart.subscribeCrosshairMove((param) => {
       const point = param.seriesData?.get(candleSeries);
-      const dateKey = typeof param.time === "string" ? param.time : String(param.time ?? "").slice(0, 10);
-      const raw = compactByDate.get(dateKey);
-      if (point && "open" in point) {
+      const dateKey = normalizeChartTime(param.time);
+      const metric = metricsByDate.get(dateKey);
+      if (point && "open" in point && metric) {
         setDashboardChartInfo({
+          ...metric,
           time: dateKey,
           open: Number(point.open), high: Number(point.high), low: Number(point.low), close: Number(point.close),
-          volume: Number(raw?.volume || 0),
+          volume: Number(metric.volume || 0),
         });
       }
     });
@@ -3205,15 +3256,16 @@ function App() {
                   ))}
                 </div>
                 <div className="framework-current-values">
-                  <b>Current chart values:</b>
+                  <b>Hovered chart values{dashboardChartInfo?.time ? ` — ${formatChartDate(dashboardChartInfo.time)}` : ""}:</b>
                   {[10,20,34,50,100,150,200].map((period) => {
-                    const em = technicalSummary?.ema?.[`ema_${period}`] ?? technicalSummary?.ema?.[period] ?? technicalSummary?.ema?.[`ema${period}`];
+                    const em = dashboardChartInfo?.ema?.[period];
                     return <span key={period}>EMA {period}: <strong>{Number.isFinite(Number(em)) ? Number(em).toFixed(2) : "N/A"}</strong></span>;
                   })}
-                  <span>BB Upper: <strong>{Number.isFinite(Number(technicalSummary?.bollinger_upper)) ? Number(technicalSummary.bollinger_upper).toFixed(2) : "N/A"}</strong></span>
-                  <span>BB Lower: <strong>{Number.isFinite(Number(technicalSummary?.bollinger_lower)) ? Number(technicalSummary.bollinger_lower).toFixed(2) : "N/A"}</strong></span>
-                  <span>EPS: <strong>{fundamentalHistory?.quarterly?.[0]?.eps != null ? Number(fundamentalHistory.quarterly[0].eps).toFixed(2) : "N/A"}</strong></span>
-                  <span>RS Score: <strong>{Number.isFinite(Number(technicalSummary?.rs_rating ?? dashboardView?.score_components?.relative_strength)) ? Number(technicalSummary?.rs_rating ?? dashboardView?.score_components?.relative_strength).toFixed(2) : "N/A"}</strong></span>
+                  <span>BB Upper: <strong>{Number.isFinite(Number(dashboardChartInfo?.bbUpper)) ? Number(dashboardChartInfo.bbUpper).toFixed(2) : "N/A"}</strong></span>
+                  <span>BB Middle: <strong>{Number.isFinite(Number(dashboardChartInfo?.bbMiddle)) ? Number(dashboardChartInfo.bbMiddle).toFixed(2) : "N/A"}</strong></span>
+                  <span>BB Lower: <strong>{Number.isFinite(Number(dashboardChartInfo?.bbLower)) ? Number(dashboardChartInfo.bbLower).toFixed(2) : "N/A"}</strong></span>
+                  <span>EPS: <strong>{Number.isFinite(Number(dashboardChartInfo?.eps)) ? Number(dashboardChartInfo.eps).toFixed(2) : "N/A"}</strong></span>
+                  <span>RS (Price/Benchmark): <strong>{Number.isFinite(Number(dashboardChartInfo?.rs)) ? Number(dashboardChartInfo.rs).toFixed(4) : "N/A"}</strong></span>
                 </div>
                 {data?.length ? (
                   <div ref={dashboardCandlestickRef} className="dashboard-candlestick-canvas" />
