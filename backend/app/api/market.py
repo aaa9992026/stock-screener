@@ -150,14 +150,32 @@ def _market_rows_with_live_fallback(db: Session, symbol: str, exchange: str, min
             except Exception:
                 pass
             stored = []
-    # Do not treat a sufficiently long but stale database cache as current market data.
-    # The client reported charts stopping in Sep-2023 while newer provider data exists.
-    # Keep fresh stored rows when they are recent; otherwise fetch live rows and merge
-    # them by date (live provider rows win on overlap). This preserves free-tier DB
-    # savings without allowing a stale cache to freeze the chart/indicators.
+    # Always prefer a live merge on the free tier.  The persisted OHLCV cache is
+    # deliberately compact/disposable there, so a date that is only a few days
+    # old can still be missing the latest completed sessions (for example Oct-01
+    # when Oct-02/Oct-05 are already available).  _live_provider_rows itself is
+    # cached for 15 minutes, so this does not hammer the provider.
+    if _free_tier_mode():
+        live = _live_provider_rows(symbol, exchange, years=years)
+        if live:
+            merged = {row.date: row for row in stored}
+            for row in live:
+                merged[row.date] = row
+            merged_rows = [merged[key] for key in sorted(merged)]
+            if len(merged_rows) >= min_rows:
+                return merged_rows
+            if len(live) >= min_rows:
+                return live
+        return stored or live
+
+    # Non-free deployments may use the persisted cache when it already contains
+    # the latest completed weekday session. Otherwise merge the live provider
+    # rows by date (live wins on overlap).
     latest_stored_date = stored[-1].date if stored else None
-    freshness_cutoff = date.today() - timedelta(days=7)
-    stored_is_recent = bool(latest_stored_date and latest_stored_date >= freshness_cutoff)
+    expected_completed = date.today() - timedelta(days=1)
+    while expected_completed.weekday() >= 5:
+        expected_completed -= timedelta(days=1)
+    stored_is_recent = bool(latest_stored_date and latest_stored_date >= expected_completed)
     if len(stored) >= min_rows and stored_is_recent:
         return stored
 
@@ -3635,7 +3653,7 @@ def get_technical_summary(
     opens = [float(row.open) for row in rows]
     volumes = [float(row.volume or 0) for row in rows]
 
-    ema_periods = [20, 30, 50, 100, 150, 200]
+    ema_periods = [10, 20, 34, 50, 100, 150, 200]
     emas = {str(period): _ema(closes, period) for period in ema_periods}
     available_emas = [emas[str(p)] for p in ema_periods if emas[str(p)] is not None]
     ema_alignment = "Unavailable"
@@ -3725,9 +3743,10 @@ def get_technical_summary(
     sd20 = variance20 ** 0.5
     bb_upper = sma20 + 2 * sd20
     bb_lower = sma20 - 2 * sd20
-    # Client-specified Bollinger Band width formula:
-    # (Upper BB - Lower BB) * 100 / Lower BB
-    bb_width = ((bb_upper - bb_lower) / bb_lower * 100) if bb_lower not in (None, 0) else None
+    # TradingView/default Bollinger Band Width uses the basis (middle band):
+    # (Upper BB - Lower BB) / Middle BB * 100.  Using the lower band as the
+    # denominator made the screener disagree with the chart/TradingView.
+    bb_width = ((bb_upper - bb_lower) / sma20 * 100) if sma20 not in (None, 0) else None
     bb_width_20_periods_ago = None
     if len(closes) >= 40:
         old_window = closes[-40:-20]
@@ -3736,7 +3755,7 @@ def get_technical_summary(
         old_sd = old_var ** 0.5
         old_upper = old_mean + 2 * old_sd
         old_lower = old_mean - 2 * old_sd
-        bb_width_20_periods_ago = ((old_upper - old_lower) / old_lower * 100) if old_lower else None
+        bb_width_20_periods_ago = ((old_upper - old_lower) / old_mean * 100) if old_mean else None
 
     range20 = ((max(highs[-20:]) - min(lows[-20:])) / min(lows[-20:]) * 100) if min(lows[-20:]) else None
 
@@ -5344,6 +5363,170 @@ def get_top_composite_dashboard(
 
 
 
+_TRADINGVIEW_DIRECT_FUNDAMENTAL_FIELDS = {
+    # Direct market-wide growth fields.  These allow a one-rule (or other
+    # directly mappable) client screen to evaluate the complete stock universe
+    # immediately instead of waiting for thousands of per-symbol statement
+    # history calls. Complex acceleration/average rules still use verified
+    # provider histories below and are never approximated.
+    "q_eps_yoy_latest": "earnings_per_share_diluted_yoy_growth_fq",
+    "q_eps_qoq_latest": "earnings_per_share_diluted_qoq_growth_fq",
+    "a_eps_yoy_latest": "earnings_per_share_diluted_yoy_growth_fy",
+    "q_pat_yoy_latest": "net_income_yoy_growth_fq",
+    "q_pat_qoq_latest": "net_income_qoq_growth_fq",
+    "a_pat_yoy_latest": "net_income_yoy_growth_fy",
+    "q_sales_yoy_latest": "total_revenue_yoy_growth_fq",
+    "q_sales_qoq_latest": "total_revenue_qoq_growth_fq",
+    "a_sales_yoy_latest": "total_revenue_yoy_growth_fy",
+    "roe_above": "return_on_equity",
+}
+
+
+def _tradingview_filter_operation(comparator: str):
+    return {
+        ">": "greater",
+        ">=": "greater_or_equal",
+        "<": "less",
+        "<=": "less_or_equal",
+    }.get(str(comparator or ">").strip())
+
+
+def _tradingview_complete_fundamental_scan(market, active_rules, company_map, limit=10000):
+    """Fast complete-universe path for rules TradingView exposes directly.
+
+    Returns ``None`` when any active rule is not a direct scanner field or when
+    the public scanner is unavailable.  The caller then falls back to the
+    project's verified per-symbol provider-history path.  Results are always
+    intersected with the project's eligible Company universe, so funds/other
+    instruments from the public scanner never leak into the client list.
+    """
+    if not active_rules or not company_map:
+        return None
+
+    mapped_rules = []
+    for rule in active_rules:
+        field = _TRADINGVIEW_DIRECT_FUNDAMENTAL_FIELDS.get(rule.get("key"))
+        op = _tradingview_filter_operation(rule.get("comparator"))
+        threshold = _finite_number(rule.get("threshold"))
+        if not field or not op or threshold is None:
+            return None
+        mapped_rules.append((rule, field, op, threshold))
+
+    market = str(market or "ALL").upper()
+    scan_markets = []
+    if market in {"ALL", "US"}:
+        scan_markets.append(("america", "US"))
+    if market in {"ALL", "INDIA", "NSE", "BSE"}:
+        scan_markets.append(("india", None))
+    if not scan_markets:
+        return None
+
+    headers = {
+        "Content-Type": "application/json",
+        "User-Agent": "Mozilla/5.0",
+        "Origin": "https://www.tradingview.com",
+        "Referer": "https://www.tradingview.com/",
+    }
+    filters = [
+        {"left": field, "operation": op, "right": threshold}
+        for _rule, field, op, threshold in mapped_rules
+    ]
+    columns = ["name", "description"] + [field for _rule, field, _op, _threshold in mapped_rules]
+    seen_columns = []
+    for column in columns:
+        if column not in seen_columns:
+            seen_columns.append(column)
+    columns = seen_columns
+
+    results = []
+    for scan_market, forced_exchange in scan_markets:
+        payload = {
+            "filter": filters,
+            "options": {"lang": "en"},
+            "symbols": {"query": {"types": []}, "tickers": []},
+            "columns": columns,
+            "sort": {"sortBy": mapped_rules[0][1], "sortOrder": "desc"},
+            "range": [0, min(max(int(limit or 10000), 500), 10000)],
+        }
+        try:
+            response = requests.post(
+                f"https://scanner.tradingview.com/{scan_market}/scan",
+                headers=headers,
+                json=payload,
+                timeout=25,
+            )
+            response.raise_for_status()
+            body = response.json() or {}
+        except Exception:
+            return None
+
+        for item in body.get("data") or []:
+            ticker_id = str(item.get("s") or "")
+            if ":" not in ticker_id:
+                continue
+            tv_exchange, tv_symbol = ticker_id.split(":", 1)
+            tv_exchange = tv_exchange.upper().strip()
+            tv_symbol = tv_symbol.upper().strip()
+            if forced_exchange == "US":
+                exchange = "US"
+            elif tv_exchange == "NSE":
+                exchange = "NSE"
+            elif tv_exchange == "BSE":
+                exchange = "BSE"
+            else:
+                continue
+            if market == "NSE" and exchange != "NSE":
+                continue
+            if market == "BSE" and exchange != "BSE":
+                continue
+
+            candidates = [tv_symbol]
+            if exchange == "US":
+                candidates.extend([tv_symbol.replace("-", "."), tv_symbol.replace("-", "/")])
+            company = None
+            canonical_key = None
+            for candidate in candidates:
+                key = (exchange, candidate)
+                if key in company_map:
+                    company = company_map[key]
+                    canonical_key = key
+                    break
+            if company is None:
+                continue
+
+            values_raw = item.get("d") or []
+            values_by_column = dict(zip(columns, values_raw))
+            rule_values = {}
+            complete = True
+            for rule, field, _op, _threshold in mapped_rules:
+                value = _finite_number(values_by_column.get(field))
+                if value is None:
+                    complete = False
+                    break
+                rule_values[rule["key"]] = value
+            if not complete:
+                continue
+
+            results.append({
+                "symbol": canonical_key[1],
+                "exchange": canonical_key[0],
+                "name": company.name or values_by_column.get("description") or canonical_key[1],
+                "isin": company.isin,
+                "sector": company.sector,
+                "industry": company.industry,
+                "fundamental_rule_values": rule_values,
+                "current_fundamental_score": 100.0,
+                "current_fundamental_coverage_percent": 100.0,
+            })
+
+    # Deduplicate when an instrument can be surfaced by more than one exchange
+    # alias in the public scanner.
+    unique = {}
+    for row in results:
+        unique[(row["exchange"], row["symbol"])] = row
+    return list(unique.values())
+
+
 def _qualified_rule_compare(value, comparator, threshold):
     """Evaluate one client filter without inventing unavailable values."""
     value = _finite_number(value)
@@ -5428,6 +5611,39 @@ def get_fundamental_qualified(payload: dict, db: Session = Depends(get_db)):
     company_query = apply_eligible_equity_filter(company_query, exchanges)
     companies = company_query.order_by(Company.exchange.asc(), Company.symbol.asc()).all()
     company_map = {(str(c.exchange).upper(), str(c.symbol).upper()): c for c in companies}
+
+    # For directly supported growth rules (for example the client test
+    # "Latest quarter EPS YoY > 20%"), use TradingView's market-wide scanner
+    # and intersect it with our eligible Company universe. This returns the
+    # complete list immediately instead of showing only the small subset whose
+    # per-symbol history cache has already warmed. Complex handwritten rules
+    # still fall through to the verified history path below.
+    direct_rows = _tradingview_complete_fundamental_scan(market, active_rules, company_map, limit=limit)
+    if direct_rows is not None:
+        def direct_sort_value(row):
+            if sort_by == "symbol":
+                return str(row.get("symbol") or "")
+            if sort_by == "fundamental":
+                return float(row.get("current_fundamental_score") or 0)
+            value = _finite_number((row.get("fundamental_rule_values") or {}).get(sort_by))
+            return float("-inf") if value is None else value
+
+        reverse = sort_dir != "asc"
+        if sort_by == "symbol":
+            direct_rows.sort(key=direct_sort_value, reverse=reverse)
+        else:
+            direct_rows.sort(key=lambda row: (direct_sort_value(row), str(row.get("symbol") or "")), reverse=reverse)
+        universe_total = len(company_map)
+        return _json_safe({
+            "rows": direct_rows[:limit],
+            "qualified_total": len(direct_rows),
+            "evaluated": universe_total,
+            "universe_total": universe_total,
+            "scan_remaining": 0,
+            "complete": True,
+            "source": "TradingView market-wide screener + eligible company universe",
+            "message": "Complete eligible stock universe evaluated immediately for directly supported fundamental growth rules; no Top-200 cap is applied.",
+        })
 
     # Use every persisted real-provider snapshot for qualification instead of
     # dropping a stock merely because its compact history snapshot is older than

@@ -211,3 +211,15 @@ The current focus remains the **Ranking System**. Per client clarification, Sect
 - Price/benchmark RS is calculated per candle and updates with the crosshair.
 - OHLCV and overlay values use the same normalized candle date, including Lightweight Charts `BusinessDay` crosshair values, so moving the cursor between candles updates the complete value strip reliably.
 - The static indicator **RS Score (0–100)** remains separate from the dynamic price-chart RS ratio.
+
+## 2026-10-06 Ranking System correction pass — latest-date / TradingView alignment
+
+This build is a Ranking System correction pass only. Sector Analysis, Portfolio Management, and the separate 20-year Backtesting milestone part are **not marked complete** by this package.
+
+- Free-tier chart reads now always merge the newest live-provider OHLCV into the compact stored cache so an old stored date cannot suppress newer completed sessions.
+- The framework chart calculates EMA 10/20/34/50/100/150/200 and Bollinger values from the full loaded history before slicing the visible window. The hover strip resets to the newest candle when the pointer leaves the chart.
+- RSI, ATR, +DI/-DI and ADX use Wilder/RMA smoothing to match standard TradingView-style calculations more closely. Bollinger Width now uses `(Upper - Lower) / Middle * 100` consistently.
+- Technical relationship rows (Price vs EMA, EMA vs EMA, pivot breakout, ATR-average and volume-average comparisons) honor the editable Compare selector. `Price > 34 EMA` displays the actual EMA-34 target instead of `Dynamic` when chart history is available.
+- Simple directly mapped Fundamental screens (for example latest-quarter EPS/PAT/Sales YoY or QoQ rules) have a complete-universe fast path through the market-wide scanner, intersected with the project's eligible Company universe. Complex handwritten acceleration rules continue to use verified provider histories and never fabricate missing values.
+- Full-universe qualification automatically refreshes while background history evaluation is incomplete.
+- **Excel Live Link** downloads a refreshable `.iqy` connection for the currently selected stock. Opening it in Excel creates a live web-query connection to the screener CSV endpoint; use Data → Refresh All to reload that stock.

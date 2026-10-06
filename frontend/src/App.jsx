@@ -673,6 +673,10 @@ function App() {
   const [topCompositeSortDir, setTopCompositeSortDir] = useState("desc");
   const [qualifiedSortBy, setQualifiedSortBy] = useState("fundamental");
   const [qualifiedSortDir, setQualifiedSortDir] = useState("desc");
+  const [technicalQualifiedSortBy, setTechnicalQualifiedSortBy] = useState("technical");
+  const [technicalQualifiedSortDir, setTechnicalQualifiedSortDir] = useState("desc");
+  const [ownershipQualifiedSortBy, setOwnershipQualifiedSortBy] = useState("ownership");
+  const [ownershipQualifiedSortDir, setOwnershipQualifiedSortDir] = useState("desc");
   const [fundamentalUniverseQualified, setFundamentalUniverseQualified] = useState([]);
   const [fundamentalUniverseMeta, setFundamentalUniverseMeta] = useState({ evaluated: 0, universe_total: 0, scan_remaining: 0, complete: false, qualified_total: 0 });
   const [fundamentalUniverseLoaded, setFundamentalUniverseLoaded] = useState(false);
@@ -992,13 +996,21 @@ function App() {
 
   const technicalQualifiedRows = topCompositeDisplayRows
     .filter((row) => Number.isFinite(Number(row.technical_score)) && Number(row.technical_score) >= 99.999)
-    .sort((a, b) => Number(b.technical_score) - Number(a.technical_score))
-    .slice(0, 50);
+    .sort((a, b) => {
+      const av = technicalQualifiedSortBy === "symbol" ? String(a.symbol || "") : Number(technicalQualifiedSortBy === "rs" ? a.rs_score : a.technical_score);
+      const bv = technicalQualifiedSortBy === "symbol" ? String(b.symbol || "") : Number(technicalQualifiedSortBy === "rs" ? b.rs_score : b.technical_score);
+      const cmp = technicalQualifiedSortBy === "symbol" ? av.localeCompare(bv) : ((Number.isFinite(av) ? av : -Infinity) - (Number.isFinite(bv) ? bv : -Infinity));
+      return technicalQualifiedSortDir === "asc" ? cmp : -cmp;
+    });
 
   const ownershipQualifiedRows = topCompositeDisplayRows
     .filter((row) => Number.isFinite(Number(row.ownership_score)) && Number(row.ownership_score) >= 99.999)
-    .sort((a, b) => Number(b.ownership_score) - Number(a.ownership_score))
-    .slice(0, 50);
+    .sort((a, b) => {
+      const av = ownershipQualifiedSortBy === "symbol" ? String(a.symbol || "") : Number(ownershipQualifiedSortBy === "institutional" ? a.institution_percent : ownershipQualifiedSortBy === "insider" ? a.insider_percent : a.ownership_score);
+      const bv = ownershipQualifiedSortBy === "symbol" ? String(b.symbol || "") : Number(ownershipQualifiedSortBy === "institutional" ? b.institution_percent : ownershipQualifiedSortBy === "insider" ? b.insider_percent : b.ownership_score);
+      const cmp = ownershipQualifiedSortBy === "symbol" ? av.localeCompare(bv) : ((Number.isFinite(av) ? av : -Infinity) - (Number.isFinite(bv) ? bv : -Infinity));
+      return ownershipQualifiedSortDir === "asc" ? cmp : -cmp;
+    });
 
   const loadFundamentalQualifiedUniverse = async () => {
     const rules = (handwrittenFactorMeta.fundamental || []).map(([key]) => {
@@ -1038,6 +1050,18 @@ function App() {
       setFundamentalUniverseLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!fundamentalUniverseLoaded || fundamentalUniverseMeta.complete || fundamentalUniverseLoading) return undefined;
+    const timer = window.setTimeout(() => {
+      loadFundamentalQualifiedUniverse();
+    }, 5000);
+    return () => window.clearTimeout(timer);
+    // Keep polling while the backend is warming missing real-provider histories
+    // so the qualified list grows automatically instead of freezing at the
+    // first small evaluated subset.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fundamentalUniverseLoaded, fundamentalUniverseMeta.complete, fundamentalUniverseMeta.evaluated, fundamentalUniverseLoading, universeFilters.market, qualifiedSortBy, qualifiedSortDir]);
 
   const resetUniverseFilters = () => {
     const next = { ...emptyUniverseFilters };
@@ -1908,11 +1932,12 @@ function App() {
       localization: { dateFormat: "dd/MM/yyyy" },
     });
 
-    const compactRows = data.slice(-420).map((row) => ({
+    const allRows = (data || []).map((row) => ({
       time: String(row.date).slice(0, 10),
       open: Number(row.open), high: Number(row.high), low: Number(row.low), close: Number(row.close),
       volume: Number(row.volume || 0),
     })).filter((row) => [row.open, row.high, row.low, row.close].every(Number.isFinite));
+    const compactRows = allRows.slice(-420);
     if (!compactRows.length) return () => chart.remove();
 
     const candleSeries = chart.addSeries(CandlestickSeries, {
@@ -1925,6 +1950,7 @@ function App() {
     const metricsByDate = new Map(compactRows.map((row) => [row.time, {
       ...row, ema: {}, bbUpper: null, bbMiddle: null, bbLower: null, eps: null, rs: null,
     }]));
+    const visibleDateSet = new Set(compactRows.map((row) => row.time));
     const normalizeChartTime = (time) => {
       if (time == null) return "";
       if (typeof time === "string") return time.slice(0, 10);
@@ -1935,41 +1961,46 @@ function App() {
       return String(time).slice(0, 10);
     };
 
+    // Calculate EMA values from the complete loaded history, not only the visible
+    // 420 candles. This materially reduces seed drift versus TradingView, while
+    // still plotting only the visible chart window.
     const emaSeries = (period) => {
-      if (compactRows.length < period) return [];
+      if (allRows.length < period) return [];
       const multiplier = 2 / (period + 1);
-      let current = compactRows.slice(0, period).reduce((sum, row) => sum + row.close, 0) / period;
-      const output = [{ time: compactRows[period - 1].time, value: current }];
-      for (let i = period; i < compactRows.length; i += 1) {
-        current = ((compactRows[i].close - current) * multiplier) + current;
-        output.push({ time: compactRows[i].time, value: current });
+      let current = allRows.slice(0, period).reduce((sum, row) => sum + row.close, 0) / period;
+      const output = [{ time: allRows[period - 1].time, value: current }];
+      for (let i = period; i < allRows.length; i += 1) {
+        current = ((allRows[i].close - current) * multiplier) + current;
+        output.push({ time: allRows[i].time, value: current });
       }
-      return output;
+      return output.filter((row) => visibleDateSet.has(row.time));
     };
 
-    if (chartOverlays.ema) {
-      [10, 20, 34, 50, 100, 150, 200].forEach((period) => {
-        const values = emaSeries(period);
-        if (!values.length) return;
-        const line = chart.addSeries(LineSeries, { color: FRAMEWORK_EMA_COLORS[period], lineWidth: period <= 34 ? 2 : 1, priceLineVisible: false, lastValueVisible: true, title: `EMA ${period}` });
-        line.setData(values);
-        values.forEach((row) => {
-          const metric = metricsByDate.get(row.time);
-          if (metric) metric.ema[period] = Number(row.value);
-        });
+    [10, 20, 34, 50, 100, 150, 200].forEach((period) => {
+      const values = emaSeries(period);
+      values.forEach((row) => {
+        const metric = metricsByDate.get(row.time);
+        if (metric) metric.ema[period] = Number(row.value);
       });
-    }
+      if (!chartOverlays.ema || !values.length) return;
+      const line = chart.addSeries(LineSeries, { color: FRAMEWORK_EMA_COLORS[period], lineWidth: period <= 34 ? 2 : 1, priceLineVisible: false, lastValueVisible: true, title: `EMA ${period}` });
+      line.setData(values);
+    });
 
-    if (chartOverlays.bollinger && compactRows.length >= 20) {
-      const upper = [];
-      const middle = [];
-      const lower = [];
-      for (let i = 19; i < compactRows.length; i += 1) {
-        const values = compactRows.slice(i - 19, i + 1).map((row) => row.close);
+    // Bollinger Bands use the same 20-period population standard deviation as
+    // the TradingView default. Calculate from full history and then show only
+    // dates in the visible window so the first visible candles are not missing.
+    const upper = [];
+    const middle = [];
+    const lower = [];
+    if (allRows.length >= 20) {
+      for (let i = 19; i < allRows.length; i += 1) {
+        const values = allRows.slice(i - 19, i + 1).map((row) => row.close);
         const mean = values.reduce((sum, value) => sum + value, 0) / values.length;
         const variance = values.reduce((sum, value) => sum + ((value - mean) ** 2), 0) / values.length;
         const sd = Math.sqrt(variance);
-        const time = compactRows[i].time;
+        const time = allRows[i].time;
+        if (!visibleDateSet.has(time)) continue;
         const upperValue = mean + (2 * sd);
         const lowerValue = mean - (2 * sd);
         upper.push({ time, value: upperValue });
@@ -1978,6 +2009,8 @@ function App() {
         const metric = metricsByDate.get(time);
         if (metric) { metric.bbUpper = upperValue; metric.bbMiddle = mean; metric.bbLower = lowerValue; }
       }
+    }
+    if (chartOverlays.bollinger && upper.length) {
       const upperLine = chart.addSeries(LineSeries, { color: "#64748b", lineWidth: 1, priceLineVisible: false, lastValueVisible: true, title: "BB Upper" });
       const middleLine = chart.addSeries(LineSeries, { color: "#94a3b8", lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false, title: "BB Middle" });
       const lowerLine = chart.addSeries(LineSeries, { color: "#94a3b8", lineWidth: 1, priceLineVisible: false, lastValueVisible: true, title: "BB Lower" });
@@ -2059,7 +2092,8 @@ function App() {
 
     const latestCompact = compactRows[compactRows.length - 1];
     const latestMetrics = latestCompact ? metricsByDate.get(latestCompact.time) : null;
-    setDashboardChartInfo(latestMetrics ? { ...latestMetrics, time: latestCompact.time } : latestCompact || null);
+    const latestChartInfo = latestMetrics ? { ...latestMetrics, time: latestCompact.time } : latestCompact || null;
+    setDashboardChartInfo(latestChartInfo);
     chart.subscribeCrosshairMove((param) => {
       const point = param.seriesData?.get(candleSeries);
       const dateKey = normalizeChartTime(param.time);
@@ -2071,6 +2105,10 @@ function App() {
           open: Number(point.open), high: Number(point.high), low: Number(point.low), close: Number(point.close),
           volume: Number(metric.volume || 0),
         });
+      } else if (!param.time || !point) {
+        // When the cursor leaves the candles, immediately return the strip to
+        // the latest available session instead of leaving an old hovered date.
+        setDashboardChartInfo(latestChartInfo);
       }
     });
 
@@ -2113,6 +2151,16 @@ function App() {
 
     const tech = handwrittenFactors.technical;
     const em = technicalSummary?.ema || {};
+    const latestEmaFromChart = (period) => {
+      const closes = (data || []).map((row) => Number(row?.close)).filter((value) => Number.isFinite(value) && value > 0);
+      if (closes.length < period) return null;
+      const multiplier = 2 / (period + 1);
+      let current = closes.slice(0, period).reduce((sum, value) => sum + value, 0) / period;
+      for (let index = period; index < closes.length; index += 1) {
+        current = ((closes[index] - current) * multiplier) + current;
+      }
+      return Number.isFinite(current) ? current : null;
+    };
     const d52 = finite(technicalSummary?.distance_from_52w_high_percent);
     let distanceScore = null;
     if (d52 != null) {
@@ -2265,10 +2313,12 @@ function App() {
       rsiScore = maxPoints > 0 ? (rawPoints / maxPoints) * 100 : null;
     }
     const latestPrice = finite(technicalSummary?.client_technical_filters?.trend?.price) ?? finite(data?.[data.length - 1]?.close);
-    const ema20 = finite(em["20"]);
-    const ema34 = finite(em["34"]);
-    const ema50 = finite(em["50"]);
-    const ema150 = finite(em["150"]);
+    // Prefer the EMA calculated from the same full candle history that feeds
+    // the visible chart. This keeps filter targets and chart labels aligned.
+    const ema20 = latestEmaFromChart(20) ?? finite(em["20"]);
+    const ema34 = latestEmaFromChart(34) ?? finite(em["34"]);
+    const ema50 = latestEmaFromChart(50) ?? finite(em["50"]);
+    const ema150 = latestEmaFromChart(150) ?? finite(em["150"]);
     const distance52Low = (() => {
       const closes = (data || []).slice(-260).map((item) => finite(item?.low ?? item?.close)).filter((value) => value != null && value > 0);
       if (!closes.length || latestPrice == null) return null;
@@ -2290,9 +2340,13 @@ function App() {
     const range20Current = finite(technicalSummary?.range_20d_percent);
     const pivotCurrent = finite(technicalSummary?.pivot);
 
+    const compareToTargetScore = (value, target, cfg) => {
+      const verdict = compareNumeric(value, cfg?.comparator || ">", target);
+      return verdict == null ? null : (verdict ? 100 : 0);
+    };
     const technical = {
-      price_gt_ema20: resultRow(latestPrice, latestPrice == null || ema20 == null ? null : (latestPrice > ema20 ? 100 : 0), ema20),
-      price_gt_ema34: resultRow(latestPrice, latestPrice == null || ema34 == null ? null : (latestPrice > ema34 ? 100 : 0), ema34),
+      price_gt_ema20: resultRow(latestPrice, compareToTargetScore(latestPrice, ema20, tech.price_gt_ema20), ema20),
+      price_gt_ema34: resultRow(latestPrice, compareToTargetScore(latestPrice, ema34, tech.price_gt_ema34), ema34),
       distance52_low: resultRow(distance52Low, passScore(distance52Low, tech.distance52_low)),
       rs_score: resultRow(rsScoreCurrent, passScore(rsScoreCurrent, tech.rs_score)),
       roc20: resultRow(roc20Current, passScore(roc20Current, tech.roc20)),
@@ -2304,16 +2358,16 @@ function App() {
       volume_dry_up: resultRow(volumeDryUpPercent, passScore(volumeDryUpPercent, tech.volume_dry_up), avgVolume50Current),
       volume_contraction: resultRow(range20Current, passScore(range20Current, tech.volume_contraction)),
       di_spread: resultRow(diSpreadCurrent, passScore(diSpreadCurrent, tech.di_spread)),
-      pivot_breakout: resultRow(latestPrice, latestPrice == null || pivotCurrent == null ? null : (latestPrice > pivotCurrent ? 100 : 0), pivotCurrent),
+      pivot_breakout: resultRow(latestPrice, compareToTargetScore(latestPrice, pivotCurrent, tech.pivot_breakout), pivotCurrent),
       bb_width: resultRow(finite(technicalSummary?.bollinger_width_percent), passScore(technicalSummary?.bollinger_width_percent, tech.bb_width)),
-      atr5_lt20: resultRow(finite(technicalSummary?.average_atr_percent_5), finite(technicalSummary?.average_atr_percent_5) == null || finite(technicalSummary?.average_atr_percent_20) == null ? null : (Number(technicalSummary.average_atr_percent_5) < Number(technicalSummary.average_atr_percent_20) ? 100 : 0), finite(technicalSummary?.average_atr_percent_20)),
-      atr10_lt20: resultRow(finite(technicalSummary?.average_atr_percent_10), finite(technicalSummary?.average_atr_percent_10) == null || finite(technicalSummary?.average_atr_percent_20) == null ? null : (Number(technicalSummary.average_atr_percent_10) < Number(technicalSummary.average_atr_percent_20) ? 100 : 0), finite(technicalSummary?.average_atr_percent_20)),
+      atr5_lt20: resultRow(finite(technicalSummary?.average_atr_percent_5), compareToTargetScore(finite(technicalSummary?.average_atr_percent_5), finite(technicalSummary?.average_atr_percent_20), tech.atr5_lt20), finite(technicalSummary?.average_atr_percent_20)),
+      atr10_lt20: resultRow(finite(technicalSummary?.average_atr_percent_10), compareToTargetScore(finite(technicalSummary?.average_atr_percent_10), finite(technicalSummary?.average_atr_percent_20), tech.atr10_lt20), finite(technicalSummary?.average_atr_percent_20)),
       rsi14: resultRow(rsiValue, rsiScore, "Bands"),
-      volume10_lt20: resultRow(finite(technicalSummary?.average_volume_10), finite(technicalSummary?.average_volume_10) == null || finite(technicalSummary?.average_volume_20) == null ? null : (Number(technicalSummary.average_volume_10) < Number(technicalSummary.average_volume_20) ? 100 : 0), finite(technicalSummary?.average_volume_20)),
-      volume20_lt40: resultRow(finite(technicalSummary?.average_volume_20), finite(technicalSummary?.average_volume_20) == null || finite(technicalSummary?.average_volume_40) == null ? null : (Number(technicalSummary.average_volume_20) < Number(technicalSummary.average_volume_40) ? 100 : 0), finite(technicalSummary?.average_volume_40)),
+      volume10_lt20: resultRow(finite(technicalSummary?.average_volume_10), compareToTargetScore(finite(technicalSummary?.average_volume_10), finite(technicalSummary?.average_volume_20), tech.volume10_lt20), finite(technicalSummary?.average_volume_20)),
+      volume20_lt40: resultRow(finite(technicalSummary?.average_volume_20), compareToTargetScore(finite(technicalSummary?.average_volume_20), finite(technicalSummary?.average_volume_40), tech.volume20_lt40), finite(technicalSummary?.average_volume_40)),
       distance52: resultRow(d52, distanceScore, "Bands"),
-      ema20_gt50: resultRow(finite(em["20"]), finite(em["20"]) == null || finite(em["50"]) == null ? null : (Number(em["20"]) > Number(em["50"]) ? 100 : 0), finite(em["50"])),
-      ema50_gt150: resultRow(finite(em["50"]), finite(em["50"]) == null || finite(em["150"]) == null ? null : (Number(em["50"]) > Number(em["150"]) ? 100 : 0), finite(em["150"])),
+      ema20_gt50: resultRow(ema20, compareToTargetScore(ema20, ema50, tech.ema20_gt50), ema50),
+      ema50_gt150: resultRow(ema50, compareToTargetScore(ema50, ema150, tech.ema50_gt150), ema150),
     };
 
     const fundamental = buildClientFundamentalRows({
@@ -2423,6 +2477,40 @@ function App() {
     window.setTimeout(() => setExcelCopyMessage(""), 6000);
   };
 
+  const downloadLiveExcelConnection = () => {
+    try {
+      const liveUrl = `${API}/market/excel-live-csv/${encodeURIComponent(symbol)}?exchange=${encodeURIComponent(exchange)}&limit=5000`;
+      // Excel Web Query (.iqy): opening this file creates a refreshable external
+      // data connection.  Data -> Refresh All re-requests the selected stock.
+      const iqy = [
+        "WEB",
+        "1",
+        `"${liveUrl}"`,
+        "",
+        "Selection=EntirePage",
+        "Formatting=None",
+        "PreFormattedTextToColumns=True",
+        "ConsecutiveDelimitersAsOne=False",
+        "SingleBlockTextImport=False",
+        "DisableDateRecognition=False",
+        "DisableRedirections=False",
+      ].join("\r\n");
+      const blob = new Blob([iqy], { type: "text/x-ms-iqy;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `${symbol}_${exchange}_LIVE_CONNECTION.iqy`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+      setExcelCopyMessage(`Live Excel connection created for ${exchange}:${symbol}. Open the .iqy in Excel, then use Data → Refresh All.`);
+      window.setTimeout(() => setExcelCopyMessage(""), 9000);
+    } catch (error) {
+      setExcelCopyMessage(`Could not create the live Excel connection for ${exchange}:${symbol}.`);
+    }
+  };
+
   const downloadCurrentStockExcel = async () => {
     try {
       setExcelCopyMessage(`Preparing Excel for ${exchange}:${symbol}…`);
@@ -2485,7 +2573,7 @@ function App() {
         low: Number(row.low),
         volume: Number(row.volume),
       }))
-      .filter((row) => Number.isFinite(row.close) && row.close > 0);
+      .filter((row) => Number.isFinite(row.close) && row.close > 0 && Number.isFinite(row.high) && Number.isFinite(row.low));
 
     const clampPeriod = (value, fallback, min = 2, max = 250) => {
       const n = Math.round(Number(value));
@@ -2504,14 +2592,13 @@ function App() {
     const volumeShortPeriod = clampPeriod(frameworkIndicatorSettings.volumeShort, 10);
     const volumeLongPeriod = Math.max(volumeShortPeriod + 1, clampPeriod(frameworkIndicatorSettings.volumeLong, 30));
     const volumeDryUpPeriod = clampPeriod(frameworkIndicatorSettings.volumeDryUp, 50);
-    const minimumRows = Math.max(rsiPeriodLocal + 1, macdSlow + macdSignalPeriod, rocPeriod + 1, adxPeriod * 2, atrPeriod, adrPeriod, volumePeriod, bbWidthPeriod, volumeLongPeriod, volumeDryUpPeriod);
-    if (rows.length < Math.min(minimumRows, 15)) return [];
+    if (rows.length < 15) return [];
 
     const closes = rows.map((row) => row.close);
     const ema = (values, period) => {
       const output = new Array(values.length).fill(null);
       const multiplier = 2 / (period + 1);
-      let seed = [];
+      const seed = [];
       let current = null;
       values.forEach((raw, index) => {
         const value = Number(raw);
@@ -2530,71 +2617,94 @@ function App() {
       return output;
     };
 
+    // TradingView's RSI, ATR and DMI/ADX use Wilder's RMA smoothing. Using
+    // the same seed + recursive smoothing removes the earlier simple-moving-
+    // average drift visible when comparing our indicator charts to TradingView.
+    const rma = (values, period) => {
+      const output = new Array(values.length).fill(null);
+      const seed = [];
+      let current = null;
+      values.forEach((raw, index) => {
+        const value = Number(raw);
+        if (!Number.isFinite(value)) return;
+        if (current == null) {
+          seed.push(value);
+          if (seed.length === period) {
+            current = seed.reduce((sum, item) => sum + item, 0) / period;
+            output[index] = current;
+          }
+        } else {
+          current = ((current * (period - 1)) + value) / period;
+          output[index] = current;
+        }
+      });
+      return output;
+    };
+
     const emaFast = ema(closes, macdFast);
     const emaSlow = ema(closes, macdSlow);
     const macd = closes.map((_, index) => (
       Number.isFinite(emaFast[index]) && Number.isFinite(emaSlow[index]) ? emaFast[index] - emaSlow[index] : null
     ));
-    const macdSignal = new Array(rows.length).fill(null);
-    let signalSeed = [];
-    let signal = null;
-    const signalMultiplier = 2 / (macdSignalPeriod + 1);
-    macd.forEach((value, index) => {
-      if (!Number.isFinite(value)) return;
-      if (signal == null) {
-        signalSeed.push(value);
-        if (signalSeed.length === macdSignalPeriod) {
-          signal = signalSeed.reduce((sum, item) => sum + item, 0) / macdSignalPeriod;
-          macdSignal[index] = signal;
-        }
-      } else {
-        signal = ((value - signal) * signalMultiplier) + signal;
-        macdSignal[index] = signal;
-      }
+    const macdSignal = ema(macd, macdSignalPeriod);
+
+    const changes = closes.map((value, index) => index === 0 ? null : value - closes[index - 1]);
+    const gains = changes.map((value) => Number.isFinite(value) ? Math.max(value, 0) : null);
+    const losses = changes.map((value) => Number.isFinite(value) ? Math.max(-value, 0) : null);
+    const avgGain = rma(gains, rsiPeriodLocal);
+    const avgLoss = rma(losses, rsiPeriodLocal);
+    const rsiSeries = closes.map((_, index) => {
+      const gain = avgGain[index];
+      const loss = avgLoss[index];
+      if (!Number.isFinite(gain) || !Number.isFinite(loss)) return null;
+      if (loss === 0) return 100;
+      if (gain === 0) return 0;
+      const rs = gain / loss;
+      return 100 - (100 / (1 + rs));
     });
 
     const trueRange = rows.map((row, index) => {
-      if (index === 0) return Number.isFinite(row.high) && Number.isFinite(row.low) ? row.high - row.low : null;
+      if (index === 0) return row.high - row.low;
       const prevClose = rows[index - 1].close;
-      if (!Number.isFinite(row.high) || !Number.isFinite(row.low)) return null;
       return Math.max(row.high - row.low, Math.abs(row.high - prevClose), Math.abs(row.low - prevClose));
     });
     const plusDm = rows.map((row, index) => {
-      if (index === 0 || !Number.isFinite(row.high) || !Number.isFinite(rows[index - 1].high)) return 0;
+      if (index === 0) return 0;
       const up = row.high - rows[index - 1].high;
       const down = rows[index - 1].low - row.low;
       return up > down && up > 0 ? up : 0;
     });
     const minusDm = rows.map((row, index) => {
-      if (index === 0 || !Number.isFinite(row.low) || !Number.isFinite(rows[index - 1].low)) return 0;
+      if (index === 0) return 0;
       const up = row.high - rows[index - 1].high;
       const down = rows[index - 1].low - row.low;
       return down > up && down > 0 ? down : 0;
     });
 
-    const dxSeries = new Array(rows.length).fill(null);
+    const atrSeries = rma(trueRange, atrPeriod);
+    const adxTr = rma(trueRange, adxPeriod);
+    const plusDmRma = rma(plusDm, adxPeriod);
+    const minusDmRma = rma(minusDm, adxPeriod);
+    const plusDiSeries = rows.map((_, index) => (
+      Number.isFinite(adxTr[index]) && adxTr[index] > 0 && Number.isFinite(plusDmRma[index])
+        ? (100 * plusDmRma[index] / adxTr[index]) : null
+    ));
+    const minusDiSeries = rows.map((_, index) => (
+      Number.isFinite(adxTr[index]) && adxTr[index] > 0 && Number.isFinite(minusDmRma[index])
+        ? (100 * minusDmRma[index] / adxTr[index]) : null
+    ));
+    const dxSeries = rows.map((_, index) => {
+      const plus = plusDiSeries[index];
+      const minus = minusDiSeries[index];
+      if (!Number.isFinite(plus) || !Number.isFinite(minus) || (plus + minus) === 0) return null;
+      return 100 * Math.abs(plus - minus) / (plus + minus);
+    });
+    const adxSeries = rma(dxSeries, adxPeriod);
+
     const enriched = rows.map((row, index) => {
-      let rsi = null;
-      if (index >= rsiPeriodLocal) {
-        let gains = 0;
-        let losses = 0;
-        for (let i = index - rsiPeriodLocal + 1; i <= index; i += 1) {
-          const change = closes[i] - closes[i - 1];
-          if (change >= 0) gains += change;
-          else losses += Math.abs(change);
-        }
-        const avgGain = gains / rsiPeriodLocal;
-        const avgLoss = losses / rsiPeriodLocal;
-        rsi = avgLoss === 0 ? 100 : 100 - (100 / (1 + (avgGain / avgLoss)));
-      }
-
+      const rsi = rsiSeries[index];
       const roc = index >= rocPeriod && closes[index - rocPeriod] ? ((row.close / closes[index - rocPeriod]) - 1) * 100 : null;
-      let atr = null;
-      if (index >= atrPeriod - 1) {
-        const trWindow = trueRange.slice(index - atrPeriod + 1, index + 1).filter(Number.isFinite);
-        if (trWindow.length === atrPeriod) atr = trWindow.reduce((sum, value) => sum + value, 0) / atrPeriod;
-      }
-
+      const atr = atrSeries[index];
       const atrPercent = Number.isFinite(atr) && row.close > 0 ? (atr / row.close) * 100 : null;
 
       let adr = null;
@@ -2602,37 +2712,17 @@ function App() {
       let adrRatio = null;
       if (index >= adrPeriod - 1) {
         const adrWindow = rows.slice(index - adrPeriod + 1, index + 1);
-        const absoluteRanges = adrWindow
-          .map((item) => Number.isFinite(item.high) && Number.isFinite(item.low) ? item.high - item.low : null)
-          .filter(Number.isFinite);
-        const percentRanges = adrWindow
-          .map((item) => Number.isFinite(item.high) && Number.isFinite(item.low) && item.low > 0 ? ((item.high - item.low) / item.low) * 100 : null)
-          .filter(Number.isFinite);
+        const absoluteRanges = adrWindow.map((item) => item.high - item.low);
+        const percentRanges = adrWindow.map((item) => item.low > 0 ? ((item.high - item.low) / item.low) * 100 : null).filter(Number.isFinite);
         if (absoluteRanges.length === adrPeriod) adr = absoluteRanges.reduce((sum, value) => sum + value, 0) / adrPeriod;
         if (percentRanges.length === adrPeriod) adrPercent = percentRanges.reduce((sum, value) => sum + value, 0) / adrPeriod;
-        const currentRange = Number.isFinite(row.high) && Number.isFinite(row.low) ? row.high - row.low : null;
+        const currentRange = row.high - row.low;
         if (Number.isFinite(currentRange) && Number.isFinite(adr) && adr > 0) adrRatio = currentRange / adr;
       }
 
-      let plusDi = null;
-      let minusDi = null;
-      if (index >= adxPeriod - 1) {
-        const trWindow = trueRange.slice(index - adxPeriod + 1, index + 1).filter(Number.isFinite);
-        const trSum = trWindow.reduce((sum, value) => sum + value, 0);
-        if (trWindow.length === adxPeriod && trSum > 0) {
-          const plusSum = plusDm.slice(index - adxPeriod + 1, index + 1).reduce((sum, value) => sum + (Number(value) || 0), 0);
-          const minusSum = minusDm.slice(index - adxPeriod + 1, index + 1).reduce((sum, value) => sum + (Number(value) || 0), 0);
-          plusDi = 100 * plusSum / trSum;
-          minusDi = 100 * minusSum / trSum;
-          const diSum = plusDi + minusDi;
-          dxSeries[index] = diSum > 0 ? 100 * Math.abs(plusDi - minusDi) / diSum : 0;
-        }
-      }
-      let adx = null;
-      if (index >= (adxPeriod * 2) - 2) {
-        const dxWindow = dxSeries.slice(index - adxPeriod + 1, index + 1).filter(Number.isFinite);
-        if (dxWindow.length === adxPeriod) adx = dxWindow.reduce((sum, value) => sum + value, 0) / adxPeriod;
-      }
+      const plusDi = plusDiSeries[index];
+      const minusDi = minusDiSeries[index];
+      const adx = adxSeries[index];
 
       let volumeRatio = null;
       if (index >= volumePeriod - 1) {
@@ -2715,7 +2805,9 @@ function App() {
       const sample = raw.slice(0, index + 1).map((item) => item.ratioIndex);
       const lower = sample.filter((value) => value < row.ratioIndex).length;
       const equal = sample.filter((value) => value === row.ratioIndex).length;
-      const percentile = sample.length ? ((lower + (0.5 * equal)) * 100) / sample.length : null;
+      const percentile = sample.length > 1
+        ? ((lower + ((Math.max(1, equal) - 1) / 2)) * 100) / (sample.length - 1)
+        : 50;
       return {
         date: row.date,
         rsScore: percentile == null ? null : Math.max(0, Math.min(100, Number(percentile.toFixed(2)))),
@@ -2885,6 +2977,7 @@ function App() {
                 const enabled = cfg.enabled !== false;
                 const hasThreshold = editableValues.includes("threshold");
                 const bandFields = editableValues.filter((field) => field !== "threshold");
+                const compareEditable = hasThreshold || (group === "technical" && !["distance52", "rsi14"].includes(key));
                 const score = evalRow.score;
                 return (
                   <tr key={key} className={!enabled ? "filter-row-disabled" : ""}>
@@ -2894,7 +2987,7 @@ function App() {
                       <small>{description}</small>
                     </td>
                     <td>
-                      {hasThreshold ? (
+                      {compareEditable ? (
                         <select
                           className="filter-compare-select"
                           value={cfg.comparator || ">"}
@@ -3123,6 +3216,10 @@ function App() {
           <button type="button" className="excel-live-top" onClick={downloadCurrentStockExcel}>
             Excel — Current Stock
           </button>
+
+          <button type="button" className="excel-live-top" onClick={downloadLiveExcelConnection}>
+            Excel Live Link
+          </button>
         </section>
 
         <section className="timeframes">
@@ -3185,8 +3282,8 @@ function App() {
           </div>
 
           <div className="framework-mode-banner">
-            <strong>Framework Review Mode</strong>
-            <span>Chart layout, indicator controls, Top-200 interaction and table structure are the focus now. Data/scoring validation is intentionally deferred to the next stage.</span>
+            <strong>Live Ranking Validation</strong>
+            <span>Charts, indicator values and ranking filters use the latest verified provider data available. Missing provider fields stay N/A and are never fabricated.</span>
           </div>
 
           <div className="dashboard-selected-grid">
@@ -3216,7 +3313,7 @@ function App() {
                 <div className="dashboard-mini-chart-title">
                   <div>
                     <strong>{symbol} Candlestick Chart</strong>
-                    <span>{timeframe} • DD/MM/YYYY • click any Top-200 stock to replace this chart</span>
+                    <span>{timeframe} • DD/MM/YYYY • latest candle {data?.length ? formatChartDate(String(data[data.length - 1]?.date || "").slice(0, 10)) : "N/A"} • click any Top-200 stock to replace this chart</span>
                   </div>
                   <div className="dashboard-mini-indicators framework-overlay-toggles">
                     {[
@@ -3237,7 +3334,7 @@ function App() {
                 </div>
                 {dashboardChartInfo && (
                   <div className="framework-ohlcv-strip">
-                    <b>OHLCV — hover candle</b>
+                    <b>OHLCV — hover candle (latest restores on exit)</b>
                     <span>{formatChartDate(dashboardChartInfo.time || dashboardChartInfo.date)}</span>
                     <span>O {Number(dashboardChartInfo.open).toFixed(2)}</span>
                     <span>H {Number(dashboardChartInfo.high).toFixed(2)}</span>
@@ -3692,7 +3789,7 @@ function App() {
             {fundamentalUniverseLoaded && (
               <div className={`full-universe-status ${fundamentalUniverseMeta.complete ? "is-complete" : "is-scanning"}`}>
                 <strong>Complete universe filter:</strong> {fundamentalUniverseMeta.evaluated.toLocaleString()} / {fundamentalUniverseMeta.universe_total.toLocaleString()} stocks evaluated
-                {fundamentalUniverseMeta.complete ? " • complete" : ` • ${fundamentalUniverseMeta.scan_remaining.toLocaleString()} histories still being evaluated automatically`}
+                {fundamentalUniverseMeta.complete ? " • complete" : ` • ${fundamentalUniverseMeta.scan_remaining.toLocaleString()} histories remaining • auto-refreshing every 5s`}
               </div>
             )}
             {fundamentalUniverseError && <div className="message error-message">{fundamentalUniverseError}</div>}
@@ -3763,6 +3860,21 @@ function App() {
               </div>
               <span className="qualification-count">{technicalQualifiedRows.length} qualified</span>
             </div>
+            <div className="qualified-list-toolbar">
+              <label><span>Sort by</span>
+                <select value={technicalQualifiedSortBy} onChange={(e) => setTechnicalQualifiedSortBy(e.target.value)}>
+                  <option value="technical">Technical Score</option>
+                  <option value="rs">RS Score</option>
+                  <option value="symbol">Symbol</option>
+                </select>
+              </label>
+              <label><span>Order</span>
+                <select value={technicalQualifiedSortDir} onChange={(e) => setTechnicalQualifiedSortDir(e.target.value)}>
+                  <option value="desc">Descending ↓</option>
+                  <option value="asc">Ascending ↑</option>
+                </select>
+              </label>
+            </div>
             <div className="compact-table-scroll">
               <table className="filter-config-table fundamental-qualified-table">
                 <thead><tr><th>#</th><th>Stock</th><th>Technical Score</th><th>RS Score</th><th>Coverage</th></tr></thead>
@@ -3804,6 +3916,22 @@ function App() {
                 <span>Top-200 rows with a complete Ownership component score of 100/100 are shown here; N/A provider fields are excluded from qualification.</span>
               </div>
               <span className="qualification-count">{ownershipQualifiedRows.length} qualified</span>
+            </div>
+            <div className="qualified-list-toolbar">
+              <label><span>Sort by</span>
+                <select value={ownershipQualifiedSortBy} onChange={(e) => setOwnershipQualifiedSortBy(e.target.value)}>
+                  <option value="ownership">Ownership Score</option>
+                  <option value="institutional">Institutional</option>
+                  <option value="insider">Insider</option>
+                  <option value="symbol">Symbol</option>
+                </select>
+              </label>
+              <label><span>Order</span>
+                <select value={ownershipQualifiedSortDir} onChange={(e) => setOwnershipQualifiedSortDir(e.target.value)}>
+                  <option value="desc">Descending ↓</option>
+                  <option value="asc">Ascending ↑</option>
+                </select>
+              </label>
             </div>
             <div className="compact-table-scroll">
               <table className="filter-config-table fundamental-qualified-table">
@@ -3927,7 +4055,7 @@ function App() {
                   {fundamentalUniverseLoaded && (
               <div className={`full-universe-status ${fundamentalUniverseMeta.complete ? "is-complete" : "is-scanning"}`}>
                 <strong>Complete universe filter:</strong> {fundamentalUniverseMeta.evaluated.toLocaleString()} / {fundamentalUniverseMeta.universe_total.toLocaleString()} stocks evaluated
-                {fundamentalUniverseMeta.complete ? " • complete" : ` • ${fundamentalUniverseMeta.scan_remaining.toLocaleString()} histories still being evaluated automatically`}
+                {fundamentalUniverseMeta.complete ? " • complete" : ` • ${fundamentalUniverseMeta.scan_remaining.toLocaleString()} histories remaining • auto-refreshing every 5s`}
               </div>
             )}
             {fundamentalUniverseError && <div className="message error-message">{fundamentalUniverseError}</div>}
@@ -4693,7 +4821,7 @@ function App() {
           )}
 
           <div className="chart-note">
-            Price-chart RS overlay = stock price / broad-market benchmark and is visually rebased only to share the price scale. The indicator RS Score is separately bounded from 0 to 100 and never crosses 100. Relative Return = Stock Return % - Benchmark Return % and is independent of the editable RS weights. The weights change only the Final RS Score. Each stock percentile uses the client-required market universe: {"5,000 stocks"}. Formula: [(stocks with lower relative return) + 0.5 × (stocks with equal relative return)] × 100 / {"5000"}. Final RS Score uses the enabled weighted percentile components. Default period weights remain 1W×0.30 + 1M×0.25 + 3M×0.20 + 6M×0.15 + 12M×0.10. 2W, 2M, and Sector RS are optional with default weight 0.
+            Price-chart RS overlay = stock price / broad-market benchmark and is visually rebased only to share the price scale. The indicator RS Score is separately bounded from 0 to 100 and never crosses 100. Relative Return = Stock Return % - Benchmark Return % and is independent of the editable RS weights. The weights change only the Final RS Score. Each stock percentile uses the client-required market universe: {"5,000 stocks"}. Formula: [(stocks with lower relative return) + (stocks with equal relative return − 1) / 2] × 100 / (total stocks − 1). Final RS Score uses the enabled weighted percentile components. Default period weights remain 1W×0.30 + 1M×0.25 + 3M×0.20 + 6M×0.15 + 12M×0.10. 2W, 2M, and Sector RS are optional with default weight 0.
           </div>
           {technicalSummary?.rs_available && relativeStrengthChartData.length > 1 ? (
             <ResponsiveContainer width="100%" height={230}>

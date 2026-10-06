@@ -147,3 +147,24 @@ git add .
 git commit -m "Make EMA BB EPS and RS values follow chart crosshair"
 git push
 ```
+
+## 2026-10-06 Ranking System correction pass
+
+After Railway/Vercel deployment:
+
+1. Hard-refresh the site with `Ctrl+Shift+R`.
+2. Open AAPL (or another liquid symbol) and confirm the candlestick subtitle shows the newest completed provider session, not an older compact-cache date.
+3. Hover several candles. OHLCV + EMA 10/20/34/50/100/150/200 + BB Upper/Middle/Lower + EPS + price/benchmark RS must follow the hovered date; leaving the chart restores the newest candle.
+4. Compare RSI/ATR/ADX/+DI/-DI with the same symbol/timeframe/period settings in TradingView. The formulas now use Wilder/RMA smoothing.
+5. In Technical Filters, confirm Compare is editable for relationship rows and `Price > 34 EMA` displays the numerical EMA-34 target.
+6. In Fundamental Filters, enable only a directly supported rule such as Latest Quarter EPS YoY > 20 and apply. The complete-universe fast path should report a completed universe scan rather than a small warmed subset.
+7. Search a stock and click **Excel Live Link**. Open the `.iqy` in Excel and use **Data → Refresh All** to verify a live connection for the selected stock.
+
+This package closes Ranking System corrections only. Do not report Sector Analysis, Portfolio Management, or the separate 20-year Backtesting milestone part as completed from this build.
+
+### Git
+```bash
+git add .
+git commit -m "Fix ranking data alignment full-universe filters and Excel live link"
+git push
+```
