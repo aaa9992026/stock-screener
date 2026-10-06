@@ -3331,9 +3331,6 @@ function App() {
             Export to Excel
           </button>
 
-          <button type="button" className="excel-live-top excel-live-link-top" onClick={downloadLiveExcelConnection}>
-            Excel Live Link
-          </button>
         </section>
 
         <section className="timeframes">

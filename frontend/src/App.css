@@ -4481,3 +4481,41 @@ main { max-width: 1510px!important; padding: 0 18px!important; margin-top: 16px!
   .app[data-view="overview"] .framework-price-card { height: auto!important; max-height: none!important; }
   .app[data-view="overview"] .dashboard-candlestick-canvas { height: 300px!important; }
 }
+
+
+/* ===== 2026-10 UI V7 — utility-page toolbar correction =====
+   Keep the stock toolbar exactly as the reference on the market workspaces.
+   Export/Excel and Settings have their own dedicated page actions, so do not
+   repeat the global stock controls there. This also prevents wrapped buttons. */
+.app[data-view="excel"] .overview-top-toolbar,
+.app[data-view="settings"] .overview-top-toolbar {
+  display: none !important;
+}
+
+/* The live-link action belongs only inside Export / Excel. */
+.excel-live-link-top {
+  display: none !important;
+}
+
+/* Keep the reference toolbar on one line on desktop after readable font sizing. */
+@media (min-width: 1251px) {
+  .overview-top-toolbar .controls {
+    grid-template-columns: 165px minmax(320px, 1fr) auto auto auto !important;
+    align-items: center !important;
+  }
+  .overview-top-toolbar .controls .symbol-search {
+    min-width: 0 !important;
+    width: auto !important;
+    max-width: none !important;
+  }
+}
+
+/* Utility pages start immediately under the page header with deliberate spacing. */
+.app[data-view="excel"] main,
+.app[data-view="settings"] main {
+  padding-top: 18px !important;
+}
+.app[data-view="excel"] .utility-workspace,
+.app[data-view="settings"] .utility-workspace {
+  margin-top: 0 !important;
+}
