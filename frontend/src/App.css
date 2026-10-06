@@ -4519,3 +4519,50 @@ main { max-width: 1510px!important; padding: 0 18px!important; margin-top: 16px!
 .app[data-view="settings"] .utility-workspace {
   margin-top: 0 !important;
 }
+
+/* ===== 2026-10 UI V8 — larger, clearer data status badge ===== */
+header .status {
+  min-height: 42px !important;
+  padding: 9px 16px !important;
+  gap: 9px !important;
+  border-radius: 999px !important;
+  border: 1px solid #ccefdc !important;
+  background: #edf9f2 !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04) !important;
+}
+header .status .dot {
+  width: 10px !important;
+  height: 10px !important;
+  flex: 0 0 10px !important;
+  margin-right: 0 !important;
+}
+header .status > div {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: 1px !important;
+  line-height: 1.1 !important;
+}
+header .status strong {
+  font-size: 13px !important;
+  line-height: 1.15 !important;
+  font-weight: 800 !important;
+  color: #17352a !important;
+  white-space: nowrap !important;
+}
+header .status small {
+  margin: 0 !important;
+  font-size: 10px !important;
+  line-height: 1.15 !important;
+  font-weight: 600 !important;
+  color: #6b7f75 !important;
+  white-space: nowrap !important;
+}
+@media (max-width: 850px) {
+  header .status {
+    min-height: 38px !important;
+    padding: 8px 12px !important;
+  }
+  header .status strong { font-size: 12px !important; }
+  header .status small { font-size: 9px !important; }
+}
