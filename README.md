@@ -250,3 +250,7 @@ The frontend Overview has been rebuilt to follow the approved compact dashboard 
 - Overview keeps a compact Top-200 table below the filter previews.
 
 This is a UI/structure rebuild. Existing real-data rules and provider behavior are preserved; unavailable data remains N/A rather than fabricated.
+
+
+## UI V9 Top 200 ranking correction
+The Top 200 workspace is now table-first: full ranking list and controls first, selected-stock detail/chart second, with ranking settings preserved below.

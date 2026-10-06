@@ -4566,3 +4566,245 @@ header .status small {
   header .status strong { font-size: 12px !important; }
   header .status small { font-size: 9px !important; }
 }
+
+/* ===== 2026-10 UI V9 — corrected Top 200 Ranking workspace =====
+   Ranking is table-first. The former layout hid the actual Top-200 list below a
+   very large chart and squeezed company values into a narrow card. Keep every
+   ranking function, but make the primary task (rank / sort / choose a stock)
+   visible immediately and keep the detail area clean underneath. */
+.app[data-view="ranking"] main {
+  display:flex!important;
+  flex-direction:column!important;
+  max-width:1510px!important;
+  width:100%!important;
+}
+.app[data-view="ranking"] .overview-top-toolbar { order:1; }
+.app[data-view="ranking"] .score-overview-grid { order:2; }
+.app[data-view="ranking"] main > .message { order:3; }
+.app[data-view="ranking"] .overview-ranking-card {
+  display:block!important;
+  order:4!important;
+  width:100%!important;
+  max-width:none!important;
+  margin:0 0 14px!important;
+  padding:16px!important;
+  border:1px solid #dfe7f1!important;
+  border-radius:14px!important;
+  background:#fff!important;
+  box-shadow:0 8px 24px rgba(34,55,86,.055)!important;
+}
+.app[data-view="ranking"] #client-framework-dashboard {
+  order:5!important;
+  width:100%!important;
+  max-width:none!important;
+  margin:0 0 18px!important;
+  padding:16px!important;
+  border:1px solid #dfe7f1!important;
+  border-radius:14px!important;
+  background:#fff!important;
+  box-shadow:0 8px 24px rgba(34,55,86,.055)!important;
+}
+/* Remove duplicate Top-200 table inside the detail card. The full table above
+   is the single source of truth; weights and indicator controls remain below. */
+.app[data-view="ranking"] #client-framework-dashboard > .top200-sort-toolbar,
+.app[data-view="ranking"] #client-framework-dashboard > .composite-table-wrap {
+  display:none!important;
+}
+.app[data-view="ranking"] .overview-ranking-head {
+  display:flex!important;
+  align-items:flex-end!important;
+  justify-content:space-between!important;
+  gap:14px!important;
+  margin-bottom:12px!important;
+}
+.app[data-view="ranking"] .overview-ranking-head h2 {
+  margin:0!important;
+  font-size:20px!important;
+  letter-spacing:-.025em!important;
+  color:#17243a!important;
+}
+.app[data-view="ranking"] .overview-ranking-head p {
+  margin:4px 0 0!important;
+  font-size:11px!important;
+  color:#6c7e96!important;
+}
+.app[data-view="ranking"] .overview-ranking-controls {
+  display:flex!important;
+  gap:8px!important;
+  align-items:flex-end!important;
+  flex-wrap:wrap!important;
+}
+.app[data-view="ranking"] .overview-ranking-controls label {
+  display:block!important;
+  font-size:10px!important;
+  line-height:1.2!important;
+  font-weight:800!important;
+  color:#65758b!important;
+}
+.app[data-view="ranking"] .overview-ranking-controls select,
+.app[data-view="ranking"] .overview-ranking-controls button {
+  display:block!important;
+  min-width:132px!important;
+  height:38px!important;
+  min-height:38px!important;
+  margin-top:5px!important;
+  border-radius:8px!important;
+  font-size:11px!important;
+}
+.app[data-view="ranking"] .overview-ranking-controls button {
+  min-width:118px!important;
+  border:0!important;
+  padding:0 14px!important;
+  background:#1769e0!important;
+  color:#fff!important;
+  font-weight:800!important;
+}
+.app[data-view="ranking"] .overview-ranking-table-wrap {
+  max-height:520px!important;
+  overflow:auto!important;
+  border:1px solid #e8eef5!important;
+  border-radius:10px!important;
+}
+.app[data-view="ranking"] .overview-ranking-table {
+  width:100%!important;
+  border-collapse:collapse!important;
+}
+.app[data-view="ranking"] .overview-ranking-table th {
+  position:sticky!important;
+  top:0!important;
+  z-index:3!important;
+  background:#f7fafe!important;
+  color:#61738a!important;
+  font-size:10px!important;
+  font-weight:800!important;
+  padding:9px 10px!important;
+  border-bottom:1px solid #e2e9f1!important;
+  white-space:nowrap!important;
+}
+.app[data-view="ranking"] .overview-ranking-table td {
+  color:#364a63!important;
+  font-size:11px!important;
+  padding:9px 10px!important;
+  border-bottom:1px solid #eef2f6!important;
+  white-space:nowrap!important;
+}
+.app[data-view="ranking"] .overview-ranking-table td:nth-child(3) {
+  max-width:260px!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+}
+.app[data-view="ranking"] .overview-ranking-table tbody tr:hover,
+.app[data-view="ranking"] .overview-ranking-table tbody tr.selected {
+  background:#f3f8ff!important;
+}
+.app[data-view="ranking"] .score-chip {
+  min-width:45px!important;
+  padding:4px 8px!important;
+  font-size:9.5px!important;
+}
+/* Detail card below the ranking table: balanced company/chart columns. */
+.app[data-view="ranking"] .composite-dashboard-header {
+  display:flex!important;
+  align-items:flex-end!important;
+  margin-bottom:12px!important;
+}
+.app[data-view="ranking"] .composite-dashboard-header h2 {
+  font-size:18px!important;
+  margin:3px 0!important;
+}
+.app[data-view="ranking"] .composite-dashboard-header p {
+  font-size:10px!important;
+}
+.app[data-view="ranking"] .composite-dashboard-actions { display:none!important; }
+.app[data-view="ranking"] .framework-mode-banner { display:none!important; }
+.app[data-view="ranking"] .dashboard-selected-grid {
+  grid-template-columns:minmax(470px,.95fr) minmax(0,1.55fr)!important;
+  gap:12px!important;
+  align-items:stretch!important;
+}
+.app[data-view="ranking"] .dashboard-selected-stock,
+.app[data-view="ranking"] .framework-price-card {
+  min-width:0!important;
+  height:auto!important;
+  min-height:390px!important;
+  border:1px solid #e4ebf4!important;
+  border-radius:13px!important;
+  box-shadow:none!important;
+  background:#fff!important;
+}
+.app[data-view="ranking"] .dashboard-selected-stock { padding:16px!important; }
+.app[data-view="ranking"] .overview-company-name-row > strong { font-size:20px!important; }
+.app[data-view="ranking"] .overview-company-description {
+  display:block!important;
+  margin:12px 0!important;
+  font-size:11px!important;
+  line-height:1.45!important;
+  color:#65758b!important;
+}
+.app[data-view="ranking"] .overview-company-stats {
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:8px!important;
+  margin:12px 0!important;
+  border:0!important;
+  overflow:visible!important;
+}
+.app[data-view="ranking"] .overview-company-stats > div {
+  min-width:0!important;
+  padding:10px!important;
+  border:1px solid #e8eef5!important;
+  border-radius:9px!important;
+  background:#f9fbfe!important;
+}
+.app[data-view="ranking"] .overview-company-stats span { font-size:10px!important; }
+.app[data-view="ranking"] .overview-company-stats strong {
+  font-size:13px!important;
+  white-space:normal!important;
+  overflow:visible!important;
+  text-overflow:clip!important;
+  word-break:break-word!important;
+}
+.app[data-view="ranking"] .overview-mini-indicator-row {
+  display:grid!important;
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  gap:7px!important;
+  margin-top:12px!important;
+}
+.app[data-view="ranking"] .overview-mini-indicator-row > div { min-height:78px!important; }
+.app[data-view="ranking"] .framework-price-card { padding:13px!important; }
+.app[data-view="ranking"] .dashboard-candlestick-canvas {
+  height:315px!important;
+  min-height:315px!important;
+}
+.app[data-view="ranking"] .framework-overlay-toggles button {
+  height:29px!important;
+  min-height:29px!important;
+  font-size:9px!important;
+}
+.app[data-view="ranking"] .framework-ohlcv-strip,
+.app[data-view="ranking"] .framework-current-values {
+  font-size:9px!important;
+}
+/* Preserve advanced ranking configuration, but separate it visually from the
+   selected-stock preview so the page stays understandable. */
+.app[data-view="ranking"] .dashboard-indicator-section,
+.app[data-view="ranking"] .composite-weight-strip,
+.app[data-view="ranking"] .composite-weight-controls,
+.app[data-view="ranking"] .composite-dashboard-note {
+  margin-top:14px!important;
+  padding-top:14px!important;
+  border-top:1px solid #e8eef5!important;
+}
+@media(max-width:1150px){
+  .app[data-view="ranking"] .dashboard-selected-grid{grid-template-columns:1fr!important;}
+  .app[data-view="ranking"] .dashboard-selected-stock,.app[data-view="ranking"] .framework-price-card{min-height:0!important;}
+  .app[data-view="ranking"] .dashboard-candlestick-canvas{height:300px!important;min-height:300px!important;}
+}
+@media(max-width:760px){
+  .app[data-view="ranking"] .overview-ranking-head{align-items:flex-start!important;flex-direction:column!important;}
+  .app[data-view="ranking"] .overview-ranking-controls{width:100%!important;}
+  .app[data-view="ranking"] .overview-ranking-controls label{flex:1 1 140px!important;}
+  .app[data-view="ranking"] .overview-ranking-controls select{width:100%!important;min-width:0!important;}
+  .app[data-view="ranking"] .overview-company-stats{grid-template-columns:1fr!important;}
+  .app[data-view="ranking"] .overview-mini-indicator-row{grid-template-columns:repeat(2,minmax(0,1fr))!important;}
+}

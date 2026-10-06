@@ -7,3 +7,7 @@ git push
 ```
 
 After Vercel deploys, hard-refresh the browser with `Ctrl + Shift + R`.
+
+
+## UI V9 Top 200 ranking correction
+The Top 200 workspace is now table-first: full ranking list and controls first, selected-stock detail/chart second, with ranking settings preserved below.

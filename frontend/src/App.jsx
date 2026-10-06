@@ -3385,8 +3385,8 @@ function App() {
           <div className="composite-dashboard-header">
             <div>
               <span className="dashboard-kicker">CLIENT DASHBOARD</span>
-              <h2>Market Overview & Top 200 Ranking</h2>
-              <p>Select a stock to review its chart, score breakdown, indicators and ranking details.</p>
+              <h2>{activeView === "ranking" ? "Selected Stock Ranking Detail" : "Market Overview & Top 200 Ranking"}</h2>
+              <p>{activeView === "ranking" ? "Select any row in the Top 200 table above to inspect the stock without losing your ranking position." : "Select a stock to review its chart, score breakdown, indicators and ranking details."}</p>
             </div>
             <div className="composite-dashboard-actions">
               <label className="dashboard-sort-control dashboard-market-control"><span>Market</span>
@@ -4115,6 +4115,24 @@ function App() {
               <p>Ranked by composite score across fundamental, technical, relative-strength and ownership metrics.</p>
             </div>
             <div className="overview-ranking-controls">
+              {activeView === "ranking" && (
+                <label>Market
+                  <select
+                    value={universeFilters.market}
+                    onChange={(e) => {
+                      const nextMarket = e.target.value;
+                      setUniverseFilters((v) => ({ ...v, market: nextMarket, sector: "", industry: "" }));
+                      loadTopComposite(nextMarket);
+                    }}
+                  >
+                    <option value="ALL">US + India</option>
+                    <option value="US">US Stocks</option>
+                    <option value="INDIA">Indian Stocks</option>
+                    <option value="NSE">NSE Only</option>
+                    <option value="BSE">BSE Only</option>
+                  </select>
+                </label>
+              )}
               <label>Sort by
                 <select value={topCompositeSortBy} onChange={(e) => setTopCompositeSortBy(e.target.value)}>
                   <option value="composite">Composite Score</option><option value="fundamental">Fundamental</option><option value="technical">Technical</option><option value="rs">Relative Strength</option><option value="ownership">Ownership</option><option value="symbol">Symbol</option>
