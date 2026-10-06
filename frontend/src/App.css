@@ -4287,3 +4287,197 @@ header .status>div{display:flex!important;align-items:center!important;gap:8px!i
 .app[data-view="overview"] .framework-price-card{height:278px!important;min-height:278px!important;max-height:278px!important;}
 .app[data-view="overview"] .overview-mini-indicator-row{margin-top:7px!important;}
 .app[data-view="overview"] .dashboard-candlestick-canvas{height:198px!important;min-height:198px!important;}
+
+/* ===== 2026-10 UI V6 — readable overview typography =====
+   Keep the V5 reference structure, but raise typography and control sizes so
+   the dashboard is comfortable at normal browser zoom on 1440–1920px screens. */
+.app[data-view="overview"] {
+  --readable-text: 12px;
+}
+
+/* Sidebar + page header */
+.app-sidebar { width: 204px!important; padding: 18px 12px!important; }
+.app-content { margin-left: 204px!important; width: calc(100% - 204px)!important; }
+.sidebar-brand strong { font-size: 15px!important; }
+.sidebar-brand small { font-size: 10px!important; }
+.sidebar-nav button { min-height: 46px!important; padding: 11px 13px!important; font-size: 13px!important; }
+.sidebar-nav button span { font-size: 17px!important; }
+.sidebar-help b { font-size: 13px!important; }
+.sidebar-help span { font-size: 11px!important; line-height: 1.45!important; }
+header { min-height: 72px!important; padding: 14px 22px!important; }
+header h1 { font-size: 25px!important; }
+header p { font-size: 12px!important; }
+.status { font-size: 12px!important; }
+main { max-width: 1510px!important; padding: 0 18px!important; margin-top: 16px!important; }
+
+/* Top toolbar */
+.overview-top-toolbar .controls { gap: 9px!important; padding: 10px!important; }
+.overview-top-toolbar .controls select,
+.overview-top-toolbar .controls input,
+.overview-top-toolbar .controls button {
+  height: 42px!important;
+  min-height: 42px!important;
+  border-radius: 9px!important;
+  font-size: 12px!important;
+}
+.overview-top-toolbar .controls select { padding-left: 12px!important; }
+.overview-top-toolbar .controls input { padding: 0 13px!important; }
+.overview-top-toolbar .controls button { padding: 0 16px!important; }
+.overview-top-toolbar .timeframes { height: 42px!important; }
+.overview-top-toolbar .timeframes button {
+  min-width: 68px!important;
+  font-size: 11px!important;
+  padding: 0 14px!important;
+}
+
+/* Summary score cards */
+.score-overview-grid { gap: 11px!important; margin-bottom: 14px!important; }
+.score-overview-card { min-height: 86px!important; padding: 14px!important; border-radius: 14px!important; }
+.score-icon { width: 40px!important; height: 40px!important; flex: 0 0 40px!important; font-size: 18px!important; }
+.score-copy span { font-size: 12px!important; }
+.score-copy strong { font-size: 23px!important; margin: 4px 0 7px!important; }
+.score-copy strong small { font-size: 12px!important; }
+.score-copy i { height: 5px!important; }
+
+/* Company card */
+.app[data-view="overview"] .overview-company-card,
+.app[data-view="overview"] .framework-price-card {
+  height: 370px!important;
+  min-height: 370px!important;
+  max-height: 370px!important;
+}
+.app[data-view="overview"] .overview-company-card { padding: 18px!important; }
+.overview-company-avatar { width: 50px!important; height: 50px!important; flex: 0 0 50px!important; font-size: 20px!important; border-radius: 13px!important; }
+.overview-company-name-row > strong { font-size: 21px!important; }
+.overview-symbol-badge { font-size: 10px!important; padding: 4px 8px!important; }
+.app[data-view="overview"] .overview-company-heading .dashboard-selected-meta > span,
+.app[data-view="overview"] .dashboard-selected-meta > span {
+  font-size: 10px!important;
+  padding: 4px 8px!important;
+}
+.overview-watchlist-button { height: 34px!important; padding: 0 12px!important; font-size: 10px!important; }
+.overview-company-description { font-size: 11px!important; line-height: 1.55!important; min-height: 34px!important; margin-bottom: 11px!important; }
+.overview-company-stats { margin: 12px 0 10px!important; }
+.overview-company-stats > div { padding: 11px 12px!important; }
+.overview-company-stats span { font-size: 10px!important; margin-bottom: 5px!important; }
+.overview-company-stats strong { font-size: 14px!important; }
+.overview-company-stats small { font-size: 10px!important; }
+.app[data-view="overview"] .overview-mini-indicator-row { gap: 8px!important; margin-top: 9px!important; }
+.app[data-view="overview"] .overview-mini-indicator-row > div { min-height: 92px!important; padding: 11px!important; }
+.app[data-view="overview"] .overview-mini-indicator-row span { font-size: 10px!important; }
+.app[data-view="overview"] .overview-mini-indicator-row strong { font-size: 18px!important; margin-top: 5px!important; }
+
+/* Chart readability */
+.app[data-view="overview"] .framework-price-card { padding: 14px!important; }
+.app[data-view="overview"] .dashboard-mini-chart-title strong { font-size: 16px!important; }
+.app[data-view="overview"] .dashboard-mini-chart-title span { font-size: 10px!important; }
+.app[data-view="overview"] .framework-overlay-toggles { gap: 5px!important; }
+.app[data-view="overview"] .framework-overlay-toggles button {
+  height: 30px!important;
+  min-height: 30px!important;
+  padding: 0 9px!important;
+  font-size: 10px!important;
+}
+.app[data-view="overview"] .framework-ohlcv-strip {
+  gap: 9px!important;
+  padding: 4px 0!important;
+  margin: 3px 0 4px!important;
+  font-size: 10px!important;
+  overflow-x: auto!important;
+}
+.app[data-view="overview"] .framework-ema-color-key { gap: 6px!important; padding: 5px 0 6px!important; }
+.app[data-view="overview"] .framework-ema-legend-item { padding: 3px 7px!important; }
+.app[data-view="overview"] .framework-ema-legend-item b { font-size: 9px!important; }
+.app[data-view="overview"] .framework-current-values {
+  min-height: 34px!important;
+  max-height: 54px!important;
+  padding: 7px 9px!important;
+  font-size: 9.5px!important;
+  line-height: 1.45!important;
+}
+.app[data-view="overview"] .dashboard-candlestick-canvas {
+  height: 260px!important;
+  min-height: 260px!important;
+}
+
+/* Filter preview cards */
+.overview-filter-preview-grid { gap: 12px!important; margin: 12px 0!important; }
+.overview-filter-preview-card { padding: 14px!important; border-radius: 14px!important; }
+.overview-filter-preview-head { padding-bottom: 9px!important; }
+.overview-filter-preview-icon,
+.overview-filter-icon { width: 32px!important; height: 32px!important; font-size: 14px!important; }
+.overview-filter-preview-head h3 { font-size: 14px!important; }
+.overview-filter-preview-head p { font-size: 10px!important; margin-top: 3px!important; }
+.overview-filter-preview-head button { font-size: 10px!important; padding: 4px!important; }
+.overview-filter-form-rows { gap: 1px!important; }
+.overview-filter-form-row {
+  grid-template-columns: minmax(0,1.45fr) 72px minmax(100px,.9fr)!important;
+  gap: 7px!important;
+  min-height: 35px!important;
+}
+.overview-filter-form-row > span { font-size: 10.5px!important; }
+.overview-filter-form-row select,
+.overview-filter-form-row input {
+  height: 28px!important;
+  min-height: 28px!important;
+  font-size: 10.5px!important;
+  padding: 0 8px!important;
+  border-radius: 6px!important;
+}
+.overview-filter-input-shell { height: 28px!important; }
+.overview-filter-input-shell b {
+  height: 28px!important;
+  font-size: 10px!important;
+  padding: 0 7px!important;
+}
+
+/* Ranking table */
+.app[data-view="overview"] .overview-ranking-card { padding: 13px 14px!important; border-radius: 13px!important; }
+.app[data-view="overview"] .overview-ranking-head { margin-bottom: 9px!important; }
+.app[data-view="overview"] .overview-ranking-head h2 { font-size: 16px!important; }
+.app[data-view="overview"] .overview-ranking-head p { font-size: 10px!important; margin-top: 3px!important; }
+.app[data-view="overview"] .overview-ranking-controls { gap: 7px!important; }
+.app[data-view="overview"] .overview-ranking-controls label { font-size: 10px!important; }
+.app[data-view="overview"] .overview-ranking-controls select,
+.app[data-view="overview"] .overview-ranking-controls button {
+  height: 32px!important;
+  min-height: 32px!important;
+  font-size: 10px!important;
+  border-radius: 7px!important;
+}
+.app[data-view="overview"] .overview-ranking-table-wrap { max-height: 350px!important; border-radius: 9px!important; }
+.app[data-view="overview"] .overview-ranking-table th {
+  font-size: 10px!important;
+  padding: 8px 9px!important;
+}
+.app[data-view="overview"] .overview-ranking-table td {
+  font-size: 10.5px!important;
+  padding: 8px 9px!important;
+}
+.score-chip { min-width: 44px!important; padding: 4px 7px!important; font-size: 9.5px!important; }
+.overview-table-watch { font-size: 15px!important; }
+
+/* Non-overview workspaces should also remain legible. */
+.app[data-view="ranking"],
+.app[data-view="filters"],
+.app[data-view="screener"],
+.app[data-view="analytics"],
+.app[data-view="excel"],
+.app[data-view="settings"] {
+  font-size: 13px;
+}
+.app[data-view="ranking"] .filter-config-table th,
+.app[data-view="ranking"] .filter-config-table td,
+.app[data-view="filters"] .filter-config-table th,
+.app[data-view="filters"] .filter-config-table td {
+  font-size: 11px!important;
+  padding: 9px 10px!important;
+}
+
+@media (max-width: 1250px) {
+  .app-sidebar { width: 174px!important; }
+  .app-content { margin-left: 174px!important; width: calc(100% - 174px)!important; }
+  .app[data-view="overview"] .overview-company-card,
+  .app[data-view="overview"] .framework-price-card { height: auto!important; max-height: none!important; }
+  .app[data-view="overview"] .dashboard-candlestick-canvas { height: 300px!important; }
+}
