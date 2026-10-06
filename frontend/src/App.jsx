@@ -576,6 +576,7 @@ function App() {
   const [exchange, setExchange] = useState("US");
   const [timeframe, setTimeframe] = useState("daily");
   const [activeView, setActiveView] = useState("overview");
+  const [watchlisted, setWatchlisted] = useState(false);
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -3093,45 +3094,63 @@ function App() {
       };
       const institution = pct(fundamentals?.ownership?.institution_percent);
       const insider = pct(fundamentals?.ownership?.insider_percent);
-      const retail = institution != null && insider != null ? Math.max(0, 100 - institution - insider) : null;
       const rows = [
-        ["Institutional Ownership", ">", institution == null ? "N/A" : `${institution.toFixed(2)}%`],
-        ["Insider Ownership", ">", insider == null ? "N/A" : `${insider.toFixed(2)}%`],
-        ["Retail / Public", "—", retail == null ? "N/A" : `${retail.toFixed(2)}%`],
-        ["Shares Outstanding", "<", fundamentals?.ownership?.shares_outstanding == null ? "N/A" : formatFilterCurrent("shares_outstanding", fundamentals.ownership.shares_outstanding)],
+        ["Institutional Ownership", ">", institution == null ? "N/A" : institution.toFixed(2), "%"],
+        ["Insider Ownership", ">", insider == null ? "N/A" : insider.toFixed(2), "%"],
+        ["Shares Outstanding", "<", fundamentals?.ownership?.shares_outstanding == null ? "N/A" : formatFilterCurrent("shares_outstanding", fundamentals.ownership.shares_outstanding), ""],
+        ["Retail / Public", "—", institution != null && insider != null ? Math.max(0, 100 - institution - insider).toFixed(2) : "N/A", "%"],
       ];
       return (
         <section className={`overview-filter-preview-card ${tone}`}>
           <div className="overview-filter-preview-head">
-            <div><span className="overview-filter-icon">●</span><div><h3>{title}</h3><p>Institutional, insider and shareholding filters.</p></div></div>
+            <div><span className="overview-filter-icon">●</span><div><h3>{title}</h3><p>Institutional ownership and shareholding.</p></div></div>
             <button type="button" onClick={() => setActiveView("filters")}>View all →</button>
           </div>
-          <div className="overview-filter-preview-rows">
-            {rows.map(([label, compare, value]) => <div className="overview-filter-preview-row" key={label}><span>{label}</span><b>{compare}</b><strong>{value}</strong></div>)}
+          <div className="overview-filter-form-rows">
+            {rows.map(([label, compare, value, suffix]) => (
+              <div className="overview-filter-form-row" key={label}>
+                <span>{label}</span>
+                <select value={compare} disabled={compare === "—"} onChange={() => {}} aria-label={`${label} compare`}><option>{compare}</option></select>
+                <div className="overview-filter-input-shell"><input value={value} readOnly aria-label={`${label} value`} />{suffix && <b>{suffix}</b>}</div>
+              </div>
+            ))}
           </div>
         </section>
       );
     }
 
     const rows = (handwrittenFactorMeta[group] || []).slice(0, 4);
-    const score = factorEvaluationRows.groupScores?.[group];
     return (
       <section className={`overview-filter-preview-card ${tone}`}>
         <div className="overview-filter-preview-head">
-          <div><span className="overview-filter-icon">{group === "fundamental" ? "▥" : "↗"}</span><div><h3>{title}</h3><p>{group === "fundamental" ? "Growth, profitability and quality rules." : "Trend, momentum and technical rules."}</p></div></div>
+          <div><span className="overview-filter-icon">{group === "fundamental" ? "▥" : "↗"}</span><div><h3>{title}</h3><p>{group === "fundamental" ? "Growth, profitability and quality filters." : "Trend, momentum and technical indicators."}</p></div></div>
           <button type="button" onClick={() => setActiveView("filters")}>View all →</button>
         </div>
-        <div className="overview-filter-preview-rows">
+        <div className="overview-filter-form-rows">
           {rows.map(([key, label, _description, editableValues]) => {
             const cfg = handwrittenFactors[group]?.[key] || {};
             const evalRow = factorEvaluationRows[group]?.[key] || {};
-            const target = editableValues?.includes("threshold")
-              ? formatFilterCurrent(key, cfg.threshold ?? 0)
-              : (evalRow.targetText != null ? String(evalRow.targetText) : "Dynamic");
-            return <div className="overview-filter-preview-row" key={key}><span>{label}</span><b>{cfg.comparator || ">"}</b><strong>{target}</strong></div>;
+            const canEditThreshold = editableValues?.includes("threshold");
+            const value = canEditThreshold
+              ? (cfg.threshold ?? 0)
+              : (evalRow.targetText != null ? (typeof evalRow.targetText === "number" ? Number(evalRow.targetText).toFixed(2) : String(evalRow.targetText)) : "Dynamic");
+            return (
+              <div className="overview-filter-form-row" key={key}>
+                <span title={label}>{label.replace(/^EPS \d+ — /, "").replace(/^PAT \d+ — /, "").replace(/^Sales \d+ — /, "")}</span>
+                <select value={cfg.comparator || ">"} onChange={(e) => updateHandwrittenFactor(group, key, "comparator", e.target.value)} aria-label={`${label} compare`}>
+                  <option value=">">&gt;</option><option value=">=">&gt;=</option><option value="<">&lt;</option><option value="<=">&lt;=</option>
+                </select>
+                <div className="overview-filter-input-shell">
+                  {canEditThreshold ? (
+                    <input type="number" step="0.1" value={cfg.threshold ?? 0} onChange={(e) => updateHandwrittenFactor(group, key, "threshold", Number(e.target.value))} aria-label={`${label} target`} />
+                  ) : (
+                    <input value={value} readOnly aria-label={`${label} target`} />
+                  )}
+                </div>
+              </div>
+            );
           })}
         </div>
-        <div className="overview-filter-preview-score"><span>{title.replace(" Filters", " Score")}</span><strong>{filterScoreText(score)}</strong></div>
       </section>
     );
   };
@@ -3148,8 +3167,9 @@ function App() {
             ["overview", "⌂", "Overview"],
             ["ranking", "♜", "Top 200 Ranking"],
             ["filters", "☷", "Filters"],
-            ["screener", "⌁", "Universe Screener"],
-            ["analytics", "↗", "Advanced Analytics"],
+            ["analytics", "↗", "Backtesting"],
+            ["excel", "▤", "Export / Excel"],
+            ["settings", "⚙", "Settings"],
           ].map(([view, icon, label]) => (
             <button
               key={view}
@@ -3200,6 +3220,7 @@ function App() {
       </header>
 
       <main>
+        <div className="overview-top-toolbar">
         <section id="excel-tools" className="controls">
           <select
             value={exchange}
@@ -3217,7 +3238,7 @@ function App() {
               onFocus={() => {
                 if (suggestions.length) setShowSuggestions(true);
               }}
-              placeholder="Search symbol or company"
+              placeholder="Search stock symbol or company name..."
             />
 
             {showSuggestions && suggestions.length > 0 && (
@@ -3310,7 +3331,7 @@ function App() {
             Export to Excel
           </button>
 
-          <button type="button" className="excel-live-top" onClick={downloadLiveExcelConnection}>
+          <button type="button" className="excel-live-top excel-live-link-top" onClick={downloadLiveExcelConnection}>
             Excel Live Link
           </button>
         </section>
@@ -3326,6 +3347,7 @@ function App() {
             </button>
           ))}
         </section>
+        </div>
 
         <section className="score-overview-grid" aria-label="Ranking score overview">
           {[
@@ -3402,24 +3424,29 @@ function App() {
             <div className="dashboard-selected-stock overview-company-card">
               <div className="overview-company-heading">
                 <div className="overview-company-avatar" aria-hidden="true">{(selectedCompany?.name || symbol || "S").charAt(0)}</div>
-                <div>
+                <div className="overview-company-heading-copy">
                   <div className="overview-company-name-row">
                     <strong>{selectedCompany?.name || symbol}</strong>
-                    <span className="overview-symbol-badge">{symbol}</span>
                   </div>
                   <div className="dashboard-selected-meta">
+                    <span className="overview-symbol-badge">{symbol}</span>
                     <span>{exchange}</span>
+                    <span>{fundamentals?.fundamentals?.industry || fundamentals?.fundamentals?.sector || dashboard?.industry || dashboard?.sector || "Listed Equity"}</span>
                     <span>{selectedCompany?.isin ? `ISIN ${selectedCompany.isin}` : "ISIN N/A"}</span>
                   </div>
                 </div>
+                <button type="button" className={`overview-watchlist-button ${watchlisted ? "active" : ""}`} onClick={() => setWatchlisted((v) => !v)}>
+                  {watchlisted ? "★ Watchlist" : "☆ Watchlist"}
+                </button>
               </div>
+              <p className="overview-company-description">{selectedCompany?.name || symbol} • {fundamentals?.fundamentals?.sector || dashboard?.sector || "Market"} • live market, fundamental and technical overview.</p>
 
               <div className="overview-company-stats">
                 <div><span>Price</span><strong>{latest ? `${currency}${Number(latest.close).toFixed(2)}` : "N/A"}</strong>{data?.length > 1 && Number(data[data.length - 2]?.close) ? <small className={Number(latest?.close) >= Number(data[data.length - 2]?.close) ? "is-up" : "is-down"}>{`${(((Number(latest?.close) / Number(data[data.length - 2]?.close)) - 1) * 100).toFixed(2)}%`}</small> : null}</div>
                 <div><span>Market Cap</span><strong>{fundamentals?.fundamentals?.market_cap != null ? formatMarketMoney(fundamentals.fundamentals.market_cap, exchange) : "N/A"}</strong></div>
                 <div><span>EPS</span><strong>{fundamentals?.fundamentals?.trailing_eps ?? "N/A"}</strong></div>
-                <div><span>Sector</span><strong>{dashboard?.sector || "N/A"}</strong></div>
-                <div><span>Industry</span><strong>{dashboard?.industry || "N/A"}</strong></div>
+                <div><span>Sector</span><strong>{fundamentals?.fundamentals?.sector || dashboard?.sector || "N/A"}</strong></div>
+                <div><span>Industry</span><strong>{fundamentals?.fundamentals?.industry || dashboard?.industry || "N/A"}</strong></div>
               </div>
 
               <div className="overview-mini-indicator-row" aria-label="Selected stock indicator snapshot">
@@ -3434,8 +3461,8 @@ function App() {
               <div className="dashboard-mini-chart framework-price-card">
                 <div className="dashboard-mini-chart-title">
                   <div>
-                    <strong>{symbol} Candlestick Chart</strong>
-                    <span>{timeframe} • DD/MM/YYYY • latest candle {data?.length ? formatChartDate(String(data[data.length - 1]?.date || "").slice(0, 10)) : "N/A"} • click any Top-200 stock to replace this chart</span>
+                    <strong>{symbol} Stock Chart</strong>
+                    <span>{timeframe} • DD/MM/YYYY • live hover values</span>
                   </div>
                   <div className="dashboard-mini-indicators framework-overlay-toggles">
                     {[
@@ -4106,23 +4133,53 @@ function App() {
           </div>
           <div className="overview-ranking-table-wrap">
             <table className="overview-ranking-table">
-              <thead><tr><th>#</th><th>Symbol</th><th>Company</th><th>Composite</th><th>Fundamental</th><th>Technical</th><th>RS</th><th>Ownership</th><th>Sector</th><th>Coverage</th></tr></thead>
+              <thead><tr><th>#</th><th>Symbol</th><th>Company Name</th><th>Price</th><th>Change</th><th>Composite ↓</th><th>Fundamental</th><th>Technical</th><th>RS</th><th>Ownership</th><th>Market Cap</th><th>Sector</th><th>Watch</th></tr></thead>
               <tbody>
-                {sortedTopCompositeRows.slice(0, 50).map((row, index) => (
+                {sortedTopCompositeRows.slice(0, 50).map((row, index) => {
+                  const rowPrice = Number(row.close ?? row.price ?? row.last_price);
+                  const rowChange = Number(row.change_percent ?? row.change_pct);
+                  return (
                   <tr key={`overview-${row.exchange}-${row.symbol}`} onClick={() => openUniverseStock(row)} className={row.symbol === symbol && row.exchange === exchange ? "selected" : ""}>
                     <td>{index + 1}</td><td><strong>{row.symbol}</strong></td><td>{row.name || row.symbol}</td>
+                    <td>{Number.isFinite(rowPrice) ? rowPrice.toFixed(2) : "N/A"}</td>
+                    <td className={Number.isFinite(rowChange) ? (rowChange >= 0 ? "table-change-up" : "table-change-down") : ""}>{Number.isFinite(rowChange) ? formatPctChange(rowChange) : "N/A"}</td>
                     <td><span className="score-chip composite">{formatScoreValue(row.display_composite_score)}</span></td>
                     <td><span className="score-chip fundamental">{formatScoreValue(row.fundamental_score)}</span></td>
                     <td><span className="score-chip technical">{formatScoreValue(row.technical_score)}</span></td>
                     <td><span className="score-chip rs">{formatScoreValue(row.rs_score)}</span></td>
                     <td><span className="score-chip ownership">{formatScoreValue(row.ownership_score)}</span></td>
-                    <td>{row.sector || "N/A"}</td><td>{row.display_coverage_percent != null ? `${Number(row.display_coverage_percent).toFixed(0)}%` : "N/A"}</td>
+                    <td>{row.market_cap != null ? new Intl.NumberFormat(row.exchange === "US" ? "en-US" : "en-IN", { notation: "compact", maximumFractionDigits: 2 }).format(Number(row.market_cap)) : "N/A"}</td>
+                    <td>{row.sector || "N/A"}</td><td><button type="button" className="overview-table-watch" onClick={(e) => e.stopPropagation()}>☆</button></td>
                   </tr>
-                ))}
+                );})}
               </tbody>
             </table>
           </div>
         </section>
+
+
+        {activeView === "excel" && (
+          <section className="utility-workspace excel-workspace">
+            <div className="utility-workspace-head"><div><span>EXPORT / EXCEL</span><h2>Excel Workspace</h2><p>Export the selected stock or use the refreshable live connection without leaving the dashboard.</p></div></div>
+            <div className="utility-action-grid">
+              <button type="button" onClick={downloadCurrentStockExcel}><b>Export Current Stock</b><span>{symbol} • {exchange} • Excel workbook snapshot</span></button>
+              <button type="button" onClick={downloadLiveExcelConnection}><b>Excel Live Link</b><span>Refreshable connection for the currently selected stock</span></button>
+              <a href="/StockScreener_Master_Excel_Python.zip" download><b>Master Excel + Python</b><span>Download the complete interactive workbook package</span></a>
+            </div>
+          </section>
+        )}
+
+        {activeView === "settings" && (
+          <section className="utility-workspace settings-workspace">
+            <div className="utility-workspace-head"><div><span>SETTINGS</span><h2>Dashboard Settings</h2><p>Core display and data-source information for this deployment.</p></div></div>
+            <div className="settings-grid">
+              <div><span>API</span><strong>{API}</strong></div>
+              <div><span>Selected Market</span><strong>{exchange}</strong></div>
+              <div><span>Timeframe</span><strong>{timeframe}</strong></div>
+              <div><span>Data Status</span><strong>{dataStatus}</strong></div>
+            </div>
+          </section>
+        )}
 
 
         <section id="universe-screener" className="universe-screener-card">

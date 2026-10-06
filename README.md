@@ -1,8 +1,8 @@
 # Stock Screener
 
-## 2026-10-06 clean multi-workspace UI V3
+## 2026-10-06 UI V5 — reference-match clean product dashboard
 
-The frontend is now split into **Overview, Top 200 Ranking, Filters, Universe Screener, and Advanced Analytics** workspaces. This keeps the default page compact and aligned while preserving the full existing functions in dedicated workspaces. See `docs/UI_V3_CLEAN_WORKSPACE_REDESIGN_2026-10-06.md`.
+The actual React frontend has been rebuilt to follow the supplied clean dashboard reference: compact left navigation, single-row search/actions, five score cards, company card + stock chart, three compact filter panels, and a clean Top-200 table. Full ranking/filter/universe/backtesting/Excel functionality remains available in dedicated workspaces. See `docs/UI_V5_REFERENCE_MATCH_2026-10-06.md`.
 
 Full-stack US / NSE / BSE stock screener built with React, FastAPI and PostgreSQL.
 

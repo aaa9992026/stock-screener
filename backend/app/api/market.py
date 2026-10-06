@@ -5292,12 +5292,19 @@ def get_top_composite_dashboard(
         )
         final_allowed = all_required_available and exact_history_available and not _free_tier_mode()
         final_composite = provisional if final_allowed else None
+        latest_close = _finite_number(closes[-1]) if closes else None
+        previous_close = _finite_number(closes[-2]) if len(closes) >= 2 else None
+        change_percent = None
+        if latest_close is not None and previous_close not in (None, 0):
+            change_percent = round(((latest_close / previous_close) - 1.0) * 100.0, 2)
         ranked.append({
             **row,
             "composite_score": provisional,
             "final_composite_score": final_composite,
             "provisional_composite_score": provisional,
             "score_status": "Final" if final_composite is not None else "Provisional",
+            "close": latest_close,
+            "change_percent": change_percent,
             "score_coverage_percent": round(available_weight, 2),
             "technical_score": technical,
             "fundamental_score": fundamental,
