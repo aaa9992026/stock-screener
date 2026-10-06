@@ -233,3 +233,20 @@ This build is a Ranking System correction pass only. Sector Analysis, Portfolio 
 - Moved the EMA helper to component scope so both dashboard scoring and technical filter evaluation can use it.
 - This restores the page after the TradingView-alignment update.
 
+
+## UI V4 — Clean Product Dashboard (2026-10-06)
+
+The frontend Overview has been rebuilt to follow the approved compact dashboard structure without removing the existing working tools.
+
+- Compact left navigation and aligned search/action toolbar.
+- Five score cards at the top.
+- Selected-stock company card with Price, Market Cap, EPS, Sector and Industry.
+- Four compact indicator snapshots (RSI, MACD, ROC, ADX).
+- Candlestick chart remains fully interactive with OHLCV hover, EMA/BB/EPS/RS values and overlay toggles.
+- Overview now uses three short filter preview cards with **View all** actions instead of rendering the full filter editors on the landing page.
+- Full Fundamental / Technical / Ownership filter editors and qualified-stock lists remain in the Filters workspace.
+- Full Top-200 ranking, weights and indicator configuration remain in the Top 200 Ranking workspace.
+- Universe Screener and Advanced Analytics remain available in their own workspaces.
+- Overview keeps a compact Top-200 table below the filter previews.
+
+This is a UI/structure rebuild. Existing real-data rules and provider behavior are preserved; unavailable data remains N/A rather than fabricated.

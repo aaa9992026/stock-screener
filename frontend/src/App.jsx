@@ -3084,6 +3084,58 @@ function App() {
     );
   };
 
+  const renderOverviewFilterPreview = (group, title, tone) => {
+    if (group === "ownership" && exchange === "US") {
+      const pct = (value) => {
+        const n = Number(value);
+        if (!Number.isFinite(n)) return null;
+        return n <= 1 ? n * 100 : n;
+      };
+      const institution = pct(fundamentals?.ownership?.institution_percent);
+      const insider = pct(fundamentals?.ownership?.insider_percent);
+      const retail = institution != null && insider != null ? Math.max(0, 100 - institution - insider) : null;
+      const rows = [
+        ["Institutional Ownership", ">", institution == null ? "N/A" : `${institution.toFixed(2)}%`],
+        ["Insider Ownership", ">", insider == null ? "N/A" : `${insider.toFixed(2)}%`],
+        ["Retail / Public", "—", retail == null ? "N/A" : `${retail.toFixed(2)}%`],
+        ["Shares Outstanding", "<", fundamentals?.ownership?.shares_outstanding == null ? "N/A" : formatFilterCurrent("shares_outstanding", fundamentals.ownership.shares_outstanding)],
+      ];
+      return (
+        <section className={`overview-filter-preview-card ${tone}`}>
+          <div className="overview-filter-preview-head">
+            <div><span className="overview-filter-icon">●</span><div><h3>{title}</h3><p>Institutional, insider and shareholding filters.</p></div></div>
+            <button type="button" onClick={() => setActiveView("filters")}>View all →</button>
+          </div>
+          <div className="overview-filter-preview-rows">
+            {rows.map(([label, compare, value]) => <div className="overview-filter-preview-row" key={label}><span>{label}</span><b>{compare}</b><strong>{value}</strong></div>)}
+          </div>
+        </section>
+      );
+    }
+
+    const rows = (handwrittenFactorMeta[group] || []).slice(0, 4);
+    const score = factorEvaluationRows.groupScores?.[group];
+    return (
+      <section className={`overview-filter-preview-card ${tone}`}>
+        <div className="overview-filter-preview-head">
+          <div><span className="overview-filter-icon">{group === "fundamental" ? "▥" : "↗"}</span><div><h3>{title}</h3><p>{group === "fundamental" ? "Growth, profitability and quality rules." : "Trend, momentum and technical rules."}</p></div></div>
+          <button type="button" onClick={() => setActiveView("filters")}>View all →</button>
+        </div>
+        <div className="overview-filter-preview-rows">
+          {rows.map(([key, label, _description, editableValues]) => {
+            const cfg = handwrittenFactors[group]?.[key] || {};
+            const evalRow = factorEvaluationRows[group]?.[key] || {};
+            const target = editableValues?.includes("threshold")
+              ? formatFilterCurrent(key, cfg.threshold ?? 0)
+              : (evalRow.targetText != null ? String(evalRow.targetText) : "Dynamic");
+            return <div className="overview-filter-preview-row" key={key}><span>{label}</span><b>{cfg.comparator || ">"}</b><strong>{target}</strong></div>;
+          })}
+        </div>
+        <div className="overview-filter-preview-score"><span>{title.replace(" Filters", " Score")}</span><strong>{filterScoreText(score)}</strong></div>
+      </section>
+    );
+  };
+
   return (
     <div className="app" data-view={activeView}>
       <aside className="app-sidebar">
@@ -3347,30 +3399,34 @@ function App() {
           </div>
 
           <div className="dashboard-selected-grid">
-            <div className="dashboard-selected-stock">
-              <span>Selected Stock</span>
-              <strong>{selectedCompany?.name || symbol}</strong>
-              <div className="dashboard-selected-meta">
-                <b>{symbol}</b>
-                <span>{exchange}</span>
-                <span>{selectedCompany?.isin ? `ISIN ${selectedCompany.isin}` : "ISIN N/A"}</span>
+            <div className="dashboard-selected-stock overview-company-card">
+              <div className="overview-company-heading">
+                <div className="overview-company-avatar" aria-hidden="true">{(selectedCompany?.name || symbol || "S").charAt(0)}</div>
+                <div>
+                  <div className="overview-company-name-row">
+                    <strong>{selectedCompany?.name || symbol}</strong>
+                    <span className="overview-symbol-badge">{symbol}</span>
+                  </div>
+                  <div className="dashboard-selected-meta">
+                    <span>{exchange}</span>
+                    <span>{selectedCompany?.isin ? `ISIN ${selectedCompany.isin}` : "ISIN N/A"}</span>
+                  </div>
+                </div>
               </div>
-              <div className="dashboard-score-pills">
-                <span>Final <b>{formatScoreValue(dashboardView?.score)}</b></span>
-                {dashboardView?.score == null && dashboardView?.provisional_score != null && (
-                  <span>Provisional <b>{formatScoreValue(dashboardView.provisional_score)}</b></span>
-                )}
-                <span>Technical <b>{formatScoreValue(dashboardView?.score_components?.technical)}</b></span>
-                <span>Fundamental <b>{formatScoreValue(dashboardView?.score_components?.fundamental)}</b></span>
-                <span>Ownership <b>{formatScoreValue(dashboardView?.score_components?.ownership)}</b></span>
-                <span>Sector <b>{formatScoreValue(dashboardView?.score_components?.sector)}</b></span>
-                <span>RS <b>{formatScoreValue(dashboardView?.score_components?.relative_strength)}</b></span>
+
+              <div className="overview-company-stats">
+                <div><span>Price</span><strong>{latest ? `${currency}${Number(latest.close).toFixed(2)}` : "N/A"}</strong>{data?.length > 1 && Number(data[data.length - 2]?.close) ? <small className={Number(latest?.close) >= Number(data[data.length - 2]?.close) ? "is-up" : "is-down"}>{`${(((Number(latest?.close) / Number(data[data.length - 2]?.close)) - 1) * 100).toFixed(2)}%`}</small> : null}</div>
+                <div><span>Market Cap</span><strong>{fundamentals?.fundamentals?.market_cap != null ? formatMarketMoney(fundamentals.fundamentals.market_cap, exchange) : "N/A"}</strong></div>
+                <div><span>EPS</span><strong>{fundamentals?.fundamentals?.trailing_eps ?? "N/A"}</strong></div>
+                <div><span>Sector</span><strong>{dashboard?.sector || "N/A"}</strong></div>
+                <div><span>Industry</span><strong>{dashboard?.industry || "N/A"}</strong></div>
               </div>
+
               <div className="overview-mini-indicator-row" aria-label="Selected stock indicator snapshot">
                 <div><span>RSI (14)</span><strong>{formatScoreValue(latestOverviewIndicator?.rsi, 1)}</strong><i className="spark violet" /></div>
                 <div><span>MACD</span><strong>{formatScoreValue(latestOverviewIndicator?.macd, 2)}</strong><i className="spark blue" /></div>
-                <div><span>ROC</span><strong>{latestOverviewIndicator?.roc == null ? "N/A" : `${formatScoreValue(latestOverviewIndicator.roc, 1)}%`}</strong><i className="spark green" /></div>
-                <div><span>ADX</span><strong>{formatScoreValue(latestOverviewIndicator?.adx, 1)}</strong><i className="spark orange" /></div>
+                <div><span>ROC (20)</span><strong>{latestOverviewIndicator?.roc == null ? "N/A" : `${formatScoreValue(latestOverviewIndicator.roc, 1)}%`}</strong><i className="spark green" /></div>
+                <div><span>ADX (14)</span><strong>{formatScoreValue(latestOverviewIndicator?.adx, 1)}</strong><i className="spark orange" /></div>
               </div>
             </div>
 
@@ -3818,6 +3874,13 @@ function App() {
           </div>
         </section>
 
+        {activeView === "overview" && (
+          <section className="overview-filter-preview-grid" aria-label="Filter previews">
+            {renderOverviewFilterPreview("fundamental", "Fundamental Filters", "fundamental")}
+            {renderOverviewFilterPreview("technical", "Technical Filters", "technical")}
+            {renderOverviewFilterPreview("ownership", "Ownership Filters", "ownership")}
+          </section>
+        )}
 
         <div className="filter-workspace-grid">
         <section className="standalone-fundamental-filters" id="fundamental-filters">

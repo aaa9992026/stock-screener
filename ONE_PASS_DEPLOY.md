@@ -168,3 +168,13 @@ git add .
 git commit -m "Fix ranking data alignment full-universe filters and Excel live link"
 git push
 ```
+
+## UI V4 clean dashboard deployment
+
+```bash
+git add .
+git commit -m "Rebuild stock screener overview into clean product dashboard"
+git push
+```
+
+After Vercel finishes, hard-refresh the production page with `Ctrl+Shift+R`.
