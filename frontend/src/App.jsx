@@ -3081,7 +3081,22 @@ function App() {
 
   return (
     <div className="app">
-      <header>
+      <aside className="app-sidebar">
+        <div className="sidebar-brand">
+          <div className="sidebar-logo" aria-hidden="true"><i></i><i></i><i></i></div>
+          <div><strong>StockScreener</strong><small>Market intelligence</small></div>
+        </div>
+        <nav className="sidebar-nav" aria-label="Dashboard sections">
+          <a className="active" href="#overview"><span>⌂</span>Overview</a>
+          <a href="#client-framework-dashboard"><span>♜</span>Top 200 Ranking</a>
+          <a href="#fundamental-filters"><span>☷</span>Filters</a>
+          <a href="#universe-screener"><span>⌁</span>Universe Screener</a>
+          <a href="#excel-tools"><span>⇩</span>Export / Excel</a>
+        </nav>
+        <div className="sidebar-help"><b>Need Help?</b><span>Use the section menu to jump directly to the tools you need.</span></div>
+      </aside>
+      <div className="app-content">
+      <header id="overview">
         <div>
           <h1>Stock Screener</h1>
           <p>US & Indian Market Dashboard</p>
@@ -3113,7 +3128,7 @@ function App() {
       </header>
 
       <main>
-        <section className="controls">
+        <section id="excel-tools" className="controls">
           <select
             value={exchange}
             onChange={(e) => changeExchange(e.target.value)}
@@ -3240,6 +3255,25 @@ function App() {
           ))}
         </section>
 
+        <section className="score-overview-grid" aria-label="Ranking score overview">
+          {[
+            ["Composite Score", dashboardView?.score ?? dashboardView?.provisional_score, "composite"],
+            ["Fundamental Score", dashboardView?.score_components?.fundamental, "fundamental"],
+            ["Technical Score", dashboardView?.score_components?.technical, "technical"],
+            ["Relative Strength", dashboardView?.score_components?.relative_strength, "rs"],
+            ["Ownership Score", dashboardView?.score_components?.ownership, "ownership"],
+          ].map(([label, value, tone]) => {
+            const numeric = Number(value);
+            const score = Number.isFinite(numeric) ? Math.max(0, Math.min(100, numeric)) : null;
+            return (
+              <div className={`score-overview-card ${tone}`} key={label}>
+                <div className="score-icon" aria-hidden="true">{tone === "composite" ? "★" : tone === "fundamental" ? "▥" : tone === "technical" ? "↗" : tone === "rs" ? "◎" : "●"}</div>
+                <div className="score-copy"><span>{label}</span><strong>{score == null ? "N/A" : score.toFixed(1)} <small>/ 100</small></strong><i><b style={{ width: `${score || 0}%` }} /></i></div>
+              </div>
+            );
+          })}
+        </section>
+
         {message && (
           <div
             className={
@@ -3260,8 +3294,8 @@ function App() {
           <div className="composite-dashboard-header">
             <div>
               <span className="dashboard-kicker">CLIENT DASHBOARD</span>
-              <h2>Top 200 Stocks — Composite Score</h2>
-              <p>Framework-first layout: click any Top-200 stock to open its candlestick chart and customizable indicator basket.</p>
+              <h2>Market Overview & Top 200 Ranking</h2>
+              <p>Select a stock to review its chart, score breakdown, indicators and ranking details.</p>
             </div>
             <div className="composite-dashboard-actions">
               <label className="dashboard-sort-control dashboard-market-control"><span>Market</span>
@@ -3959,7 +3993,48 @@ function App() {
         </section>
 
 
-        <section className="universe-screener-card">
+        <section className="overview-ranking-card" aria-label="Top 200 qualified stocks">
+          <div className="overview-ranking-head">
+            <div>
+              <h2>Top 200 Qualified Stocks</h2>
+              <p>Ranked by composite score across fundamental, technical, relative-strength and ownership metrics.</p>
+            </div>
+            <div className="overview-ranking-controls">
+              <label>Sort by
+                <select value={topCompositeSortBy} onChange={(e) => setTopCompositeSortBy(e.target.value)}>
+                  <option value="composite">Composite Score</option><option value="fundamental">Fundamental</option><option value="technical">Technical</option><option value="rs">Relative Strength</option><option value="ownership">Ownership</option><option value="symbol">Symbol</option>
+                </select>
+              </label>
+              <label>Order
+                <select value={topCompositeSortDir} onChange={(e) => setTopCompositeSortDir(e.target.value)}>
+                  <option value="desc">Descending ↓</option><option value="asc">Ascending ↑</option>
+                </select>
+              </label>
+              <button type="button" onClick={() => loadTopComposite()} disabled={topCompositeLoading}>{topCompositeLoading ? "Refreshing…" : "Refresh List"}</button>
+            </div>
+          </div>
+          <div className="overview-ranking-table-wrap">
+            <table className="overview-ranking-table">
+              <thead><tr><th>#</th><th>Symbol</th><th>Company</th><th>Composite</th><th>Fundamental</th><th>Technical</th><th>RS</th><th>Ownership</th><th>Sector</th><th>Coverage</th></tr></thead>
+              <tbody>
+                {sortedTopCompositeRows.slice(0, 50).map((row, index) => (
+                  <tr key={`overview-${row.exchange}-${row.symbol}`} onClick={() => openUniverseStock(row)} className={row.symbol === symbol && row.exchange === exchange ? "selected" : ""}>
+                    <td>{index + 1}</td><td><strong>{row.symbol}</strong></td><td>{row.name || row.symbol}</td>
+                    <td><span className="score-chip composite">{formatScoreValue(row.display_composite_score)}</span></td>
+                    <td><span className="score-chip fundamental">{formatScoreValue(row.fundamental_score)}</span></td>
+                    <td><span className="score-chip technical">{formatScoreValue(row.technical_score)}</span></td>
+                    <td><span className="score-chip rs">{formatScoreValue(row.rs_score)}</span></td>
+                    <td><span className="score-chip ownership">{formatScoreValue(row.ownership_score)}</span></td>
+                    <td>{row.sector || "N/A"}</td><td>{row.display_coverage_percent != null ? `${Number(row.display_coverage_percent).toFixed(0)}%` : "N/A"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+
+        <section id="universe-screener" className="universe-screener-card">
           <div className="universe-screener-header">
             <div>
               <h2>Stock Universe Screener</h2>
@@ -5735,6 +5810,7 @@ function App() {
           </div>
         </section>
       </main>
+      </div>
     </div>
   );
 }
