@@ -2123,6 +2123,22 @@ function App() {
     : null;
   const currency = exchange === "US" ? "$" : "₹";
 
+  // Calculate the latest EMA from the same candle history used by the visible
+  // chart. Keep this helper at component scope because both the dashboard score
+  // and the factor-evaluation table need it.
+  const latestEmaFromChart = (period) => {
+    const closes = (data || [])
+      .map((row) => Number(row?.close))
+      .filter((value) => Number.isFinite(value) && value > 0);
+    if (closes.length < period) return null;
+    const multiplier = 2 / (period + 1);
+    let current = closes.slice(0, period).reduce((sum, value) => sum + value, 0) / period;
+    for (let index = period; index < closes.length; index += 1) {
+      current = ((closes[index] - current) * multiplier) + current;
+    }
+    return Number.isFinite(current) ? current : null;
+  };
+
   // Final client ranking: calculate the visible score only from the factors in
   // the handwritten sheets. Missing source fields are excluded rather than
   // guessed; Indian fundamental data remains a required category when weighted.
@@ -2151,16 +2167,6 @@ function App() {
 
     const tech = handwrittenFactors.technical;
     const em = technicalSummary?.ema || {};
-    const latestEmaFromChart = (period) => {
-      const closes = (data || []).map((row) => Number(row?.close)).filter((value) => Number.isFinite(value) && value > 0);
-      if (closes.length < period) return null;
-      const multiplier = 2 / (period + 1);
-      let current = closes.slice(0, period).reduce((sum, value) => sum + value, 0) / period;
-      for (let index = period; index < closes.length; index += 1) {
-        current = ((closes[index] - current) * multiplier) + current;
-      }
-      return Number.isFinite(current) ? current : null;
-    };
     const d52 = finite(technicalSummary?.distance_from_52w_high_percent);
     let distanceScore = null;
     if (d52 != null) {

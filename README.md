@@ -223,3 +223,9 @@ This build is a Ranking System correction pass only. Sector Analysis, Portfolio 
 - Simple directly mapped Fundamental screens (for example latest-quarter EPS/PAT/Sales YoY or QoQ rules) have a complete-universe fast path through the market-wide scanner, intersected with the project's eligible Company universe. Complex handwritten acceleration rules continue to use verified provider histories and never fabricate missing values.
 - Full-universe qualification automatically refreshes while background history evaluation is incomplete.
 - **Excel Live Link** downloads a refreshable `.iqy` connection for the currently selected stock. Opening it in Excel creates a live web-query connection to the screener CSV endpoint; use Data → Refresh All to reload that stock.
+## 2026-10-06 blank-page hotfix
+
+- Fixed frontend `ReferenceError: latestEmaFromChart is not defined`.
+- Moved the EMA helper to component scope so both dashboard scoring and technical filter evaluation can use it.
+- This restores the page after the TradingView-alignment update.
+
