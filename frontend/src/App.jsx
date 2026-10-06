@@ -575,6 +575,7 @@ function App() {
   const [symbolInput, setSymbolInput] = useState("AAPL");
   const [exchange, setExchange] = useState("US");
   const [timeframe, setTimeframe] = useState("daily");
+  const [activeView, setActiveView] = useState("overview");
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -2793,6 +2794,10 @@ function App() {
   })();
 
 
+  const latestOverviewIndicator = dashboardIndicatorChartData.length
+    ? dashboardIndicatorChartData[dashboardIndicatorChartData.length - 1]
+    : null;
+
   const relativeStrengthChartData = (() => {
     const rows = technicalSummary?.rs_chart;
     if (!Array.isArray(rows)) return [];
@@ -3080,18 +3085,33 @@ function App() {
   };
 
   return (
-    <div className="app">
+    <div className="app" data-view={activeView}>
       <aside className="app-sidebar">
         <div className="sidebar-brand">
           <div className="sidebar-logo" aria-hidden="true"><i></i><i></i><i></i></div>
           <div><strong>StockScreener</strong><small>Market intelligence</small></div>
         </div>
         <nav className="sidebar-nav" aria-label="Dashboard sections">
-          <a className="active" href="#overview"><span>⌂</span>Overview</a>
-          <a href="#client-framework-dashboard"><span>♜</span>Top 200 Ranking</a>
-          <a href="#fundamental-filters"><span>☷</span>Filters</a>
-          <a href="#universe-screener"><span>⌁</span>Universe Screener</a>
-          <a href="#excel-tools"><span>⇩</span>Export / Excel</a>
+          {[
+            ["overview", "⌂", "Overview"],
+            ["ranking", "♜", "Top 200 Ranking"],
+            ["filters", "☷", "Filters"],
+            ["screener", "⌁", "Universe Screener"],
+            ["analytics", "↗", "Advanced Analytics"],
+          ].map(([view, icon, label]) => (
+            <button
+              key={view}
+              type="button"
+              className={activeView === view ? "active" : ""}
+              aria-current={activeView === view ? "page" : undefined}
+              onClick={() => {
+                setActiveView(view);
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+            >
+              <span>{icon}</span>{label}
+            </button>
+          ))}
         </nav>
         <div className="sidebar-help"><b>Need Help?</b><span>Use the section menu to jump directly to the tools you need.</span></div>
       </aside>
@@ -3235,7 +3255,7 @@ function App() {
           </button>
 
           <button type="button" className="excel-live-top" onClick={downloadCurrentStockExcel}>
-            Excel — Current Stock
+            Export to Excel
           </button>
 
           <button type="button" className="excel-live-top" onClick={downloadLiveExcelConnection}>
@@ -3345,6 +3365,12 @@ function App() {
                 <span>Ownership <b>{formatScoreValue(dashboardView?.score_components?.ownership)}</b></span>
                 <span>Sector <b>{formatScoreValue(dashboardView?.score_components?.sector)}</b></span>
                 <span>RS <b>{formatScoreValue(dashboardView?.score_components?.relative_strength)}</b></span>
+              </div>
+              <div className="overview-mini-indicator-row" aria-label="Selected stock indicator snapshot">
+                <div><span>RSI (14)</span><strong>{formatScoreValue(latestOverviewIndicator?.rsi, 1)}</strong><i className="spark violet" /></div>
+                <div><span>MACD</span><strong>{formatScoreValue(latestOverviewIndicator?.macd, 2)}</strong><i className="spark blue" /></div>
+                <div><span>ROC</span><strong>{latestOverviewIndicator?.roc == null ? "N/A" : `${formatScoreValue(latestOverviewIndicator.roc, 1)}%`}</strong><i className="spark green" /></div>
+                <div><span>ADX</span><strong>{formatScoreValue(latestOverviewIndicator?.adx, 1)}</strong><i className="spark orange" /></div>
               </div>
             </div>
 
@@ -3793,6 +3819,7 @@ function App() {
         </section>
 
 
+        <div className="filter-workspace-grid">
         <section className="standalone-fundamental-filters" id="fundamental-filters">
           <div className="standalone-fundamental-header">
             <div>
@@ -3991,6 +4018,7 @@ function App() {
             </div>
           </div>
         </section>
+        </div>
 
 
         <section className="overview-ranking-card" aria-label="Top 200 qualified stocks">
@@ -4357,6 +4385,7 @@ function App() {
           <div className="universe-data-note">Only verified provider/database values are shown. Warrants, units, ETFs and obvious SPAC/acquisition securities are excluded from the normal US stock universe. Missing values remain N/A until the automatic enrichment process retrieves real data.</div>
         </section>
 
+        <div className="advanced-workspace">
         <section className="cards">
           <div className="card">
             <span>Market</span>
@@ -5809,6 +5838,7 @@ function App() {
             </table>
           </div>
         </section>
+        </div>
       </main>
       </div>
     </div>

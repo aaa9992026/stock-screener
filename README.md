@@ -1,5 +1,9 @@
 # Stock Screener
 
+## 2026-10-06 clean multi-workspace UI V3
+
+The frontend is now split into **Overview, Top 200 Ranking, Filters, Universe Screener, and Advanced Analytics** workspaces. This keeps the default page compact and aligned while preserving the full existing functions in dedicated workspaces. See `docs/UI_V3_CLEAN_WORKSPACE_REDESIGN_2026-10-06.md`.
+
 Full-stack US / NSE / BSE stock screener built with React, FastAPI and PostgreSQL.
 
 ## Current scope
