@@ -4223,6 +4223,91 @@ def get_chart_data(
 
 
 
+def _backtest_direct_yahoo_history(symbol: str, exchange: str, years: int):
+    """Fetch real daily OHLCV from Yahoo chart API without yfinance cookies.
+
+    This is used specifically for long backtests because Railway/cloud hosts can
+    intermittently fail yfinance crumb/cookie negotiation even when Yahoo's
+    public chart JSON endpoint is reachable. No synthetic bars are created.
+    """
+    exchange = str(exchange or "US").upper().strip()
+    provider = YahooProvider()
+    ticker_symbol = provider.format_symbol(str(symbol or "").upper().strip(), exchange)
+    if not ticker_symbol:
+        return []
+
+    # Request the exact period using UNIX timestamps. A small warm-up margin is
+    # included so indicators such as SMA50/Bollinger are valid from the visible
+    # beginning of the requested backtest window.
+    end_dt = datetime.utcnow() + timedelta(days=1)
+    start_dt = end_dt - timedelta(days=366 * max(1, min(20, int(years or 20))) + 120)
+    params = {
+        "period1": int(start_dt.timestamp()),
+        "period2": int(end_dt.timestamp()),
+        "interval": "1d",
+        "events": "history",
+        "includeAdjustedClose": "true",
+    }
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36",
+        "Accept": "application/json,text/plain,*/*",
+    }
+    encoded = quote(ticker_symbol, safe="")
+    for host in ("query1.finance.yahoo.com", "query2.finance.yahoo.com"):
+        try:
+            response = requests.get(
+                f"https://{host}/v8/finance/chart/{encoded}",
+                params=params,
+                headers=headers,
+                timeout=25,
+            )
+            response.raise_for_status()
+            payload = response.json()
+            result = ((payload.get("chart") or {}).get("result") or [None])[0]
+            if not result:
+                continue
+            timestamps = result.get("timestamp") or []
+            quote_rows = (((result.get("indicators") or {}).get("quote") or [{}])[0])
+            opens = quote_rows.get("open") or []
+            highs = quote_rows.get("high") or []
+            lows = quote_rows.get("low") or []
+            closes = quote_rows.get("close") or []
+            volumes = quote_rows.get("volume") or []
+            rows = []
+            for i, ts in enumerate(timestamps):
+                try:
+                    close = closes[i] if i < len(closes) else None
+                    if close is None:
+                        continue
+                    open_ = opens[i] if i < len(opens) else close
+                    high = highs[i] if i < len(highs) else close
+                    low = lows[i] if i < len(lows) else close
+                    volume = volumes[i] if i < len(volumes) else 0
+                    if None in (open_, high, low, close):
+                        continue
+                    trade_date = datetime.utcfromtimestamp(int(ts)).date()
+                    if trade_date.weekday() >= 5:
+                        continue
+                    values = [float(open_), float(high), float(low), float(close)]
+                    if any((not math.isfinite(v)) or v <= 0 for v in values):
+                        continue
+                    rows.append({
+                        "date": trade_date,
+                        "open": values[0],
+                        "high": values[1],
+                        "low": values[2],
+                        "close": values[3],
+                        "volume": float(volume or 0),
+                    })
+                except (TypeError, ValueError, IndexError, OverflowError):
+                    continue
+            if len(rows) >= 60:
+                return rows
+        except Exception:
+            continue
+    return []
+
+
 def _backtest_stateful_position(buy_condition, sell_condition):
     state = 0.0
     out = []
@@ -4275,17 +4360,28 @@ def get_backtest(
     if not symbol:
         raise HTTPException(status_code=400, detail="Symbol is required")
 
-    start_date = (date.today() - timedelta(days=366 * years + 30)).isoformat()
+    start_date = (date.today() - timedelta(days=366 * years + 120)).isoformat()
     provider = YahooProvider()
     rows = []
     provider_error = None
+    source = "Yahoo Finance/yfinance long history"
+
+    # First use the existing provider path. If Railway/yfinance cannot negotiate
+    # Yahoo cookies/crumbs, immediately retry against Yahoo's chart JSON API.
     try:
         rows = provider.get_ohlcv(symbol=symbol, exchange=exchange, start_date=start_date) or []
     except Exception as exc:
         provider_error = str(exc)
+        rows = []
 
-    # Fallback is real verified dashboard history only; never fabricate a 20Y series.
-    source = "Yahoo Finance direct history"
+    direct_rows = _backtest_direct_yahoo_history(symbol, exchange, years)
+    # Prefer whichever verified provider result contains materially more history.
+    if len(direct_rows) > len(rows):
+        rows = direct_rows
+        source = "Yahoo Finance direct chart API"
+
+    # Final fallback is verified stored/live dashboard history. This can be
+    # shorter than the requested horizon and is explicitly reported as Partial.
     if not rows:
         fallback = _market_rows_with_live_fallback(db, symbol=symbol, exchange=exchange, min_rows=1, years=max(5, years))
         rows = [
@@ -4300,6 +4396,11 @@ def get_backtest(
     frame = pd.DataFrame(rows)
     frame["Date"] = pd.to_datetime(frame["date"])
     frame = frame.sort_values("Date").drop_duplicates(subset=["Date"]).reset_index(drop=True)
+    requested_start = pd.Timestamp(date.today() - timedelta(days=366 * years + 7))
+    # Keep a small indicator warm-up internally, but report/backtest only within
+    # the selected horizon. For long-listed stocks like AAPL, 20Y therefore
+    # means an actual ~20-year test rather than a 5-year browser-chart fallback.
+    frame = frame[frame["Date"] >= requested_start].reset_index(drop=True)
     for src, dst in [("open", "Open"), ("high", "High"), ("low", "Low"), ("close", "Close"), ("volume", "Volume")]:
         frame[dst] = pd.to_numeric(frame[src], errors="coerce")
     frame = frame.dropna(subset=["Close"])

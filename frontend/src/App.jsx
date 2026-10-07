@@ -1570,29 +1570,15 @@ function App() {
       setBacktestNotice("");
       const res = await axios.get(`${API}/market/backtest/${symbol}?exchange=${exchange}&years=${backtestYears}`, { timeout: 90000 });
       setBacktest(res.data);
-      if (String(res.data?.history_status || "").toLowerCase() === "partial") {
-        setBacktestNotice(`Verified provider history covers ${Number(res.data?.actual_years || 0).toFixed(1)} years of the requested ${backtestYears} years. Results are calculated only on available real data.`);
+      const actualYears = Number(res.data?.actual_years || 0);
+      const status = String(res.data?.history_status || "").toLowerCase();
+      if (status === "partial") {
+        setBacktestNotice(`Only ${actualYears.toFixed(1)} verified years are available for this ${backtestYears}-year request. The app will not replace the missing years with a shorter browser-chart fallback.`);
       }
     } catch (error) {
-      try {
-        const chartRes = await axios.get(`${API}/market/chart/${symbol}?exchange=${exchange}&timeframe=daily&limit=6000`, { timeout: 30000 });
-        const fallback = buildLocalBacktestFromRows(chartRes.data?.data || data, backtestYears, "Verified market-history fallback");
-        if (!fallback) throw new Error("Not enough verified OHLCV history");
-        setBacktest(fallback);
-        setBacktestError("");
-        setBacktestNotice(`The long-history service is temporarily unavailable, so this view is using ${fallback.actual_years.toFixed(1)} years of verified OHLCV already available from the market-data service. No synthetic data is used.`);
-      } catch (fallbackError) {
-        const localFallback = buildLocalBacktestFromRows(data, backtestYears, "Verified chart data already loaded in this browser");
-        if (localFallback) {
-          setBacktest(localFallback);
-          setBacktestError("");
-          setBacktestNotice(`Showing a partial backtest from ${localFallback.actual_years.toFixed(1)} years of verified chart data currently loaded. Run again when the long-history service is available for the full requested period.`);
-        } else {
-          setBacktest(null);
-          setBacktestNotice("");
-          setBacktestError(error?.response?.data?.detail || "Verified history is not available yet for this stock. Refresh the stock data and try again.");
-        }
-      }
+      setBacktest(null);
+      setBacktestNotice("");
+      setBacktestError(error?.response?.data?.detail || `The verified ${backtestYears}-year provider history could not be loaded. Please retry; no shorter or synthetic history has been substituted.`);
     } finally {
       setBacktestLoading(false);
     }
@@ -4732,7 +4718,7 @@ function App() {
                 <span className="backtest-icon">↗</span>
                 <div>
                   <h2>Backtesting</h2>
-                  <p>Test the selected stock with verified daily OHLCV. No synthetic history is created.</p>
+                  <p>Run the selected 5/10/15/20-year test on verified provider daily OHLCV. The selected horizon is never replaced by a shorter chart fallback.</p>
                 </div>
               </div>
               <div className="backtest-context-chips">
@@ -4798,7 +4784,7 @@ function App() {
                 <div><b>BB</b><span>Enter below lower, exit above upper</span></div>
                 <div className="combined-rule"><b>Combined</b><span>At least 3 of 5 rules active</span></div>
               </div>
-              <div className="backtest-data-note">Only verified real OHLCV is used. If the requested history is unavailable, the result is marked <b>Partial</b> instead of filling missing years.</div>
+              <div className="backtest-data-note">Only verified real OHLCV is used. A 20-year request must come from the long-history provider; the browser chart is not substituted for missing years.</div>
             </section>
           </div>
 
