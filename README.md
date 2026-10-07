@@ -263,3 +263,11 @@ The Filters page is now a dedicated tabbed workspace (Fundamental / Technical / 
 ## UI V11 — dedicated 20-year Backtesting workspace
 
 The Backtesting sidebar item now opens a dedicated backtesting page instead of the old ranking/advanced-analytics content. It runs the same SMA/ROC/MACD/RSI/Bollinger/Combined long-cash strategy framework used by the Master Excel workflow against up to 20 years of verified provider history, with a Buy & Hold comparison, equity curve, CAGR, max drawdown and trade-entry counts. Missing years are shown as Partial and are never fabricated.
+
+## UI V12 — Backtesting usability and fallback correction
+
+- Rebuilt the Backtesting workspace into a compact product-style layout.
+- Backtesting now falls back to verified daily chart history if the dedicated long-history endpoint is unavailable.
+- Fallback results are explicitly marked Partial when fewer years are available than requested; no synthetic data is created.
+- Added verified-history notice, source/row/history coverage, compact summary cards, equity curve, strategy rules, and comparison table.
+- Reduced sidebar width while keeping readable navigation text.

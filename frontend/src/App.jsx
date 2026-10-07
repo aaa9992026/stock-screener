@@ -692,6 +692,7 @@ function App() {
   const [backtest, setBacktest] = useState(null);
   const [backtestLoading, setBacktestLoading] = useState(false);
   const [backtestError, setBacktestError] = useState("");
+  const [backtestNotice, setBacktestNotice] = useState("");
   const [frameworkIndicatorSettings, setFrameworkIndicatorSettings] = useState({
     rsi: 14, macdFast: 12, macdSlow: 26, macdSignal: 9, roc: 14, adx: 14, atr: 14, adr: 20, volumeRatio: 20,
     bbWidth: 20, volumeShort: 10, volumeLong: 30, volumeDryUp: 50, delivery: 5, rsScore: 14
@@ -1433,15 +1434,165 @@ function App() {
     }
   };
 
+  const buildLocalBacktestFromRows = (rawRows, requestedYears, sourceLabel = "Verified chart-history fallback") => {
+    const rows = (rawRows || [])
+      .map((row) => ({
+        date: String(row.date || "").slice(0, 10),
+        open: Number(row.open), high: Number(row.high), low: Number(row.low), close: Number(row.close), volume: Number(row.volume || 0),
+      }))
+      .filter((row) => row.date && [row.open, row.high, row.low, row.close].every(Number.isFinite))
+      .sort((a, b) => a.date.localeCompare(b.date));
+    if (rows.length < 60) return null;
+
+    const latestMs = new Date(`${rows[rows.length - 1].date}T00:00:00Z`).getTime();
+    const cutoffMs = latestMs - Math.max(1, requestedYears) * 365.25 * 86400000;
+    const scoped = rows.filter((row) => new Date(`${row.date}T00:00:00Z`).getTime() >= cutoffMs);
+    const useRows = scoped.length >= 60 ? scoped : rows;
+    const closes = useRows.map((r) => r.close);
+
+    const rollingMean = (arr, period) => arr.map((_, i) => {
+      if (i + 1 < period) return null;
+      let sum = 0;
+      for (let j = i - period + 1; j <= i; j += 1) sum += arr[j];
+      return sum / period;
+    });
+    const rollingStd = (arr, period, means) => arr.map((_, i) => {
+      if (i + 1 < period || means[i] == null) return null;
+      let sum = 0;
+      for (let j = i - period + 1; j <= i; j += 1) sum += (arr[j] - means[i]) ** 2;
+      return Math.sqrt(sum / period);
+    });
+    const ema = (arr, period) => {
+      const out = Array(arr.length).fill(null);
+      if (!arr.length) return out;
+      const k = 2 / (period + 1);
+      let value = arr[0];
+      out[0] = value;
+      for (let i = 1; i < arr.length; i += 1) {
+        value = arr[i] * k + value * (1 - k);
+        out[i] = value;
+      }
+      return out;
+    };
+    const stateful = (buy, sell) => {
+      let state = 0;
+      return buy.map((flag, i) => {
+        if (flag) state = 1;
+        else if (sell[i]) state = 0;
+        return state;
+      });
+    };
+    const sma50 = rollingMean(closes, 50);
+    const roc14 = closes.map((v, i) => i >= 14 && closes[i - 14] ? ((v / closes[i - 14]) - 1) * 100 : null);
+    const ema12 = ema(closes, 12), ema26 = ema(closes, 26);
+    const macd = closes.map((_, i) => ema12[i] - ema26[i]);
+    const macdSignal = ema(macd, 9);
+    const gains = closes.map((v, i) => i ? Math.max(0, v - closes[i - 1]) : 0);
+    const losses = closes.map((v, i) => i ? Math.max(0, closes[i - 1] - v) : 0);
+    const avgGain = ema(gains, 27), avgLoss = ema(losses, 27);
+    const rsi14 = closes.map((_, i) => avgLoss[i] === 0 ? 100 : 100 - (100 / (1 + (avgGain[i] / avgLoss[i]))));
+    const bbMid = rollingMean(closes, 20), bbStd = rollingStd(closes, 20, bbMid);
+    const bbUpper = closes.map((_, i) => bbMid[i] == null || bbStd[i] == null ? null : bbMid[i] + 2 * bbStd[i]);
+    const bbLower = closes.map((_, i) => bbMid[i] == null || bbStd[i] == null ? null : bbMid[i] - 2 * bbStd[i]);
+
+    const positions = {
+      SMA: closes.map((v, i) => sma50[i] != null && v > sma50[i] ? 1 : 0),
+      ROC: roc14.map((v) => v != null && v > 0 ? 1 : 0),
+      MACD: macd.map((v, i) => macdSignal[i] != null && v > macdSignal[i] ? 1 : 0),
+      RSI: stateful(rsi14.map((v) => v < 30), rsi14.map((v) => v > 70)),
+      BOLL: stateful(closes.map((v, i) => bbLower[i] != null && v < bbLower[i]), closes.map((v, i) => bbUpper[i] != null && v > bbUpper[i])),
+    };
+    positions.Combined = closes.map((_, i) => [positions.SMA[i], positions.ROC[i], positions.MACD[i], positions.RSI[i], positions.BOLL[i]].reduce((a, b) => a + b, 0) >= 3 ? 1 : 0);
+
+    const dailyReturns = closes.map((v, i) => i && closes[i - 1] ? (v / closes[i - 1]) - 1 : 0);
+    const curveFromReturns = (rets) => {
+      let equity = 1;
+      return rets.map((r) => { equity *= (1 + (Number.isFinite(r) ? r : 0)); return equity - 1; });
+    };
+    const buyHoldCurve = curveFromReturns(dailyReturns);
+    const buyHoldTotal = buyHoldCurve[buyHoldCurve.length - 1] || 0;
+    const maxDrawdown = (curve) => {
+      let peak = 1, worst = 0;
+      curve.forEach((value) => { const eq = 1 + value; peak = Math.max(peak, eq); worst = Math.min(worst, peak ? (eq / peak) - 1 : 0); });
+      return worst;
+    };
+    const firstMs = new Date(`${useRows[0].date}T00:00:00Z`).getTime();
+    const lastMs = new Date(`${useRows[useRows.length - 1].date}T00:00:00Z`).getTime();
+    const elapsedDays = Math.max(1, (lastMs - firstMs) / 86400000);
+    const cagr = (total) => total <= -1 ? 0 : ((1 + total) ** (365.25 / elapsedDays)) - 1;
+    const strategies = Object.keys(positions).map((name) => {
+      const pos = positions[name];
+      const rets = dailyReturns.map((r, i) => (i ? pos[i - 1] : 0) * r);
+      const curve = curveFromReturns(rets);
+      const total = curve[curve.length - 1] || 0;
+      let entries = 0;
+      for (let i = 0; i < pos.length; i += 1) if (pos[i] && (i === 0 || !pos[i - 1])) entries += 1;
+      return {
+        strategy: name,
+        last_signal: pos[pos.length - 1] ? "Buy" : "Sell",
+        strategy_return_percent: total * 100,
+        buy_hold_percent: buyHoldTotal * 100,
+        value_added_percent: (total - buyHoldTotal) * 100,
+        cagr_percent: cagr(total) * 100,
+        max_drawdown_percent: maxDrawdown(curve) * 100,
+        trades: entries,
+        status: total >= buyHoldTotal ? "Pass" : "Fail",
+        _curve: curve,
+      };
+    });
+    const combinedCurve = strategies.find((row) => row.strategy === "Combined")?._curve || buyHoldCurve;
+    const step = Math.max(1, Math.floor(useRows.length / 420));
+    const equity_curve = [];
+    for (let i = 0; i < useRows.length; i += step) equity_curve.push({ date: useRows[i].date, buy_hold: buyHoldCurve[i] * 100, combined: combinedCurve[i] * 100 });
+    if (equity_curve[equity_curve.length - 1]?.date !== useRows[useRows.length - 1].date) {
+      const i = useRows.length - 1;
+      equity_curve.push({ date: useRows[i].date, buy_hold: buyHoldCurve[i] * 100, combined: combinedCurve[i] * 100 });
+    }
+    const actualYears = elapsedDays / 365.25;
+    return {
+      symbol, exchange, requested_years: requestedYears, actual_years: actualYears, row_count: useRows.length,
+      earliest_date: useRows[0].date, latest_date: useRows[useRows.length - 1].date,
+      history_status: actualYears >= Math.max(1, requestedYears - 0.5) ? "Complete" : "Partial",
+      source: sourceLabel,
+      buy_hold_return_percent: buyHoldTotal * 100,
+      buy_hold_cagr_percent: cagr(buyHoldTotal) * 100,
+      buy_hold_max_drawdown_percent: maxDrawdown(buyHoldCurve) * 100,
+      strategies: strategies.map(({ _curve, ...row }) => row), equity_curve,
+      method: "Long/cash signals: SMA50, ROC14, MACD 12/26/9, RSI14, Bollinger 20/2; Combined is majority vote of 3 or more active signals.",
+      data_rule: "Calculated from verified OHLCV already available in the app. If fewer years are available than requested, the result is explicitly marked Partial.",
+    };
+  };
+
   const loadBacktest = async () => {
     try {
       setBacktestLoading(true);
       setBacktestError("");
+      setBacktestNotice("");
       const res = await axios.get(`${API}/market/backtest/${symbol}?exchange=${exchange}&years=${backtestYears}`, { timeout: 90000 });
       setBacktest(res.data);
+      if (String(res.data?.history_status || "").toLowerCase() === "partial") {
+        setBacktestNotice(`Verified provider history covers ${Number(res.data?.actual_years || 0).toFixed(1)} years of the requested ${backtestYears} years. Results are calculated only on available real data.`);
+      }
     } catch (error) {
-      setBacktest(null);
-      setBacktestError(error?.response?.data?.detail || "Backtesting data is temporarily unavailable for this stock.");
+      try {
+        const chartRes = await axios.get(`${API}/market/chart/${symbol}?exchange=${exchange}&timeframe=daily&limit=6000`, { timeout: 30000 });
+        const fallback = buildLocalBacktestFromRows(chartRes.data?.data || data, backtestYears, "Verified market-history fallback");
+        if (!fallback) throw new Error("Not enough verified OHLCV history");
+        setBacktest(fallback);
+        setBacktestError("");
+        setBacktestNotice(`The long-history service is temporarily unavailable, so this view is using ${fallback.actual_years.toFixed(1)} years of verified OHLCV already available from the market-data service. No synthetic data is used.`);
+      } catch (fallbackError) {
+        const localFallback = buildLocalBacktestFromRows(data, backtestYears, "Verified chart data already loaded in this browser");
+        if (localFallback) {
+          setBacktest(localFallback);
+          setBacktestError("");
+          setBacktestNotice(`Showing a partial backtest from ${localFallback.actual_years.toFixed(1)} years of verified chart data currently loaded. Run again when the long-history service is available for the full requested period.`);
+        } else {
+          setBacktest(null);
+          setBacktestNotice("");
+          setBacktestError(error?.response?.data?.detail || "Verified history is not available yet for this stock. Refresh the stock data and try again.");
+        }
+      }
     } finally {
       setBacktestLoading(false);
     }
@@ -1666,7 +1817,7 @@ function App() {
   useEffect(() => {
     if (activeView !== "analytics") return;
     loadBacktest();
-  }, [activeView, symbol, exchange, backtestYears]);
+  }, [activeView, symbol, exchange, backtestYears, data.length]);
 
   useEffect(() => {
     if (!chartContainerRef.current || !data?.length) return;
@@ -4575,13 +4726,23 @@ function App() {
         </section>
 
         <section className="backtesting-workspace">
-          <div className="backtest-header-card">
-            <div>
-              <span className="dashboard-kicker">MILESTONE II • BACKTESTING</span>
-              <h2>20-Year Backtesting</h2>
-              <p>Run the same long/cash strategy tests used by the Master Excel workflow on verified provider history. Missing years stay partial; no synthetic history is created.</p>
+          <div className="backtest-hero-card">
+            <div className="backtest-hero-copy">
+              <div className="backtest-title-row">
+                <span className="backtest-icon">↗</span>
+                <div>
+                  <h2>Backtesting</h2>
+                  <p>Test the selected stock with verified daily OHLCV. No synthetic history is created.</p>
+                </div>
+              </div>
+              <div className="backtest-context-chips">
+                <span><b>{symbol}</b> · {selectedCompany?.name || symbol}</span>
+                <span>{exchange}</span>
+                <span>Requested: {backtestYears}Y</span>
+                {backtest && <span className={String(backtest.history_status || "").toLowerCase() === "complete" ? "is-complete" : "is-partial"}>{backtest.history_status}</span>}
+              </div>
             </div>
-            <div className="backtest-header-actions">
+            <div className="backtest-hero-actions">
               <label><span>History</span>
                 <select value={backtestYears} onChange={(e) => setBacktestYears(Number(e.target.value))}>
                   {[5, 10, 15, 20].map((years) => <option key={years} value={years}>{years} Years</option>)}
@@ -4593,28 +4754,28 @@ function App() {
             </div>
           </div>
 
+          {backtestNotice && <div className="backtest-notice"><strong>Verified data notice</strong><span>{backtestNotice}</span></div>}
           {backtestError && <div className="message error-message backtest-message">{backtestError}</div>}
 
-          <div className="backtest-summary-grid">
-            <div className="backtest-summary-card"><span>Stock</span><strong>{symbol}</strong><small>{exchange}</small></div>
-            <div className="backtest-summary-card"><span>Verified History</span><strong>{backtest ? `${Number(backtest.actual_years || 0).toFixed(1)}Y` : "—"}</strong><small>{backtest ? `${backtest.earliest_date} → ${backtest.latest_date}` : "Run backtest to load"}</small></div>
-            <div className="backtest-summary-card"><span>Rows Tested</span><strong>{backtest ? Number(backtest.row_count || 0).toLocaleString() : "—"}</strong><small>{backtest?.history_status || "Waiting"}</small></div>
+          <div className="backtest-summary-grid v12">
+            <div className="backtest-summary-card"><span>Verified History</span><strong>{backtest ? `${Number(backtest.actual_years || 0).toFixed(1)}Y` : "—"}</strong><small>{backtest ? `${backtest.earliest_date} → ${backtest.latest_date}` : "Loading verified history"}</small></div>
             <div className="backtest-summary-card"><span>Buy & Hold</span><strong className={Number(backtest?.buy_hold_return_percent) >= 0 ? "is-positive" : "is-negative"}>{backtest ? `${Number(backtest.buy_hold_return_percent || 0).toFixed(2)}%` : "—"}</strong><small>{backtest ? `CAGR ${Number(backtest.buy_hold_cagr_percent || 0).toFixed(2)}%` : "Baseline"}</small></div>
             <div className="backtest-summary-card"><span>Combined Strategy</span><strong className={Number(backtest?.strategies?.find((r) => r.strategy === "Combined")?.strategy_return_percent) >= 0 ? "is-positive" : "is-negative"}>{backtest ? `${Number(backtest.strategies?.find((r) => r.strategy === "Combined")?.strategy_return_percent || 0).toFixed(2)}%` : "—"}</strong><small>{backtest?.strategies?.find((r) => r.strategy === "Combined")?.last_signal || "Signal pending"}</small></div>
+            <div className="backtest-summary-card"><span>Max Drawdown</span><strong className="is-negative">{backtest ? `${Number(backtest.buy_hold_max_drawdown_percent || 0).toFixed(2)}%` : "—"}</strong><small>{backtest ? `${Number(backtest.row_count || 0).toLocaleString()} daily rows tested` : "Waiting"}</small></div>
           </div>
 
-          <div className="backtest-grid-main">
+          <div className="backtest-grid-main v12">
             <section className="backtest-chart-card">
               <div className="backtest-section-head">
-                <div><h3>Equity Curve</h3><p>Buy & Hold vs Combined strategy</p></div>
+                <div><h3>Equity Curve</h3><p>Buy & Hold compared with the combined strategy</p></div>
                 {backtest && <span className={`backtest-status-badge ${String(backtest.history_status || "").toLowerCase()}`}>{backtest.history_status}</span>}
               </div>
               <div className="backtest-chart-shell">
                 {backtest?.equity_curve?.length ? (
-                  <ResponsiveContainer width="100%" height={340}>
-                    <LineChart data={backtest.equity_curve} margin={{ top: 10, right: 16, left: 0, bottom: 0 }}>
+                  <ResponsiveContainer width="100%" height={320}>
+                    <LineChart data={backtest.equity_curve} margin={{ top: 8, right: 14, left: 0, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#e8eef6" />
-                      <XAxis dataKey="date" tick={{ fontSize: 11 }} minTickGap={35} />
+                      <XAxis dataKey="date" tick={{ fontSize: 11 }} minTickGap={42} />
                       <YAxis tick={{ fontSize: 11 }} tickFormatter={(value) => `${Number(value).toFixed(0)}%`} />
                       <Tooltip formatter={(value) => `${Number(value).toFixed(2)}%`} />
                       <Line type="monotone" dataKey="buy_hold" name="Buy & Hold" stroke="#2563eb" dot={false} strokeWidth={2} />
@@ -4622,29 +4783,30 @@ function App() {
                       <ReferenceLine y={0} stroke="#94a3b8" />
                     </LineChart>
                   </ResponsiveContainer>
-                ) : <div className="backtest-empty-state">{backtestLoading ? "Loading verified history and calculating strategies…" : "Run Backtest to display the equity curve."}</div>}
+                ) : <div className="backtest-empty-state">{backtestLoading ? "Loading verified history and calculating strategies…" : "Choose a history period and run the backtest."}</div>}
               </div>
+              {backtest && <div className="backtest-source-line"><b>Source:</b> {backtest.source} <span>•</span> {Number(backtest.row_count || 0).toLocaleString()} rows <span>•</span> {Number(backtest.actual_years || 0).toFixed(1)} years</div>}
             </section>
 
             <section className="backtest-method-card">
-              <div className="backtest-section-head"><div><h3>Method</h3><p>Exact web implementation of the existing Excel signal framework</p></div></div>
+              <div className="backtest-section-head"><div><h3>Strategy Rules</h3><p>Long/cash methodology used by this test</p></div></div>
               <div className="backtest-method-list">
-                <div><b>SMA</b><span>Long when Close &gt; SMA50</span></div>
-                <div><b>ROC</b><span>Long when ROC14 &gt; 0</span></div>
-                <div><b>MACD</b><span>Long when MACD &gt; Signal</span></div>
+                <div><b>SMA</b><span>Close above SMA50</span></div>
+                <div><b>ROC</b><span>ROC14 above 0</span></div>
+                <div><b>MACD</b><span>MACD above signal</span></div>
                 <div><b>RSI</b><span>Enter below 30, exit above 70</span></div>
-                <div><b>Bollinger</b><span>Enter below lower band, exit above upper band</span></div>
-                <div><b>Combined</b><span>Long when at least 3 of 5 strategies are active</span></div>
+                <div><b>BB</b><span>Enter below lower, exit above upper</span></div>
+                <div className="combined-rule"><b>Combined</b><span>At least 3 of 5 rules active</span></div>
               </div>
-              {backtest && <div className="backtest-data-note"><strong>Source:</strong> {backtest.source}<br />{backtest.data_rule}</div>}
+              <div className="backtest-data-note">Only verified real OHLCV is used. If the requested history is unavailable, the result is marked <b>Partial</b> instead of filling missing years.</div>
             </section>
           </div>
 
           <section className="backtest-strategy-card">
-            <div className="backtest-section-head"><div><h3>Strategy Comparison</h3><p>Returns, drawdown, CAGR and current signal for each tested rule.</p></div></div>
+            <div className="backtest-section-head"><div><h3>Strategy Comparison</h3><p>Return, value added, CAGR, drawdown and current signal.</p></div></div>
             <div className="backtest-table-wrap">
               <table className="backtest-table">
-                <thead><tr><th>Strategy</th><th>Current Signal</th><th>Strategy Return</th><th>Buy & Hold</th><th>Value Added</th><th>CAGR</th><th>Max Drawdown</th><th>Entries</th><th>Status</th></tr></thead>
+                <thead><tr><th>Strategy</th><th>Signal</th><th>Return</th><th>Buy & Hold</th><th>Value Added</th><th>CAGR</th><th>Max DD</th><th>Entries</th><th>Status</th></tr></thead>
                 <tbody>
                   {backtest?.strategies?.length ? backtest.strategies.map((row) => (
                     <tr key={row.strategy}>
@@ -4658,7 +4820,7 @@ function App() {
                       <td>{Number(row.trades || 0).toLocaleString()}</td>
                       <td><span className={`backtest-result ${String(row.status || "").toLowerCase()}`}>{row.status}</span></td>
                     </tr>
-                  )) : <tr><td colSpan="9" className="backtest-empty-row">No backtest results yet.</td></tr>}
+                  )) : <tr><td colSpan="9" className="backtest-empty-row">Backtest results will appear here after the verified history is loaded.</td></tr>}
                 </tbody>
               </table>
             </div>

@@ -4287,7 +4287,7 @@ def get_backtest(
     # Fallback is real verified dashboard history only; never fabricate a 20Y series.
     source = "Yahoo Finance direct history"
     if not rows:
-        fallback = _market_rows_with_live_fallback(db, symbol=symbol, exchange=exchange, min_rows=1, years=6)
+        fallback = _market_rows_with_live_fallback(db, symbol=symbol, exchange=exchange, min_rows=1, years=max(5, years))
         rows = [
             {"date": row.date, "open": row.open, "high": row.high, "low": row.low, "close": row.close, "volume": row.volume}
             for row in fallback
