@@ -2145,9 +2145,13 @@ function App() {
 
     const container = dashboardCandlestickRef.current;
     container.innerHTML = "";
+    // The overview chart shares a row with the selected-company card. Use the
+    // actual CSS-controlled canvas height so the two cards stay perfectly
+    // aligned instead of letting the chart force the row taller.
+    const chartHeight = Math.max(240, Math.round(container.clientHeight || 260));
     const chart = createChart(container, {
       width: container.clientWidth,
-      height: 400,
+      height: chartHeight,
       layout: {
         background: { color: "#ffffff" },
         textColor: "#334155",
@@ -2350,16 +2354,21 @@ function App() {
       }
     }
 
-    // Give the price pane most of the available height while keeping every
-    // secondary metric readable. Heights sum to the chart canvas height.
-    const totalChartHeight = 400;
-    const secondaryHeight = secondaryPanes.length ? 56 : 0;
-    const mainPaneHeight = Math.max(220, totalChartHeight - (secondaryPanes.length * secondaryHeight));
+    // Keep the main price pane dominant while fitting Volume / EPS / RS into
+    // compact dedicated panes inside the fixed-height Overview card.
     const panes = chart.panes();
-    if (panes[0]) panes[0].setHeight(mainPaneHeight);
-    secondaryPanes.forEach(({ index }) => {
-      if (panes[index]) panes[index].setHeight(secondaryHeight);
-    });
+    const applyPaneHeights = (availableHeight = chartHeight) => {
+      const safeHeight = Math.max(240, Math.round(availableHeight || chartHeight));
+      const secondaryHeight = secondaryPanes.length
+        ? Math.max(34, Math.min(46, Math.floor(safeHeight * 0.13)))
+        : 0;
+      const mainPaneHeight = Math.max(132, safeHeight - (secondaryPanes.length * secondaryHeight));
+      if (panes[0]) panes[0].setHeight(mainPaneHeight);
+      secondaryPanes.forEach(({ index }) => {
+        if (panes[index]) panes[index].setHeight(secondaryHeight);
+      });
+    };
+    applyPaneHeights(chartHeight);
 
     const latestCompact = compactRows[compactRows.length - 1];
     const latestMetrics = latestCompact ? metricsByDate.get(latestCompact.time) : null;
@@ -2384,7 +2393,11 @@ function App() {
     });
 
     chart.timeScale().fitContent();
-    const resize = () => chart.applyOptions({ width: container.clientWidth });
+    const resize = () => {
+      const nextHeight = Math.max(240, Math.round(container.clientHeight || chartHeight));
+      chart.applyOptions({ width: container.clientWidth, height: nextHeight });
+      applyPaneHeights(nextHeight);
+    };
     window.addEventListener("resize", resize);
     return () => { window.removeEventListener("resize", resize); chart.remove(); };
   }, [data, benchmark, fundamentalHistory, chartOverlays, symbol, timeframe]);

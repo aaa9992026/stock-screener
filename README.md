@@ -320,3 +320,7 @@ Replaced the Overview browser-native market dropdown with a polished custom sele
 ## 2026-10-07 UI V27 — chart correctness
 
 The Overview chart now uses separate synchronized panes for Volume, quarterly EPS, and raw price/benchmark RS. Price, EMA and Bollinger remain in the main pane. This removes the misleading rebased RS price label and prevents EPS/RS units from being mixed with the stock-price scale. EMA/BB right-edge labels are also suppressed to keep the price scale readable. See `docs/UI_V27_CHART_CORRECTNESS_2026-10-07.md`.
+
+## 2026-10-07 UI V28 — Overview row alignment
+
+The selected-company card and the corrected multi-pane chart now share one desktop baseline. The chart uses the remaining space inside the 430px hero row instead of forcing the right card taller, while Volume, EPS and RS remain on separate synchronized panes. See `docs/UI_V28_OVERVIEW_ALIGNMENT_FIX_2026-10-07.md`.

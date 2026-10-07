@@ -8328,3 +8328,110 @@ main{max-width:1600px!important;margin:18px auto 48px!important;padding:0 24px!i
     max-height:460px!important;
   }
 }
+
+/* =========================================================
+   UI V28 — overview row alignment correction (2026-10-07)
+   Keep the selected-company card and multi-pane chart on one clean baseline.
+   V27 made the chart canvas 400px tall, which pushed the right card roughly
+   150px below the company card. The chart now consumes the remaining space
+   inside the same 430px desktop row while preserving separate metric panes.
+   ========================================================= */
+@media (min-width:1281px){
+  .app[data-view="overview"] .dashboard-selected-grid{
+    align-items:stretch!important;
+  }
+
+  .app[data-view="overview"] .overview-company-card,
+  .app[data-view="overview"] .framework-price-card{
+    height:430px!important;
+    min-height:430px!important;
+    max-height:430px!important;
+    box-sizing:border-box!important;
+  }
+
+  .app[data-view="overview"] .overview-company-card{
+    align-self:stretch!important;
+  }
+
+  .app[data-view="overview"] .framework-price-card{
+    display:flex!important;
+    flex-direction:column!important;
+    align-self:stretch!important;
+    overflow:hidden!important;
+    padding:13px 14px!important;
+  }
+
+  .app[data-view="overview"] .dashboard-mini-chart-title{
+    flex:0 0 auto!important;
+    margin-bottom:4px!important;
+  }
+
+  .app[data-view="overview"] .framework-ohlcv-strip{
+    flex:0 0 auto!important;
+    min-height:26px!important;
+    max-height:26px!important;
+    margin:3px 0!important;
+    padding:5px 8px!important;
+    border:1px solid #e5edf6!important;
+    border-radius:8px!important;
+    background:#f8fbff!important;
+    overflow-x:auto!important;
+    overflow-y:hidden!important;
+    white-space:nowrap!important;
+  }
+
+  .app[data-view="overview"] .framework-ema-color-key{
+    flex:0 0 auto!important;
+    min-height:25px!important;
+    max-height:25px!important;
+    margin:0!important;
+    padding:4px 0!important;
+    overflow-x:auto!important;
+    overflow-y:hidden!important;
+    white-space:nowrap!important;
+  }
+
+  .app[data-view="overview"] .framework-current-values{
+    flex:0 0 auto!important;
+    min-height:31px!important;
+    max-height:31px!important;
+    margin:3px 0 5px!important;
+    padding:6px 8px!important;
+    line-height:17px!important;
+    overflow-x:auto!important;
+    overflow-y:hidden!important;
+    white-space:nowrap!important;
+  }
+
+  .app[data-view="overview"] .dashboard-candlestick-canvas{
+    flex:1 1 auto!important;
+    width:100%!important;
+    height:auto!important;
+    min-height:240px!important;
+    max-height:none!important;
+    margin:0!important;
+  }
+}
+
+/* Once the two cards stack, natural height is more useful than forced parity. */
+@media (max-width:1280px){
+  .app[data-view="overview"] .framework-price-card{
+    height:auto!important;
+    min-height:0!important;
+    max-height:none!important;
+    overflow:visible!important;
+  }
+  .app[data-view="overview"] .dashboard-candlestick-canvas{
+    height:390px!important;
+    min-height:390px!important;
+    max-height:390px!important;
+  }
+}
+
+@media (max-width:700px){
+  .app[data-view="overview"] .dashboard-candlestick-canvas{
+    height:430px!important;
+    min-height:430px!important;
+    max-height:430px!important;
+  }
+}

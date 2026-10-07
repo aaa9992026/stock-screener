@@ -1,8 +1,8 @@
-# One-pass deploy — UI V27 chart correctness
+# One-pass deploy — UI V28 overview alignment
 
 ```bash
 git add .
-git commit -m "Fix stock chart scales and separate EPS RS panes"
+git commit -m "Align overview company and chart cards"
 git push origin main
 ```
 
