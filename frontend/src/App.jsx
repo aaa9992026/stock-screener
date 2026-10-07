@@ -3320,33 +3320,66 @@ function App() {
     <div className="app" data-view={activeView} data-filter-tab={filterWorkspaceTab}>
       <aside className="app-sidebar">
         <div className="sidebar-brand">
-          <div className="sidebar-logo" aria-hidden="true"><i></i><i></i><i></i></div>
-          <div><strong>StockScreener</strong><small>Market intelligence</small></div>
+          <div className="sidebar-logo" aria-hidden="true">
+            <span></span><span></span><span></span>
+          </div>
+          <div className="sidebar-brand-copy">
+            <strong>StockScreener</strong>
+            <small>Market Intelligence</small>
+          </div>
         </div>
+
+        <div className="sidebar-section-title">Workspace</div>
         <nav className="sidebar-nav" aria-label="Dashboard sections">
           {[
-            ["overview", "⌂", "Overview"],
-            ["ranking", "♜", "Top 200 Ranking"],
-            ["filters", "☷", "Filters"],
-            ["analytics", "↗", "Backtesting"],
-            ["excel", "▤", "Export / Excel"],
-            ["settings", "⚙", "Settings"],
-          ].map(([view, icon, label]) => (
-            <button
-              key={view}
-              type="button"
-              className={activeView === view ? "active" : ""}
-              aria-current={activeView === view ? "page" : undefined}
-              onClick={() => {
-                setActiveView(view);
-                window.scrollTo({ top: 0, behavior: "smooth" });
-              }}
-            >
-              <span>{icon}</span>{label}
-            </button>
-          ))}
+            ["overview", "overview", "Overview"],
+            ["ranking", "ranking", "Top 200 Ranking"],
+            ["filters", "filters", "Filters"],
+            ["analytics", "backtest", "Backtesting"],
+            ["excel", "excel", "Export / Excel"],
+            ["settings", "settings", "Settings"],
+          ].map(([view, icon, label]) => {
+            const iconPaths = {
+              overview: <><path d="M3 10.5 12 3l9 7.5"/><path d="M5.5 9.5V21h13V9.5"/><path d="M9 21v-6h6v6"/></>,
+              ranking: <><path d="M8 4h8v4a4 4 0 0 1-8 0V4Z"/><path d="M6 5H4v2a4 4 0 0 0 4 4"/><path d="M18 5h2v2a4 4 0 0 1-4 4"/><path d="M12 12v5"/><path d="M8 21h8"/><path d="M9 17h6v4H9z"/></>,
+              filters: <><path d="M4 7h10"/><path d="M18 7h2"/><path d="M4 17h2"/><path d="M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></>,
+              backtest: <><path d="M4 19V5"/><path d="M4 19h16"/><path d="m7 15 4-4 3 2 5-7"/><path d="m16 6 3 0 0 3"/></>,
+              excel: <><path d="M5 3h10l4 4v14H5z"/><path d="M15 3v5h5"/><path d="m8 12 5 6"/><path d="m13 12-5 6"/></>,
+              settings: <><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21h-4v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H3v-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1L7 4.2l.1.1a1.7 1.7 0 0 0 1.9.3A1.7 1.7 0 0 0 10 3h4a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.1v4H21a1.7 1.7 0 0 0-1.6 1Z"/></>,
+            };
+            return (
+              <button
+                key={view}
+                type="button"
+                className={activeView === view ? "active" : ""}
+                aria-current={activeView === view ? "page" : undefined}
+                onClick={() => {
+                  setActiveView(view);
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+              >
+                <span className="sidebar-nav-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    {iconPaths[icon]}
+                  </svg>
+                </span>
+                <span className="sidebar-nav-label">{label}</span>
+                <span className="sidebar-nav-arrow" aria-hidden="true">›</span>
+              </button>
+            );
+          })}
         </nav>
-        <div className="sidebar-help"><b>Need Help?</b><span>Use the section menu to jump directly to the tools you need.</span></div>
+
+        <div className="sidebar-footer">
+          <div className="sidebar-system-card">
+            <span className={`sidebar-system-dot ${dataStatus}`}></span>
+            <div><strong>Market data</strong><small>{dataStatus === "fresh" ? "Live connection" : dataStatus === "loading" ? "Refreshing…" : "Connected"}</small></div>
+          </div>
+          <div className="sidebar-help">
+            <div className="sidebar-help-icon">?</div>
+            <div><b>Need help?</b><span>Use each workspace to keep the workflow focused and easy to review.</span></div>
+          </div>
+        </div>
       </aside>
       <div className="app-content">
       <header id="overview">

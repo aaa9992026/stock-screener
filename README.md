@@ -271,3 +271,7 @@ The Backtesting sidebar item now opens a dedicated backtesting page instead of t
 - Fallback results are explicitly marked Partial when fewer years are available than requested; no synthetic data is created.
 - Added verified-history notice, source/row/history coverage, compact summary cards, equity curve, strategy rules, and comparison table.
 - Reduced sidebar width while keeping readable navigation text.
+
+## UI V14 navigation polish
+
+The dashboard sidebar was rebuilt with consistent SVG icons, stronger active/hover states, clearer hierarchy, a compact market-data status footer, and improved spacing. Functional workspaces remain unchanged.

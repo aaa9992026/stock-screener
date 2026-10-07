@@ -19,3 +19,11 @@ git add .
 git commit -m "Fix backtesting workspace and verified-history fallback"
 git push
 ```
+
+## UI V14 deployment
+
+```bash
+git add .
+git commit -m "Polish stock screener sidebar and navigation UI"
+git push
+```
