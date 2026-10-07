@@ -324,3 +324,7 @@ The Overview chart now uses separate synchronized panes for Volume, quarterly EP
 ## 2026-10-07 UI V28 — Overview row alignment
 
 The selected-company card and the corrected multi-pane chart now share one desktop baseline. The chart uses the remaining space inside the 430px hero row instead of forcing the right card taller, while Volume, EPS and RS remain on separate synchronized panes. See `docs/UI_V28_OVERVIEW_ALIGNMENT_FIX_2026-10-07.md`.
+
+## 2026-10-07 UI V29 — Top 200 Ranking render repair
+
+Fixed an SVG sizing regression on the Top 200 Ranking workspace. Shared toolbar and score-card SVGs are now explicitly bounded outside Overview, the Ranking command bar is restored to a compact desktop layout, and the five ranking score cards use the same structured label/value/progress treatment without oversized icons or collapsed text. No ranking or provider logic changed.
