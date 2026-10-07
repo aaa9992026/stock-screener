@@ -254,3 +254,8 @@ This is a UI/structure rebuild. Existing real-data rules and provider behavior a
 
 ## UI V9 Top 200 ranking correction
 The Top 200 workspace is now table-first: full ranking list and controls first, selected-stock detail/chart second, with ranking settings preserved below.
+
+## UI V10 filters workspace
+
+The Filters page is now a dedicated tabbed workspace (Fundamental / Technical / Ownership / Universe Screener). Only one filter family is displayed at a time, and the main rule tables fit the desktop content width while preserving all editable controls and qualification lists.
+

@@ -576,6 +576,7 @@ function App() {
   const [exchange, setExchange] = useState("US");
   const [timeframe, setTimeframe] = useState("daily");
   const [activeView, setActiveView] = useState("overview");
+  const [filterWorkspaceTab, setFilterWorkspaceTab] = useState("fundamental");
   const [watchlisted, setWatchlisted] = useState(false);
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -3156,7 +3157,7 @@ function App() {
   };
 
   return (
-    <div className="app" data-view={activeView}>
+    <div className="app" data-view={activeView} data-filter-tab={filterWorkspaceTab}>
       <aside className="app-sidebar">
         <div className="sidebar-brand">
           <div className="sidebar-logo" aria-hidden="true"><i></i><i></i><i></i></div>
@@ -3903,6 +3904,36 @@ function App() {
             {renderOverviewFilterPreview("fundamental", "Fundamental Filters", "fundamental")}
             {renderOverviewFilterPreview("technical", "Technical Filters", "technical")}
             {renderOverviewFilterPreview("ownership", "Ownership Filters", "ownership")}
+          </section>
+        )}
+
+        {activeView === "filters" && (
+          <section className="filter-workspace-shell" aria-label="Ranking filter workspace">
+            <div className="filter-workspace-heading">
+              <div>
+                <span>Ranking Filters</span>
+                <h2>Filter & Qualification Workspace</h2>
+                <p>Edit one filter family at a time. Every control remains connected to the same ranking and qualification logic.</p>
+              </div>
+              <div className="filter-workspace-summary">
+                <b>{symbol}</b>
+                <small>{exchange} selected stock</small>
+              </div>
+            </div>
+            <div className="filter-workspace-tabs" role="tablist" aria-label="Filter groups">
+              <button type="button" className={filterWorkspaceTab === "fundamental" ? "active" : ""} onClick={() => setFilterWorkspaceTab("fundamental")}>
+                <span>Fundamental</span><strong>{filterScoreText(factorEvaluationRows.groupScores?.fundamental)}</strong>
+              </button>
+              <button type="button" className={filterWorkspaceTab === "technical" ? "active" : ""} onClick={() => setFilterWorkspaceTab("technical")}>
+                <span>Technical</span><strong>{filterScoreText(factorEvaluationRows.groupScores?.technical)}</strong>
+              </button>
+              <button type="button" className={filterWorkspaceTab === "ownership" ? "active" : ""} onClick={() => setFilterWorkspaceTab("ownership")}>
+                <span>Ownership</span><strong>{filterScoreText(dashboardView?.score_components?.ownership ?? factorEvaluationRows.groupScores?.ownership)}</strong>
+              </button>
+              <button type="button" className={filterWorkspaceTab === "universe" ? "active" : ""} onClick={() => setFilterWorkspaceTab("universe")}>
+                <span>Universe Screener</span><strong>All stocks</strong>
+              </button>
+            </div>
           </section>
         )}
 

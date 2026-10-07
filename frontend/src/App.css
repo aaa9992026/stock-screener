@@ -4808,3 +4808,301 @@ header .status small {
   .app[data-view="ranking"] .overview-company-stats{grid-template-columns:1fr!important;}
   .app[data-view="ranking"] .overview-mini-indicator-row{grid-template-columns:repeat(2,minmax(0,1fr))!important;}
 }
+
+/* ===== 2026-10 UI V10 — dedicated clean Filters workspace =====
+   The Filters page is now tabbed instead of stacking three huge tables. The
+   active table fits the desktop width without horizontal scrolling, while all
+   editable controls and qualification lists remain functional. */
+.app[data-view="filters"] .score-overview-grid { display:none!important; }
+.app[data-view="filters"] main { max-width:1480px!important; width:100%!important; }
+.app[data-view="filters"] .filter-workspace-shell {
+  display:block!important;
+  margin:0 0 12px!important;
+  padding:16px!important;
+  border:1px solid #dfe7f1!important;
+  border-radius:14px!important;
+  background:#fff!important;
+  box-shadow:0 7px 22px rgba(34,55,86,.05)!important;
+}
+.app[data-view="filters"] .filter-workspace-heading {
+  display:flex!important;
+  align-items:flex-start!important;
+  justify-content:space-between!important;
+  gap:16px!important;
+  margin-bottom:14px!important;
+}
+.app[data-view="filters"] .filter-workspace-heading > div:first-child > span {
+  display:block!important;
+  margin-bottom:3px!important;
+  color:#1769e0!important;
+  font-size:10px!important;
+  font-weight:900!important;
+  text-transform:uppercase!important;
+  letter-spacing:.08em!important;
+}
+.app[data-view="filters"] .filter-workspace-heading h2 {
+  margin:0!important;
+  color:#15233a!important;
+  font-size:21px!important;
+  letter-spacing:-.025em!important;
+}
+.app[data-view="filters"] .filter-workspace-heading p {
+  margin:5px 0 0!important;
+  color:#6e7f95!important;
+  font-size:11px!important;
+  line-height:1.45!important;
+}
+.app[data-view="filters"] .filter-workspace-summary {
+  min-width:130px!important;
+  padding:9px 12px!important;
+  border:1px solid #e0e8f2!important;
+  border-radius:10px!important;
+  background:#f8fbff!important;
+  text-align:right!important;
+}
+.app[data-view="filters"] .filter-workspace-summary b,
+.app[data-view="filters"] .filter-workspace-summary small { display:block!important; }
+.app[data-view="filters"] .filter-workspace-summary b { font-size:14px!important; color:#16325c!important; }
+.app[data-view="filters"] .filter-workspace-summary small { margin-top:2px!important; font-size:9px!important; color:#7b8ba0!important; }
+.app[data-view="filters"] .filter-workspace-tabs {
+  display:grid!important;
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  gap:8px!important;
+}
+.app[data-view="filters"] .filter-workspace-tabs button {
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:10px!important;
+  min-height:48px!important;
+  padding:9px 12px!important;
+  border:1px solid #dfe7f1!important;
+  border-radius:10px!important;
+  background:#fff!important;
+  color:#51647d!important;
+  cursor:pointer!important;
+  font-size:11px!important;
+  font-weight:800!important;
+}
+.app[data-view="filters"] .filter-workspace-tabs button strong {
+  padding:4px 7px!important;
+  border-radius:999px!important;
+  background:#f1f5f9!important;
+  color:#50617a!important;
+  font-size:10px!important;
+  white-space:nowrap!important;
+}
+.app[data-view="filters"] .filter-workspace-tabs button.active {
+  border-color:#9ac5ff!important;
+  background:#eff6ff!important;
+  color:#0d5fd3!important;
+  box-shadow:inset 0 0 0 1px #d9eaff!important;
+}
+.app[data-view="filters"] .filter-workspace-tabs button.active strong { background:#1769e0!important; color:#fff!important; }
+
+/* Show a single filter family at a time. */
+.app[data-view="filters"] .filter-workspace-grid { display:block!important; max-width:none!important; margin:0!important; }
+.app[data-view="filters"] .filter-workspace-grid > section { display:none!important; }
+.app[data-view="filters"][data-filter-tab="fundamental"] #fundamental-filters,
+.app[data-view="filters"][data-filter-tab="technical"] #technical-filters,
+.app[data-view="filters"][data-filter-tab="ownership"] #ownership-filters { display:block!important; }
+.app[data-view="filters"] #universe-screener { display:none!important; }
+.app[data-view="filters"][data-filter-tab="universe"] #universe-screener { display:block!important; margin-top:0!important; }
+
+.app[data-view="filters"] .standalone-fundamental-filters {
+  width:100%!important;
+  max-width:none!important;
+  margin:0!important;
+  padding:16px!important;
+  border:1px solid #dfe7f1!important;
+  border-radius:14px!important;
+  background:#fff!important;
+  box-shadow:0 7px 22px rgba(34,55,86,.05)!important;
+}
+.app[data-view="filters"] .standalone-fundamental-header {
+  display:flex!important;
+  align-items:flex-start!important;
+  justify-content:space-between!important;
+  gap:16px!important;
+  padding:0 0 12px!important;
+  border-bottom:1px solid #edf1f6!important;
+}
+.app[data-view="filters"] .standalone-fundamental-header h2 { font-size:18px!important; margin:2px 0 0!important; }
+.app[data-view="filters"] .standalone-fundamental-header p { max-width:900px!important; font-size:10.5px!important; line-height:1.45!important; }
+.app[data-view="filters"] .section-eyebrow { font-size:9px!important; }
+.app[data-view="filters"] .standalone-fundamental-score {
+  min-width:125px!important;
+  padding:9px 12px!important;
+  border-radius:10px!important;
+}
+.app[data-view="filters"] .standalone-fundamental-score strong { font-size:20px!important; }
+
+/* Remove the duplicate nested card title; the workspace header above already
+   explains the active group. */
+.app[data-view="filters"] .compact-filter-card { margin-top:12px!important; border:1px solid #e5ebf3!important; border-radius:11px!important; overflow:hidden!important; }
+.app[data-view="filters"] .compact-filter-card > .compact-filter-header { display:none!important; }
+.app[data-view="filters"] .compact-filter-card > .compact-table-scroll {
+  width:100%!important;
+  max-height:540px!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  border:0!important;
+  border-radius:0!important;
+}
+.app[data-view="filters"] .filter-config-table {
+  width:100%!important;
+  border-collapse:collapse!important;
+}
+.app[data-view="filters"] .compact-filter-card .filter-config-table {
+  min-width:0!important;
+  table-layout:fixed!important;
+}
+.app[data-view="filters"] .filter-config-table th,
+.app[data-view="filters"] .filter-config-table td {
+  padding:9px 8px!important;
+  font-size:10.5px!important;
+  line-height:1.3!important;
+  vertical-align:middle!important;
+  overflow:hidden!important;
+}
+.app[data-view="filters"] .filter-config-table th {
+  position:sticky!important;
+  top:0!important;
+  z-index:3!important;
+  background:#f8fafc!important;
+  color:#52657d!important;
+  font-size:9px!important;
+  white-space:nowrap!important;
+}
+.app[data-view="filters"] .filter-name-cell { min-width:0!important; width:auto!important; }
+.app[data-view="filters"] .filter-name-cell strong {
+  color:#1a2d48!important;
+  font-size:10.5px!important;
+  white-space:normal!important;
+  line-height:1.3!important;
+}
+.app[data-view="filters"] .filter-name-cell small {
+  margin-top:2px!important;
+  max-width:none!important;
+  color:#8390a2!important;
+  font-size:8.5px!important;
+  white-space:normal!important;
+  line-height:1.25!important;
+}
+.app[data-view="filters"] .filter-compare-select,
+.app[data-view="filters"] .filter-value-input,
+.app[data-view="filters"] .filter-weight-input,
+.app[data-view="filters"] .filter-band-values input {
+  width:100%!important;
+  min-width:0!important;
+  height:31px!important;
+  padding:5px 7px!important;
+  border-radius:7px!important;
+  font-size:10px!important;
+}
+.app[data-view="filters"] .filter-band-values { min-width:0!important; display:grid!important; grid-template-columns:repeat(3,minmax(0,1fr))!important; gap:4px!important; }
+.app[data-view="filters"] .filter-band-values label { min-width:0!important; display:block!important; }
+.app[data-view="filters"] .filter-band-values label span { display:block!important; margin-bottom:2px!important; font-size:7px!important; }
+.app[data-view="filters"] .filter-target-text,
+.app[data-view="filters"] .filter-current-cell { font-size:10px!important; white-space:normal!important; word-break:break-word!important; }
+.app[data-view="filters"] .filter-score-badge { min-width:52px!important; padding:4px 7px!important; font-size:9px!important; }
+.app[data-view="filters"] .compact-enable-toggle { justify-content:flex-start!important; font-size:9.5px!important; }
+
+/* Fundamental has one extra Group column. */
+.app[data-view="filters"] #fundamental-filters .compact-filter-card .filter-config-table th:nth-child(1),
+.app[data-view="filters"] #fundamental-filters .compact-filter-card .filter-config-table td:nth-child(1) { width:7%!important; }
+.app[data-view="filters"] #fundamental-filters .compact-filter-card .filter-config-table th:nth-child(2),
+.app[data-view="filters"] #fundamental-filters .compact-filter-card .filter-config-table td:nth-child(2) { width:31%!important; }
+.app[data-view="filters"] #fundamental-filters .compact-filter-card .filter-config-table th:nth-child(3),
+.app[data-view="filters"] #fundamental-filters .compact-filter-card .filter-config-table td:nth-child(3) { width:8%!important; }
+.app[data-view="filters"] #fundamental-filters .compact-filter-card .filter-config-table th:nth-child(4),
+.app[data-view="filters"] #fundamental-filters .compact-filter-card .filter-config-table td:nth-child(4) { width:15%!important; }
+.app[data-view="filters"] #fundamental-filters .compact-filter-card .filter-config-table th:nth-child(5),
+.app[data-view="filters"] #fundamental-filters .compact-filter-card .filter-config-table td:nth-child(5) { width:11%!important; }
+.app[data-view="filters"] #fundamental-filters .compact-filter-card .filter-config-table th:nth-child(6),
+.app[data-view="filters"] #fundamental-filters .compact-filter-card .filter-config-table td:nth-child(6) { width:9%!important; }
+.app[data-view="filters"] #fundamental-filters .compact-filter-card .filter-config-table th:nth-child(7),
+.app[data-view="filters"] #fundamental-filters .compact-filter-card .filter-config-table td:nth-child(7) { width:10%!important; }
+.app[data-view="filters"] #fundamental-filters .compact-filter-card .filter-config-table th:nth-child(8),
+.app[data-view="filters"] #fundamental-filters .compact-filter-card .filter-config-table td:nth-child(8) { width:9%!important; }
+
+/* Technical / non-US ownership have seven columns. */
+.app[data-view="filters"] #technical-filters .compact-filter-card .filter-config-table th:nth-child(1),
+.app[data-view="filters"] #technical-filters .compact-filter-card .filter-config-table td:nth-child(1),
+.app[data-view="filters"] #ownership-filters .compact-filter-card .filter-config-table th:nth-child(1),
+.app[data-view="filters"] #ownership-filters .compact-filter-card .filter-config-table td:nth-child(1) { width:34%!important; }
+.app[data-view="filters"] #technical-filters .compact-filter-card .filter-config-table th:nth-child(2),
+.app[data-view="filters"] #technical-filters .compact-filter-card .filter-config-table td:nth-child(2),
+.app[data-view="filters"] #ownership-filters .compact-filter-card .filter-config-table th:nth-child(2),
+.app[data-view="filters"] #ownership-filters .compact-filter-card .filter-config-table td:nth-child(2) { width:9%!important; }
+.app[data-view="filters"] #technical-filters .compact-filter-card .filter-config-table th:nth-child(3),
+.app[data-view="filters"] #technical-filters .compact-filter-card .filter-config-table td:nth-child(3),
+.app[data-view="filters"] #ownership-filters .compact-filter-card .filter-config-table th:nth-child(3),
+.app[data-view="filters"] #ownership-filters .compact-filter-card .filter-config-table td:nth-child(3) { width:17%!important; }
+.app[data-view="filters"] #technical-filters .compact-filter-card .filter-config-table th:nth-child(4),
+.app[data-view="filters"] #technical-filters .compact-filter-card .filter-config-table td:nth-child(4),
+.app[data-view="filters"] #ownership-filters .compact-filter-card .filter-config-table th:nth-child(4),
+.app[data-view="filters"] #ownership-filters .compact-filter-card .filter-config-table td:nth-child(4) { width:12%!important; }
+.app[data-view="filters"] #technical-filters .compact-filter-card .filter-config-table th:nth-child(5),
+.app[data-view="filters"] #technical-filters .compact-filter-card .filter-config-table td:nth-child(5),
+.app[data-view="filters"] #ownership-filters .compact-filter-card .filter-config-table th:nth-child(5),
+.app[data-view="filters"] #ownership-filters .compact-filter-card .filter-config-table td:nth-child(5) { width:9%!important; }
+.app[data-view="filters"] #technical-filters .compact-filter-card .filter-config-table th:nth-child(6),
+.app[data-view="filters"] #technical-filters .compact-filter-card .filter-config-table td:nth-child(6),
+.app[data-view="filters"] #ownership-filters .compact-filter-card .filter-config-table th:nth-child(6),
+.app[data-view="filters"] #ownership-filters .compact-filter-card .filter-config-table td:nth-child(6) { width:10%!important; }
+.app[data-view="filters"] #technical-filters .compact-filter-card .filter-config-table th:nth-child(7),
+.app[data-view="filters"] #technical-filters .compact-filter-card .filter-config-table td:nth-child(7),
+.app[data-view="filters"] #ownership-filters .compact-filter-card .filter-config-table th:nth-child(7),
+.app[data-view="filters"] #ownership-filters .compact-filter-card .filter-config-table td:nth-child(7) { width:9%!important; }
+
+.app[data-view="filters"] .fundamental-score-strip {
+  display:grid!important;
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  gap:7px!important;
+  padding:10px!important;
+}
+.app[data-view="filters"] .fundamental-score-strip > div { padding:8px 9px!important; }
+.app[data-view="filters"] .fundamental-score-strip span { font-size:8.5px!important; }
+.app[data-view="filters"] .fundamental-score-strip strong { font-size:12px!important; }
+.app[data-view="filters"] .standalone-fundamental-actions {
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:12px!important;
+  margin-top:11px!important;
+  padding:10px!important;
+  border-radius:10px!important;
+  background:#f8fbff!important;
+  border:1px solid #e5edf7!important;
+}
+.app[data-view="filters"] .standalone-fundamental-actions span { font-size:9.5px!important; color:#6e7f95!important; }
+.app[data-view="filters"] .fundamental-qualified-panel { margin-top:12px!important; padding:12px!important; }
+.app[data-view="filters"] .fundamental-qualified-head strong { font-size:13px!important; }
+.app[data-view="filters"] .fundamental-qualified-head span:not(.qualification-count) { font-size:9.5px!important; line-height:1.4!important; }
+.app[data-view="filters"] .qualified-list-toolbar { display:flex!important; align-items:flex-end!important; gap:8px!important; flex-wrap:wrap!important; }
+.app[data-view="filters"] .qualified-list-toolbar label span { font-size:9px!important; }
+.app[data-view="filters"] .qualified-list-toolbar select { min-height:34px!important; font-size:10px!important; }
+
+@media(max-width:1050px){
+  .app[data-view="filters"] .filter-workspace-tabs{grid-template-columns:repeat(2,minmax(0,1fr))!important;}
+  .app[data-view="filters"] .compact-filter-card > .compact-table-scroll{overflow-x:auto!important;}
+  .app[data-view="filters"] .compact-filter-card .filter-config-table{min-width:980px!important;table-layout:auto!important;}
+}
+@media(max-width:700px){
+  .app[data-view="filters"] .filter-workspace-heading{flex-direction:column!important;}
+  .app[data-view="filters"] .filter-workspace-summary{width:100%!important;text-align:left!important;}
+  .app[data-view="filters"] .filter-workspace-tabs{grid-template-columns:1fr!important;}
+  .app[data-view="filters"] .fundamental-score-strip{grid-template-columns:repeat(2,minmax(0,1fr))!important;}
+}
+
+.app[data-view="filters"] .fundamental-qualified-panel .compact-table-scroll {
+  max-height:420px!important;
+  overflow:auto!important;
+  border:1px solid #edf1f6!important;
+  border-radius:9px!important;
+}
+.app[data-view="filters"] .fundamental-qualified-panel .filter-config-table {
+  table-layout:auto!important;
+  min-width:100%!important;
+}
