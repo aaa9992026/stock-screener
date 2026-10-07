@@ -4398,25 +4398,150 @@ function App() {
 
 
         {activeView === "excel" && (
-          <section className="utility-workspace excel-workspace">
-            <div className="utility-workspace-head"><div><span>EXPORT / EXCEL</span><h2>Excel Workspace</h2><p>Export the selected stock or use the refreshable live connection without leaving the dashboard.</p></div></div>
-            <div className="utility-action-grid">
-              <button type="button" onClick={downloadCurrentStockExcel}><b>Export Current Stock</b><span>{symbol} • {exchange} • Excel workbook snapshot</span></button>
-              <button type="button" onClick={downloadLiveExcelConnection}><b>Excel Live Link</b><span>Refreshable connection for the currently selected stock</span></button>
-              <a href="/StockScreener_Master_Excel_Python.zip" download><b>Master Excel + Python</b><span>Download the complete interactive workbook package</span></a>
+          <section className="utility-workspace excel-workspace utility-workspace-premium">
+            <div className="utility-premium-hero">
+              <div className="utility-premium-title">
+                <div className="utility-premium-icon excel" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="24" height="24"><path d="M4 3h10l6 6v12H4z" fill="none" stroke="currentColor" strokeWidth="1.8"/><path d="M14 3v6h6M8 12l4 6m0-6-4 6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
+                </div>
+                <div>
+                  <span className="utility-eyebrow">EXPORT / EXCEL</span>
+                  <h2>Excel & Data Workspace</h2>
+                  <p>Export the selected stock, create a refreshable Excel connection, or download the full Master Excel + Python workflow.</p>
+                </div>
+              </div>
+              <div className="utility-selection-card">
+                <span>Current selection</span>
+                <strong>{symbol}</strong>
+                <small>{selectedCompany?.name || symbol} · {exchange} · {timeframe}</small>
+              </div>
+            </div>
+
+            {excelCopyMessage && <div className="utility-feedback-banner">{excelCopyMessage}</div>}
+
+            <div className="excel-action-cards">
+              <article className="excel-action-card snapshot">
+                <div className="excel-action-card-top"><span className="excel-step">01</span><span className="excel-action-icon">↓</span></div>
+                <h3>Export Current Stock</h3>
+                <p>Download a ready-to-open Excel snapshot for the stock currently selected in the dashboard.</p>
+                <div className="excel-action-meta"><span>Stock</span><b>{symbol}</b><span>Market</span><b>{exchange}</b></div>
+                <button type="button" className="utility-primary-btn" onClick={downloadCurrentStockExcel}>Download .xlsx</button>
+              </article>
+
+              <article className="excel-action-card live">
+                <div className="excel-action-card-top"><span className="excel-step">02</span><span className="excel-action-icon">↻</span></div>
+                <h3>Excel Live Connection</h3>
+                <p>Create a refreshable Excel Web Query tied to the selected symbol. Use Data → Refresh All in Excel to fetch the latest rows.</p>
+                <div className="excel-action-meta"><span>Connection</span><b>Refreshable</b><span>Rows</span><b>Up to 5,000</b></div>
+                <button type="button" className="utility-primary-btn teal" onClick={downloadLiveExcelConnection}>Create Live Link</button>
+              </article>
+
+              <article className="excel-action-card master">
+                <div className="excel-action-card-top"><span className="excel-step">03</span><span className="excel-action-icon">⌘</span></div>
+                <h3>Master Excel + Python</h3>
+                <p>Download the reusable workbook, Python/xlwings bridge, and Windows launchers for the complete interactive workflow.</p>
+                <div className="excel-action-meta"><span>History</span><b>Up to 20Y</b><span>Workbook</span><b>Reusable</b></div>
+                <button type="button" className="utility-primary-btn dark" onClick={downloadMasterExcelBundle}>Download Package</button>
+              </article>
+            </div>
+
+            <div className="excel-workflow-grid">
+              <section className="utility-info-panel">
+                <div className="utility-panel-head"><div><span>WORKFLOW</span><h3>How to use the Master workbook</h3></div><span className="utility-panel-badge">3 steps</span></div>
+                <div className="excel-workflow-steps">
+                  <div><span>1</span><div><b>Install once</b><small>Run INSTALL_MASTER_EXCEL.bat to install the Python/xlwings requirements.</small></div></div>
+                  <div><span>2</span><div><b>Select any stock</b><small>Open StockScreener_Master.xlsx and set Market + Symbol on the Control sheet.</small></div></div>
+                  <div><span>3</span><div><b>Refresh in place</b><small>Run START_MASTER_EXCEL.bat. The same workbook is updated with history and indicators.</small></div></div>
+                </div>
+              </section>
+
+              <section className="utility-info-panel compact">
+                <div className="utility-panel-head"><div><span>CONNECTION</span><h3>Current data link</h3></div><span className={`utility-status-pill ${dataStatus}`}>{dataStatus}</span></div>
+                <dl className="utility-detail-list">
+                  <div><dt>Selected stock</dt><dd>{exchange}:{symbol}</dd></div>
+                  <div><dt>Timeframe</dt><dd>{timeframe}</dd></div>
+                  <div><dt>Provider policy</dt><dd>Verified data only</dd></div>
+                  <div><dt>Missing values</dt><dd>Shown as N/A</dd></div>
+                </dl>
+              </section>
             </div>
           </section>
         )}
 
         {activeView === "settings" && (
-          <section className="utility-workspace settings-workspace">
-            <div className="utility-workspace-head"><div><span>SETTINGS</span><h2>Dashboard Settings</h2><p>Core display and data-source information for this deployment.</p></div></div>
-            <div className="settings-grid">
-              <div><span>API</span><strong>{API}</strong></div>
-              <div><span>Selected Market</span><strong>{exchange}</strong></div>
-              <div><span>Timeframe</span><strong>{timeframe}</strong></div>
-              <div><span>Data Status</span><strong>{dataStatus}</strong></div>
+          <section className="utility-workspace settings-workspace utility-workspace-premium">
+            <div className="utility-premium-hero settings">
+              <div className="utility-premium-title">
+                <div className="utility-premium-icon settings" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="24" height="24"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" strokeWidth="1.8"/><path d="M19 13.5v-3l-2-.7a7 7 0 0 0-.7-1.7l.9-1.9-2.1-2.1-1.9.9a7 7 0 0 0-1.7-.7L10.8 2h-3l-.7 2.3a7 7 0 0 0-1.7.7l-1.9-.9-2.1 2.1.9 1.9a7 7 0 0 0-.7 1.7l-2 .7v3l2 .7a7 7 0 0 0 .7 1.7l-.9 1.9 2.1 2.1 1.9-.9a7 7 0 0 0 1.7.7l.7 2.3h3l.7-2.3a7 7 0 0 0 1.7-.7l1.9.9 2.1-2.1-.9-1.9a7 7 0 0 0 .7-1.7z" transform="translate(2 0) scale(.83)" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/></svg>
+                </div>
+                <div>
+                  <span className="utility-eyebrow">SETTINGS</span>
+                  <h2>Dashboard Preferences</h2>
+                  <p>Manage the active market, timeframe and data connection used across the screener.</p>
+                </div>
+              </div>
+              <div className="settings-health-summary">
+                <span className={`settings-health-dot ${dataStatus}`}></span>
+                <div><small>Market data</small><strong>{dataStatus === "fresh" ? "Live & Fresh" : dataStatus === "loading" ? "Refreshing…" : dataStatus}</strong></div>
+              </div>
             </div>
+
+            <div className="settings-dashboard-grid">
+              <section className="settings-card controls-card">
+                <div className="settings-card-head"><div><span>DEFAULTS</span><h3>Market & timeframe</h3><p>Changes apply immediately across Overview, Ranking, Filters and Backtesting.</p></div></div>
+                <label className="settings-field">
+                  <span>Selected market</span>
+                  <select value={exchange} onChange={(e) => setExchange(e.target.value)}>
+                    <option value="US">US Market</option>
+                    <option value="NSE">NSE</option>
+                    <option value="BSE">BSE</option>
+                  </select>
+                </label>
+                <div className="settings-field">
+                  <span>Default timeframe</span>
+                  <div className="settings-segmented">
+                    {["daily", "weekly", "monthly"].map((item) => <button key={item} type="button" className={timeframe === item ? "active" : ""} onClick={() => setTimeframe(item)}>{item.charAt(0).toUpperCase() + item.slice(1)}</button>)}
+                  </div>
+                </div>
+                <div className="settings-actions-row">
+                  <button type="button" className="utility-primary-btn" onClick={refreshData} disabled={loading}>{loading ? "Refreshing…" : "Refresh Market Data"}</button>
+                  <button type="button" className="utility-secondary-btn" onClick={() => { setExchange("US"); setTimeframe("daily"); }}>Reset Defaults</button>
+                </div>
+              </section>
+
+              <section className="settings-card connection-card">
+                <div className="settings-card-head"><div><span>DATA SOURCE</span><h3>Backend connection</h3><p>The dashboard reads market, fundamentals, ranking and export data from this API.</p></div><span className={`utility-status-pill ${dataStatus}`}>{dataStatus}</span></div>
+                <div className="settings-api-box"><span>API endpoint</span><code>{API}</code><button type="button" onClick={() => { navigator.clipboard?.writeText(API); setExcelCopyMessage("API endpoint copied to clipboard."); window.setTimeout(() => setExcelCopyMessage(""), 2500); }}>Copy</button></div>
+                <dl className="utility-detail-list settings-details">
+                  <div><dt>Current stock</dt><dd>{exchange}:{symbol}</dd></div>
+                  <div><dt>Company</dt><dd>{selectedCompany?.name || symbol}</dd></div>
+                  <div><dt>Data status</dt><dd>{dataStatus}</dd></div>
+                  <div><dt>Last updated</dt><dd>{lastUpdated ? new Date(lastUpdated).toLocaleString() : "Not available"}</dd></div>
+                </dl>
+              </section>
+
+              <section className="settings-card policy-card">
+                <div className="settings-card-head"><div><span>DATA QUALITY</span><h3>Provider rules</h3><p>These safeguards apply across the whole project.</p></div></div>
+                <div className="settings-policy-list">
+                  <div><span className="policy-check">✓</span><div><b>Verified provider data</b><small>Real provider values are used for prices, fundamentals and history.</small></div></div>
+                  <div><span className="policy-check">✓</span><div><b>No fabricated values</b><small>Missing provider fields remain N/A instead of being invented.</small></div></div>
+                  <div><span className="policy-check">✓</span><div><b>Selection-aware exports</b><small>Excel downloads and live links follow the currently selected market and symbol.</small></div></div>
+                </div>
+              </section>
+
+              <section className="settings-card workspace-card">
+                <div className="settings-card-head"><div><span>WORKSPACE</span><h3>Current session</h3><p>Quick context for the active dashboard session.</p></div></div>
+                <div className="settings-session-grid">
+                  <div><span>Market</span><strong>{exchange}</strong></div>
+                  <div><span>Symbol</span><strong>{symbol}</strong></div>
+                  <div><span>Timeframe</span><strong>{timeframe}</strong></div>
+                  <div><span>Status</span><strong>{dataStatus}</strong></div>
+                </div>
+              </section>
+            </div>
+
+            {excelCopyMessage && <div className="utility-feedback-banner settings-feedback">{excelCopyMessage}</div>}
           </section>
         )}
 

@@ -279,3 +279,8 @@ The dashboard sidebar was rebuilt with consistent SVG icons, stronger active/hov
 ## UI V16 — Backtesting command bar
 
 The Backtesting workspace now uses a single compact command card: Market + Stock + Search + 5Y/10Y/15Y/20Y horizon + Run Backtest. The detached search strip and oversized hero were removed to make the workflow cleaner and easier to scan.
+
+## UI V17 — Excel + Settings redesign
+
+The Export / Excel and Settings pages were rebuilt as full product workspaces instead of sparse placeholder cards. Existing Excel export/live-link/master-workbook functions remain wired to the same handlers, while Settings now provides functional Market, Timeframe and Refresh controls plus connection/data-quality status. See `docs/UI_V17_EXCEL_SETTINGS_REDESIGN_2026-10-07.md`.
+

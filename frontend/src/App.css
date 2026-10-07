@@ -5881,3 +5881,310 @@ header .status small {
   .bt-v16-history-field,.bt-v16-run{grid-column:auto;}
   .bt-v16-search-shell{grid-template-columns:minmax(0,1fr) 82px;}
 }
+
+/* ===== 2026-10 UI V17 — premium Excel + Settings workspaces ===== */
+.app[data-view="excel"],
+.app[data-view="settings"] {
+  --utility-ink: #0f2747;
+  --utility-muted: #687b96;
+  --utility-line: #dbe5f1;
+  --utility-soft: #f7faff;
+  --utility-blue: #1f6fe5;
+  --utility-teal: #0e9f7a;
+}
+
+.app[data-view="excel"] main,
+.app[data-view="settings"] main {
+  padding: 24px 28px 42px !important;
+  max-width: none !important;
+}
+
+.app[data-view="excel"] .utility-workspace,
+.app[data-view="settings"] .utility-workspace {
+  display: block !important;
+  max-width: 1260px !important;
+  margin: 0 auto !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  color: var(--utility-ink) !important;
+}
+
+.utility-workspace-premium {
+  display: grid !important;
+  gap: 18px !important;
+}
+
+.utility-premium-hero {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 24px !important;
+  padding: 24px 26px !important;
+  border: 1px solid var(--utility-line) !important;
+  border-radius: 18px !important;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fbff 100%) !important;
+  box-shadow: 0 12px 32px rgba(30, 64, 120, 0.07) !important;
+}
+
+.utility-premium-title {
+  display: flex !important;
+  align-items: center !important;
+  gap: 16px !important;
+  min-width: 0 !important;
+}
+.utility-premium-title > div:last-child { min-width: 0 !important; }
+.utility-premium-icon {
+  width: 52px !important;
+  height: 52px !important;
+  flex: 0 0 52px !important;
+  display: grid !important;
+  place-items: center !important;
+  border-radius: 14px !important;
+  color: #1f6fe5 !important;
+  background: #eaf3ff !important;
+  border: 1px solid #d3e5ff !important;
+}
+.utility-premium-icon.excel { color: #087f5b !important; background: #eafaf4 !important; border-color: #ccefe2 !important; }
+.utility-premium-icon.settings { color: #6d4bd2 !important; background: #f2efff !important; border-color: #e1d9ff !important; }
+.utility-eyebrow,
+.utility-premium-title .utility-eyebrow {
+  display: block !important;
+  margin-bottom: 4px !important;
+  color: #4270b4 !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  letter-spacing: .12em !important;
+}
+.utility-premium-title h2 {
+  margin: 0 !important;
+  font-size: 27px !important;
+  line-height: 1.15 !important;
+  color: #0f2747 !important;
+  letter-spacing: -.02em !important;
+}
+.utility-premium-title p {
+  margin: 7px 0 0 !important;
+  max-width: 720px !important;
+  color: var(--utility-muted) !important;
+  font-size: 13px !important;
+  line-height: 1.55 !important;
+}
+
+.utility-selection-card,
+.settings-health-summary {
+  min-width: 220px !important;
+  padding: 14px 16px !important;
+  border-radius: 14px !important;
+  background: #ffffff !important;
+  border: 1px solid var(--utility-line) !important;
+  box-shadow: 0 5px 14px rgba(30, 64, 120, 0.05) !important;
+}
+.utility-selection-card span,
+.settings-health-summary small {
+  display: block !important;
+  color: #7789a2 !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: .08em !important;
+}
+.utility-selection-card strong {
+  display: block !important;
+  margin-top: 4px !important;
+  font-size: 23px !important;
+  line-height: 1.1 !important;
+  color: #0e2c55 !important;
+}
+.utility-selection-card small {
+  display: block !important;
+  margin-top: 5px !important;
+  color: #697d97 !important;
+  font-size: 11px !important;
+}
+.settings-health-summary {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+}
+.settings-health-summary strong { display: block !important; margin-top: 3px !important; font-size: 15px !important; text-transform: capitalize !important; }
+.settings-health-dot {
+  width: 12px !important; height: 12px !important; border-radius: 999px !important;
+  background: #94a3b8 !important; box-shadow: 0 0 0 5px #f1f5f9 !important;
+}
+.settings-health-dot.fresh { background: #16b364 !important; box-shadow: 0 0 0 5px #eaf9f1 !important; }
+.settings-health-dot.loading { background: #f59e0b !important; box-shadow: 0 0 0 5px #fff7e6 !important; }
+.settings-health-dot.stale { background: #ef4444 !important; box-shadow: 0 0 0 5px #fff0f0 !important; }
+
+.utility-feedback-banner {
+  padding: 12px 14px !important;
+  border-radius: 11px !important;
+  border: 1px solid #bfe1ff !important;
+  background: #eef7ff !important;
+  color: #1d4f8d !important;
+  font-size: 12px !important;
+  line-height: 1.45 !important;
+}
+
+.excel-action-cards {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 16px !important;
+}
+.excel-action-card {
+  position: relative !important;
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 286px !important;
+  padding: 20px !important;
+  border-radius: 17px !important;
+  border: 1px solid var(--utility-line) !important;
+  background: #ffffff !important;
+  box-shadow: 0 10px 24px rgba(30, 64, 120, 0.06) !important;
+  overflow: hidden !important;
+}
+.excel-action-card::before {
+  content: "" !important;
+  position: absolute !important;
+  inset: 0 0 auto 0 !important;
+  height: 4px !important;
+  background: #2b79ea !important;
+}
+.excel-action-card.live::before { background: #13a57b !important; }
+.excel-action-card.master::before { background: #6d4bd2 !important; }
+.excel-action-card-top { display: flex !important; justify-content: space-between !important; align-items: center !important; margin-bottom: 16px !important; }
+.excel-step {
+  display: inline-grid !important; place-items: center !important;
+  width: 34px !important; height: 34px !important; border-radius: 10px !important;
+  background: #eef5ff !important; color: #1f6fe5 !important; font-weight: 800 !important; font-size: 11px !important;
+}
+.excel-action-card.live .excel-step { background: #ecfaf5 !important; color: #0c8b69 !important; }
+.excel-action-card.master .excel-step { background: #f2efff !important; color: #6d4bd2 !important; }
+.excel-action-icon { font-size: 25px !important; font-weight: 700 !important; color: #90a3bc !important; }
+.excel-action-card h3 { margin: 0 !important; font-size: 18px !important; color: #102a4d !important; }
+.excel-action-card p { margin: 8px 0 16px !important; color: #6d819b !important; font-size: 12px !important; line-height: 1.55 !important; min-height: 56px !important; }
+.excel-action-meta {
+  display: grid !important; grid-template-columns: 1fr auto !important; gap: 7px 12px !important;
+  margin: 0 0 18px !important; padding: 11px 12px !important; border-radius: 10px !important; background: #f7faff !important;
+}
+.excel-action-meta span { color: #7b8ca2 !important; font-size: 10.5px !important; }
+.excel-action-meta b { color: #29415f !important; font-size: 10.5px !important; }
+.utility-primary-btn,
+.utility-secondary-btn {
+  min-height: 42px !important; border-radius: 10px !important; padding: 0 16px !important;
+  border: 1px solid transparent !important; font-size: 12px !important; font-weight: 800 !important; cursor: pointer !important;
+}
+.utility-primary-btn { margin-top: auto !important; background: #1f6fe5 !important; color: #fff !important; box-shadow: 0 6px 14px rgba(31,111,229,.18) !important; }
+.utility-primary-btn.teal { background: #0e9f7a !important; box-shadow: 0 6px 14px rgba(14,159,122,.16) !important; }
+.utility-primary-btn.dark { background: #243a5a !important; box-shadow: 0 6px 14px rgba(36,58,90,.16) !important; }
+.utility-secondary-btn { background: #fff !important; color: #315071 !important; border-color: #d5e0ed !important; }
+.utility-primary-btn:hover { filter: brightness(.97) !important; transform: translateY(-1px) !important; }
+.utility-secondary-btn:hover { background: #f7faff !important; }
+
+.excel-workflow-grid {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1.6fr) minmax(300px, .8fr) !important;
+  gap: 16px !important;
+}
+.utility-info-panel,
+.settings-card {
+  padding: 20px !important;
+  border-radius: 17px !important;
+  border: 1px solid var(--utility-line) !important;
+  background: #ffffff !important;
+  box-shadow: 0 8px 22px rgba(30,64,120,.05) !important;
+}
+.utility-panel-head,
+.settings-card-head {
+  display: flex !important; align-items: flex-start !important; justify-content: space-between !important; gap: 14px !important;
+}
+.utility-panel-head span:first-child,
+.settings-card-head span:first-child { color: #6f83a0 !important; font-size: 9.5px !important; font-weight: 800 !important; letter-spacing: .1em !important; }
+.utility-panel-head h3,
+.settings-card-head h3 { margin: 4px 0 0 !important; font-size: 16px !important; color: #132d50 !important; }
+.settings-card-head p { margin: 5px 0 0 !important; color: #7a8ca4 !important; font-size: 11px !important; line-height: 1.45 !important; }
+.utility-panel-badge,
+.utility-status-pill {
+  display: inline-flex !important; align-items: center !important; justify-content: center !important;
+  min-height: 28px !important; padding: 0 10px !important; border-radius: 999px !important;
+  background: #eef4fc !important; color: #55708f !important; font-size: 10px !important; font-weight: 800 !important; text-transform: capitalize !important;
+}
+.utility-status-pill.fresh { background: #eaf9f1 !important; color: #11864e !important; }
+.utility-status-pill.loading { background: #fff7e6 !important; color: #a66a00 !important; }
+.utility-status-pill.stale { background: #fff0f0 !important; color: #c33d3d !important; }
+
+.excel-workflow-steps { display: grid !important; gap: 10px !important; margin-top: 16px !important; }
+.excel-workflow-steps > div {
+  display: grid !important; grid-template-columns: 34px 1fr !important; gap: 12px !important; align-items: start !important;
+  padding: 12px !important; border-radius: 11px !important; background: #f8fbff !important; border: 1px solid #e5edf7 !important;
+}
+.excel-workflow-steps > div > span {
+  display: grid !important; place-items: center !important; width: 28px !important; height: 28px !important; border-radius: 8px !important;
+  background: #e7f1ff !important; color: #1f6fe5 !important; font-size: 11px !important; font-weight: 800 !important;
+}
+.excel-workflow-steps b { display: block !important; color: #193452 !important; font-size: 11.5px !important; }
+.excel-workflow-steps small { display: block !important; margin-top: 3px !important; color: #72859c !important; font-size: 10.5px !important; line-height: 1.45 !important; }
+.utility-detail-list { display: grid !important; gap: 0 !important; margin: 14px 0 0 !important; }
+.utility-detail-list > div { display: flex !important; justify-content: space-between !important; gap: 16px !important; padding: 10px 0 !important; border-bottom: 1px solid #edf2f7 !important; }
+.utility-detail-list > div:last-child { border-bottom: 0 !important; }
+.utility-detail-list dt { color: #788aa0 !important; font-size: 10.5px !important; }
+.utility-detail-list dd { margin: 0 !important; color: #233e60 !important; font-size: 10.5px !important; font-weight: 800 !important; text-align: right !important; text-transform: none !important; }
+
+.settings-dashboard-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 16px !important;
+}
+.settings-card { min-height: 250px !important; }
+.settings-card.controls-card,
+.settings-card.connection-card { min-height: 310px !important; }
+.settings-field { display: grid !important; gap: 7px !important; margin-top: 16px !important; }
+.settings-field > span { color: #4d6480 !important; font-size: 10.5px !important; font-weight: 800 !important; }
+.settings-field select {
+  width: 100% !important; height: 42px !important; border: 1px solid #d5e0ed !important; border-radius: 10px !important;
+  padding: 0 12px !important; background: #fff !important; color: #173452 !important; font-size: 12px !important;
+}
+.settings-segmented { display: grid !important; grid-template-columns: repeat(3,1fr) !important; padding: 4px !important; border: 1px solid #dbe5f1 !important; border-radius: 11px !important; background: #f4f8fc !important; }
+.settings-segmented button { height: 35px !important; border: 0 !important; border-radius: 8px !important; background: transparent !important; color: #5f7591 !important; font-size: 11px !important; font-weight: 800 !important; cursor: pointer !important; }
+.settings-segmented button.active { background: #fff !important; color: #1f6fe5 !important; box-shadow: 0 2px 8px rgba(30,64,120,.08) !important; }
+.settings-actions-row { display: flex !important; gap: 9px !important; margin-top: 20px !important; }
+.settings-actions-row .utility-primary-btn { margin-top: 0 !important; }
+.settings-api-box {
+  display: grid !important; grid-template-columns: 1fr auto !important; gap: 7px 10px !important; margin-top: 16px !important;
+  padding: 12px !important; border: 1px solid #dce6f2 !important; border-radius: 11px !important; background: #f8fbff !important;
+}
+.settings-api-box > span { grid-column: 1/-1 !important; color: #788aa1 !important; font-size: 9.5px !important; font-weight: 800 !important; text-transform: uppercase !important; letter-spacing: .08em !important; }
+.settings-api-box code { min-width: 0 !important; overflow: hidden !important; text-overflow: ellipsis !important; white-space: nowrap !important; color: #163b68 !important; font-size: 10.5px !important; background: transparent !important; }
+.settings-api-box button { height: 30px !important; padding: 0 10px !important; border-radius: 8px !important; border: 1px solid #cfddeb !important; background: #fff !important; color: #2d5f98 !important; font-size: 10px !important; font-weight: 800 !important; cursor: pointer !important; }
+.settings-policy-list { display: grid !important; gap: 10px !important; margin-top: 16px !important; }
+.settings-policy-list > div { display: grid !important; grid-template-columns: 30px 1fr !important; gap: 10px !important; align-items: start !important; padding: 11px !important; border-radius: 11px !important; background: #f8fbff !important; border: 1px solid #e6edf6 !important; }
+.policy-check { display: grid !important; place-items: center !important; width: 26px !important; height: 26px !important; border-radius: 8px !important; background: #eaf9f1 !important; color: #11965a !important; font-weight: 900 !important; }
+.settings-policy-list b { display: block !important; color: #24415f !important; font-size: 11px !important; }
+.settings-policy-list small { display: block !important; margin-top: 3px !important; color: #74879f !important; font-size: 10px !important; line-height: 1.45 !important; }
+.settings-session-grid { display: grid !important; grid-template-columns: repeat(2,1fr) !important; gap: 10px !important; margin-top: 16px !important; }
+.settings-session-grid > div { padding: 14px !important; border: 1px solid #e4ebf4 !important; border-radius: 11px !important; background: #fafcff !important; }
+.settings-session-grid span { display: block !important; color: #7a8ca2 !important; font-size: 9.5px !important; text-transform: uppercase !important; letter-spacing: .07em !important; }
+.settings-session-grid strong { display: block !important; margin-top: 5px !important; color: #173a63 !important; font-size: 16px !important; text-transform: capitalize !important; }
+.settings-feedback { margin-top: 0 !important; }
+
+@media (max-width: 1100px) {
+  .excel-action-cards { grid-template-columns: 1fr !important; }
+  .excel-action-card { min-height: 0 !important; }
+  .excel-workflow-grid { grid-template-columns: 1fr !important; }
+  .settings-dashboard-grid { grid-template-columns: 1fr !important; }
+  .utility-premium-hero { align-items: flex-start !important; flex-direction: column !important; }
+  .utility-selection-card, .settings-health-summary { width: 100% !important; min-width: 0 !important; }
+}
+
+@media (max-width: 700px) {
+  .app[data-view="excel"] main,
+  .app[data-view="settings"] main { padding: 16px 12px 28px !important; }
+  .utility-premium-hero { padding: 18px !important; }
+  .utility-premium-title { align-items: flex-start !important; }
+  .utility-premium-icon { width: 44px !important; height: 44px !important; flex-basis: 44px !important; }
+  .utility-premium-title h2 { font-size: 23px !important; }
+  .settings-actions-row { flex-direction: column !important; }
+  .settings-actions-row button { width: 100% !important; }
+}
