@@ -300,3 +300,7 @@ Fixed the V20 Overview regression caused by an inherited `top: 86px` rule on the
 
 The Overview score strip now uses a consistent custom SVG icon system and a clearer information hierarchy. The five score cards have professional line icons, restrained category accents, contextual micro-labels, larger score values, cleaner progress bars, and responsive hover/layout behavior. This is a UI-only change; ranking values and backend logic are unchanged. See `docs/UI_V22_PREMIUM_SCORE_CARDS_2026-10-07.md`.
 
+
+## 2026-10-07 UI V23 — premium command bar
+
+The Overview market/search/action/timeframe row has been rebuilt as a single cohesive command surface with consistent SVG icons, calmer fields, clearer primary/secondary actions, and a modern segmented timeframe selector. Existing search, refresh, Excel export and timeframe behavior is unchanged. See `docs/UI_V23_PREMIUM_COMMAND_BAR_2026-10-07.md`.

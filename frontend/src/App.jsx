@@ -3467,17 +3467,28 @@ function App() {
       <main>
         <div className="overview-top-toolbar">
         <section id="excel-tools" className="controls">
-          <select
-            value={exchange}
-            onChange={(e) => changeExchange(e.target.value)}
-          >
+          <div className="toolbar-market-picker">
+            <span className="toolbar-control-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M3.5 10.5 12 4l8.5 6.5"/><path d="M5.5 9.5V20h13V9.5"/><path d="M9.5 20v-6h5v6"/></svg>
+            </span>
+            <select
+              className="toolbar-market-select"
+              value={exchange}
+              onChange={(e) => changeExchange(e.target.value)}
+              aria-label="Market"
+            >
             <option value="US">US Market</option>
             <option value="NSE">NSE India</option>
-            <option value="BSE">BSE India (Limited)</option>
-          </select>
+              <option value="BSE">BSE India (Limited)</option>
+            </select>
+          </div>
 
           <div className="symbol-search" ref={symbolSearchRef}>
+            <span className="toolbar-control-icon toolbar-search-field-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg>
+            </span>
             <input
+              className="toolbar-symbol-input"
               value={symbolInput}
               onChange={(e) => searchCompanies(e.target.value)}
               onFocus={() => {
@@ -3519,6 +3530,7 @@ function App() {
           </div>
 
           <button
+            className="toolbar-action toolbar-action-primary"
             onClick={async () => {
               const nextSymbol = symbolInput.trim().toUpperCase();
               if (!nextSymbol) {
@@ -3565,15 +3577,24 @@ function App() {
               ]);
             }}
           >
-            Search
+            <span className="toolbar-action-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="5.5"/><path d="m15 15 4 4"/></svg>
+            </span>
+            <span>Search</span>
           </button>
 
-          <button className="refresh" onClick={refreshData}>
-            Refresh Data
+          <button className="refresh toolbar-action toolbar-action-secondary" onClick={refreshData}>
+            <span className="toolbar-action-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M20 7v5h-5"/><path d="M18.3 15.5A7 7 0 1 1 18.9 8L20 12"/></svg>
+            </span>
+            <span>Refresh</span>
           </button>
 
-          <button type="button" className="excel-live-top" onClick={downloadCurrentStockExcel}>
-            Export to Excel
+          <button type="button" className="excel-live-top toolbar-action toolbar-action-export" onClick={downloadCurrentStockExcel}>
+            <span className="toolbar-action-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M7 3.5h7l3 3V20H7z"/><path d="M14 3.5V7h3.5"/><path d="M12 10v6"/><path d="m9.5 13.5 2.5 2.5 2.5-2.5"/></svg>
+            </span>
+            <span>Export Excel</span>
           </button>
 
         </section>
@@ -3582,7 +3603,7 @@ function App() {
           {["daily", "weekly", "monthly"].map((item) => (
             <button
               key={item}
-              className={timeframe === item ? "active" : ""}
+              className={`timeframe-tab ${timeframe === item ? "active" : ""}`}
               onClick={() => setTimeframe(item)}
             >
               {item.charAt(0).toUpperCase() + item.slice(1)}

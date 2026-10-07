@@ -1,8 +1,8 @@
-# One-pass deploy — UI V22 premium score cards
+# One-pass deploy — UI V23 premium command bar
 
 ```bash
 git add .
-git commit -m "Redesign overview score cards and icons"
+git commit -m "Redesign overview command bar and timeframe controls"
 git push origin main
 ```
 
