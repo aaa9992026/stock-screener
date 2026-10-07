@@ -312,3 +312,7 @@ Rebuilt the Overview company card with a professional ticker/market mark, strong
 ## 2026-10-07 UI V25 — selected-company geometry correction
 
 Fixed the V24 Overview company-card regression caused by inherited flex wrapping and max-height rules. The company card now stays aligned with the chart, all five company stats remain inside the card, and RSI/MACD/ROC/ADX render as one complete row instead of wrapping into a clipped side column. Responsive layouts use natural height. No scoring or data logic changed.
+
+## 2026-10-07 UI V26 — custom market selector
+
+Replaced the Overview browser-native market dropdown with a polished custom selector so BSE no longer appears as a clipped `BSE India (` label or an unstyled system menu. The compact selected label now reads `BSE India`, while `Limited data coverage` is shown as secondary context inside the menu. Existing market-switching behavior is unchanged. See `docs/UI_V26_CUSTOM_MARKET_SELECTOR_2026-10-07.md`.

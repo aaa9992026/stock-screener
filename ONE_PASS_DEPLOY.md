@@ -1,8 +1,8 @@
-# One-pass deploy — UI V25 company card geometry fix
+# One-pass deploy — UI V26 custom market selector
 
 ```bash
 git add .
-git commit -m "Fix selected company card layout and indicator clipping"
+git commit -m "Fix market selector clipping and dropdown UI"
 git push origin main
 ```
 
