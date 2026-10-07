@@ -7992,3 +7992,123 @@ main{max-width:1600px!important;margin:18px auto 48px!important;padding:0 24px!i
   .app[data-view="overview"] .overview-company-stats>div:nth-child(5){grid-column:1/-1!important;}
   .app[data-view="overview"] .overview-mini-indicator-row{grid-template-columns:repeat(2,minmax(0,1fr))!important;}
 }
+
+/* =========================================================
+   UI V25 — selected-company geometry correction (2026-10-07)
+   Fixes V24 flex wrapping / max-height inheritance that could push the
+   momentum cards into a hidden second column and leave the card incomplete.
+   ========================================================= */
+.app[data-view="overview"] .overview-company-card{
+  display:grid!important;
+  grid-template-rows:auto auto auto auto!important;
+  align-content:start!important;
+  align-items:stretch!important;
+  flex-direction:initial!important;
+  flex-wrap:nowrap!important;
+  gap:0!important;
+  width:100%!important;
+  height:430px!important;
+  min-height:430px!important;
+  max-height:430px!important;
+  overflow:hidden!important;
+}
+
+.app[data-view="overview"] .overview-company-heading,
+.app[data-view="overview"] .overview-company-stats,
+.app[data-view="overview"] .overview-indicator-heading,
+.app[data-view="overview"] .overview-mini-indicator-row{
+  width:100%!important;
+  min-width:0!important;
+  max-width:100%!important;
+}
+
+.app[data-view="overview"] .overview-company-heading{
+  min-height:74px!important;
+  align-self:start!important;
+}
+
+.app[data-view="overview"] .overview-company-stats{
+  align-self:start!important;
+  margin-top:12px!important;
+  gap:7px!important;
+}
+.app[data-view="overview"] .overview-company-stats>div{
+  min-height:66px!important;
+  height:66px!important;
+  padding:9px 11px!important;
+  overflow:hidden!important;
+}
+.app[data-view="overview"] .overview-company-stats strong{
+  font-size:14px!important;
+  line-height:1.15!important;
+  display:-webkit-box!important;
+  -webkit-box-orient:vertical!important;
+  -webkit-line-clamp:2!important;
+  overflow:hidden!important;
+}
+.app[data-view="overview"] .overview-company-stats .primary-stat strong{
+  font-size:18px!important;
+}
+
+.app[data-view="overview"] .overview-indicator-heading{
+  align-self:start!important;
+  margin-top:12px!important;
+  padding-top:11px!important;
+  min-height:29px!important;
+}
+
+.app[data-view="overview"] .overview-mini-indicator-row{
+  align-self:start!important;
+  display:grid!important;
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  gap:7px!important;
+  margin:8px 0 0!important;
+  overflow:visible!important;
+}
+.app[data-view="overview"] .overview-mini-indicator-row>div{
+  width:100%!important;
+  min-width:0!important;
+  height:66px!important;
+  min-height:66px!important;
+  max-height:66px!important;
+  padding:9px 10px!important;
+  overflow:hidden!important;
+}
+.app[data-view="overview"] .overview-mini-indicator-row strong{
+  margin-top:5px!important;
+  font-size:16px!important;
+}
+.app[data-view="overview"] .overview-mini-indicator-row small{
+  margin-top:4px!important;
+}
+
+/* Prevent any old direct-child flex rules from moving card sections sideways. */
+.app[data-view="overview"] .overview-company-card>*{
+  position:relative!important;
+  left:auto!important;
+  right:auto!important;
+  top:auto!important;
+  bottom:auto!important;
+  margin-left:0!important;
+  margin-right:0!important;
+}
+
+@media(max-width:1280px){
+  .app[data-view="overview"] .overview-company-card{
+    height:auto!important;
+    min-height:0!important;
+    max-height:none!important;
+    overflow:visible!important;
+  }
+  .app[data-view="overview"] .overview-mini-indicator-row>div{
+    height:72px!important;
+    min-height:72px!important;
+    max-height:none!important;
+  }
+}
+
+@media(max-width:700px){
+  .app[data-view="overview"] .overview-mini-indicator-row{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  }
+}

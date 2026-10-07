@@ -1,8 +1,8 @@
-# One-pass deploy — UI V24 premium company card
+# One-pass deploy — UI V25 company card geometry fix
 
 ```bash
 git add .
-git commit -m "Redesign selected company card and market mark"
+git commit -m "Fix selected company card layout and indicator clipping"
 git push origin main
 ```
 

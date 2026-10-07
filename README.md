@@ -308,3 +308,7 @@ The Overview market/search/action/timeframe row has been rebuilt as a single coh
 ## 2026-10-07 UI V24 — premium selected-company card
 
 Rebuilt the Overview company card with a professional ticker/market mark, stronger company hierarchy, compact statistic tiles, proper SVG watchlist action, and cleaner momentum cards. Removed the generic black single-letter avatar and fake decorative sparklines. The company card is content-height instead of stretching to the chart height. No data or ranking logic changed. See `docs/UI_V24_PREMIUM_COMPANY_CARD_2026-10-07.md`.
+
+## 2026-10-07 UI V25 — selected-company geometry correction
+
+Fixed the V24 Overview company-card regression caused by inherited flex wrapping and max-height rules. The company card now stays aligned with the chart, all five company stats remain inside the card, and RSI/MACD/ROC/ADX render as one complete row instead of wrapping into a clipped side column. Responsive layouts use natural height. No scoring or data logic changed.
