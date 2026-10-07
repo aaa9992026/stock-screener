@@ -7034,3 +7034,264 @@ main{max-width:1600px!important;margin:18px auto 48px!important;padding:0 24px!i
   .app[data-view="overview"] .overview-company-name-row>strong{font-size:21px!important;}
   .app[data-view="overview"] .overview-filter-form-row{grid-template-columns:minmax(0,1fr) 68px 96px!important;}
 }
+
+/* =========================================================
+   UI V21 — corrected overview geometry (2026-10-07)
+   Fix the V20 regression where the selected-company card inherited
+   `top:86px` from an older sticky-card rule after V19 changed it to
+   position:relative. That offset made the left card drop below the chart,
+   so the filter row appeared to overlap it. This block is the final
+   authoritative Overview layout.
+   ========================================================= */
+.app[data-view="overview"] .dashboard-selected-grid{
+  display:grid!important;
+  grid-template-columns:minmax(420px,.9fr) minmax(0,1.55fr)!important;
+  gap:16px!important;
+  align-items:stretch!important;
+  margin:0 0 16px!important;
+  min-width:0!important;
+}
+.app[data-view="overview"] .dashboard-selected-grid>*{
+  min-width:0!important;
+  margin-top:0!important;
+}
+
+/* Critical regression fix: old sticky `top:86px` must never affect Overview. */
+.app[data-view="overview"] .dashboard-selected-stock,
+.app[data-view="overview"] .overview-company-card{
+  position:relative!important;
+  top:auto!important;
+  inset-block-start:auto!important;
+  margin-top:0!important;
+  align-self:stretch!important;
+}
+
+/* Compact hero height: no giant blank company panel. */
+.app[data-view="overview"] .overview-company-card,
+.app[data-view="overview"] .framework-price-card{
+  height:430px!important;
+  min-height:430px!important;
+  max-height:430px!important;
+  border-radius:16px!important;
+  overflow:hidden!important;
+}
+
+/* Company summary — content flows naturally from top to bottom. */
+.app[data-view="overview"] .overview-company-card{
+  padding:18px!important;
+  justify-content:flex-start!important;
+}
+.app[data-view="overview"] .overview-company-heading{
+  min-height:58px!important;
+  padding:0 0 12px!important;
+  gap:11px!important;
+}
+.app[data-view="overview"] .overview-company-avatar{
+  width:50px!important;
+  height:50px!important;
+  flex-basis:50px!important;
+  font-size:20px!important;
+}
+.app[data-view="overview"] .overview-company-name-row>strong{
+  font-size:21px!important;
+}
+.app[data-view="overview"] .dashboard-selected-meta{
+  margin-top:6px!important;
+  gap:5px!important;
+}
+.app[data-view="overview"] .dashboard-selected-meta>span{
+  min-height:22px!important;
+  padding:0 7px!important;
+  font-size:9.5px!important;
+}
+.app[data-view="overview"] .overview-watchlist-button{
+  height:34px!important;
+  padding:0 11px!important;
+  font-size:10.5px!important;
+}
+.app[data-view="overview"] .overview-company-description{
+  margin:10px 0!important;
+  min-height:0!important;
+  font-size:11.5px!important;
+  line-height:1.45!important;
+  -webkit-line-clamp:1!important;
+}
+.app[data-view="overview"] .overview-company-stats{
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  margin:0 0 10px!important;
+  border-radius:11px!important;
+}
+.app[data-view="overview"] .overview-company-stats>div{
+  min-height:61px!important;
+  padding:9px 10px!important;
+}
+.app[data-view="overview"] .overview-company-stats span{
+  font-size:9.5px!important;
+  margin-bottom:4px!important;
+}
+.app[data-view="overview"] .overview-company-stats strong{
+  font-size:14px!important;
+  line-height:1.2!important;
+}
+.app[data-view="overview"] .overview-company-stats small{
+  font-size:9px!important;
+}
+
+/* Four indicators fit in one clean row; no hidden/peeking cards. */
+.app[data-view="overview"] .overview-mini-indicator-row{
+  display:grid!important;
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  gap:8px!important;
+  margin:0!important;
+  margin-top:0!important;
+  width:100%!important;
+  overflow:hidden!important;
+}
+.app[data-view="overview"] .overview-mini-indicator-row>div{
+  width:auto!important;
+  min-width:0!important;
+  height:68px!important;
+  min-height:68px!important;
+  padding:9px 10px!important;
+  border-radius:10px!important;
+}
+.app[data-view="overview"] .overview-mini-indicator-row span{
+  font-size:9.5px!important;
+}
+.app[data-view="overview"] .overview-mini-indicator-row strong{
+  font-size:16px!important;
+  margin-top:4px!important;
+}
+.app[data-view="overview"] .overview-mini-indicator-row .spark{
+  left:9px!important;
+  right:9px!important;
+  bottom:7px!important;
+  height:11px!important;
+}
+
+/* Chart — keep the graph dominant without forcing a 500px card. */
+.app[data-view="overview"] .framework-price-card{
+  padding:15px!important;
+}
+.app[data-view="overview"] .dashboard-mini-chart-title{
+  margin-bottom:7px!important;
+}
+.app[data-view="overview"] .dashboard-mini-chart-title strong{
+  font-size:18px!important;
+}
+.app[data-view="overview"] .dashboard-mini-chart-title span{
+  font-size:9.5px!important;
+}
+.app[data-view="overview"] .framework-overlay-toggles{
+  gap:5px!important;
+  flex-wrap:nowrap!important;
+}
+.app[data-view="overview"] .framework-overlay-toggles button{
+  height:30px!important;
+  min-height:30px!important;
+  padding:0 9px!important;
+  font-size:9.5px!important;
+}
+.app[data-view="overview"] .framework-ohlcv-strip{
+  min-height:31px!important;
+  padding:5px 8px!important;
+  margin:0 0 5px!important;
+  gap:8px!important;
+  font-size:9.5px!important;
+  flex-wrap:nowrap!important;
+  white-space:nowrap!important;
+  overflow-x:auto!important;
+  overflow-y:hidden!important;
+}
+.app[data-view="overview"] .framework-ohlcv-strip b{
+  font-size:9.5px!important;
+}
+.app[data-view="overview"] .framework-ema-color-key{
+  gap:6px!important;
+  margin:0 0 4px!important;
+  padding:2px 0 4px!important;
+  flex-wrap:nowrap!important;
+  overflow:hidden!important;
+}
+.app[data-view="overview"] .framework-ema-legend-item b{
+  font-size:8.5px!important;
+}
+.app[data-view="overview"] .framework-current-values{
+  min-height:34px!important;
+  max-height:40px!important;
+  padding:5px 7px!important;
+  margin:0 0 5px!important;
+  gap:4px 8px!important;
+  font-size:9px!important;
+  line-height:1.35!important;
+  overflow:auto!important;
+}
+.app[data-view="overview"] .framework-current-values>b{
+  font-size:9px!important;
+}
+.app[data-view="overview"] .dashboard-candlestick-canvas{
+  height:275px!important;
+  min-height:275px!important;
+  max-height:275px!important;
+  border-radius:10px!important;
+}
+
+/* Filters always start below the complete hero row. */
+.app[data-view="overview"] .overview-filter-preview-grid{
+  clear:both!important;
+  position:relative!important;
+  z-index:1!important;
+  margin:0 0 16px!important;
+  gap:12px!important;
+  align-items:stretch!important;
+}
+.app[data-view="overview"] .overview-filter-preview-card{
+  min-height:0!important;
+  padding:14px!important;
+  border-radius:14px!important;
+}
+.app[data-view="overview"] .overview-filter-preview-head h3{font-size:15px!important;}
+.app[data-view="overview"] .overview-filter-preview-head p{font-size:10px!important;}
+.app[data-view="overview"] .overview-filter-form-row{
+  min-height:38px!important;
+  grid-template-columns:minmax(0,1.45fr) 64px minmax(92px,.72fr)!important;
+}
+.app[data-view="overview"] .overview-filter-form-row>span,
+.app[data-view="overview"] .overview-filter-form-row select,
+.app[data-view="overview"] .overview-filter-form-row input{
+  font-size:10.5px!important;
+}
+.app[data-view="overview"] .overview-filter-form-row select,
+.app[data-view="overview"] .overview-filter-form-row input,
+.app[data-view="overview"] .overview-filter-input-shell{
+  height:31px!important;
+  min-height:31px!important;
+}
+
+/* Keep the score strip readable without consuming a full screen. */
+.app[data-view="overview"] .score-overview-card{
+  min-height:86px!important;
+  padding:13px 14px!important;
+  border-radius:14px!important;
+}
+.app[data-view="overview"] .score-icon{
+  width:38px!important;height:38px!important;flex-basis:38px!important;font-size:16px!important;
+}
+.app[data-view="overview"] .score-copy span{font-size:11px!important;}
+.app[data-view="overview"] .score-copy strong{font-size:22px!important;margin:4px 0 7px!important;}
+.app[data-view="overview"] .score-copy strong small{font-size:10px!important;}
+.app[data-view="overview"] .score-copy i{height:5px!important;}
+
+@media(max-width:1280px){
+  .app[data-view="overview"] .dashboard-selected-grid{grid-template-columns:1fr!important;}
+  .app[data-view="overview"] .overview-company-card,
+  .app[data-view="overview"] .framework-price-card{height:auto!important;min-height:0!important;max-height:none!important;}
+  .app[data-view="overview"] .dashboard-candlestick-canvas{height:330px!important;min-height:330px!important;max-height:330px!important;}
+  .app[data-view="overview"] .overview-filter-preview-grid{grid-template-columns:1fr 1fr!important;}
+  .app[data-view="overview"] .overview-filter-preview-card.ownership{grid-column:1/-1!important;}
+}
+@media(max-width:900px){
+  .app[data-view="overview"] .overview-mini-indicator-row{grid-template-columns:repeat(2,minmax(0,1fr))!important;}
+  .app[data-view="overview"] .overview-filter-preview-grid{grid-template-columns:1fr!important;}
+  .app[data-view="overview"] .overview-filter-preview-card.ownership{grid-column:auto!important;}
+}

@@ -291,3 +291,7 @@ The Overview workspace was rebuilt for a cleaner, clearer and more comfortable d
 ## 2026-10-07 UI V20 — clarity-first overview refinement
 
 The Overview has received a further readability and spacing pass based on the latest visual review. Typography, score cards, company information, chart controls, filter previews, and Top-200 rows are larger and clearer at normal browser zoom. Existing functionality and data behavior are unchanged. See `docs/UI_V20_CLARITY_FIRST_OVERVIEW_2026-10-07.md`.
+
+## 2026-10-07 UI V21 — corrected Overview geometry
+
+Fixed the V20 Overview regression caused by an inherited `top: 86px` rule on the selected-company card. The company card and chart now align at the same top edge, the hero row is compact, indicator snapshots stay fully inside the company card, and the filter cards start cleanly below the entire hero row. Existing functionality is unchanged. See `docs/UI_V21_OVERVIEW_GEOMETRY_FIX_2026-10-07.md`.

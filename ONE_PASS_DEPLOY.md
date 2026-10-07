@@ -1,8 +1,8 @@
-# One-pass deploy — UI V20 clarity-first overview
+# One-pass deploy — UI V21 corrected Overview geometry
 
 ```bash
 git add .
-git commit -m "Polish stock screener overview readability and spacing"
+git commit -m "Fix overview card alignment and dashboard geometry"
 git push
 ```
 
