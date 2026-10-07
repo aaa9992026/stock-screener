@@ -275,3 +275,7 @@ The Backtesting sidebar item now opens a dedicated backtesting page instead of t
 ## UI V14 navigation polish
 
 The dashboard sidebar was rebuilt with consistent SVG icons, stronger active/hover states, clearer hierarchy, a compact market-data status footer, and improved spacing. Functional workspaces remain unchanged.
+
+## UI V16 — Backtesting command bar
+
+The Backtesting workspace now uses a single compact command card: Market + Stock + Search + 5Y/10Y/15Y/20Y horizon + Run Backtest. The detached search strip and oversized hero were removed to make the workflow cleaner and easier to scan.

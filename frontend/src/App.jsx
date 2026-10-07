@@ -4745,37 +4745,94 @@ function App() {
         </section>
 
         <section className="backtesting-workspace bt-pro-workspace">
-          <div className="bt-pro-hero">
-            <div className="bt-pro-title">
-              <span className="bt-pro-kicker">Strategy Lab</span>
-              <div className="bt-pro-title-line">
-                <span className="bt-pro-title-icon" aria-hidden="true">↗</span>
+          <section className="bt-v16-command-card">
+            <div className="bt-v16-heading-row">
+              <div className="bt-v16-heading">
+                <span className="bt-v16-heading-icon" aria-hidden="true">↗</span>
                 <div>
-                  <h2>Backtest & Compare</h2>
-                  <p>Measure strategy performance on verified daily OHLCV without synthetic history.</p>
+                  <h2>Backtesting</h2>
+                  <p>Test the selected stock on verified provider OHLCV and compare strategy performance over time.</p>
                 </div>
               </div>
-              <div className="bt-pro-stock-meta">
-                <span className="bt-pro-symbol">{symbol}</span>
-                <span>{selectedCompany?.name || symbol}</span>
+              <div className="bt-v16-current-stock">
+                <span className="bt-v16-symbol">{symbol}</span>
+                <strong>{selectedCompany?.name || symbol}</strong>
                 <span>{exchange}</span>
-                <span className="bt-pro-period-chip">Requested {backtestYears}Y</span>
                 {backtest && <span className={`bt-pro-status ${String(backtest.history_status || "").toLowerCase()}`}>{backtest.history_status}</span>}
               </div>
             </div>
 
-            <div className="bt-pro-actions">
-              <label>
-                <span>History</span>
-                <select value={backtestYears} onChange={(e) => setBacktestYears(Number(e.target.value))}>
-                  {[5, 10, 15, 20].map((years) => <option key={years} value={years}>{years} Years</option>)}
+            <div className="bt-v16-toolbar">
+              <label className="bt-v16-field bt-v16-market">
+                <span>Market</span>
+                <select value={exchange} onChange={(e) => changeExchange(e.target.value)}>
+                  <option value="US">US Market</option>
+                  <option value="NSE">NSE India</option>
+                  <option value="BSE">BSE India</option>
                 </select>
               </label>
-              <button type="button" className="bt-pro-run" disabled={backtestLoading} onClick={loadBacktest}>
-                <span aria-hidden="true">▶</span>{backtestLoading ? "Running…" : "Run Backtest"}
+
+              <label className="bt-v16-field bt-v16-stock-field">
+                <span>Stock</span>
+                <div className="bt-v16-search-shell">
+                  <input
+                    value={symbolInput}
+                    onChange={(e) => setSymbolInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") e.currentTarget.parentElement?.querySelector("button")?.click();
+                    }}
+                    placeholder="Ticker, e.g. AAPL"
+                  />
+                  <button type="button" onClick={async () => {
+                    const nextSymbol = symbolInput.trim().toUpperCase();
+                    if (!nextSymbol) { setMessage("Enter a stock symbol first."); return; }
+                    setShowSuggestions(false);
+                    setSuggestions([]);
+                    suggestionRequestRef.current += 1;
+                    if (nextSymbol !== symbol) {
+                      setData([]); setDashboard(null); setFundamentals(null); setFundamentalHistory(null);
+                      setTechnicalSummary(null); setIndicators(null); setOwnershipDetails(null);
+                      setIndiaShareholding(null); setSecEdgar(null);
+                      setSelectedCompany({ name: nextSymbol, isin: null });
+                      setMessage("");
+                      setSymbol(nextSymbol);
+                      return;
+                    }
+                    await Promise.allSettled([
+                      loadChart(), loadIndicators(), loadBenchmark(), loadDashboard(), loadTechnicalSummary(),
+                      loadOwnershipDetails(), loadFundamentals(), loadFundamentalHistory(),
+                      exchange === "US" ? loadSecEdgar() : loadIndiaShareholding(),
+                    ]);
+                  }}>Search</button>
+                </div>
+              </label>
+
+              <div className="bt-v16-field bt-v16-history-field">
+                <span>History</span>
+                <div className="bt-v16-history-options" role="group" aria-label="Backtest history period">
+                  {[5, 10, 15, 20].map((years) => (
+                    <button
+                      key={years}
+                      type="button"
+                      className={backtestYears === years ? "active" : ""}
+                      onClick={() => setBacktestYears(years)}
+                    >{years}Y</button>
+                  ))}
+                </div>
+              </div>
+
+              <button type="button" className="bt-v16-run" disabled={backtestLoading} onClick={loadBacktest}>
+                <span aria-hidden="true">▶</span>
+                <span>{backtestLoading ? "Running…" : "Run Backtest"}</span>
               </button>
             </div>
-          </div>
+
+            <div className="bt-v16-helper-row">
+              <span><b>Requested:</b> {backtestYears} years</span>
+              <span>Verified daily OHLCV only</span>
+              <span>No synthetic history</span>
+            </div>
+          </section>
 
           {(backtestNotice || backtestError) && (
             <div className={`bt-pro-alert ${backtestError ? "error" : "notice"}`}>
