@@ -304,3 +304,7 @@ The Overview score strip now uses a consistent custom SVG icon system and a clea
 ## 2026-10-07 UI V23 — premium command bar
 
 The Overview market/search/action/timeframe row has been rebuilt as a single cohesive command surface with consistent SVG icons, calmer fields, clearer primary/secondary actions, and a modern segmented timeframe selector. Existing search, refresh, Excel export and timeframe behavior is unchanged. See `docs/UI_V23_PREMIUM_COMMAND_BAR_2026-10-07.md`.
+
+## 2026-10-07 UI V24 — premium selected-company card
+
+Rebuilt the Overview company card with a professional ticker/market mark, stronger company hierarchy, compact statistic tiles, proper SVG watchlist action, and cleaner momentum cards. Removed the generic black single-letter avatar and fake decorative sparklines. The company card is content-height instead of stretching to the chart height. No data or ranking logic changed. See `docs/UI_V24_PREMIUM_COMPANY_CARD_2026-10-07.md`.

@@ -1,8 +1,8 @@
-# One-pass deploy — UI V23 premium command bar
+# One-pass deploy — UI V24 premium company card
 
 ```bash
 git add .
-git commit -m "Redesign overview command bar and timeframe controls"
+git commit -m "Redesign selected company card and market mark"
 git push origin main
 ```
 

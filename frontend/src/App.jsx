@@ -3708,10 +3708,21 @@ function App() {
           <div className="dashboard-selected-grid">
             <div className="dashboard-selected-stock overview-company-card">
               <div className="overview-company-heading">
-                <div className="overview-company-avatar" aria-hidden="true">{(selectedCompany?.name || symbol || "S").charAt(0)}</div>
+                <div className="overview-company-mark" aria-hidden="true">
+                  <div className="overview-company-mark-core">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M5 16.5 9.2 12l3 2.7L19 7.5" />
+                      <path d="M15.2 7.5H19v3.8" />
+                    </svg>
+                    <span>{String(symbol || "STK").slice(0, 4)}</span>
+                  </div>
+                  <i className="overview-company-market-dot" />
+                </div>
                 <div className="overview-company-heading-copy">
+                  <span className="overview-company-eyebrow">Selected company</span>
                   <div className="overview-company-name-row">
                     <strong>{selectedCompany?.name || symbol}</strong>
+                    <span className="overview-live-badge"><i />Live</span>
                   </div>
                   <div className="dashboard-selected-meta">
                     <span className="overview-symbol-badge">{symbol}</span>
@@ -3720,25 +3731,31 @@ function App() {
                     <span>{selectedCompany?.isin ? `ISIN ${selectedCompany.isin}` : "ISIN N/A"}</span>
                   </div>
                 </div>
-                <button type="button" className={`overview-watchlist-button ${watchlisted ? "active" : ""}`} onClick={() => setWatchlisted((v) => !v)}>
-                  {watchlisted ? "★ Watchlist" : "☆ Watchlist"}
+                <button type="button" aria-label={watchlisted ? "Remove from watchlist" : "Add to watchlist"} className={`overview-watchlist-button ${watchlisted ? "active" : ""}`} onClick={() => setWatchlisted((v) => !v)}>
+                  <svg viewBox="0 0 24 24" fill={watchlisted ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="m12 3.8 2.47 5 5.53.8-4 3.9.94 5.5L12 16.4 7.06 19l.94-5.5-4-3.9 5.53-.8L12 3.8Z" />
+                  </svg>
+                  <span>{watchlisted ? "Saved" : "Watchlist"}</span>
                 </button>
               </div>
-              <p className="overview-company-description">{selectedCompany?.name || symbol} • {fundamentals?.fundamentals?.sector || dashboard?.sector || "Market"} • live market, fundamental and technical overview.</p>
 
               <div className="overview-company-stats">
-                <div><span>Price</span><strong>{latest ? `${currency}${Number(latest.close).toFixed(2)}` : "N/A"}</strong>{data?.length > 1 && Number(data[data.length - 2]?.close) ? <small className={Number(latest?.close) >= Number(data[data.length - 2]?.close) ? "is-up" : "is-down"}>{`${(((Number(latest?.close) / Number(data[data.length - 2]?.close)) - 1) * 100).toFixed(2)}%`}</small> : null}</div>
+                <div className="primary-stat"><span>Price</span><strong>{latest ? `${currency}${Number(latest.close).toFixed(2)}` : "N/A"}</strong>{data?.length > 1 && Number(data[data.length - 2]?.close) ? <small className={Number(latest?.close) >= Number(data[data.length - 2]?.close) ? "is-up" : "is-down"}>{`${(((Number(latest?.close) / Number(data[data.length - 2]?.close)) - 1) * 100).toFixed(2)}%`}</small> : null}</div>
                 <div><span>Market Cap</span><strong>{fundamentals?.fundamentals?.market_cap != null ? formatMarketMoney(fundamentals.fundamentals.market_cap, exchange) : "N/A"}</strong></div>
                 <div><span>EPS</span><strong>{fundamentals?.fundamentals?.trailing_eps ?? "N/A"}</strong></div>
                 <div><span>Sector</span><strong>{fundamentals?.fundamentals?.sector || dashboard?.sector || "N/A"}</strong></div>
                 <div><span>Industry</span><strong>{fundamentals?.fundamentals?.industry || dashboard?.industry || "N/A"}</strong></div>
               </div>
 
+              <div className="overview-indicator-heading">
+                <span>Momentum snapshot</span>
+                <small>Latest verified values</small>
+              </div>
               <div className="overview-mini-indicator-row" aria-label="Selected stock indicator snapshot">
-                <div><span>RSI (14)</span><strong>{formatScoreValue(latestOverviewIndicator?.rsi, 1)}</strong><i className="spark violet" /></div>
-                <div><span>MACD</span><strong>{formatScoreValue(latestOverviewIndicator?.macd, 2)}</strong><i className="spark blue" /></div>
-                <div><span>ROC (20)</span><strong>{latestOverviewIndicator?.roc == null ? "N/A" : `${formatScoreValue(latestOverviewIndicator.roc, 1)}%`}</strong><i className="spark green" /></div>
-                <div><span>ADX (14)</span><strong>{formatScoreValue(latestOverviewIndicator?.adx, 1)}</strong><i className="spark orange" /></div>
+                <div className="tone-violet"><span><i />RSI 14</span><strong>{formatScoreValue(latestOverviewIndicator?.rsi, 1)}</strong><small>Momentum</small></div>
+                <div className="tone-blue"><span><i />MACD</span><strong>{formatScoreValue(latestOverviewIndicator?.macd, 2)}</strong><small>Trend</small></div>
+                <div className="tone-green"><span><i />ROC 20</span><strong>{latestOverviewIndicator?.roc == null ? "N/A" : `${formatScoreValue(latestOverviewIndicator.roc, 1)}%`}</strong><small>Velocity</small></div>
+                <div className="tone-orange"><span><i />ADX 14</span><strong>{formatScoreValue(latestOverviewIndicator?.adx, 1)}</strong><small>Strength</small></div>
               </div>
             </div>
 
