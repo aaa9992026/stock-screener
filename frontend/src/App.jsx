@@ -2147,8 +2147,12 @@ function App() {
     container.innerHTML = "";
     const chart = createChart(container, {
       width: container.clientWidth,
-      height: 330,
-      layout: { background: { color: "#ffffff" }, textColor: "#334155" },
+      height: 400,
+      layout: {
+        background: { color: "#ffffff" },
+        textColor: "#334155",
+        panes: { separatorColor: "#e5eaf1", separatorHoverColor: "#cbd5e1", enableResize: false },
+      },
       grid: { vertLines: { color: "#eef2f7" }, horzLines: { color: "#eef2f7" } },
       rightPriceScale: { borderColor: "#cbd5e1", scaleMargins: { top: 0.06, bottom: 0.25 } },
       timeScale: { borderColor: "#cbd5e1", timeVisible: true },
@@ -2206,7 +2210,7 @@ function App() {
         if (metric) metric.ema[period] = Number(row.value);
       });
       if (!chartOverlays.ema || !values.length) return;
-      const line = chart.addSeries(LineSeries, { color: FRAMEWORK_EMA_COLORS[period], lineWidth: period <= 34 ? 2 : 1, priceLineVisible: false, lastValueVisible: true, title: `EMA ${period}` });
+      const line = chart.addSeries(LineSeries, { color: FRAMEWORK_EMA_COLORS[period], lineWidth: period <= 34 ? 2 : 1, priceLineVisible: false, lastValueVisible: false, title: `EMA ${period}` });
       line.setData(values);
     });
 
@@ -2234,53 +2238,51 @@ function App() {
       }
     }
     if (chartOverlays.bollinger && upper.length) {
-      const upperLine = chart.addSeries(LineSeries, { color: "#64748b", lineWidth: 1, priceLineVisible: false, lastValueVisible: true, title: "BB Upper" });
+      const upperLine = chart.addSeries(LineSeries, { color: "#64748b", lineWidth: 1, priceLineVisible: false, lastValueVisible: false, title: "BB Upper" });
       const middleLine = chart.addSeries(LineSeries, { color: "#94a3b8", lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false, title: "BB Middle" });
-      const lowerLine = chart.addSeries(LineSeries, { color: "#94a3b8", lineWidth: 1, priceLineVisible: false, lastValueVisible: true, title: "BB Lower" });
+      const lowerLine = chart.addSeries(LineSeries, { color: "#94a3b8", lineWidth: 1, priceLineVisible: false, lastValueVisible: false, title: "BB Lower" });
       upperLine.setData(upper);
       middleLine.setData(middle);
       lowerLine.setData(lower);
     }
 
+    // Put non-price data in dedicated panes. Mixing Volume, EPS and raw RS
+    // into the price pane makes the chart visually misleading because the
+    // series use different units. Lightweight Charts v5 keeps one shared time
+    // axis while giving each metric its own vertical scale.
+    let paneIndex = 1;
+    const secondaryPanes = [];
+
     if (chartOverlays.volume) {
-      const volume = chart.addSeries(HistogramSeries, { priceScaleId: "framework-volume", priceFormat: { type: "volume" }, priceLineVisible: false, lastValueVisible: false });
-      volume.setData(compactRows.map((row) => ({ time: row.time, value: row.volume, color: row.close >= row.open ? "#86efac" : "#fca5a5" })));
-      chart.priceScale("framework-volume").applyOptions({ scaleMargins: { top: 0.82, bottom: 0 } });
+      const volumePaneIndex = paneIndex++;
+      const volume = chart.addSeries(HistogramSeries, {
+        priceFormat: { type: "volume" },
+        priceLineVisible: false,
+        lastValueVisible: false,
+        title: "Volume",
+      }, volumePaneIndex);
+      volume.setData(compactRows.map((row) => ({
+        time: row.time,
+        value: row.volume,
+        color: row.close >= row.open ? "#86efac" : "#fca5a5",
+      })));
+      secondaryPanes.push({ index: volumePaneIndex, kind: "volume" });
     }
 
-    if (chartOverlays.rs && benchmark?.data?.length) {
-      const benchmarkByDate = new Map(benchmark.data.map((row) => [String(row.date).slice(0, 10), Number(row.close)]));
-      const raw = compactRows.map((row) => {
-        const bench = benchmarkByDate.get(row.time);
-        return Number.isFinite(bench) && bench > 0 ? { time: row.time, ratio: row.close / bench, close: row.close } : null;
-      }).filter(Boolean);
-      if (raw.length) {
-        const firstRatio = raw[0].ratio;
-        const firstClose = raw[0].close;
-        const rs = chart.addSeries(LineSeries, { color: "#111827", lineWidth: 2, priceLineVisible: false, lastValueVisible: true, title: "RS Price Line" });
-        rs.setData(raw.map((row) => ({ time: row.time, value: (row.ratio / firstRatio) * firstClose })));
-        raw.forEach((row) => {
-          const metric = metricsByDate.get(row.time);
-          if (metric) metric.rs = Number(row.ratio);
-        });
-      }
-    }
-
+    // Quarterly EPS belongs on its own pane and is carried forward only from
+    // the first candle ON OR AFTER the quarter date. The old nearest-date
+    // mapping could place a new quarter on an earlier candle and introduce
+    // look-ahead in the visual.
     if (chartOverlays.eps && fundamentalHistory?.quarterly?.length) {
-      const visibleDates = compactRows.map((row) => row.time);
-      const nearestDate = (dateText) => {
-        const target = new Date(`${String(dateText).slice(0, 10)}T00:00:00Z`).getTime();
-        let best = null;
-        let bestDiff = Infinity;
-        visibleDates.forEach((date) => {
-          const diff = Math.abs(new Date(`${date}T00:00:00Z`).getTime() - target);
-          if (diff < bestDiff) { bestDiff = diff; best = date; }
-        });
-        return best;
+      const allVisibleDates = compactRows.map((row) => row.time);
+      const firstDateOnOrAfter = (dateText) => {
+        const target = String(dateText || "").slice(0, 10);
+        if (!target) return null;
+        return allVisibleDates.find((date) => date >= target) || null;
       };
       const epsRows = [...fundamentalHistory.quarterly]
         .filter((row) => row.eps != null)
-        .map((row) => ({ time: nearestDate(row.period), value: Number(row.eps) }))
+        .map((row) => ({ time: firstDateOnOrAfter(row.period), value: Number(row.eps) }))
         .filter((row) => row.time && Number.isFinite(row.value))
         .sort((a, b) => a.time.localeCompare(b.time));
       const unique = [];
@@ -2289,16 +2291,12 @@ function App() {
         else unique.push(row);
       });
       if (unique.length) {
-        // EPS is quarterly, so carry the most recently known quarter forward
-        // across daily candles. That makes the value under the crosshair explicit
-        // for every candle while changing only when a new quarterly EPS appears.
-        const sortedQuarterly = unique.slice().sort((a, b) => a.time.localeCompare(b.time));
         const denseEps = [];
         let quarterIndex = 0;
         let currentEps = null;
         compactRows.forEach((row) => {
-          while (quarterIndex < sortedQuarterly.length && sortedQuarterly[quarterIndex].time <= row.time) {
-            currentEps = Number(sortedQuarterly[quarterIndex].value);
+          while (quarterIndex < unique.length && unique[quarterIndex].time <= row.time) {
+            currentEps = Number(unique[quarterIndex].value);
             quarterIndex += 1;
           }
           if (Number.isFinite(currentEps)) {
@@ -2307,11 +2305,61 @@ function App() {
             if (metric) metric.eps = currentEps;
           }
         });
-        const eps = chart.addSeries(LineSeries, { priceScaleId: "framework-eps", color: "#ec4899", lineWidth: 2, pointMarkersVisible: false, priceLineVisible: false, lastValueVisible: true, title: "EPS" });
-        eps.setData(denseEps);
-        chart.priceScale("framework-eps").applyOptions({ scaleMargins: { top: 0.04, bottom: 0.84 } });
+        if (denseEps.length) {
+          const epsPaneIndex = paneIndex++;
+          const eps = chart.addSeries(LineSeries, {
+            color: "#ec4899",
+            lineWidth: 2,
+            pointMarkersVisible: false,
+            priceLineVisible: false,
+            lastValueVisible: true,
+            title: "EPS / share",
+            priceFormat: { type: "price", precision: 2, minMove: 0.01 },
+          }, epsPaneIndex);
+          eps.setData(denseEps);
+          secondaryPanes.push({ index: epsPaneIndex, kind: "eps" });
+        }
       }
     }
+
+    // RS is the actual Stock Price / Benchmark Price ratio. Do not rebase it
+    // to the stock-price axis: rebasing made the right-side label look like a
+    // price (for example 1181) while the hover strip correctly showed 0.0547.
+    if (chartOverlays.rs && benchmark?.data?.length) {
+      const benchmarkByDate = new Map(benchmark.data.map((row) => [String(row.date).slice(0, 10), Number(row.close)]));
+      const rawRs = compactRows.map((row) => {
+        const bench = benchmarkByDate.get(row.time);
+        return Number.isFinite(bench) && bench > 0 ? { time: row.time, value: row.close / bench } : null;
+      }).filter(Boolean);
+      rawRs.forEach((row) => {
+        const metric = metricsByDate.get(row.time);
+        if (metric) metric.rs = Number(row.value);
+      });
+      if (rawRs.length) {
+        const rsPaneIndex = paneIndex++;
+        const rs = chart.addSeries(LineSeries, {
+          color: "#111827",
+          lineWidth: 2,
+          priceLineVisible: false,
+          lastValueVisible: true,
+          title: "RS Price / Benchmark",
+          priceFormat: { type: "price", precision: 4, minMove: 0.0001 },
+        }, rsPaneIndex);
+        rs.setData(rawRs);
+        secondaryPanes.push({ index: rsPaneIndex, kind: "rs" });
+      }
+    }
+
+    // Give the price pane most of the available height while keeping every
+    // secondary metric readable. Heights sum to the chart canvas height.
+    const totalChartHeight = 400;
+    const secondaryHeight = secondaryPanes.length ? 56 : 0;
+    const mainPaneHeight = Math.max(220, totalChartHeight - (secondaryPanes.length * secondaryHeight));
+    const panes = chart.panes();
+    if (panes[0]) panes[0].setHeight(mainPaneHeight);
+    secondaryPanes.forEach(({ index }) => {
+      if (panes[index]) panes[index].setHeight(secondaryHeight);
+    });
 
     const latestCompact = compactRows[compactRows.length - 1];
     const latestMetrics = latestCompact ? metricsByDate.get(latestCompact.time) : null;
@@ -3839,9 +3887,9 @@ function App() {
                 <div className="framework-overlay-summary">
                   <span><b>EMA:</b> 10 / 20 / 34 / 50 / 100 / 150 / 200</span>
                   <span><b>BB:</b> 20-period</span>
-                  <span><b>RS:</b> price / benchmark</span>
-                  <span><b>EPS:</b> quarterly line</span>
-                  <span><b>Volume:</b> candle direction</span>
+                  <span><b>RS:</b> price / benchmark · own pane</span>
+                  <span><b>EPS:</b> quarterly · own pane</span>
+                  <span><b>Volume:</b> own pane</span>
                 </div>
                 {dashboardChartInfo && (
                   <div className="framework-ohlcv-strip">
@@ -3873,7 +3921,7 @@ function App() {
                   <span>BB Middle: <strong>{Number.isFinite(Number(dashboardChartInfo?.bbMiddle)) ? Number(dashboardChartInfo.bbMiddle).toFixed(2) : "N/A"}</strong></span>
                   <span>BB Lower: <strong>{Number.isFinite(Number(dashboardChartInfo?.bbLower)) ? Number(dashboardChartInfo.bbLower).toFixed(2) : "N/A"}</strong></span>
                   <span>EPS: <strong>{Number.isFinite(Number(dashboardChartInfo?.eps)) ? Number(dashboardChartInfo.eps).toFixed(2) : "N/A"}</strong></span>
-                  <span>RS (Price/Benchmark): <strong>{Number.isFinite(Number(dashboardChartInfo?.rs)) ? Number(dashboardChartInfo.rs).toFixed(4) : "N/A"}</strong></span>
+                  <span>RS ratio (Price/Benchmark): <strong>{Number.isFinite(Number(dashboardChartInfo?.rs)) ? Number(dashboardChartInfo.rs).toFixed(4) : "N/A"}</strong></span>
                 </div>
                 {data?.length ? (
                   <div ref={dashboardCandlestickRef} className="dashboard-candlestick-canvas" />

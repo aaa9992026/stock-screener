@@ -8281,3 +8281,50 @@ main{max-width:1600px!important;margin:18px auto 48px!important;padding:0 24px!i
   .app[data-view="overview"] .toolbar-market-picker{grid-column:1/-1!important;}
   .app[data-view="overview"] .toolbar-market-menu{width:min(100%,300px)!important;}
 }
+
+/* =========================================================
+   UI V27 — chart correctness / multi-pane market chart
+   Price-derived overlays stay with price; Volume, EPS and RS use their own
+   synchronized panes so units are never mixed on the same vertical axis.
+   ========================================================= */
+.app[data-view="overview"] .framework-price-card{
+  height:auto!important;
+  min-height:0!important;
+  max-height:none!important;
+  overflow:visible!important;
+}
+.app[data-view="overview"] .dashboard-candlestick-canvas{
+  height:400px!important;
+  min-height:400px!important;
+  max-height:400px!important;
+  border:1px solid #edf1f6!important;
+  border-radius:10px!important;
+  overflow:hidden!important;
+  background:#fff!important;
+}
+.app[data-view="overview"] .framework-current-values{
+  max-height:none!important;
+  overflow-x:auto!important;
+  overflow-y:hidden!important;
+  flex-wrap:nowrap!important;
+  white-space:nowrap!important;
+}
+.app[data-view="overview"] .framework-ema-color-key{
+  overflow-x:auto!important;
+  overflow-y:hidden!important;
+  padding-bottom:5px!important;
+}
+@media(max-width:1280px){
+  .app[data-view="overview"] .dashboard-candlestick-canvas{
+    height:430px!important;
+    min-height:430px!important;
+    max-height:430px!important;
+  }
+}
+@media(max-width:700px){
+  .app[data-view="overview"] .dashboard-candlestick-canvas{
+    height:460px!important;
+    min-height:460px!important;
+    max-height:460px!important;
+  }
+}

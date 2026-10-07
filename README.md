@@ -316,3 +316,7 @@ Fixed the V24 Overview company-card regression caused by inherited flex wrapping
 ## 2026-10-07 UI V26 — custom market selector
 
 Replaced the Overview browser-native market dropdown with a polished custom selector so BSE no longer appears as a clipped `BSE India (` label or an unstyled system menu. The compact selected label now reads `BSE India`, while `Limited data coverage` is shown as secondary context inside the menu. Existing market-switching behavior is unchanged. See `docs/UI_V26_CUSTOM_MARKET_SELECTOR_2026-10-07.md`.
+
+## 2026-10-07 UI V27 — chart correctness
+
+The Overview chart now uses separate synchronized panes for Volume, quarterly EPS, and raw price/benchmark RS. Price, EMA and Bollinger remain in the main pane. This removes the misleading rebased RS price label and prevents EPS/RS units from being mixed with the stock-price scale. EMA/BB right-edge labels are also suppressed to keep the price scale readable. See `docs/UI_V27_CHART_CORRECTNESS_2026-10-07.md`.
