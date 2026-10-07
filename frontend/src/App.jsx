@@ -4744,102 +4744,163 @@ function App() {
           <div className="universe-data-note">Only verified provider/database values are shown. Warrants, units, ETFs and obvious SPAC/acquisition securities are excluded from the normal US stock universe. Missing values remain N/A until the automatic enrichment process retrieves real data.</div>
         </section>
 
-        <section className="backtesting-workspace">
-          <div className="backtest-hero-card">
-            <div className="backtest-hero-copy">
-              <div className="backtest-title-row">
-                <span className="backtest-icon">↗</span>
+        <section className="backtesting-workspace bt-pro-workspace">
+          <div className="bt-pro-hero">
+            <div className="bt-pro-title">
+              <span className="bt-pro-kicker">Strategy Lab</span>
+              <div className="bt-pro-title-line">
+                <span className="bt-pro-title-icon" aria-hidden="true">↗</span>
                 <div>
-                  <h2>Backtesting</h2>
-                  <p>Run the selected 5/10/15/20-year test on verified provider daily OHLCV. The selected horizon is never replaced by a shorter chart fallback.</p>
+                  <h2>Backtest & Compare</h2>
+                  <p>Measure strategy performance on verified daily OHLCV without synthetic history.</p>
                 </div>
               </div>
-              <div className="backtest-context-chips">
-                <span><b>{symbol}</b> · {selectedCompany?.name || symbol}</span>
+              <div className="bt-pro-stock-meta">
+                <span className="bt-pro-symbol">{symbol}</span>
+                <span>{selectedCompany?.name || symbol}</span>
                 <span>{exchange}</span>
-                <span>Requested: {backtestYears}Y</span>
-                {backtest && <span className={String(backtest.history_status || "").toLowerCase() === "complete" ? "is-complete" : "is-partial"}>{backtest.history_status}</span>}
+                <span className="bt-pro-period-chip">Requested {backtestYears}Y</span>
+                {backtest && <span className={`bt-pro-status ${String(backtest.history_status || "").toLowerCase()}`}>{backtest.history_status}</span>}
               </div>
             </div>
-            <div className="backtest-hero-actions">
-              <label><span>History</span>
+
+            <div className="bt-pro-actions">
+              <label>
+                <span>History</span>
                 <select value={backtestYears} onChange={(e) => setBacktestYears(Number(e.target.value))}>
                   {[5, 10, 15, 20].map((years) => <option key={years} value={years}>{years} Years</option>)}
                 </select>
               </label>
-              <button type="button" className="ranking-primary-button" disabled={backtestLoading} onClick={loadBacktest}>
-                {backtestLoading ? "Running…" : "Run Backtest"}
+              <button type="button" className="bt-pro-run" disabled={backtestLoading} onClick={loadBacktest}>
+                <span aria-hidden="true">▶</span>{backtestLoading ? "Running…" : "Run Backtest"}
               </button>
             </div>
           </div>
 
-          {backtestNotice && <div className="backtest-notice"><strong>Verified data notice</strong><span>{backtestNotice}</span></div>}
-          {backtestError && <div className="message error-message backtest-message">{backtestError}</div>}
+          {(backtestNotice || backtestError) && (
+            <div className={`bt-pro-alert ${backtestError ? "error" : "notice"}`}>
+              <span className="bt-pro-alert-icon" aria-hidden="true">{backtestError ? "!" : "i"}</span>
+              <div>
+                <strong>{backtestError ? "History unavailable" : "Verified data notice"}</strong>
+                <p>{backtestError || backtestNotice}</p>
+              </div>
+              {backtestError && <button type="button" onClick={loadBacktest} disabled={backtestLoading}>Retry</button>}
+            </div>
+          )}
 
-          <div className="backtest-summary-grid v12">
-            <div className="backtest-summary-card"><span>Verified History</span><strong>{backtest ? `${Number(backtest.actual_years || 0).toFixed(1)}Y` : "—"}</strong><small>{backtest ? `${backtest.earliest_date} → ${backtest.latest_date}` : "Loading verified history"}</small></div>
-            <div className="backtest-summary-card"><span>Buy & Hold</span><strong className={Number(backtest?.buy_hold_return_percent) >= 0 ? "is-positive" : "is-negative"}>{backtest ? `${Number(backtest.buy_hold_return_percent || 0).toFixed(2)}%` : "—"}</strong><small>{backtest ? `CAGR ${Number(backtest.buy_hold_cagr_percent || 0).toFixed(2)}%` : "Baseline"}</small></div>
-            <div className="backtest-summary-card"><span>Combined Strategy</span><strong className={Number(backtest?.strategies?.find((r) => r.strategy === "Combined")?.strategy_return_percent) >= 0 ? "is-positive" : "is-negative"}>{backtest ? `${Number(backtest.strategies?.find((r) => r.strategy === "Combined")?.strategy_return_percent || 0).toFixed(2)}%` : "—"}</strong><small>{backtest?.strategies?.find((r) => r.strategy === "Combined")?.last_signal || "Signal pending"}</small></div>
-            <div className="backtest-summary-card"><span>Max Drawdown</span><strong className="is-negative">{backtest ? `${Number(backtest.buy_hold_max_drawdown_percent || 0).toFixed(2)}%` : "—"}</strong><small>{backtest ? `${Number(backtest.row_count || 0).toLocaleString()} daily rows tested` : "Waiting"}</small></div>
+          <div className="bt-pro-kpis">
+            <article className="bt-pro-kpi history">
+              <div className="bt-pro-kpi-icon">◷</div>
+              <div><span>Verified History</span><strong>{backtest ? `${Number(backtest.actual_years || 0).toFixed(1)}Y` : "—"}</strong><small>{backtest ? `${backtest.earliest_date} → ${backtest.latest_date}` : "Waiting for provider"}</small></div>
+            </article>
+            <article className="bt-pro-kpi buyhold">
+              <div className="bt-pro-kpi-icon">↗</div>
+              <div><span>Buy & Hold</span><strong className={Number(backtest?.buy_hold_return_percent) >= 0 ? "is-positive" : "is-negative"}>{backtest ? `${Number(backtest.buy_hold_return_percent || 0).toFixed(2)}%` : "—"}</strong><small>{backtest ? `CAGR ${Number(backtest.buy_hold_cagr_percent || 0).toFixed(2)}%` : "Market baseline"}</small></div>
+            </article>
+            <article className="bt-pro-kpi combined">
+              <div className="bt-pro-kpi-icon">◆</div>
+              <div><span>Combined Strategy</span><strong className={Number(backtest?.strategies?.find((r) => r.strategy === "Combined")?.strategy_return_percent) >= 0 ? "is-positive" : "is-negative"}>{backtest ? `${Number(backtest.strategies?.find((r) => r.strategy === "Combined")?.strategy_return_percent || 0).toFixed(2)}%` : "—"}</strong><small>{backtest?.strategies?.find((r) => r.strategy === "Combined")?.last_signal || "Signal pending"}</small></div>
+            </article>
+            <article className="bt-pro-kpi drawdown">
+              <div className="bt-pro-kpi-icon">↓</div>
+              <div><span>Max Drawdown</span><strong className="is-negative">{backtest ? `${Number(backtest.buy_hold_max_drawdown_percent || 0).toFixed(2)}%` : "—"}</strong><small>{backtest ? `${Number(backtest.row_count || 0).toLocaleString()} daily rows` : "Risk metric"}</small></div>
+            </article>
           </div>
 
-          <div className="backtest-grid-main v12">
-            <section className="backtest-chart-card">
-              <div className="backtest-section-head">
-                <div><h3>Equity Curve</h3><p>Buy & Hold compared with the combined strategy</p></div>
-                {backtest && <span className={`backtest-status-badge ${String(backtest.history_status || "").toLowerCase()}`}>{backtest.history_status}</span>}
+          <div className="bt-pro-main-grid">
+            <section className="bt-pro-chart-card">
+              <div className="bt-pro-card-head">
+                <div>
+                  <span className="bt-pro-section-label">Performance</span>
+                  <h3>Equity Curve</h3>
+                  <p>Buy & Hold compared with the combined strategy.</p>
+                </div>
+                <div className="bt-pro-legend">
+                  <span><i className="buyhold"></i>Buy & Hold</span>
+                  <span><i className="combined"></i>Combined</span>
+                </div>
               </div>
-              <div className="backtest-chart-shell">
+
+              <div className="bt-pro-chart-shell">
                 {backtest?.equity_curve?.length ? (
-                  <ResponsiveContainer width="100%" height={320}>
-                    <LineChart data={backtest.equity_curve} margin={{ top: 8, right: 14, left: 0, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e8eef6" />
-                      <XAxis dataKey="date" tick={{ fontSize: 11 }} minTickGap={42} />
-                      <YAxis tick={{ fontSize: 11 }} tickFormatter={(value) => `${Number(value).toFixed(0)}%`} />
-                      <Tooltip formatter={(value) => `${Number(value).toFixed(2)}%`} />
-                      <Line type="monotone" dataKey="buy_hold" name="Buy & Hold" stroke="#2563eb" dot={false} strokeWidth={2} />
-                      <Line type="monotone" dataKey="combined" name="Combined" stroke="#0a9c68" dot={false} strokeWidth={2.2} />
+                  <ResponsiveContainer width="100%" height={360}>
+                    <LineChart data={backtest.equity_curve} margin={{ top: 14, right: 18, left: 0, bottom: 2 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e8eef6" vertical={false} />
+                      <XAxis dataKey="date" tick={{ fontSize: 11, fill: "#64748b" }} minTickGap={46} axisLine={{ stroke: "#dbe4ef" }} tickLine={false} />
+                      <YAxis tick={{ fontSize: 11, fill: "#64748b" }} tickFormatter={(value) => `${Number(value).toFixed(0)}%`} axisLine={false} tickLine={false} />
+                      <Tooltip formatter={(value) => `${Number(value).toFixed(2)}%`} contentStyle={{ borderRadius: 10, border: "1px solid #dbe4ef", boxShadow: "0 10px 28px rgba(15,23,42,.10)" }} />
                       <ReferenceLine y={0} stroke="#94a3b8" />
+                      <Line type="monotone" dataKey="buy_hold" name="Buy & Hold" stroke="#2563eb" dot={false} strokeWidth={2.4} />
+                      <Line type="monotone" dataKey="combined" name="Combined" stroke="#10b981" dot={false} strokeWidth={2.6} />
                     </LineChart>
                   </ResponsiveContainer>
-                ) : <div className="backtest-empty-state">{backtestLoading ? "Loading verified history and calculating strategies…" : "Choose a history period and run the backtest."}</div>}
+                ) : (
+                  <div className="bt-pro-empty">
+                    <div className="bt-pro-empty-icon">⌁</div>
+                    <h4>{backtestLoading ? "Calculating backtest…" : "No verified backtest results yet"}</h4>
+                    <p>{backtestLoading ? "Loading provider history and calculating the selected strategies." : "Choose a history period and run the backtest. If the provider cannot supply the requested history, the app will not fabricate missing years."}</p>
+                    {!backtestLoading && <button type="button" onClick={loadBacktest}>Run Backtest</button>}
+                  </div>
+                )}
               </div>
-              {backtest && <div className="backtest-source-line"><b>Source:</b> {backtest.source} <span>•</span> {Number(backtest.row_count || 0).toLocaleString()} rows <span>•</span> {Number(backtest.actual_years || 0).toFixed(1)} years</div>}
+
+              <div className="bt-pro-chart-footer">
+                <span><b>Source</b> {backtest?.source || "Verified provider history"}</span>
+                <span><b>Rows</b> {backtest ? Number(backtest.row_count || 0).toLocaleString() : "—"}</span>
+                <span><b>Coverage</b> {backtest ? `${Number(backtest.actual_years || 0).toFixed(1)} years` : "—"}</span>
+              </div>
             </section>
 
-            <section className="backtest-method-card">
-              <div className="backtest-section-head"><div><h3>Strategy Rules</h3><p>Long/cash methodology used by this test</p></div></div>
-              <div className="backtest-method-list">
-                <div><b>SMA</b><span>Close above SMA50</span></div>
-                <div><b>ROC</b><span>ROC14 above 0</span></div>
-                <div><b>MACD</b><span>MACD above signal</span></div>
-                <div><b>RSI</b><span>Enter below 30, exit above 70</span></div>
-                <div><b>BB</b><span>Enter below lower, exit above upper</span></div>
-                <div className="combined-rule"><b>Combined</b><span>At least 3 of 5 rules active</span></div>
+            <aside className="bt-pro-rules-card">
+              <div className="bt-pro-card-head compact">
+                <div><span className="bt-pro-section-label">Methodology</span><h3>Strategy Rules</h3><p>Long / cash rules used in this test.</p></div>
               </div>
-              <div className="backtest-data-note">Only verified real OHLCV is used. A 20-year request must come from the long-history provider; the browser chart is not substituted for missing years.</div>
-            </section>
+              <div className="bt-pro-rules-list">
+                {[
+                  ["SMA", "Trend", "Close above SMA50"],
+                  ["ROC", "Momentum", "ROC14 above 0"],
+                  ["MACD", "Momentum", "MACD above signal"],
+                  ["RSI", "Reversal", "Enter below 30, exit above 70"],
+                  ["BB", "Reversal", "Enter below lower, exit above upper"],
+                ].map(([code, type, text]) => (
+                  <div className="bt-pro-rule" key={code}>
+                    <span className="bt-pro-rule-code">{code}</span>
+                    <div><b>{type}</b><small>{text}</small></div>
+                  </div>
+                ))}
+                <div className="bt-pro-rule combined-rule">
+                  <span className="bt-pro-rule-code">ALL</span>
+                  <div><b>Combined</b><small>Long when at least 3 of 5 rules are active</small></div>
+                </div>
+              </div>
+              <div className="bt-pro-provider-note">
+                <span>✓</span><p>Only verified real OHLCV is used. Missing years remain missing instead of being synthesized.</p>
+              </div>
+            </aside>
           </div>
 
-          <section className="backtest-strategy-card">
-            <div className="backtest-section-head"><div><h3>Strategy Comparison</h3><p>Return, value added, CAGR, drawdown and current signal.</p></div></div>
-            <div className="backtest-table-wrap">
-              <table className="backtest-table">
+          <section className="bt-pro-table-card">
+            <div className="bt-pro-card-head">
+              <div><span className="bt-pro-section-label">Comparison</span><h3>Strategy Performance</h3><p>Compare returns, CAGR, value added, drawdown and current signal.</p></div>
+              {backtest && <span className={`bt-pro-status ${String(backtest.history_status || "").toLowerCase()}`}>{backtest.history_status}</span>}
+            </div>
+            <div className="bt-pro-table-wrap">
+              <table className="bt-pro-table">
                 <thead><tr><th>Strategy</th><th>Signal</th><th>Return</th><th>Buy & Hold</th><th>Value Added</th><th>CAGR</th><th>Max DD</th><th>Entries</th><th>Status</th></tr></thead>
                 <tbody>
                   {backtest?.strategies?.length ? backtest.strategies.map((row) => (
                     <tr key={row.strategy}>
                       <td><strong>{row.strategy}</strong></td>
-                      <td><span className={`backtest-signal ${String(row.last_signal || "").toLowerCase()}`}>{row.last_signal}</span></td>
+                      <td><span className={`bt-pro-signal ${String(row.last_signal || "").toLowerCase()}`}>{row.last_signal}</span></td>
                       <td>{Number(row.strategy_return_percent || 0).toFixed(2)}%</td>
                       <td>{Number(row.buy_hold_percent || 0).toFixed(2)}%</td>
                       <td className={Number(row.value_added_percent) >= 0 ? "is-positive" : "is-negative"}>{Number(row.value_added_percent || 0).toFixed(2)}%</td>
                       <td>{Number(row.cagr_percent || 0).toFixed(2)}%</td>
                       <td>{Number(row.max_drawdown_percent || 0).toFixed(2)}%</td>
                       <td>{Number(row.trades || 0).toLocaleString()}</td>
-                      <td><span className={`backtest-result ${String(row.status || "").toLowerCase()}`}>{row.status}</span></td>
+                      <td><span className={`bt-pro-result ${String(row.status || "").toLowerCase()}`}>{row.status}</span></td>
                     </tr>
-                  )) : <tr><td colSpan="9" className="backtest-empty-row">Backtest results will appear here after the verified history is loaded.</td></tr>}
+                  )) : <tr><td colSpan="9" className="bt-pro-empty-row">Run a verified backtest to populate the comparison table.</td></tr>}
                 </tbody>
               </table>
             </div>
