@@ -5106,3 +5106,92 @@ header .status small {
   table-layout:auto!important;
   min-width:100%!important;
 }
+
+/* =========================================================
+   UI V11 — dedicated Backtesting workspace
+   Backtesting must not show ranking-weight/fundamental-history content.
+   ========================================================= */
+.backtesting-workspace{display:none!important;}
+.app[data-view="analytics"] .backtesting-workspace{
+  display:block!important;
+  max-width:1320px;
+  margin:0 auto;
+}
+.app[data-view="analytics"] .advanced-workspace{display:none!important;}
+.app[data-view="analytics"] .score-overview-grid{display:none!important;}
+.app[data-view="analytics"] .timeframes{display:none!important;}
+.app[data-view="analytics"] .controls{
+  grid-template-columns:180px minmax(320px,1fr) auto!important;
+  margin-bottom:16px!important;
+}
+.app[data-view="analytics"] .controls .refresh,
+.app[data-view="analytics"] .controls .excel-live-top{display:none!important;}
+
+.backtest-header-card{
+  display:flex;align-items:flex-end;justify-content:space-between;gap:24px;
+  padding:22px 24px;border:1px solid #dfe7f1;border-radius:16px;background:#fff;
+  box-shadow:0 8px 24px rgba(15,23,42,.05);margin-bottom:14px;
+}
+.backtest-header-card h2{margin:4px 0 6px;font-size:26px;line-height:1.1;color:#0f172a;}
+.backtest-header-card p{margin:0;max-width:760px;font-size:13px;line-height:1.55;color:#64748b;}
+.backtest-header-actions{display:flex;align-items:flex-end;gap:10px;flex:0 0 auto;}
+.backtest-header-actions label{display:flex;flex-direction:column;gap:5px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#64748b;}
+.backtest-header-actions select,.backtest-header-actions button{height:40px;min-height:40px;border-radius:9px;}
+.backtest-header-actions select{min-width:125px;border:1px solid #dbe5f0;background:#fff;padding:0 12px;font-size:12px;color:#334155;}
+.backtest-header-actions button{padding:0 16px;}
+.backtest-message{margin-bottom:14px;}
+
+.backtest-summary-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-bottom:14px;}
+.backtest-summary-card{
+  min-height:112px;padding:16px 17px;border:1px solid #dfe7f1;border-radius:14px;background:#fff;
+  box-shadow:0 6px 18px rgba(15,23,42,.045);display:flex;flex-direction:column;justify-content:center;
+}
+.backtest-summary-card span{font-size:11px;font-weight:700;color:#64748b;margin-bottom:7px;}
+.backtest-summary-card strong{font-size:23px;line-height:1.05;color:#0f172a;}
+.backtest-summary-card small{font-size:10px;color:#8492a6;margin-top:7px;line-height:1.35;}
+.backtest-summary-card .is-positive,.backtest-table .is-positive{color:#059669;}
+.backtest-summary-card .is-negative,.backtest-table .is-negative{color:#dc2626;}
+
+.backtest-grid-main{display:grid;grid-template-columns:minmax(0,1.9fr) minmax(300px,.75fr);gap:12px;margin-bottom:14px;}
+.backtest-chart-card,.backtest-method-card,.backtest-strategy-card{
+  border:1px solid #dfe7f1;border-radius:16px;background:#fff;box-shadow:0 7px 22px rgba(15,23,42,.045);
+}
+.backtest-chart-card,.backtest-method-card{padding:17px;}
+.backtest-strategy-card{padding:17px 17px 14px;}
+.backtest-section-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px;}
+.backtest-section-head h3{margin:0;font-size:16px;color:#0f172a;}
+.backtest-section-head p{margin:3px 0 0;font-size:11px;color:#7b8ba0;}
+.backtest-status-badge{display:inline-flex;align-items:center;height:28px;padding:0 10px;border-radius:999px;font-size:10px;font-weight:800;border:1px solid #dbe5f0;background:#f8fafc;color:#475569;}
+.backtest-status-badge.complete{border-color:#bfe9d7;background:#effbf5;color:#087b55;}
+.backtest-status-badge.partial{border-color:#f6dcae;background:#fff8eb;color:#9a5a09;}
+.backtest-chart-shell{min-height:340px;border:1px solid #edf2f7;border-radius:11px;padding:8px;background:#fff;}
+.backtest-empty-state{height:340px;display:grid;place-items:center;text-align:center;color:#7b8ba0;font-size:13px;padding:20px;}
+
+.backtest-method-list{display:grid;gap:7px;}
+.backtest-method-list>div{display:grid;grid-template-columns:82px 1fr;gap:10px;align-items:center;padding:9px 10px;border:1px solid #e8eef5;border-radius:9px;background:#fbfdff;}
+.backtest-method-list b{font-size:11px;color:#1d4ed8;}
+.backtest-method-list span{font-size:11px;color:#475569;line-height:1.35;}
+.backtest-data-note{margin-top:12px;padding:11px 12px;border-radius:9px;background:#f8fafc;border:1px solid #e7edf5;font-size:10px;line-height:1.5;color:#64748b;}
+
+.backtest-table-wrap{overflow:auto;border:1px solid #e7edf5;border-radius:11px;}
+.backtest-table{width:100%;border-collapse:collapse;min-width:900px;}
+.backtest-table th{background:#f8fbfe;color:#607288;font-size:10px;font-weight:800;text-align:left;padding:10px 11px;border-bottom:1px solid #e4ebf3;white-space:nowrap;}
+.backtest-table td{font-size:11px;color:#334155;padding:10px 11px;border-bottom:1px solid #eef3f7;white-space:nowrap;}
+.backtest-table tbody tr:last-child td{border-bottom:0;}
+.backtest-signal,.backtest-result{display:inline-flex;align-items:center;justify-content:center;min-width:58px;height:24px;padding:0 8px;border-radius:999px;font-size:9px;font-weight:800;}
+.backtest-signal.buy,.backtest-result.pass{background:#e8f8f1;color:#087b55;}
+.backtest-signal.sell,.backtest-result.fail{background:#fff0f0;color:#b42318;}
+.backtest-empty-row{text-align:center!important;color:#7b8ba0!important;padding:24px!important;}
+
+@media (max-width:1180px){
+  .backtest-summary-grid{grid-template-columns:repeat(3,minmax(0,1fr));}
+  .backtest-grid-main{grid-template-columns:1fr;}
+}
+@media (max-width:760px){
+  .backtest-header-card{align-items:stretch;flex-direction:column;padding:17px;}
+  .backtest-header-actions{width:100%;align-items:stretch;}
+  .backtest-header-actions label{flex:1;}
+  .backtest-header-actions select,.backtest-header-actions button{width:100%;}
+  .backtest-summary-grid{grid-template-columns:1fr 1fr;}
+  .app[data-view="analytics"] .controls{grid-template-columns:1fr!important;}
+}

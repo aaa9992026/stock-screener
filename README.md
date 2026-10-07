@@ -259,3 +259,7 @@ The Top 200 workspace is now table-first: full ranking list and controls first, 
 
 The Filters page is now a dedicated tabbed workspace (Fundamental / Technical / Ownership / Universe Screener). Only one filter family is displayed at a time, and the main rule tables fit the desktop content width while preserving all editable controls and qualification lists.
 
+
+## UI V11 — dedicated 20-year Backtesting workspace
+
+The Backtesting sidebar item now opens a dedicated backtesting page instead of the old ranking/advanced-analytics content. It runs the same SMA/ROC/MACD/RSI/Bollinger/Combined long-cash strategy framework used by the Master Excel workflow against up to 20 years of verified provider history, with a Buy & Hold comparison, equity curve, CAGR, max drawdown and trade-entry counts. Missing years are shown as Partial and are never fabricated.

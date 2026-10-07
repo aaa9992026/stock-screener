@@ -688,6 +688,10 @@ function App() {
   const [chartOverlays, setChartOverlays] = useState({
     ema: true, sma: true, bollinger: true, volume: true, eps: true, rs: true
   });
+  const [backtestYears, setBacktestYears] = useState(20);
+  const [backtest, setBacktest] = useState(null);
+  const [backtestLoading, setBacktestLoading] = useState(false);
+  const [backtestError, setBacktestError] = useState("");
   const [frameworkIndicatorSettings, setFrameworkIndicatorSettings] = useState({
     rsi: 14, macdFast: 12, macdSlow: 26, macdSignal: 9, roc: 14, adx: 14, atr: 14, adr: 20, volumeRatio: 20,
     bbWidth: 20, volumeShort: 10, volumeLong: 30, volumeDryUp: 50, delivery: 5, rsScore: 14
@@ -1429,6 +1433,20 @@ function App() {
     }
   };
 
+  const loadBacktest = async () => {
+    try {
+      setBacktestLoading(true);
+      setBacktestError("");
+      const res = await axios.get(`${API}/market/backtest/${symbol}?exchange=${exchange}&years=${backtestYears}`, { timeout: 90000 });
+      setBacktest(res.data);
+    } catch (error) {
+      setBacktest(null);
+      setBacktestError(error?.response?.data?.detail || "Backtesting data is temporarily unavailable for this stock.");
+    } finally {
+      setBacktestLoading(false);
+    }
+  };
+
   const loadChart = async () => {
     const requestKey = `${exchange}:${symbol}:${timeframe}`;
     const cacheKey = `demo1:chart:${requestKey}`;
@@ -1644,6 +1662,11 @@ function App() {
     loadSelection();
     return () => { cancelled = true; };
   }, [symbol, timeframe, exchange]);
+
+  useEffect(() => {
+    if (activeView !== "analytics") return;
+    loadBacktest();
+  }, [activeView, symbol, exchange, backtestYears]);
 
   useEffect(() => {
     if (!chartContainerRef.current || !data?.length) return;
@@ -4549,6 +4572,97 @@ function App() {
             </div>
           </div>
           <div className="universe-data-note">Only verified provider/database values are shown. Warrants, units, ETFs and obvious SPAC/acquisition securities are excluded from the normal US stock universe. Missing values remain N/A until the automatic enrichment process retrieves real data.</div>
+        </section>
+
+        <section className="backtesting-workspace">
+          <div className="backtest-header-card">
+            <div>
+              <span className="dashboard-kicker">MILESTONE II • BACKTESTING</span>
+              <h2>20-Year Backtesting</h2>
+              <p>Run the same long/cash strategy tests used by the Master Excel workflow on verified provider history. Missing years stay partial; no synthetic history is created.</p>
+            </div>
+            <div className="backtest-header-actions">
+              <label><span>History</span>
+                <select value={backtestYears} onChange={(e) => setBacktestYears(Number(e.target.value))}>
+                  {[5, 10, 15, 20].map((years) => <option key={years} value={years}>{years} Years</option>)}
+                </select>
+              </label>
+              <button type="button" className="ranking-primary-button" disabled={backtestLoading} onClick={loadBacktest}>
+                {backtestLoading ? "Running…" : "Run Backtest"}
+              </button>
+            </div>
+          </div>
+
+          {backtestError && <div className="message error-message backtest-message">{backtestError}</div>}
+
+          <div className="backtest-summary-grid">
+            <div className="backtest-summary-card"><span>Stock</span><strong>{symbol}</strong><small>{exchange}</small></div>
+            <div className="backtest-summary-card"><span>Verified History</span><strong>{backtest ? `${Number(backtest.actual_years || 0).toFixed(1)}Y` : "—"}</strong><small>{backtest ? `${backtest.earliest_date} → ${backtest.latest_date}` : "Run backtest to load"}</small></div>
+            <div className="backtest-summary-card"><span>Rows Tested</span><strong>{backtest ? Number(backtest.row_count || 0).toLocaleString() : "—"}</strong><small>{backtest?.history_status || "Waiting"}</small></div>
+            <div className="backtest-summary-card"><span>Buy & Hold</span><strong className={Number(backtest?.buy_hold_return_percent) >= 0 ? "is-positive" : "is-negative"}>{backtest ? `${Number(backtest.buy_hold_return_percent || 0).toFixed(2)}%` : "—"}</strong><small>{backtest ? `CAGR ${Number(backtest.buy_hold_cagr_percent || 0).toFixed(2)}%` : "Baseline"}</small></div>
+            <div className="backtest-summary-card"><span>Combined Strategy</span><strong className={Number(backtest?.strategies?.find((r) => r.strategy === "Combined")?.strategy_return_percent) >= 0 ? "is-positive" : "is-negative"}>{backtest ? `${Number(backtest.strategies?.find((r) => r.strategy === "Combined")?.strategy_return_percent || 0).toFixed(2)}%` : "—"}</strong><small>{backtest?.strategies?.find((r) => r.strategy === "Combined")?.last_signal || "Signal pending"}</small></div>
+          </div>
+
+          <div className="backtest-grid-main">
+            <section className="backtest-chart-card">
+              <div className="backtest-section-head">
+                <div><h3>Equity Curve</h3><p>Buy & Hold vs Combined strategy</p></div>
+                {backtest && <span className={`backtest-status-badge ${String(backtest.history_status || "").toLowerCase()}`}>{backtest.history_status}</span>}
+              </div>
+              <div className="backtest-chart-shell">
+                {backtest?.equity_curve?.length ? (
+                  <ResponsiveContainer width="100%" height={340}>
+                    <LineChart data={backtest.equity_curve} margin={{ top: 10, right: 16, left: 0, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e8eef6" />
+                      <XAxis dataKey="date" tick={{ fontSize: 11 }} minTickGap={35} />
+                      <YAxis tick={{ fontSize: 11 }} tickFormatter={(value) => `${Number(value).toFixed(0)}%`} />
+                      <Tooltip formatter={(value) => `${Number(value).toFixed(2)}%`} />
+                      <Line type="monotone" dataKey="buy_hold" name="Buy & Hold" stroke="#2563eb" dot={false} strokeWidth={2} />
+                      <Line type="monotone" dataKey="combined" name="Combined" stroke="#0a9c68" dot={false} strokeWidth={2.2} />
+                      <ReferenceLine y={0} stroke="#94a3b8" />
+                    </LineChart>
+                  </ResponsiveContainer>
+                ) : <div className="backtest-empty-state">{backtestLoading ? "Loading verified history and calculating strategies…" : "Run Backtest to display the equity curve."}</div>}
+              </div>
+            </section>
+
+            <section className="backtest-method-card">
+              <div className="backtest-section-head"><div><h3>Method</h3><p>Exact web implementation of the existing Excel signal framework</p></div></div>
+              <div className="backtest-method-list">
+                <div><b>SMA</b><span>Long when Close &gt; SMA50</span></div>
+                <div><b>ROC</b><span>Long when ROC14 &gt; 0</span></div>
+                <div><b>MACD</b><span>Long when MACD &gt; Signal</span></div>
+                <div><b>RSI</b><span>Enter below 30, exit above 70</span></div>
+                <div><b>Bollinger</b><span>Enter below lower band, exit above upper band</span></div>
+                <div><b>Combined</b><span>Long when at least 3 of 5 strategies are active</span></div>
+              </div>
+              {backtest && <div className="backtest-data-note"><strong>Source:</strong> {backtest.source}<br />{backtest.data_rule}</div>}
+            </section>
+          </div>
+
+          <section className="backtest-strategy-card">
+            <div className="backtest-section-head"><div><h3>Strategy Comparison</h3><p>Returns, drawdown, CAGR and current signal for each tested rule.</p></div></div>
+            <div className="backtest-table-wrap">
+              <table className="backtest-table">
+                <thead><tr><th>Strategy</th><th>Current Signal</th><th>Strategy Return</th><th>Buy & Hold</th><th>Value Added</th><th>CAGR</th><th>Max Drawdown</th><th>Entries</th><th>Status</th></tr></thead>
+                <tbody>
+                  {backtest?.strategies?.length ? backtest.strategies.map((row) => (
+                    <tr key={row.strategy}>
+                      <td><strong>{row.strategy}</strong></td>
+                      <td><span className={`backtest-signal ${String(row.last_signal || "").toLowerCase()}`}>{row.last_signal}</span></td>
+                      <td>{Number(row.strategy_return_percent || 0).toFixed(2)}%</td>
+                      <td>{Number(row.buy_hold_percent || 0).toFixed(2)}%</td>
+                      <td className={Number(row.value_added_percent) >= 0 ? "is-positive" : "is-negative"}>{Number(row.value_added_percent || 0).toFixed(2)}%</td>
+                      <td>{Number(row.cagr_percent || 0).toFixed(2)}%</td>
+                      <td>{Number(row.max_drawdown_percent || 0).toFixed(2)}%</td>
+                      <td>{Number(row.trades || 0).toLocaleString()}</td>
+                      <td><span className={`backtest-result ${String(row.status || "").toLowerCase()}`}>{row.status}</span></td>
+                    </tr>
+                  )) : <tr><td colSpan="9" className="backtest-empty-row">No backtest results yet.</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          </section>
         </section>
 
         <div className="advanced-workspace">

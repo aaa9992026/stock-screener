@@ -4221,6 +4221,194 @@ def get_chart_data(
         "data": result[-limit:]
     })
 
+
+
+def _backtest_stateful_position(buy_condition, sell_condition):
+    state = 0.0
+    out = []
+    for buy, sell in zip(buy_condition.fillna(False), sell_condition.fillna(False)):
+        if bool(buy):
+            state = 1.0
+        elif bool(sell):
+            state = 0.0
+        out.append(state)
+    return pd.Series(out, index=buy_condition.index, dtype=float)
+
+
+def _backtest_max_drawdown(cumulative):
+    if cumulative is None or len(cumulative) == 0:
+        return None
+    equity = 1.0 + cumulative.fillna(0.0)
+    peaks = equity.cummax()
+    drawdown = (equity / peaks.replace(0, float("nan"))) - 1.0
+    value = drawdown.min()
+    return float(value) if pd.notna(value) else None
+
+
+def _backtest_cagr(total_return, days):
+    if days is None or days <= 0 or total_return is None or total_return <= -1:
+        return None
+    years = days / 365.25
+    if years <= 0:
+        return None
+    return (1.0 + float(total_return)) ** (1.0 / years) - 1.0
+
+
+@router.get("/backtest/{symbol}")
+def get_backtest(
+    symbol: str,
+    exchange: str = "US",
+    years: int = Query(20, ge=1, le=20),
+    db: Session = Depends(get_db),
+):
+    """Run the client workbook's long/cash backtests on verified provider history.
+
+    The endpoint mirrors the existing Master Excel methodology: SMA, ROC, MACD,
+    RSI and Bollinger long/cash signals plus a majority-vote Combined strategy.
+    It requests up to 20 years of real Yahoo/provider OHLCV directly and does
+    not persist the long history in PostgreSQL.
+    """
+    symbol = str(symbol or "").upper().strip()
+    exchange = str(exchange or "US").upper().strip()
+    if exchange not in {"US", "NSE", "BSE"}:
+        raise HTTPException(status_code=400, detail="Unsupported exchange")
+    if not symbol:
+        raise HTTPException(status_code=400, detail="Symbol is required")
+
+    start_date = (date.today() - timedelta(days=366 * years + 30)).isoformat()
+    provider = YahooProvider()
+    rows = []
+    provider_error = None
+    try:
+        rows = provider.get_ohlcv(symbol=symbol, exchange=exchange, start_date=start_date) or []
+    except Exception as exc:
+        provider_error = str(exc)
+
+    # Fallback is real verified dashboard history only; never fabricate a 20Y series.
+    source = "Yahoo Finance direct history"
+    if not rows:
+        fallback = _market_rows_with_live_fallback(db, symbol=symbol, exchange=exchange, min_rows=1, years=6)
+        rows = [
+            {"date": row.date, "open": row.open, "high": row.high, "low": row.low, "close": row.close, "volume": row.volume}
+            for row in fallback
+        ]
+        source = "Verified dashboard history fallback"
+
+    if len(rows) < 60:
+        raise HTTPException(status_code=404, detail="Not enough verified price history to run backtesting")
+
+    frame = pd.DataFrame(rows)
+    frame["Date"] = pd.to_datetime(frame["date"])
+    frame = frame.sort_values("Date").drop_duplicates(subset=["Date"]).reset_index(drop=True)
+    for src, dst in [("open", "Open"), ("high", "High"), ("low", "Low"), ("close", "Close"), ("volume", "Volume")]:
+        frame[dst] = pd.to_numeric(frame[src], errors="coerce")
+    frame = frame.dropna(subset=["Close"])
+    if len(frame) < 60:
+        raise HTTPException(status_code=404, detail="Not enough valid close history to run backtesting")
+
+    close = frame["Close"]
+    frame["SMA50"] = close.rolling(50, min_periods=50).mean()
+    frame["ROC14"] = close.pct_change(14) * 100.0
+    ema12 = close.ewm(span=12, adjust=False, min_periods=26).mean()
+    ema26 = close.ewm(span=26, adjust=False, min_periods=26).mean()
+    frame["MACD"] = ema12 - ema26
+    frame["MACDSignal"] = frame["MACD"].ewm(span=9, adjust=False, min_periods=9).mean()
+
+    delta = close.diff()
+    gain = delta.clip(lower=0)
+    loss = -delta.clip(upper=0)
+    avg_gain = gain.ewm(alpha=1 / 14, adjust=False, min_periods=14).mean()
+    avg_loss = loss.ewm(alpha=1 / 14, adjust=False, min_periods=14).mean()
+    rs = avg_gain / avg_loss.replace(0, float("nan"))
+    frame["RSI14"] = 100 - (100 / (1 + rs))
+
+    bb_mid = close.rolling(20, min_periods=20).mean()
+    bb_std = close.rolling(20, min_periods=20).std(ddof=0)
+    frame["BBUpper"] = bb_mid + 2 * bb_std
+    frame["BBLower"] = bb_mid - 2 * bb_std
+
+    positions = {
+        "SMA": (close > frame["SMA50"]).astype(float),
+        "ROC": (frame["ROC14"] > 0).astype(float),
+        "MACD": (frame["MACD"] > frame["MACDSignal"]).astype(float),
+        "RSI": _backtest_stateful_position(frame["RSI14"] < 30, frame["RSI14"] > 70),
+        "BOLL": _backtest_stateful_position(close < frame["BBLower"], close > frame["BBUpper"]),
+    }
+    vote_count = sum(positions.values())
+    positions["Combined"] = (vote_count >= 3).astype(float)
+
+    daily_ret = close.pct_change().fillna(0.0)
+    buy_hold_curve = (1 + daily_ret).cumprod() - 1
+    first_date = frame["Date"].iloc[0]
+    last_date = frame["Date"].iloc[-1]
+    elapsed_days = max(1, int((last_date - first_date).days))
+    buy_hold_total = float(buy_hold_curve.iloc[-1])
+
+    summaries = []
+    curves = {"Buy & Hold": buy_hold_curve}
+    last_signal_lookup = {
+        "SMA": "Buy" if float(positions["SMA"].iloc[-1]) > 0 else "Sell",
+        "ROC": "Buy" if float(positions["ROC"].iloc[-1]) > 0 else "Sell",
+        "MACD": "Buy" if float(positions["MACD"].iloc[-1]) > 0 else "Sell",
+        "RSI": "Buy" if float(positions["RSI"].iloc[-1]) > 0 else "Sell",
+        "BOLL": "Buy" if float(positions["BOLL"].iloc[-1]) > 0 else "Sell",
+        "Combined": "Buy" if float(positions["Combined"].iloc[-1]) > 0 else "Sell",
+    }
+
+    for name in ["SMA", "ROC", "MACD", "RSI", "BOLL", "Combined"]:
+        pos = positions[name]
+        strategy_ret = pos.shift(1).fillna(0.0) * daily_ret
+        curve = (1 + strategy_ret).cumprod() - 1
+        curves[name] = curve
+        total = float(curve.iloc[-1])
+        entries = ((pos.diff().fillna(pos) > 0).sum())
+        summaries.append({
+            "strategy": name,
+            "last_signal": last_signal_lookup[name],
+            "strategy_return_percent": total * 100.0,
+            "buy_hold_percent": buy_hold_total * 100.0,
+            "value_added_percent": (total - buy_hold_total) * 100.0,
+            "cagr_percent": (_backtest_cagr(total, elapsed_days) or 0.0) * 100.0,
+            "max_drawdown_percent": (_backtest_max_drawdown(curve) or 0.0) * 100.0,
+            "trades": int(entries),
+            "status": "Pass" if total >= buy_hold_total else "Fail",
+        })
+
+    # Limit payload density while retaining first/last points for the web chart.
+    max_points = 520
+    step = max(1, len(frame) // max_points)
+    sample_indices = list(range(0, len(frame), step))
+    if sample_indices[-1] != len(frame) - 1:
+        sample_indices.append(len(frame) - 1)
+    equity_curve = []
+    for idx in sample_indices:
+        equity_curve.append({
+            "date": frame["Date"].iloc[idx].strftime("%Y-%m-%d"),
+            "buy_hold": float(curves["Buy & Hold"].iloc[idx]) * 100.0,
+            "combined": float(curves["Combined"].iloc[idx]) * 100.0,
+        })
+
+    actual_years = elapsed_days / 365.25
+    return _json_safe({
+        "symbol": symbol,
+        "exchange": exchange,
+        "requested_years": years,
+        "actual_years": actual_years,
+        "row_count": int(len(frame)),
+        "earliest_date": first_date.strftime("%Y-%m-%d"),
+        "latest_date": last_date.strftime("%Y-%m-%d"),
+        "history_status": "Complete" if actual_years >= min(years - 0.5, 19.0) else "Partial",
+        "source": source,
+        "provider_warning": provider_error,
+        "buy_hold_return_percent": buy_hold_total * 100.0,
+        "buy_hold_cagr_percent": (_backtest_cagr(buy_hold_total, elapsed_days) or 0.0) * 100.0,
+        "buy_hold_max_drawdown_percent": (_backtest_max_drawdown(buy_hold_curve) or 0.0) * 100.0,
+        "strategies": summaries,
+        "equity_curve": equity_curve,
+        "method": "Long/cash signals: SMA50, ROC14, MACD 12/26/9, RSI14, Bollinger 20/2; Combined is majority vote of 3 or more active signals.",
+        "data_rule": "Only verified provider OHLCV is used. Missing years remain partial rather than being fabricated.",
+    })
+
 @router.post("/fundamentals/{symbol}")
 def refresh_fundamentals(
     symbol: str,
