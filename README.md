@@ -284,3 +284,10 @@ The Backtesting workspace now uses a single compact command card: Market + Stock
 
 The Export / Excel and Settings pages were rebuilt as full product workspaces instead of sparse placeholder cards. Existing Excel export/live-link/master-workbook functions remain wired to the same handlers, while Settings now provides functional Market, Timeframe and Refresh controls plus connection/data-quality status. See `docs/UI_V17_EXCEL_SETTINGS_REDESIGN_2026-10-07.md`.
 
+
+## UI V19 — Modern Overview rebuild (2026-10-07)
+The Overview workspace was rebuilt for a cleaner, clearer and more comfortable desktop layout. Existing ranking, filter, chart, Excel and backtesting functions remain preserved in their dedicated workspaces.
+
+## 2026-10-07 UI V20 — clarity-first overview refinement
+
+The Overview has received a further readability and spacing pass based on the latest visual review. Typography, score cards, company information, chart controls, filter previews, and Top-200 rows are larger and clearer at normal browser zoom. Existing functionality and data behavior are unchanged. See `docs/UI_V20_CLARITY_FIRST_OVERVIEW_2026-10-07.md`.
