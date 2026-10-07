@@ -7295,3 +7295,174 @@ main{max-width:1600px!important;margin:18px auto 48px!important;padding:0 24px!i
   .app[data-view="overview"] .overview-filter-preview-grid{grid-template-columns:1fr!important;}
   .app[data-view="overview"] .overview-filter-preview-card.ownership{grid-column:auto!important;}
 }
+
+
+/* ===== 2026-10 UI V22 — premium score-card redesign =====
+   Replaces the symbolic/emoji-like score icons with a consistent SVG icon
+   system and turns the score strip into a clean, information-first summary. */
+.app[data-view="overview"] .score-overview-grid{
+  gap:14px!important;
+  margin:0 0 18px!important;
+}
+
+.app[data-view="overview"] .score-overview-card{
+  --score-accent:#2563eb;
+  --score-wash:#f4f8ff;
+  position:relative!important;
+  min-height:116px!important;
+  padding:15px 16px 14px!important;
+  display:grid!important;
+  grid-template-rows:auto 1fr auto!important;
+  gap:10px!important;
+  align-items:stretch!important;
+  overflow:hidden!important;
+  border:1px solid #dbe3ed!important;
+  border-radius:16px!important;
+  background:linear-gradient(180deg,var(--score-wash) 0%,#ffffff 54%)!important;
+  box-shadow:0 6px 18px rgba(15,23,42,.055)!important;
+  transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease!important;
+}
+
+.app[data-view="overview"] .score-overview-card::before{
+  content:"";
+  position:absolute;
+  inset:0 auto auto 0;
+  width:100%;
+  height:3px;
+  background:var(--score-accent);
+  opacity:.9;
+}
+
+.app[data-view="overview"] .score-overview-card:hover{
+  transform:translateY(-1px);
+  border-color:#cbd7e6!important;
+  box-shadow:0 10px 24px rgba(15,23,42,.08)!important;
+}
+
+.app[data-view="overview"] .score-overview-card.composite{--score-accent:#d97706;--score-wash:#fffaf2;}
+.app[data-view="overview"] .score-overview-card.fundamental{--score-accent:#2563eb;--score-wash:#f6f9ff;}
+.app[data-view="overview"] .score-overview-card.technical{--score-accent:#7c3aed;--score-wash:#faf7ff;}
+.app[data-view="overview"] .score-overview-card.rs{--score-accent:#ea580c;--score-wash:#fff8f4;}
+.app[data-view="overview"] .score-overview-card.ownership{--score-accent:#059669;--score-wash:#f4fbf8;}
+
+.app[data-view="overview"] .score-card-head{
+  display:flex;
+  align-items:center;
+  gap:11px;
+  min-width:0;
+}
+
+.app[data-view="overview"] .score-icon{
+  width:38px!important;
+  height:38px!important;
+  flex:0 0 38px!important;
+  display:grid!important;
+  place-items:center!important;
+  border:1px solid color-mix(in srgb,var(--score-accent) 22%,#ffffff)!important;
+  border-radius:11px!important;
+  background:color-mix(in srgb,var(--score-accent) 9%,#ffffff)!important;
+  color:var(--score-accent)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.72)!important;
+}
+
+.app[data-view="overview"] .score-icon svg{
+  width:21px;
+  height:21px;
+  display:block;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:1.8;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+
+.app[data-view="overview"] .score-card-heading{
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+}
+
+.app[data-view="overview"] .score-card-heading > span{
+  color:#26364d!important;
+  font-size:12.5px!important;
+  line-height:1.2!important;
+  font-weight:800!important;
+  letter-spacing:-.01em!important;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.app[data-view="overview"] .score-card-heading > small{
+  color:#8795a8!important;
+  font-size:9.5px!important;
+  line-height:1.2!important;
+  font-weight:600!important;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.app[data-view="overview"] .score-card-value{
+  display:flex;
+  align-items:flex-end;
+  gap:6px;
+  padding-left:49px;
+  align-self:end;
+}
+
+.app[data-view="overview"] .score-card-value strong{
+  color:#0f1f35!important;
+  font-size:28px!important;
+  line-height:.95!important;
+  font-weight:800!important;
+  letter-spacing:-.04em!important;
+}
+
+.app[data-view="overview"] .score-card-value > span{
+  color:#7b8ba0!important;
+  font-size:10.5px!important;
+  line-height:1!important;
+  font-weight:700!important;
+  padding-bottom:3px;
+}
+
+.app[data-view="overview"] .score-card-progress{
+  height:6px;
+  margin-left:49px;
+  overflow:hidden;
+  border-radius:999px;
+  background:#e9eef5;
+  box-shadow:inset 0 1px 2px rgba(15,23,42,.04);
+}
+
+.app[data-view="overview"] .score-card-progress > span{
+  display:block;
+  height:100%;
+  border-radius:inherit;
+  background:var(--score-accent);
+  box-shadow:0 0 0 1px rgba(255,255,255,.16) inset;
+  transition:width .28s ease;
+}
+
+@media (max-width:1400px){
+  .app[data-view="overview"] .score-overview-grid{
+    grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  }
+}
+
+@media (max-width:900px){
+  .app[data-view="overview"] .score-overview-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  }
+}
+
+@media (max-width:560px){
+  .app[data-view="overview"] .score-overview-grid{
+    grid-template-columns:1fr!important;
+  }
+  .app[data-view="overview"] .score-overview-card{
+    min-height:108px!important;
+  }
+}

@@ -113,6 +113,57 @@ const FRAMEWORK_EMA_COLORS = {
 };
 
 
+const SCORE_CARD_META = {
+  composite: { hint: "Overall ranking" },
+  fundamental: { hint: "Business quality" },
+  technical: { hint: "Trend & momentum" },
+  rs: { hint: "Market-relative" },
+  ownership: { hint: "Shareholding quality" },
+};
+
+const ScoreGlyph = ({ tone }) => {
+  if (tone === "composite") {
+    return (
+      <svg viewBox="0 0 24 24" role="img" aria-label="Composite score">
+        <path d="M12 3.2l1.72 3.48 3.84.56-2.78 2.71.66 3.82L12 11.97l-3.44 1.8.66-3.82L6.44 7.24l3.84-.56L12 3.2Z" />
+        <path d="M18.5 15.5v3m-1.5-1.5h3M4 15.5v2m-1-1h2" />
+      </svg>
+    );
+  }
+  if (tone === "fundamental") {
+    return (
+      <svg viewBox="0 0 24 24" role="img" aria-label="Fundamental score">
+        <path d="M5 19V9m5 10V5m5 14v-7m4 7V3" />
+        <path d="M3 19.5h18" />
+      </svg>
+    );
+  }
+  if (tone === "technical") {
+    return (
+      <svg viewBox="0 0 24 24" role="img" aria-label="Technical score">
+        <path d="M4 17l5-5 3.4 3.4L20 7.8" />
+        <path d="M15.5 7.8H20v4.5" />
+      </svg>
+    );
+  }
+  if (tone === "rs") {
+    return (
+      <svg viewBox="0 0 24 24" role="img" aria-label="Relative strength score">
+        <path d="M5.2 17.5a7.5 7.5 0 1 1 13.6 0" />
+        <path d="M12 12l4-3" />
+        <path d="M7.8 17.5h8.4" />
+      </svg>
+    );
+  }
+  return (
+    <svg viewBox="0 0 24 24" role="img" aria-label="Ownership score">
+      <path d="M8.3 11.2a3.1 3.1 0 1 0 0-6.2 3.1 3.1 0 0 0 0 6.2Zm7.6-1a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" />
+      <path d="M3.5 19c.3-3.3 2.1-5.1 4.8-5.1s4.5 1.8 4.8 5.1m.7 0c.2-2.7 1.6-4.2 3.9-4.2 1.6 0 2.8.7 3.5 2.1" />
+    </svg>
+  );
+};
+
+
 const universeColumnOptions = [
   ["symbol", "Symbol"], ["name", "Company"], ["isin", "ISIN"], ["exchange", "Exchange"],
   ["sector", "Sector"], ["industry", "Industry"], ["close", "LTP"],
@@ -3550,11 +3601,33 @@ function App() {
           ].map(([label, value, tone]) => {
             const numeric = Number(value);
             const score = Number.isFinite(numeric) ? Math.max(0, Math.min(100, numeric)) : null;
+            const meta = SCORE_CARD_META[tone] || { hint: "Score" };
             return (
-              <div className={`score-overview-card ${tone}`} key={label}>
-                <div className="score-icon" aria-hidden="true">{tone === "composite" ? "★" : tone === "fundamental" ? "▥" : tone === "technical" ? "↗" : tone === "rs" ? "◎" : "●"}</div>
-                <div className="score-copy"><span>{label}</span><strong>{score == null ? "N/A" : score.toFixed(1)} <small>/ 100</small></strong><i><b style={{ width: `${score || 0}%` }} /></i></div>
-              </div>
+              <article className={`score-overview-card ${tone}`} key={label}>
+                <div className="score-card-head">
+                  <div className="score-icon">
+                    <ScoreGlyph tone={tone} />
+                  </div>
+                  <div className="score-card-heading">
+                    <span>{label}</span>
+                    <small>{meta.hint}</small>
+                  </div>
+                </div>
+                <div className="score-card-value">
+                  <strong>{score == null ? "N/A" : score.toFixed(1)}</strong>
+                  <span>/ 100</span>
+                </div>
+                <div
+                  className="score-card-progress"
+                  role="progressbar"
+                  aria-label={`${label} progress`}
+                  aria-valuemin="0"
+                  aria-valuemax="100"
+                  aria-valuenow={score == null ? 0 : score}
+                >
+                  <span style={{ width: `${score || 0}%` }} />
+                </div>
+              </article>
             );
           })}
         </section>

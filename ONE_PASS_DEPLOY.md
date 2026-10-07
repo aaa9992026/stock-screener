@@ -1,9 +1,9 @@
-# One-pass deploy — UI V21 corrected Overview geometry
+# One-pass deploy — UI V22 premium score cards
 
 ```bash
 git add .
-git commit -m "Fix overview card alignment and dashboard geometry"
-git push
+git commit -m "Redesign overview score cards and icons"
+git push origin main
 ```
 
 After Vercel deploys, hard-refresh the browser with `Ctrl + Shift + R`.

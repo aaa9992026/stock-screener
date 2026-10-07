@@ -295,3 +295,8 @@ The Overview has received a further readability and spacing pass based on the la
 ## 2026-10-07 UI V21 — corrected Overview geometry
 
 Fixed the V20 Overview regression caused by an inherited `top: 86px` rule on the selected-company card. The company card and chart now align at the same top edge, the hero row is compact, indicator snapshots stay fully inside the company card, and the filter cards start cleanly below the entire hero row. Existing functionality is unchanged. See `docs/UI_V21_OVERVIEW_GEOMETRY_FIX_2026-10-07.md`.
+
+## 2026-10-07 UI V22 — premium score-card redesign
+
+The Overview score strip now uses a consistent custom SVG icon system and a clearer information hierarchy. The five score cards have professional line icons, restrained category accents, contextual micro-labels, larger score values, cleaner progress bars, and responsive hover/layout behavior. This is a UI-only change; ranking values and backend logic are unchanged. See `docs/UI_V22_PREMIUM_SCORE_CARDS_2026-10-07.md`.
+
