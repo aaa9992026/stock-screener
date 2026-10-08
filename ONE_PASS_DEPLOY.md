@@ -1,8 +1,8 @@
-# One-pass deploy — UI V30 Top 200 full-page geometry rebuild
+# One-pass deploy — UI V31 shared top area
 
 ```bash
 git add .
-git commit -m "Rebuild Top 200 ranking page geometry"
+git commit -m "Unify Overview and Top 200 top area"
 git push origin main
 ```
 

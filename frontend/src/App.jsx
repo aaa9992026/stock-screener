@@ -3539,68 +3539,48 @@ function App() {
         <div className="overview-top-toolbar">
         <section id="excel-tools" className="controls">
           <div className={`toolbar-market-picker ${showMarketMenu ? "is-open" : ""}`} ref={marketPickerRef}>
-            {activeView === "overview" ? (
-              <>
-                <button
-                  type="button"
-                  className="toolbar-market-trigger"
-                  aria-label="Select market"
-                  aria-haspopup="listbox"
-                  aria-expanded={showMarketMenu}
-                  onClick={() => setShowMarketMenu((open) => !open)}
-                >
-                  <span className="toolbar-market-home" aria-hidden="true">
-                    <svg viewBox="0 0 24 24"><path d="M3.5 10.5 12 4l8.5 6.5"/><path d="M5.5 9.5V20h13V9.5"/><path d="M9.5 20v-6h5v6"/></svg>
-                  </span>
-                  <span className="toolbar-market-trigger-label">{exchange === "US" ? "US Market" : exchange === "NSE" ? "NSE India" : "BSE India"}</span>
-                  <span className="toolbar-market-chevron" aria-hidden="true">
-                    <svg viewBox="0 0 20 20"><path d="m5.5 7.5 4.5 4.5 4.5-4.5"/></svg>
-                  </span>
-                </button>
-                {showMarketMenu && (
-                  <div className="toolbar-market-menu" role="listbox" aria-label="Available markets">
-                    {[
-                      { value: "US", label: "US Market", note: "NYSE & Nasdaq", code: "US" },
-                      { value: "NSE", label: "NSE India", note: "National Stock Exchange", code: "NSE" },
-                      { value: "BSE", label: "BSE India", note: "Limited data coverage", code: "BSE" },
-                    ].map((market) => (
-                      <button
-                        type="button"
-                        role="option"
-                        aria-selected={exchange === market.value}
-                        className={`toolbar-market-option ${exchange === market.value ? "active" : ""}`}
-                        key={market.value}
-                        onClick={() => {
-                          changeExchange(market.value);
-                          setShowMarketMenu(false);
-                        }}
-                      >
-                        <span className="toolbar-market-code">{market.code}</span>
-                        <span className="toolbar-market-option-copy"><strong>{market.label}</strong><small>{market.note}</small></span>
-                        {exchange === market.value && (
-                          <span className="toolbar-market-check" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="m4.5 10.2 3.1 3.1 7.9-7.9"/></svg></span>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </>
-            ) : (
-              <>
-                <span className="toolbar-control-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24"><path d="M3.5 10.5 12 4l8.5 6.5"/><path d="M5.5 9.5V20h13V9.5"/><path d="M9.5 20v-6h5v6"/></svg>
-                </span>
-                <select
-                  className="toolbar-market-select"
-                  value={exchange}
-                  onChange={(e) => changeExchange(e.target.value)}
-                  aria-label="Market"
-                >
-                  <option value="US">US Market</option>
-                  <option value="NSE">NSE India</option>
-                  <option value="BSE">BSE India</option>
-                </select>
-              </>
+            <button
+              type="button"
+              className="toolbar-market-trigger"
+              aria-label="Select market"
+              aria-haspopup="listbox"
+              aria-expanded={showMarketMenu}
+              onClick={() => setShowMarketMenu((open) => !open)}
+            >
+              <span className="toolbar-market-home" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M3.5 10.5 12 4l8.5 6.5"/><path d="M5.5 9.5V20h13V9.5"/><path d="M9.5 20v-6h5v6"/></svg>
+              </span>
+              <span className="toolbar-market-trigger-label">{exchange === "US" ? "US Market" : exchange === "NSE" ? "NSE India" : "BSE India"}</span>
+              <span className="toolbar-market-chevron" aria-hidden="true">
+                <svg viewBox="0 0 20 20"><path d="m5.5 7.5 4.5 4.5 4.5-4.5"/></svg>
+              </span>
+            </button>
+            {showMarketMenu && (
+              <div className="toolbar-market-menu" role="listbox" aria-label="Available markets">
+                {[
+                  { value: "US", label: "US Market", note: "NYSE & Nasdaq", code: "US" },
+                  { value: "NSE", label: "NSE India", note: "National Stock Exchange", code: "NSE" },
+                  { value: "BSE", label: "BSE India", note: "Limited data coverage", code: "BSE" },
+                ].map((market) => (
+                  <button
+                    type="button"
+                    role="option"
+                    aria-selected={exchange === market.value}
+                    className={`toolbar-market-option ${exchange === market.value ? "active" : ""}`}
+                    key={market.value}
+                    onClick={() => {
+                      changeExchange(market.value);
+                      setShowMarketMenu(false);
+                    }}
+                  >
+                    <span className="toolbar-market-code">{market.code}</span>
+                    <span className="toolbar-market-option-copy"><strong>{market.label}</strong><small>{market.note}</small></span>
+                    {exchange === market.value && (
+                      <span className="toolbar-market-check" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="m4.5 10.2 3.1 3.1 7.9-7.9"/></svg></span>
+                    )}
+                  </button>
+                ))}
+              </div>
             )}
           </div>
 
