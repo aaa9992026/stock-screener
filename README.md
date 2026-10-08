@@ -344,3 +344,8 @@ The Filters workspace now matches the Overview/Top-200 content width and command
 ## 2026-10-08 UI V33 — shared utility page width
 
 Backtesting, Export / Excel and Settings now use the same 1600px content rail and desktop gutters as Overview, Top 200 Ranking and Filters. Nested page-width caps were removed so these workspaces align to the same left/right boundaries without changing application logic.
+
+## 2026-10-08 UI V34 — full-page comfort audit
+
+All primary workspaces now share one calmer typography and color system. Tiny micro-copy has been raised to a readable scale, excessive bold weight and saturated accents have been reduced, tables/forms/chart labels are more legible, and Overview / Top 200 / Filters / Backtesting / Export / Settings now use consistent visual hierarchy without changing application logic. See `docs/UI_V34_FULL_PAGE_COMFORT_AUDIT_2026-10-08.md`.
+

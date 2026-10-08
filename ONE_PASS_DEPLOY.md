@@ -1,9 +1,9 @@
-# One-pass deploy — UI V33 shared utility content width
+# One-pass deploy — UI V34 full-page comfort audit
 
 ```bash
 git add .
-git commit -m "Align Backtesting Excel and Settings content width"
+git commit -m "Standardize full dashboard typography and color comfort"
 git push origin main
 ```
 
-After Vercel deploys, hard-refresh the browser with `Ctrl + Shift + R`.
+After Vercel deploys, hard-refresh with `Ctrl + Shift + R`.
