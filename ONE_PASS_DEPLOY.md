@@ -1,9 +1,9 @@
-# One-pass deploy — UI V32 Filters shared shell
+# One-pass deploy — UI V33 shared utility content width
 
 ```bash
 git add .
-git commit -m "Align Filters workspace with shared dashboard shell"
+git commit -m "Align Backtesting Excel and Settings content width"
 git push origin main
 ```
 
-After Vercel deploys, hard-refresh with `Ctrl + Shift + R`.
+After Vercel deploys, hard-refresh the browser with `Ctrl + Shift + R`.

@@ -340,3 +340,7 @@ Overview and Top 200 Ranking now use the same top command bar and the same five 
 ## 2026-10-08 UI V32 — Filters shared shell
 
 The Filters workspace now matches the Overview/Top-200 content width and command-bar geometry. Oversized unscoped toolbar SVGs are fixed, and filter content fills the same desktop rails without changing filter or ranking logic. See `docs/UI_V32_FILTERS_SHARED_SHELL_2026-10-08.md`.
+
+## 2026-10-08 UI V33 — shared utility page width
+
+Backtesting, Export / Excel and Settings now use the same 1600px content rail and desktop gutters as Overview, Top 200 Ranking and Filters. Nested page-width caps were removed so these workspaces align to the same left/right boundaries without changing application logic.

@@ -10003,3 +10003,52 @@ main{max-width:1600px!important;margin:18px auto 48px!important;padding:0 24px!i
   .app[data-view="filters"] .filter-workspace-summary{width:100%!important;text-align:left!important;}
   .app[data-view="filters"] .filter-workspace-tabs{grid-template-columns:1fr!important;}
 }
+
+/* =========================================================
+   UI V33 — shared content rails for Backtesting / Export / Settings (2026-10-08)
+   These utility workspaces now use the same 1600px desktop content rail and
+   28px page gutters as Overview, Top 200 Ranking and Filters.
+   ========================================================= */
+.app[data-view="analytics"] main,
+.app[data-view="excel"] main,
+.app[data-view="settings"] main{
+  max-width:1600px!important;
+  width:100%!important;
+  margin:20px auto 64px!important;
+  padding:0 28px!important;
+  box-sizing:border-box!important;
+}
+
+.app[data-view="analytics"] .backtesting-workspace.bt-pro-workspace,
+.app[data-view="excel"] .utility-workspace.excel-workspace,
+.app[data-view="settings"] .utility-workspace.settings-workspace{
+  width:100%!important;
+  max-width:none!important;
+  margin-left:0!important;
+  margin-right:0!important;
+  box-sizing:border-box!important;
+}
+
+/* Keep the premium page sections on the same left/right rail rather than
+   shrinking them inside a second centered max-width container. */
+.app[data-view="excel"] .utility-workspace-premium,
+.app[data-view="settings"] .utility-workspace-premium,
+.app[data-view="analytics"] .bt-v16-command-card,
+.app[data-view="analytics"] .bt-pro-kpis,
+.app[data-view="analytics"] .bt-pro-main-grid,
+.app[data-view="analytics"] .bt-pro-table-card{
+  width:100%!important;
+  max-width:none!important;
+  box-sizing:border-box!important;
+}
+
+@media(max-width:760px){
+  .app[data-view="analytics"] main,
+  .app[data-view="excel"] main,
+  .app[data-view="settings"] main{padding:0 16px!important;}
+}
+@media(max-width:620px){
+  .app[data-view="analytics"] main,
+  .app[data-view="excel"] main,
+  .app[data-view="settings"] main{padding:0 12px!important;}
+}
