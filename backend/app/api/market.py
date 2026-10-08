@@ -33,6 +33,10 @@ from statistics import median
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import threading
 import yfinance as yf
+import pandas as pd
+from bisect import bisect_left, bisect_right
+from app.models import RSHistory
+from app.services.rs_history import decode_points, persist_history
 
 router = APIRouter(prefix="/market", tags=["market"])
 
@@ -77,6 +81,8 @@ def _live_provider_rows(symbol: str, exchange: str, years: int = 2):
         try:
             rows = BSEProvider().get_ohlcv(symbol) or []
         except Exception:
+            rows = []
+        if not rows:
             rows = provider.get_ohlcv(symbol=symbol, exchange=exchange, start_date=start_date) or []
     else:
         rows = provider.get_ohlcv(symbol=symbol, exchange=exchange, start_date=start_date) or []
@@ -100,7 +106,7 @@ def _live_provider_rows(symbol: str, exchange: str, years: int = 2):
             except Exception:
                 volume = 0.0
             normalized.append(SimpleNamespace(
-                date=dt,
+                date=dt, symbol=symbol, exchange=exchange,
                 open=values[0], high=values[1], low=values[2], close=values[3],
                 volume=volume,
             ))
@@ -2260,6 +2266,9 @@ def _weighted_relative_return_from_points(stock_points, benchmark_points, weight
         period_start = _period_start_date(end_date, label)
         stock_old = _open_on_or_after(stock_points, period_start)
         bench_old = _open_on_or_after(benchmark_points, period_start)
+        if (_point_date(stock_points[0]) > period_start + timedelta(days=7)
+                or _point_date(benchmark_points[0]) > period_start + timedelta(days=7)):
+            continue
         if not stock_old or not bench_old or stock_old[1] == 0 or bench_old[1] == 0:
             continue
 
@@ -2325,57 +2334,45 @@ def _percentile_rank(values, target_value, total_count=None):
 
 
 def _rs_universe_metrics(db: Session, exchange: str, benchmark_points):
-    """Return period relative returns for the selected market universe.
-
-    US scores use US listings only. Indian scores use stored NSE + BSE listings
-    together, matching the client's requirement for one Indian RS universe.
-    Exchange is included in the internal key so equal ticker strings on two
-    exchanges cannot overwrite one another.
-    """
-    if db is None:
+    """Evaluate real persisted observations using one benchmark date and 5,000 slots."""
+    if db is None or not benchmark_points:
         return {}, {}
-
-    market_exchanges = _rs_market_exchanges(exchange)
-    cutoff = date.today() - timedelta(days=430)
-    rows = (
-        db.query(OHLCV)
-        .join(
-            Company,
-            (Company.symbol == OHLCV.symbol) & (Company.exchange == OHLCV.exchange),
-        )
-        .filter(
-            OHLCV.exchange.in_(market_exchanges),
-            OHLCV.date >= cutoff,
-            Company.is_active == 1,
-        )
-        .order_by(OHLCV.exchange.asc(), OHLCV.symbol.asc(), OHLCV.date.asc())
-        .all()
-    )
+    from app.services.rs_universe_backfill import eligible_companies
+    companies = eligible_companies(db, _rs_market_group(exchange))
+    eligible = {(c.exchange, c.symbol): c for c in companies}
     grouped = {}
-    for row in rows:
-        if row.date is None or row.date.weekday() >= 5 or row.close is None:
+    end_date = _point_date(benchmark_points[-1])
+    for item in db.query(RSHistory).filter(RSHistory.exchange.in_(_rs_market_exchanges(exchange)), RSHistory.last_date >= end_date).all():
+        key = (item.exchange, item.symbol)
+        if key in eligible:
+            points = decode_points(item.points_payload)
+            if points:
+                grouped[key] = points
+    # Existing verified OHLCV remains a migration/fallback source. Free-tier
+    # batches write only compressed observations and never repopulate this table.
+    query = db.query(OHLCV).join(Company, (Company.symbol == OHLCV.symbol) & (Company.exchange == OHLCV.exchange)).filter(
+        OHLCV.exchange.in_(_rs_market_exchanges(exchange)), Company.is_active == 1, OHLCV.date >= date.today() - timedelta(days=500))
+    stored = {}
+    for row in query.order_by(OHLCV.exchange, OHLCV.symbol, OHLCV.date).all():
+        key = (row.exchange, row.symbol)
+        if key in grouped or key not in eligible or row.open is None or row.close is None:
             continue
-        key = f"{row.exchange.upper()}:{row.symbol.upper()}"
-        grouped.setdefault(key, []).append(
-            (row.date, float(row.open) if row.open is not None else float(row.close), float(row.close))
-        )
-
-    # The relative-return metrics themselves do not depend on scoring weights.
-    metric_weights = {key: 1.0 for key in ("1w", "2w", "1m", "2m", "3m", "6m", "1y")}
-    symbol_metrics = {}
-    for key, points in grouped.items():
-        _, metrics = _weighted_relative_return_from_points(points, benchmark_points, metric_weights)
-        if metrics:
-            symbol_metrics[key] = metrics
-
-    sector_by_symbol = {
-        f"{row.exchange.upper()}:{row.symbol.upper()}": row.sector
-        for row in db.query(Company)
-        .filter(Company.exchange.in_(market_exchanges), Company.is_active == 1)
-        .all()
-        if row.sector
-    }
-    return symbol_metrics, sector_by_symbol
+        if row.date.weekday() >= 5 or not all(math.isfinite(float(v)) and float(v) > 0 for v in (row.open, row.close)):
+            continue
+        stored.setdefault(key, []).append((row.date, float(row.open), float(row.close)))
+    grouped.update({key: points for key, points in stored.items() if points[-1][0] >= end_date})
+    weights = {label: 1 for label in ("1w", "2w", "1m", "2m", "3m", "6m", "1y")}
+    metrics, sectors = {}, {}
+    for key, points in sorted(grouped.items()):
+        _, values = _weighted_relative_return_from_points(points, benchmark_points, weights)
+        if not all(label in values for label in ("1w", "1m", "3m", "6m", "1y")):
+            continue
+        name = f"{key[0]}:{key[1]}"
+        metrics[name] = values
+        sectors[name] = eligible[key].sector
+        if len(metrics) >= _rs_percentile_total(exchange):
+            break
+    return metrics, sectors
 
 
 def _weighted_rs_against_benchmark(daily_rows, exchange: str, period_weights=None, db: Session = None):
@@ -2409,6 +2406,20 @@ def _weighted_rs_against_benchmark(daily_rows, exchange: str, period_weights=Non
         stock_points.sort(key=lambda item: item[0])
         benchmark_points.sort(key=lambda item: item[0])
 
+        from app.services.rs_universe_backfill import evaluation_date
+        cohort_date = evaluation_date(db, _rs_market_group(exchange)) if db is not None else _point_date(benchmark_points[-1])
+        stock_points = [p for p in stock_points if _point_date(p) <= cohort_date]
+        benchmark_points = [p for p in benchmark_points if _point_date(p) <= cohort_date]
+        if not stock_points or not benchmark_points:
+            return None, None, {}, benchmark_name, []
+        target_symbol = getattr(daily_rows[-1], "symbol", None) if daily_rows else None
+        if db is not None and target_symbol and len(daily_rows) >= 180:
+            try:
+                stored = db.query(RSHistory).filter_by(symbol=target_symbol.upper(), exchange=exchange.upper()).first()
+                if stored is None or stored.last_date < daily_rows[-1].date:
+                    persist_history(db, target_symbol, exchange, daily_rows)
+            except Exception:
+                db.rollback()
         benchmark_by_date = {d: c for d, _o, c in benchmark_points}
         aligned = [(d, c, benchmark_by_date.get(d)) for d, _o, c in stock_points if benchmark_by_date.get(d) is not None]
         rs_chart = []
@@ -2454,6 +2465,14 @@ def _weighted_rs_against_benchmark(daily_rows, exchange: str, period_weights=Non
             for label in period_labels
         }
 
+        sorted_period_values = {label: sorted(values) for label, values in period_universe_values.items()}
+        def fast_percentile(label, value):
+            values = sorted_period_values[label]
+            if value is None or not values:
+                return None
+            lower = bisect_left(values, value - 1e-9)
+            same = bisect_right(values, value + 1e-9) - lower
+            return round(max(0, min(100, (lower + (max(1, same) - 1) / 2) / (target_size - 1) * 100)), 2)
         stock_period_scores = {}
         for symbol, sym_metrics in universe_metrics.items():
             score_sum = 0.0
@@ -2463,7 +2482,7 @@ def _weighted_rs_against_benchmark(daily_rows, exchange: str, period_weights=Non
                 if weight <= 0 or label not in sym_metrics:
                     continue
                 rr = sym_metrics[label].get("relative_return_percent")
-                pct = _percentile_rank(period_universe_values[label], rr, target_size)
+                pct = fast_percentile(label, rr)
                 if pct is None:
                     continue
                 score_sum += pct * weight
@@ -2480,7 +2499,7 @@ def _weighted_rs_against_benchmark(daily_rows, exchange: str, period_weights=Non
                 sector_groups.setdefault(sector, []).append(score)
         sector_scores = {sector: sum(vals) / len(vals) for sector, vals in sector_groups.items() if vals}
 
-        target_symbol = daily_rows[-1].symbol if daily_rows else None
+        target_symbol = getattr(daily_rows[-1], "symbol", None) if daily_rows else None
         target_key = f"{exchange.upper()}:{target_symbol.upper()}" if target_symbol else None
         target_sector = sector_by_symbol.get(target_key) if target_key else None
         target_sector_raw = sector_scores.get(target_sector) if target_sector else None
@@ -2508,10 +2527,7 @@ def _weighted_rs_against_benchmark(daily_rows, exchange: str, period_weights=Non
             weighted_score += sector_percentile * sector_weight
             available_weight += sector_weight
 
-        if available_weight <= 0:
-            return None, None, metrics, benchmark_name, rs_chart
-
-        rating = round(weighted_score / available_weight, 2)
+        rating = round(weighted_score / available_weight, 2) if available_weight > 0 else None
 
         # IMPORTANT: raw/composite relative return is intentionally independent
         # of the editable score weights.  The client specifically requested that
@@ -2536,11 +2552,14 @@ def _weighted_rs_against_benchmark(daily_rows, exchange: str, period_weights=Non
                 for label in required_default_periods
             )
         )
+        metrics["_score_complete"] = all(weights.get(label, 0) <= 0 or (metrics.get(label) or {}).get("percentile") is not None for label in (*period_labels, "sector"))
         metrics["_score_weight_total"] = available_weight
         metrics["_relative_return_weight_independent"] = True
         metrics["_fixed_relative_return_reference_weights"] = fixed_relative_weights
         return rating, weighted_relative, metrics, benchmark_name, rs_chart
-    except Exception:
+    except Exception as exc:
+        import logging
+        logging.getLogger(__name__).exception("RS evaluation failed for %s: %s", exchange, exc)
         return None, None, {}, benchmark_name, []
 
 
@@ -3308,13 +3327,13 @@ def get_excel_feed(symbol: str, exchange: str = "US", limit: int = Query(EXCEL_D
         except Exception:
             live_rows = []
     if live_rows:
-        live_dates = [str(r.get("date")) for r in live_rows if r.get("date")]
+        live_dates = [r.date.isoformat() for r in live_rows if r.date]
         if live_dates:
             history_status = {
                 **history_status,
                 "earliest_date": min(live_dates),
                 "latest_date": max(live_dates),
-                "stored_rows": len(live_rows),
+                "requirement_met": bool(live_dates and min(live_dates) <= (date.today() - timedelta(days=366 * EXCEL_MIN_HISTORY_YEARS)).isoformat()),
                 "live_provider_rows": len(live_rows),
                 "warning": "Free-tier mode: Excel feed is using live provider OHLCV for the selected stock; the Master Excel bridge still fetches up to 20 years directly.",
             }
@@ -3349,7 +3368,7 @@ def get_excel_feed(symbol: str, exchange: str = "US", limit: int = Query(EXCEL_D
         },
         "ohlcv": (
             [
-                {"date": str(r.get("date")), "open": r.get("open"), "high": r.get("high"), "low": r.get("low"), "close": r.get("close"), "volume": r.get("volume")}
+                {"date": r.date.isoformat(), "open": r.open, "high": r.high, "low": r.low, "close": r.close, "volume": r.volume}
                 for r in live_rows
             ] if live_rows else [
                 {"date": r.date.isoformat(), "open": r.open, "high": r.high, "low": r.low, "close": r.close, "volume": r.volume}
@@ -3418,12 +3437,13 @@ def export_excel_snapshot(symbol: str, exchange: str = "US", limit: int = Query(
     summary_rows = [
         ("Symbol", symbol), ("Exchange", exchange),
         ("Company", feed["company"].get("name")),
+        ("ISIN", feed["company"].get("isin")),
         ("Sector", feed["company"].get("sector")),
         ("Industry", feed["company"].get("industry")),
         ("Generated At", feed.get("generated_at")),
     ]
     for row in summary_rows:
-        ws.append(row)
+        ws.append([value if value is not None else "N/A" for value in row])
     ws["A1"].font = Font(bold=True)
 
     raw = wb.create_sheet("OHLCV")
@@ -3435,8 +3455,8 @@ def export_excel_snapshot(symbol: str, exchange: str = "US", limit: int = Query(
     snap = wb.create_sheet("Fundamental_Ownership")
     snap.append(["Field", "Value"])
     for cell in snap[1]: cell.font = Font(bold=True)
-    for key, value in feed["fundamental_snapshot"].items(): snap.append([f"fundamental.{key}", value])
-    for key, value in feed["ownership_snapshot"].items(): snap.append([f"ownership.{key}", value])
+    for key, value in feed["fundamental_snapshot"].items(): snap.append([f"fundamental.{key}", value if value is not None else "N/A"])
+    for key, value in feed["ownership_snapshot"].items(): snap.append([f"ownership.{key}", value if value is not None else "N/A"])
 
     cfg = wb.create_sheet("Ranking_Config")
     cfg.append(["Component", "Score (0-100)", "Weight %", "Weighted Points"])
@@ -3498,6 +3518,8 @@ def export_excel_snapshot(symbol: str, exchange: str = "US", limit: int = Query(
     notes.append(["Milestone 2 handwritten ranking notes"])
     notes["A1"].font = Font(bold=True)
     notes.append(["All market/fundamental values must come from configured providers or stored DB data; missing values stay N/A."])
+    notes.append(["History coverage", feed["history"].get("earliest_date") or "N/A", feed["history"].get("latest_date") or "N/A"])
+    notes.append(["History warning", feed["history"].get("warning") or "None"])
     notes.append(["Ambiguous handwritten thresholds/point allocations remain editable and must not be guessed."])
     notes.append(["For a live Excel connection, use the /market/excel-feed/{symbol}?exchange=... endpoint through Power Query."])
 
@@ -4100,10 +4122,11 @@ def get_technical_summary(
                 min(100.0, (float(rs_metrics.get("_scored_stocks_available", 0) or 0) / _rs_percentile_total(exchange)) * 100.0),
                 2,
             ),
-            "complete": int(rs_metrics.get("_scored_stocks_available", 0) or 0) >= _rs_percentile_total(exchange),
+            "complete": int(rs_metrics.get("_scored_stocks_available", 0) or 0) >= _rs_percentile_total(exchange) and bool(rs_metrics.get("_score_complete")),
+            "evaluation_date": rs_chart[-1]["date"] if rs_chart else None,
             "note": (
                 f"Client percentile denominator is fixed at {_rs_percentile_total(exchange):,} for {_rs_market_group(exchange)}. "
-                f"The RS score is provisional until {_rs_percentile_total(exchange):,} stored stocks have usable comparison history."
+                f"The RS score is provisional until {_rs_percentile_total(exchange):,} verified stocks have usable comparison history on one persisted evaluation date."
                 if int(rs_metrics.get("_scored_stocks_available", 0) or 0) < _rs_percentile_total(exchange)
                 else f"The stored RS comparison universe meets the client-required {_rs_percentile_total(exchange):,}-stock denominator for {_rs_market_group(exchange)}."
             ),
@@ -4224,88 +4247,8 @@ def get_chart_data(
 
 
 def _backtest_direct_yahoo_history(symbol: str, exchange: str, years: int):
-    """Fetch real daily OHLCV from Yahoo chart API without yfinance cookies.
-
-    This is used specifically for long backtests because Railway/cloud hosts can
-    intermittently fail yfinance crumb/cookie negotiation even when Yahoo's
-    public chart JSON endpoint is reachable. No synthetic bars are created.
-    """
-    exchange = str(exchange or "US").upper().strip()
-    provider = YahooProvider()
-    ticker_symbol = provider.format_symbol(str(symbol or "").upper().strip(), exchange)
-    if not ticker_symbol:
-        return []
-
-    # Request the exact period using UNIX timestamps. A small warm-up margin is
-    # included so indicators such as SMA50/Bollinger are valid from the visible
-    # beginning of the requested backtest window.
-    end_dt = datetime.utcnow() + timedelta(days=1)
-    start_dt = end_dt - timedelta(days=366 * max(1, min(20, int(years or 20))) + 120)
-    params = {
-        "period1": int(start_dt.timestamp()),
-        "period2": int(end_dt.timestamp()),
-        "interval": "1d",
-        "events": "history",
-        "includeAdjustedClose": "true",
-    }
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36",
-        "Accept": "application/json,text/plain,*/*",
-    }
-    encoded = quote(ticker_symbol, safe="")
-    for host in ("query1.finance.yahoo.com", "query2.finance.yahoo.com"):
-        try:
-            response = requests.get(
-                f"https://{host}/v8/finance/chart/{encoded}",
-                params=params,
-                headers=headers,
-                timeout=25,
-            )
-            response.raise_for_status()
-            payload = response.json()
-            result = ((payload.get("chart") or {}).get("result") or [None])[0]
-            if not result:
-                continue
-            timestamps = result.get("timestamp") or []
-            quote_rows = (((result.get("indicators") or {}).get("quote") or [{}])[0])
-            opens = quote_rows.get("open") or []
-            highs = quote_rows.get("high") or []
-            lows = quote_rows.get("low") or []
-            closes = quote_rows.get("close") or []
-            volumes = quote_rows.get("volume") or []
-            rows = []
-            for i, ts in enumerate(timestamps):
-                try:
-                    close = closes[i] if i < len(closes) else None
-                    if close is None:
-                        continue
-                    open_ = opens[i] if i < len(opens) else close
-                    high = highs[i] if i < len(highs) else close
-                    low = lows[i] if i < len(lows) else close
-                    volume = volumes[i] if i < len(volumes) else 0
-                    if None in (open_, high, low, close):
-                        continue
-                    trade_date = datetime.utcfromtimestamp(int(ts)).date()
-                    if trade_date.weekday() >= 5:
-                        continue
-                    values = [float(open_), float(high), float(low), float(close)]
-                    if any((not math.isfinite(v)) or v <= 0 for v in values):
-                        continue
-                    rows.append({
-                        "date": trade_date,
-                        "open": values[0],
-                        "high": values[1],
-                        "low": values[2],
-                        "close": values[3],
-                        "volume": float(volume or 0),
-                    })
-                except (TypeError, ValueError, IndexError, OverflowError):
-                    continue
-            if len(rows) >= 60:
-                return rows
-        except Exception:
-            continue
-    return []
+    start = (date.today() - timedelta(days=366 * max(1, min(20, int(years))) + 120)).isoformat()
+    return YahooProvider().get_chart_history(symbol, exchange, start_date=start)
 
 
 def _backtest_stateful_position(buy_condition, sell_condition):
@@ -4374,7 +4317,7 @@ def get_backtest(
         provider_error = str(exc)
         rows = []
 
-    direct_rows = _backtest_direct_yahoo_history(symbol, exchange, years)
+    direct_rows = _backtest_direct_yahoo_history(symbol, exchange, years) if len(rows) < 60 else []
     # Prefer whichever verified provider result contains materially more history.
     if len(direct_rows) > len(rows):
         rows = direct_rows
@@ -4383,7 +4326,11 @@ def get_backtest(
     # Final fallback is verified stored/live dashboard history. This can be
     # shorter than the requested horizon and is explicitly reported as Partial.
     if not rows:
-        fallback = _market_rows_with_live_fallback(db, symbol=symbol, exchange=exchange, min_rows=1, years=max(5, years))
+        try:
+            fallback = _market_rows_with_live_fallback(db, symbol=symbol, exchange=exchange, min_rows=1, years=max(5, years))
+        except Exception as exc:
+            provider_error = str(exc)
+            fallback = []
         rows = [
             {"date": row.date, "open": row.open, "high": row.high, "low": row.low, "close": row.close, "volume": row.volume}
             for row in fallback
@@ -4391,7 +4338,7 @@ def get_backtest(
         source = "Verified dashboard history fallback"
 
     if len(rows) < 60:
-        raise HTTPException(status_code=404, detail="Not enough verified price history to run backtesting")
+        raise HTTPException(status_code=503 if provider_error else 404, detail=f"Verified history is currently unavailable for {exchange}:{symbol}. " + ("The history provider could not be reached; retry shortly." if provider_error else "Fewer than 60 real daily observations are available."))
 
     frame = pd.DataFrame(rows)
     frame["Date"] = pd.to_datetime(frame["date"])

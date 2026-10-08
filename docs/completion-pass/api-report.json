@@ -1,0 +1,261 @@
+[
+  {
+    "route": "/market/chart/AAPL?exchange=US&timeframe=daily&limit=1040",
+    "status": 200,
+    "bytes": 146919
+  },
+  {
+    "route": "/market/technical-summary/AAPL?exchange=US&timeframe=daily",
+    "status": 200,
+    "bytes": 62049,
+    "rs": {
+      "available": true,
+      "rating": 0.16,
+      "universe": {
+        "market": "US",
+        "market_exchanges": [
+          "US"
+        ],
+        "target_size": 5000,
+        "scored_stocks_available": 15,
+        "coverage_percent": 0.3,
+        "complete": false,
+        "evaluation_date": "2026-10-06",
+        "note": "Client percentile denominator is fixed at 5,000 for US. The RS score is provisional until 5,000 verified stocks have usable comparison history on one persisted evaluation date."
+      }
+    }
+  },
+  {
+    "route": "/market/indicators/AAPL?exchange=US&timeframe=daily",
+    "status": 200,
+    "bytes": 231
+  },
+  {
+    "route": "/market/chart/AAPL?exchange=US&timeframe=weekly&limit=1040",
+    "status": 200,
+    "bytes": 40430
+  },
+  {
+    "route": "/market/technical-summary/AAPL?exchange=US&timeframe=weekly",
+    "status": 200,
+    "bytes": 60820,
+    "rs": {
+      "available": true,
+      "rating": 0.16,
+      "universe": {
+        "market": "US",
+        "market_exchanges": [
+          "US"
+        ],
+        "target_size": 5000,
+        "scored_stocks_available": 15,
+        "coverage_percent": 0.3,
+        "complete": false,
+        "evaluation_date": "2026-10-06",
+        "note": "Client percentile denominator is fixed at 5,000 for US. The RS score is provisional until 5,000 verified stocks have usable comparison history on one persisted evaluation date."
+      }
+    }
+  },
+  {
+    "route": "/market/indicators/AAPL?exchange=US&timeframe=weekly",
+    "status": 200,
+    "bytes": 230
+  },
+  {
+    "route": "/market/chart/AAPL?exchange=US&timeframe=monthly&limit=1040",
+    "status": 200,
+    "bytes": 9366
+  },
+  {
+    "route": "/market/technical-summary/AAPL?exchange=US&timeframe=monthly",
+    "status": 200,
+    "bytes": 36747,
+    "rs": {
+      "available": true,
+      "rating": 0.16,
+      "universe": {
+        "market": "US",
+        "market_exchanges": [
+          "US"
+        ],
+        "target_size": 5000,
+        "scored_stocks_available": 15,
+        "coverage_percent": 0.3,
+        "complete": false,
+        "evaluation_date": "2026-10-06",
+        "note": "Client percentile denominator is fixed at 5,000 for US. The RS score is provisional until 5,000 verified stocks have usable comparison history on one persisted evaluation date."
+      }
+    }
+  },
+  {
+    "route": "/market/indicators/AAPL?exchange=US&timeframe=monthly",
+    "status": 200,
+    "bytes": 228
+  },
+  {
+    "route": "/market/dashboard/AAPL?exchange=US",
+    "status": 200,
+    "bytes": 1664
+  },
+  {
+    "route": "/market/backtest/AAPL?exchange=US&years=20",
+    "status": 200,
+    "bytes": 47594
+  },
+  {
+    "route": "/market/excel-export/AAPL?exchange=US&limit=5000",
+    "status": 200,
+    "bytes": 73256
+  },
+  {
+    "route": "/market/excel-feed/AAPL?exchange=US&limit=5000",
+    "status": 200,
+    "bytes": 225108
+  },
+  {
+    "route": "/market/excel-live-csv/AAPL?exchange=US&limit=5000",
+    "status": 200,
+    "bytes": 264226
+  },
+  {
+    "route": "/market/benchmark/US",
+    "status": 200,
+    "bytes": 18481
+  },
+  {
+    "route": "/companies/rs-backfill/status?market=US",
+    "status": 200,
+    "bytes": 1441
+  },
+  {
+    "route": "/market/chart/RELIANCE?exchange=NSE&timeframe=daily&limit=1040",
+    "status": 200,
+    "bytes": 134924
+  },
+  {
+    "route": "/market/technical-summary/RELIANCE?exchange=NSE&timeframe=daily",
+    "status": 200,
+    "bytes": 60806,
+    "rs": {
+      "available": true,
+      "rating": 0.14,
+      "universe": {
+        "market": "INDIA",
+        "market_exchanges": [
+          "NSE",
+          "BSE"
+        ],
+        "target_size": 5000,
+        "scored_stocks_available": 10,
+        "coverage_percent": 0.2,
+        "complete": false,
+        "evaluation_date": "2026-10-06",
+        "note": "Client percentile denominator is fixed at 5,000 for INDIA. The RS score is provisional until 5,000 verified stocks have usable comparison history on one persisted evaluation date."
+      }
+    }
+  },
+  {
+    "route": "/market/indicators/RELIANCE?exchange=NSE&timeframe=daily",
+    "status": 200,
+    "bytes": 239
+  },
+  {
+    "route": "/market/chart/RELIANCE?exchange=NSE&timeframe=weekly&limit=1040",
+    "status": 200,
+    "bytes": 37711
+  },
+  {
+    "route": "/market/technical-summary/RELIANCE?exchange=NSE&timeframe=weekly",
+    "status": 200,
+    "bytes": 59726,
+    "rs": {
+      "available": true,
+      "rating": 0.14,
+      "universe": {
+        "market": "INDIA",
+        "market_exchanges": [
+          "NSE",
+          "BSE"
+        ],
+        "target_size": 5000,
+        "scored_stocks_available": 10,
+        "coverage_percent": 0.2,
+        "complete": false,
+        "evaluation_date": "2026-10-06",
+        "note": "Client percentile denominator is fixed at 5,000 for INDIA. The RS score is provisional until 5,000 verified stocks have usable comparison history on one persisted evaluation date."
+      }
+    }
+  },
+  {
+    "route": "/market/indicators/RELIANCE?exchange=NSE&timeframe=weekly",
+    "status": 200,
+    "bytes": 243
+  },
+  {
+    "route": "/market/chart/RELIANCE?exchange=NSE&timeframe=monthly&limit=1040",
+    "status": 200,
+    "bytes": 8923
+  },
+  {
+    "route": "/market/technical-summary/RELIANCE?exchange=NSE&timeframe=monthly",
+    "status": 200,
+    "bytes": 35585,
+    "rs": {
+      "available": true,
+      "rating": 0.14,
+      "universe": {
+        "market": "INDIA",
+        "market_exchanges": [
+          "NSE",
+          "BSE"
+        ],
+        "target_size": 5000,
+        "scored_stocks_available": 10,
+        "coverage_percent": 0.2,
+        "complete": false,
+        "evaluation_date": "2026-10-06",
+        "note": "Client percentile denominator is fixed at 5,000 for INDIA. The RS score is provisional until 5,000 verified stocks have usable comparison history on one persisted evaluation date."
+      }
+    }
+  },
+  {
+    "route": "/market/indicators/RELIANCE?exchange=NSE&timeframe=monthly",
+    "status": 200,
+    "bytes": 238
+  },
+  {
+    "route": "/market/dashboard/RELIANCE?exchange=NSE",
+    "status": 200,
+    "bytes": 1494
+  },
+  {
+    "route": "/market/backtest/RELIANCE?exchange=NSE&years=20",
+    "status": 200,
+    "bytes": 46870
+  },
+  {
+    "route": "/market/excel-export/RELIANCE?exchange=NSE&limit=5000",
+    "status": 200,
+    "bytes": 82260
+  },
+  {
+    "route": "/market/excel-feed/RELIANCE?exchange=NSE&limit=5000",
+    "status": 200,
+    "bytes": 210083
+  },
+  {
+    "route": "/market/excel-live-csv/RELIANCE?exchange=NSE&limit=5000",
+    "status": 200,
+    "bytes": 268299
+  },
+  {
+    "route": "/market/benchmark/NSE",
+    "status": 200,
+    "bytes": 17828
+  },
+  {
+    "route": "/companies/rs-backfill/status?market=INDIA",
+    "status": 200,
+    "bytes": 1639
+  }
+]

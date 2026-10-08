@@ -12,11 +12,12 @@ skipped, failed/empty symbols remain pending and can be retried on a later run.
 
 from __future__ import annotations
 
+import json
 import logging
 import math
 import os
 import threading
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 
 import pandas as pd
 import yfinance as yf
@@ -24,7 +25,9 @@ from sqlalchemy import and_, func
 from sqlalchemy.orm import Session
 
 from app.database import SessionLocal
-from app.models import Company, OHLCV
+from app.models import Company, OHLCV, RSHistory, RSBackfillState
+from app.services.rs_history import persist_history
+from app.services.providers.yahoo_provider import YahooProvider
 from app.services.ohlcv_sync import sync_ohlcv
 from app.services.us_company_provider import is_supported_us_equity
 
@@ -78,6 +81,21 @@ def _provider_symbol(symbol: str, exchange: str) -> str:
     return symbol
 
 
+def eligible_companies(db, market):
+    market = normalize_market(market)
+    companies = db.query(Company).filter(Company.exchange.in_(market_exchanges(market)), Company.is_active == 1).all()
+    if market == "US":
+        return [c for c in companies if is_supported_us_equity(c.symbol, c.name)]
+    unique, seen, seen_symbols = [], set(), set()
+    for company in sorted(companies, key=lambda c: (c.exchange != "NSE", c.symbol)):
+        identity = company.isin or f"{company.exchange}:{company.symbol}"
+        if identity not in seen and company.symbol not in seen_symbols:
+            seen.add(identity)
+            seen_symbols.add(company.symbol)
+            unique.append(company)
+    return unique
+
+
 def _history_stats(db: Session, market: str) -> dict[tuple[str, str], dict]:
     exchanges = market_exchanges(market)
     cutoff = date.today() - timedelta(days=DEFAULT_HISTORY_DAYS + 45)
@@ -104,7 +122,7 @@ def _history_stats(db: Session, market: str) -> dict[tuple[str, str], dict]:
         .group_by(OHLCV.exchange, OHLCV.symbol)
         .all()
     )
-    return {
+    stats = {
         (str(exchange).upper(), str(symbol).upper()): {
             "rows": int(count or 0),
             "first_date": first_date,
@@ -112,6 +130,13 @@ def _history_stats(db: Session, market: str) -> dict[tuple[str, str], dict]:
         }
         for exchange, symbol, count, first_date, last_date in rows
     }
+
+    for item in db.query(RSHistory).filter(RSHistory.exchange.in_(exchanges), RSHistory.points_payload.isnot(None)).all():
+        key = (item.exchange.upper(), item.symbol.upper())
+        cached = {"rows": item.row_count, "first_date": item.first_date, "last_date": item.last_date}
+        if _is_ready(cached) or key not in stats:
+            stats[key] = cached
+    return stats
 
 
 def _is_ready(stat: dict | None, today: date | None = None) -> bool:
@@ -137,16 +162,13 @@ def universe_backfill_status(db: Session, market: str) -> dict:
     exchanges = market_exchanges(market)
     target = RS_UNIVERSE_TARGETS[market]
 
-    companies = (
-        db.query(Company)
-        .filter(Company.exchange.in_(exchanges), Company.is_active == 1)
-        .order_by(Company.exchange.asc(), Company.symbol.asc())
-        .all()
-    )
-    if market == "US":
-        companies = [c for c in companies if is_supported_us_equity(c.symbol, c.name)]
+    companies = eligible_companies(db, market)
     stats = _history_stats(db, market)
+    persisted = db.query(RSBackfillState).filter_by(market=market).first()
+    last_batch = json.loads(persisted.payload_json) if persisted and persisted.payload_json != "{}" else _last_results.get(market)
+    retries = db.query(RSHistory).filter(RSHistory.exchange.in_(exchanges), RSHistory.retry_after > datetime.now(timezone.utc).replace(tzinfo=None)).count()
 
+    cohort_date = evaluation_date(db, market)
     ready = 0
     no_history = 0
     stale_or_short = 0
@@ -156,7 +178,7 @@ def universe_backfill_status(db: Session, market: str) -> dict:
         bucket = by_exchange.setdefault(exchange, {"active": 0, "ready": 0, "pending": 0})
         bucket["active"] += 1
         stat = stats.get((exchange, company.symbol.upper()))
-        if _is_ready(stat):
+        if _is_ready(stat) and stat["last_date"] >= cohort_date:
             ready += 1
             bucket["ready"] += 1
         else:
@@ -170,6 +192,7 @@ def universe_backfill_status(db: Session, market: str) -> dict:
     pending = max(0, active - ready)
     return {
         "market": market,
+        "evaluation_date": evaluation_date(db, market).isoformat(),
         "target_rs_universe": target,
         "active_symbols": active,
         "history_ready_symbols": ready,
@@ -187,7 +210,10 @@ def universe_backfill_status(db: Session, market: str) -> dict:
             "requested_backfill_days": DEFAULT_HISTORY_DAYS,
         },
         "by_exchange": by_exchange,
-        "last_batch": _last_results.get(market),
+        "last_batch": last_batch,
+        "retry_cooldown_symbols": retries,
+        "scheduler_enabled": str(os.getenv("RS_BACKFILL_ENABLED", "1")).lower() in {"1", "true", "yes", "on"},
+        "storage": "compressed provider date/open/close observations",
     }
 
 
@@ -195,25 +221,24 @@ def _candidate_companies(db: Session, market: str, limit: int) -> list[Company]:
     market = normalize_market(market)
     exchanges = market_exchanges(market)
     stats = _history_stats(db, market)
-    companies = (
-        db.query(Company)
-        .filter(Company.exchange.in_(exchanges), Company.is_active == 1)
-        .all()
-    )
-    if market == "US":
-        companies = [c for c in companies if is_supported_us_equity(c.symbol, c.name)]
+    companies = eligible_companies(db, market)
 
+    persisted = {(r.exchange, r.symbol): r for r in db.query(RSHistory).filter(RSHistory.exchange.in_(exchanges)).all()}
+    cohort_date = evaluation_date(db, market)
     candidates = []
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
     for company in companies:
         key = (company.exchange.upper(), company.symbol.upper())
-        retry_after = _symbol_retry_after.get(key)
+        retry_after = getattr(persisted.get(key), "retry_after", None) or _symbol_retry_after.get(key)
         if retry_after is not None:
             if retry_after > now:
                 continue
             _symbol_retry_after.pop(key, None)
         stat = stats.get(key)
-        if _is_ready(stat):
+        # Refresh throughout a rolling evaluation; never stop once 5,000 have been seen.
+        compact = persisted.get(key)
+        compact_stat = {"rows": compact.row_count, "first_date": compact.first_date, "last_date": compact.last_date} if compact else None
+        if compact and compact.points_payload and _is_ready(compact_stat) and compact.last_date >= cohort_date:
             continue
         # Symbols with no history first, then oldest/stalest history.
         last_date = stat.get("last_date") if stat else None
@@ -293,6 +318,41 @@ def _frame_to_rows(frame: pd.DataFrame | None) -> list[dict]:
     return rows
 
 
+def evaluation_date(db, market):
+    """One persisted comparison date lets incremental batches form a real cohort."""
+    market = normalize_market(market)
+    state = db.query(RSBackfillState).filter_by(market=market).first()
+    if state is None:
+        cutoff = date.today() - timedelta(days=1)
+        while cutoff.weekday() >= 5:
+            cutoff -= timedelta(days=1)
+        state = RSBackfillState(market=market, evaluation_date=cutoff, payload_json="{}")
+        db.add(state)
+        db.commit()
+    if state.evaluation_date is None:
+        state.evaluation_date = date.today() - timedelta(days=1)
+        db.commit()
+    return state.evaluation_date
+
+
+def _persist_retry(db, exchange, symbol, status, error, retry_after):
+    item = db.query(RSHistory).filter_by(symbol=symbol, exchange=exchange).first()
+    if item is None:
+        item = RSHistory(symbol=symbol, exchange=exchange)
+        db.add(item)
+    item.status, item.error, item.retry_after = status, error[:250], retry_after
+    db.commit()
+
+def _save_result(db, market, result):
+    _last_results[market] = result
+    state = db.query(RSBackfillState).filter_by(market=market).first()
+    if state is None:
+        state = RSBackfillState(market=market)
+        db.add(state)
+    state.payload_json = json.dumps(result, default=str)
+    db.commit()
+
+
 def backfill_market_batch(market: str, batch_size: int | None = None) -> dict:
     """Fetch one idempotent batch of real OHLCV history for an RS market.
 
@@ -311,10 +371,18 @@ def backfill_market_batch(market: str, batch_size: int | None = None) -> dict:
         }
 
     db = SessionLocal()
-    started_at = datetime.utcnow()
+    started_at = datetime.now(timezone.utc).replace(tzinfo=None)
     try:
         before = universe_backfill_status(db, market)
-        if before["complete"]:
+        if before["complete"] and evaluation_date(db, market) < date.today() - timedelta(days=7):
+            state = db.query(RSBackfillState).filter_by(market=market).first()
+            cutoff = date.today() - timedelta(days=1)
+            while cutoff.weekday() >= 5:
+                cutoff -= timedelta(days=1)
+            state.evaluation_date = cutoff
+            db.commit()
+            before = universe_backfill_status(db, market)
+        if before["complete"] and not _candidate_companies(db, market, 1):
             result = {
                 "market": market,
                 "status": "complete",
@@ -326,15 +394,16 @@ def backfill_market_batch(market: str, batch_size: int | None = None) -> dict:
                 "before": before,
                 "after": before,
                 "started_at": started_at.isoformat() + "Z",
-                "finished_at": datetime.utcnow().isoformat() + "Z",
+                "finished_at": datetime.now(timezone.utc).replace(tzinfo=None).isoformat() + "Z",
                 "message": f"The client target of {before['target_rs_universe']:,} ready stocks is already met.",
             }
-            _last_results[market] = result
+            _save_result(db, market, result)
             return result
 
         candidates = _candidate_companies(db, market, batch_size)
         remaining_to_target = max(0, before["target_rs_universe"] - before["history_ready_symbols"])
-        candidates = candidates[:remaining_to_target]
+        if remaining_to_target > 0:
+            candidates = candidates[:remaining_to_target]
         if not candidates:
             result = {
                 "market": market,
@@ -347,7 +416,7 @@ def backfill_market_batch(market: str, batch_size: int | None = None) -> dict:
                 "before": before,
                 "after": before,
                 "started_at": started_at.isoformat() + "Z",
-                "finished_at": datetime.utcnow().isoformat() + "Z",
+                "finished_at": datetime.now(timezone.utc).replace(tzinfo=None).isoformat() + "Z",
             }
             _last_results[market] = result
             return result
@@ -364,15 +433,20 @@ def backfill_market_batch(market: str, batch_size: int | None = None) -> dict:
         # yfinance's end date is exclusive, so include tomorrow.
         end_date = date.today() + timedelta(days=1)
 
-        downloaded = yf.download(
-            tickers=tickers,
-            start=start_date.isoformat(),
-            end=end_date.isoformat(),
-            auto_adjust=False,
-            group_by="ticker",
-            threads=True,
-            progress=False,
-        )
+        try:
+            downloaded = yf.download(
+                tickers=tickers,
+                start=start_date.isoformat(),
+                end=end_date.isoformat(),
+                auto_adjust=False,
+                group_by="ticker",
+                threads=True,
+                progress=False,
+                timeout=10,
+            )
+        except Exception as exc:
+            logger.warning("RS bulk history request failed; using bounded per-symbol fallback: %s", exc)
+            downloaded = pd.DataFrame()
 
         succeeded = 0
         failed = 0
@@ -383,8 +457,17 @@ def backfill_market_batch(market: str, batch_size: int | None = None) -> dict:
                 frame = _extract_symbol_frame(downloaded, provider_ticker, len(tickers))
                 rows = _frame_to_rows(frame)
                 if not rows:
+                    try:
+                        rows = YahooProvider().get_ohlcv(symbol, exchange, start_date=start_date.isoformat(), end_date=end_date.isoformat())
+                    except Exception:
+                        if exchange != "BSE" or not os.getenv("TWELVE_DATA_API_KEY"):
+                            raise
+                        from app.services.providers.bse_provider import BSEProvider
+                        rows = BSEProvider().get_ohlcv(symbol)
+                if not rows:
                     empty += 1
-                    _symbol_retry_after[(exchange, symbol)] = datetime.utcnow() + timedelta(hours=EMPTY_RETRY_HOURS)
+                    _symbol_retry_after[(exchange, symbol)] = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(hours=EMPTY_RETRY_HOURS)
+                    _persist_retry(db, exchange, symbol, "empty", "No verified history returned", _symbol_retry_after[(exchange, symbol)])
                     details.append({
                         "symbol": symbol,
                         "exchange": exchange,
@@ -392,8 +475,13 @@ def backfill_market_batch(market: str, batch_size: int | None = None) -> dict:
                         "retry_after": _symbol_retry_after[(exchange, symbol)].isoformat() + "Z",
                     })
                     continue
-                sync_result = sync_ohlcv(db, symbol, exchange, rows)
+                item = persist_history(db, symbol, exchange, rows)
+                sync_result = {"compact_rows": item.row_count}
+                if str(os.getenv("FREE_TIER_MODE", "1")).lower() not in {"1", "true", "yes", "on"}:
+                    sync_result.update(sync_ohlcv(db, symbol, exchange, rows))
                 _symbol_retry_after.pop((exchange, symbol), None)
+                if not _is_ready({"rows": item.row_count, "first_date": item.first_date, "last_date": item.last_date}):
+                    _persist_retry(db, exchange, symbol, "short_history", "Insufficient real comparison history", datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(hours=24))
                 succeeded += 1
                 details.append({
                     "symbol": symbol,
@@ -405,7 +493,8 @@ def backfill_market_batch(market: str, batch_size: int | None = None) -> dict:
             except Exception as exc:
                 db.rollback()
                 failed += 1
-                _symbol_retry_after[(exchange, symbol)] = datetime.utcnow() + timedelta(hours=ERROR_RETRY_HOURS)
+                _symbol_retry_after[(exchange, symbol)] = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(hours=ERROR_RETRY_HOURS)
+                _persist_retry(db, exchange, symbol, "error", str(exc), _symbol_retry_after[(exchange, symbol)])
                 logger.warning("RS backfill provider error for %s:%s: %s", exchange, symbol, exc)
                 details.append({
                     "symbol": symbol,
@@ -430,10 +519,10 @@ def backfill_market_batch(market: str, batch_size: int | None = None) -> dict:
             "after_ready": after["history_ready_symbols"],
             "remaining_active": after["pending_active_symbols"],
             "started_at": started_at.isoformat() + "Z",
-            "finished_at": datetime.utcnow().isoformat() + "Z",
+            "finished_at": datetime.now(timezone.utc).replace(tzinfo=None).isoformat() + "Z",
             "details": details,
         }
-        _last_results[market] = result
+        _save_result(db, market, result)
         return result
     except Exception as exc:
         db.rollback()
@@ -443,7 +532,7 @@ def backfill_market_batch(market: str, batch_size: int | None = None) -> dict:
             "status": "error",
             "error": str(exc),
             "started_at": started_at.isoformat() + "Z",
-            "finished_at": datetime.utcnow().isoformat() + "Z",
+            "finished_at": datetime.now(timezone.utc).replace(tzinfo=None).isoformat() + "Z",
         }
         _last_results[market] = result
         return result

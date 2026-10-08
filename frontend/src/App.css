@@ -84,7 +84,7 @@ main { width: 100%; max-width: var(--page-max); margin: 0 auto; padding: 24px 32
 .app[data-view="filters"] .filter-workspace-shell, .app[data-view="filters"] .filter-workspace-grid { display: block; }
 .app[data-view="overview"] .overview-filter-preview-grid, .app[data-view="overview"] .overview-ranking-card { display: grid; }
 .app[data-view="analytics"] .backtesting-workspace, .app[data-view="excel"] .excel-workspace, .app[data-view="settings"] .settings-workspace,
-.app[data-view="overview"] .advanced-workspace, .app[data-view="ranking"] .advanced-workspace { display: grid; gap: 24px; }
+.app[data-view="ranking"] .advanced-workspace { display: grid; gap: 24px; }
 .app[data-view="filters"] .filter-workspace-grid > section { display: none; }
 .app[data-view="filters"][data-filter-tab="fundamental"] #fundamental-filters, .app[data-view="filters"][data-filter-tab="technical"] #technical-filters,
 .app[data-view="filters"][data-filter-tab="ownership"] #ownership-filters, .app[data-view="filters"][data-filter-tab="universe"] #universe-screener { display: block; }
@@ -624,3 +624,6 @@ td strong, td b { font-weight: 500; }
 
 .app[data-view="filters"][data-filter-tab="universe"] .filter-workspace-grid { display: none; }
 .settings-card-head > div { flex: 1; min-width: 0; }
+
+.rs-evaluation-status { padding: 16px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface-soft); display: grid; gap: 8px; }
+.rs-evaluation-status button { justify-self: start; }

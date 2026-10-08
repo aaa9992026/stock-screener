@@ -1,0 +1,313 @@
+{
+  "scope": "Isolated local database; real approved-provider listing masters and history",
+  "BSE_master": {
+    "received": 5148,
+    "sync": {
+      "added": 5148,
+      "updated": 0,
+      "reactivated": 0,
+      "deactivated": 0,
+      "legacy_non_equity_deactivated": 0,
+      "deactivation_skipped": {}
+    }
+  },
+  "US": {
+    "master_received": 5753,
+    "sync": {
+      "added": 0,
+      "updated": 5753,
+      "reactivated": 0,
+      "deactivated": 0,
+      "legacy_non_equity_deactivated": 0,
+      "deactivation_skipped": {}
+    },
+    "batch": {
+      "market": "US",
+      "status": "completed",
+      "requested_batch_size": 5,
+      "attempted": 5,
+      "succeeded": 5,
+      "failed": 0,
+      "empty": 0,
+      "provider": "Yahoo Finance/yfinance bulk OHLCV",
+      "real_data_only": true,
+      "before_ready": 10,
+      "after_ready": 15,
+      "remaining_active": 5738,
+      "started_at": "2026-10-08T05:44:32.962486Z",
+      "finished_at": "2026-10-08T05:44:36.491060Z",
+      "details": [
+        {
+          "symbol": "AAPG",
+          "exchange": "US",
+          "status": "success",
+          "records_received": 344,
+          "compact_rows": 344
+        },
+        {
+          "symbol": "AARD",
+          "exchange": "US",
+          "status": "success",
+          "records_received": 344,
+          "compact_rows": 344
+        },
+        {
+          "symbol": "AAT",
+          "exchange": "US",
+          "status": "success",
+          "records_received": 344,
+          "compact_rows": 344
+        },
+        {
+          "symbol": "AAUC",
+          "exchange": "US",
+          "status": "success",
+          "records_received": 344,
+          "compact_rows": 344
+        },
+        {
+          "symbol": "ABAT",
+          "exchange": "US",
+          "status": "success",
+          "records_received": 344,
+          "compact_rows": 344
+        }
+      ]
+    },
+    "status": {
+      "market": "US",
+      "evaluation_date": "2026-10-06",
+      "target_rs_universe": 5000,
+      "active_symbols": 5753,
+      "history_ready_symbols": 15,
+      "pending_active_symbols": 5738,
+      "no_history_symbols": 5737,
+      "stale_or_short_history_symbols": 1,
+      "target_coverage_percent": 0.3,
+      "active_coverage_percent": 0.26,
+      "symbol_master_shortfall": 0,
+      "complete": false,
+      "history_requirements": {
+        "minimum_rows": 180,
+        "minimum_span_days": 350,
+        "maximum_stale_days": 14,
+        "requested_backfill_days": 500
+      },
+      "by_exchange": {
+        "US": {
+          "active": 5753,
+          "ready": 15,
+          "pending": 5738
+        }
+      },
+      "last_batch": {
+        "market": "US",
+        "status": "completed",
+        "requested_batch_size": 5,
+        "attempted": 5,
+        "succeeded": 5,
+        "failed": 0,
+        "empty": 0,
+        "provider": "Yahoo Finance/yfinance bulk OHLCV",
+        "real_data_only": true,
+        "before_ready": 10,
+        "after_ready": 15,
+        "remaining_active": 5738,
+        "started_at": "2026-10-08T05:44:32.962486Z",
+        "finished_at": "2026-10-08T05:44:36.491060Z",
+        "details": [
+          {
+            "symbol": "AAPG",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 344,
+            "compact_rows": 344
+          },
+          {
+            "symbol": "AARD",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 344,
+            "compact_rows": 344
+          },
+          {
+            "symbol": "AAT",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 344,
+            "compact_rows": 344
+          },
+          {
+            "symbol": "AAUC",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 344,
+            "compact_rows": 344
+          },
+          {
+            "symbol": "ABAT",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 344,
+            "compact_rows": 344
+          }
+        ]
+      },
+      "retry_cooldown_symbols": 0,
+      "scheduler_enabled": true,
+      "storage": "compressed provider date/open/close observations"
+    }
+  },
+  "INDIA": {
+    "master_received": 2601,
+    "sync": {
+      "added": 0,
+      "updated": 2601,
+      "reactivated": 0,
+      "deactivated": 0,
+      "legacy_non_equity_deactivated": 0,
+      "deactivation_skipped": {}
+    },
+    "batch": {
+      "market": "INDIA",
+      "status": "completed",
+      "requested_batch_size": 5,
+      "attempted": 5,
+      "succeeded": 4,
+      "failed": 1,
+      "empty": 0,
+      "provider": "Yahoo Finance/yfinance bulk OHLCV",
+      "real_data_only": true,
+      "before_ready": 6,
+      "after_ready": 10,
+      "remaining_active": 5279,
+      "started_at": "2026-10-08T05:44:36.736310Z",
+      "finished_at": "2026-10-08T05:44:40.762010Z",
+      "details": [
+        {
+          "symbol": "3BFILMS",
+          "exchange": "BSE",
+          "status": "success",
+          "records_received": 333,
+          "compact_rows": 333
+        },
+        {
+          "symbol": "3CIT",
+          "exchange": "BSE",
+          "status": "success",
+          "records_received": 343,
+          "compact_rows": 343
+        },
+        {
+          "symbol": "4THGEN",
+          "exchange": "BSE",
+          "status": "success",
+          "records_received": 345,
+          "compact_rows": 345
+        },
+        {
+          "symbol": "603468",
+          "exchange": "BSE",
+          "status": "error",
+          "error": "Yahoo history unavailable for BSE:603468: $603468.BO: possibly delisted; no price data found  (1d 2025-05-25 -> 2026-10-08)",
+          "retry_after": "2026-10-08T07:44:40.504669Z"
+        },
+        {
+          "symbol": "7NR",
+          "exchange": "BSE",
+          "status": "success",
+          "records_received": 341,
+          "compact_rows": 341
+        }
+      ]
+    },
+    "status": {
+      "market": "INDIA",
+      "evaluation_date": "2026-10-06",
+      "target_rs_universe": 5000,
+      "active_symbols": 5289,
+      "history_ready_symbols": 10,
+      "pending_active_symbols": 5279,
+      "no_history_symbols": 5278,
+      "stale_or_short_history_symbols": 1,
+      "target_coverage_percent": 0.2,
+      "active_coverage_percent": 0.19,
+      "symbol_master_shortfall": 0,
+      "complete": false,
+      "history_requirements": {
+        "minimum_rows": 180,
+        "minimum_span_days": 350,
+        "maximum_stale_days": 14,
+        "requested_backfill_days": 500
+      },
+      "by_exchange": {
+        "NSE": {
+          "active": 2601,
+          "ready": 5,
+          "pending": 2596
+        },
+        "BSE": {
+          "active": 2688,
+          "ready": 5,
+          "pending": 2683
+        }
+      },
+      "last_batch": {
+        "market": "INDIA",
+        "status": "completed",
+        "requested_batch_size": 5,
+        "attempted": 5,
+        "succeeded": 4,
+        "failed": 1,
+        "empty": 0,
+        "provider": "Yahoo Finance/yfinance bulk OHLCV",
+        "real_data_only": true,
+        "before_ready": 6,
+        "after_ready": 10,
+        "remaining_active": 5279,
+        "started_at": "2026-10-08T05:44:36.736310Z",
+        "finished_at": "2026-10-08T05:44:40.762010Z",
+        "details": [
+          {
+            "symbol": "3BFILMS",
+            "exchange": "BSE",
+            "status": "success",
+            "records_received": 333,
+            "compact_rows": 333
+          },
+          {
+            "symbol": "3CIT",
+            "exchange": "BSE",
+            "status": "success",
+            "records_received": 343,
+            "compact_rows": 343
+          },
+          {
+            "symbol": "4THGEN",
+            "exchange": "BSE",
+            "status": "success",
+            "records_received": 345,
+            "compact_rows": 345
+          },
+          {
+            "symbol": "603468",
+            "exchange": "BSE",
+            "status": "error",
+            "error": "Yahoo history unavailable for BSE:603468: $603468.BO: possibly delisted; no price data found  (1d 2025-05-25 -> 2026-10-08)",
+            "retry_after": "2026-10-08T07:44:40.504669Z"
+          },
+          {
+            "symbol": "7NR",
+            "exchange": "BSE",
+            "status": "success",
+            "records_received": 341,
+            "compact_rows": 341
+          }
+        ]
+      },
+      "retry_cooldown_symbols": 3,
+      "scheduler_enabled": true,
+      "storage": "compressed provider date/open/close observations"
+    }
+  }
+}

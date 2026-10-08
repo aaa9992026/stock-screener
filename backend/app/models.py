@@ -137,3 +137,29 @@ class RankingSnapshot(Base):
         ),
     )
 
+
+
+class RSHistory(Base):
+    """Compact real-provider history and retry state; survives OHLCV compaction."""
+    __tablename__ = "rs_histories"
+    id = Column(Integer, primary_key=True)
+    symbol = Column(String, nullable=False, index=True)
+    exchange = Column(String, nullable=False, index=True)
+    points_payload = Column(Text, nullable=True)
+    first_date = Column(Date)
+    last_date = Column(Date)
+    row_count = Column(Integer, default=0)
+    status = Column(String, default="pending")
+    provider = Column(String)
+    error = Column(Text)
+    retry_after = Column(DateTime)
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    __table_args__ = (UniqueConstraint("symbol", "exchange", name="uq_rs_history_symbol_exchange"),)
+
+
+class RSBackfillState(Base):
+    __tablename__ = "rs_backfill_states"
+    market = Column(String, primary_key=True)
+    evaluation_date = Column(Date)
+    payload_json = Column(Text, nullable=False)
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())

@@ -199,7 +199,7 @@ def start_scheduler():
             coalesce=True,
         )
 
-    if (not free_tier_mode) and _env_flag("RS_BACKFILL_ENABLED", True):
+    if _env_flag("RS_BACKFILL_ENABLED", True):
         interval_minutes = max(5, int(os.getenv("RS_BACKFILL_INTERVAL_MINUTES", "10") or 10))
         scheduler.add_job(
             refresh_rs_universe_history,
@@ -209,7 +209,7 @@ def start_scheduler():
             replace_existing=True,
             max_instances=1,
             coalesce=True,
-            next_run_time=datetime.now() + timedelta(minutes=10),
+            next_run_time=datetime.now() + timedelta(seconds=30),
         )
 
     if (not free_tier_mode) and _env_flag("FUNDAMENTAL_BACKFILL_ENABLED", True):

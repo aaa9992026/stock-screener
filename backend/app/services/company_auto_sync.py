@@ -4,6 +4,7 @@ from app.database import SessionLocal
 from app.services.company_sync import sync_companies, bootstrap_companies_from_stored_data
 from app.services.nse_company_provider import NSECompanyProvider
 from app.services.us_company_provider import USCompanyProvider
+from app.services.providers.bse_provider import BSEProvider
 
 
 logger = logging.getLogger(__name__)
@@ -29,6 +30,7 @@ def sync_all_companies():
     providers = {
         "NSE": NSECompanyProvider,
         "US": USCompanyProvider,
+        "BSE": BSEProvider,
     }
 
     for market, provider_cls in providers.items():

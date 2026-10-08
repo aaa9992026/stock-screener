@@ -207,7 +207,7 @@ def universe_status(db: Session = Depends(get_db)):
             "target_rs_universe": 5000,
             "active_symbols": india_active,
             "exchanges": ["NSE", "BSE"],
-            "symbol_master": "NSE official equity list; BSE remains limited until a BSE symbol-master feed is configured",
+            "symbol_master": "NSE official equity list + Twelve Data BSE ordinary-equity directory",
         },
         "by_exchange": counts,
         "automatic_sync": {

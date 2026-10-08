@@ -209,6 +209,7 @@ const formatUniverseCell = (key, value, row) => {
 };
 
 const compareNumeric = (left, comparator, right) => {
+  if (left == null || right == null || left === "" || right === "") return null;
   const a = Number(left);
   const b = Number(right);
   if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
@@ -647,6 +648,39 @@ function App() {
     return () => { document.body.style.overflow = previousOverflow; document.removeEventListener("keydown", handleKey); previousFocus?.focus(); };
   }, [navigationOpen]);
   const [filterWorkspaceTab, setFilterWorkspaceTab] = useState("fundamental");
+  const backtestRequestRef = useRef(0);
+  const [rsBackfillStatus, setRsBackfillStatus] = useState(null);
+  const [rsBackfillRunning, setRsBackfillRunning] = useState(false);
+  const [rsBackfillMessage, setRsBackfillMessage] = useState("");
+  useEffect(() => {
+    if (activeView !== "ranking") return undefined;
+    let disposed = false;
+    const update = async () => {
+      try {
+        const res = await axios.get(API + "/companies/rs-backfill/status?market=" + (exchange === "US" ? "US" : "INDIA"), { timeout: 15000 });
+        if (!disposed) setRsBackfillStatus(res.data);
+      } catch { if (!disposed) setRsBackfillStatus(null); }
+    };
+    setRsBackfillStatus(null);
+    update();
+    const timer = window.setInterval(update, 30000);
+    return () => { disposed = true; window.clearInterval(timer); };
+  }, [activeView, exchange]);
+  const evaluateRSBatch = async () => {
+    setRsBackfillRunning(true);
+    setRsBackfillMessage("");
+    try {
+      const market = exchange === "US" ? "US" : "INDIA";
+      const res = await axios.post(API + "/companies/rs-backfill/run?market=" + market + "&batch_size=5", null, { timeout: 180000 });
+      setRsBackfillMessage(res.data.error || "Batch: " + (res.data.succeeded || 0) + " received, " + (res.data.empty || 0) + " unavailable, " + (res.data.failed || 0) + " provider errors.");
+      const status = await axios.get(API + "/companies/rs-backfill/status?market=" + market);
+      setRsBackfillStatus(status.data);
+      loadTechnicalSummary();
+      loadDashboard();
+    } catch (error) {
+      setRsBackfillMessage(error?.response?.data?.detail || "This evaluation request did not finish. Automatic batches retain progress; check status before retrying.");
+    } finally { setRsBackfillRunning(false); }
+  };
   const [watchlisted, setWatchlisted] = useState(false);
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -1644,23 +1678,28 @@ function App() {
   };
 
   const loadBacktest = async () => {
+    const requestId = ++backtestRequestRef.current;
+    const isCurrent = () => requestId === backtestRequestRef.current && activeSelectionRef.current.startsWith(exchange + ":" + symbol + ":");
     try {
       setBacktestLoading(true);
+      setBacktest(null);
       setBacktestError("");
       setBacktestNotice("");
       const res = await axios.get(`${API}/market/backtest/${symbol}?exchange=${exchange}&years=${backtestYears}`, { timeout: 90000 });
+      if (!isCurrent()) return;
       setBacktest(res.data);
       const actualYears = Number(res.data?.actual_years || 0);
       const status = String(res.data?.history_status || "").toLowerCase();
       if (status === "partial") {
-        setBacktestNotice(`Only ${actualYears.toFixed(1)} verified years are available for this ${backtestYears}-year request. The app will not replace the missing years with a shorter browser-chart fallback.`);
+        setBacktestNotice(`Only ${actualYears.toFixed(1)} verified years are available for this ${backtestYears}-year request. Results use that available history and are marked Partial.`);
       }
     } catch (error) {
+      if (!isCurrent()) return;
       setBacktest(null);
       setBacktestNotice("");
       setBacktestError(error?.response?.data?.detail || `The verified ${backtestYears}-year provider history could not be loaded. Please retry; no shorter or synthetic history has been substituted.`);
     } finally {
-      setBacktestLoading(false);
+      if (requestId === backtestRequestRef.current) setBacktestLoading(false);
     }
   };
 
@@ -2843,7 +2882,11 @@ function App() {
       setExcelCopyMessage(`Excel refreshed for ${exchange}:${symbol}. Searching another stock and downloading again now uses that stock.`);
       window.setTimeout(() => setExcelCopyMessage(""), 7000);
     } catch (error) {
-      setExcelCopyMessage(error?.response?.data?.detail || `Excel export failed for ${exchange}:${symbol}.`);
+      let detail = error?.response?.data?.detail;
+      if (!detail && error?.response?.data instanceof Blob) {
+        try { detail = JSON.parse(await error.response.data.text()).detail; } catch { /* Non-JSON provider response. */ }
+      }
+      setExcelCopyMessage(detail || `Excel export failed for ${exchange}:${symbol}${error?.response?.status ? " (HTTP " + error.response.status + ")" : ""}. Please retry.`);
     }
   };
 
@@ -3183,7 +3226,7 @@ function App() {
     return Number(n.toFixed(2)).toLocaleString();
   };
 
-  const renderUSOwnershipTable = () => {
+  const renderUSOwnershipTable = (embedded = false) => {
     const toPercent = (value) => {
       if (value === null || value === undefined || value === "") return null;
       const n = Number(value);
@@ -3205,10 +3248,10 @@ function App() {
     ];
     return (
       <div className="compact-filter-card">
-        <div className="compact-filter-header">
+        {!embedded && <div className="compact-filter-header">
           <div><h3>Ownership Filters (US)</h3><p>Same layout as Fundamental/Technical filters. Missing historical provider values stay N/A; unclear thresholds are not guessed.</p></div>
           <div className="compact-filter-score"><span>Ownership Score</span><strong>{filterScoreText(dashboardView?.score_components?.ownership)}</strong></div>
-        </div>
+        </div>}
         <div className="compact-table-scroll">
           <table className="filter-config-table">
             <thead><tr><th>Filter name</th><th>Compare</th><th>Value / target</th><th>Actual Value</th><th>Weight</th><th>RS score</th><th>Use</th></tr></thead>
@@ -3397,6 +3440,7 @@ function App() {
   const renderOverviewFilterPreview = (group, title, tone) => {
     if (group === "ownership" && exchange === "US") {
       const pct = (value) => {
+        if (value == null || value === "") return null;
         const n = Number(value);
         if (!Number.isFinite(n)) return null;
         return n <= 1 ? n * 100 : n;
@@ -3407,7 +3451,7 @@ function App() {
         ["Institutional Ownership", ">", institution == null ? "N/A" : institution.toFixed(2), "%"],
         ["Insider Ownership", ">", insider == null ? "N/A" : insider.toFixed(2), "%"],
         ["Shares Outstanding", "<", fundamentals?.ownership?.shares_outstanding == null ? "N/A" : formatFilterCurrent("shares_outstanding", fundamentals.ownership.shares_outstanding), ""],
-        ["Retail / Public", "—", institution != null && insider != null ? Math.max(0, 100 - institution - insider).toFixed(2) : "N/A", "%"],
+        ["Retail/Public Investors", "—", institution != null && insider != null ? Math.max(0, 100 - institution - insider).toFixed(2) : "N/A", "%"],
       ];
       return (
         <section className={`overview-filter-preview-card ${tone}`}>
@@ -3758,7 +3802,7 @@ function App() {
             ["Relative Strength", dashboardView?.score_components?.relative_strength, "rs"],
             ["Ownership Score", dashboardView?.score_components?.ownership, "ownership"],
           ].map(([label, value, tone]) => {
-            const numeric = Number(value);
+            const numeric = value == null || value === "" ? NaN : Number(value);
             const score = Number.isFinite(numeric) ? Math.max(0, Math.min(100, numeric)) : null;
             const meta = SCORE_CARD_META[tone] || { hint: "Score" };
             return (
@@ -3769,7 +3813,7 @@ function App() {
                   </div>
                   <div className="score-card-heading">
                     <span>{label}</span>
-                    <small>{meta.hint}</small>
+                    <small>{(tone === "composite" && dashboardView?.score == null) || (tone === "rs" && !technicalSummary?.rs_universe?.complete) ? "Provisional · " : ""}{meta.hint}</small>
                   </div>
                 </div>
                 <div className="score-card-value">
@@ -3946,13 +3990,13 @@ function App() {
                   <b>Hovered chart values{dashboardChartInfo?.time ? ` — ${formatChartDate(dashboardChartInfo.time)}` : ""}:</b>
                   {[10,20,34,50,100,150,200].map((period) => {
                     const em = dashboardChartInfo?.ema?.[period];
-                    return <span key={period}>EMA {period}: <strong>{Number.isFinite(Number(em)) ? Number(em).toFixed(2) : "N/A"}</strong></span>;
+                    return <span key={period}>EMA {period}: <strong>{formatScoreValue(em)}</strong></span>;
                   })}
-                  <span>BB Upper: <strong>{Number.isFinite(Number(dashboardChartInfo?.bbUpper)) ? Number(dashboardChartInfo.bbUpper).toFixed(2) : "N/A"}</strong></span>
-                  <span>BB Middle: <strong>{Number.isFinite(Number(dashboardChartInfo?.bbMiddle)) ? Number(dashboardChartInfo.bbMiddle).toFixed(2) : "N/A"}</strong></span>
-                  <span>BB Lower: <strong>{Number.isFinite(Number(dashboardChartInfo?.bbLower)) ? Number(dashboardChartInfo.bbLower).toFixed(2) : "N/A"}</strong></span>
-                  <span>EPS: <strong>{Number.isFinite(Number(dashboardChartInfo?.eps)) ? Number(dashboardChartInfo.eps).toFixed(2) : "N/A"}</strong></span>
-                  <span>RS ratio (Price/Benchmark): <strong>{Number.isFinite(Number(dashboardChartInfo?.rs)) ? Number(dashboardChartInfo.rs).toFixed(4) : "N/A"}</strong></span>
+                  <span>BB Upper: <strong>{formatScoreValue(dashboardChartInfo?.bbUpper, 2)}</strong></span>
+                  <span>BB Middle: <strong>{formatScoreValue(dashboardChartInfo?.bbMiddle, 2)}</strong></span>
+                  <span>BB Lower: <strong>{formatScoreValue(dashboardChartInfo?.bbLower, 2)}</strong></span>
+                  <span>EPS: <strong>{dashboardChartInfo?.eps != null && dashboardChartInfo.eps !== "" && Number.isFinite(Number(dashboardChartInfo.eps)) ? Number(dashboardChartInfo.eps).toFixed(2) : "N/A"}</strong></span>
+                  <span>RS ratio (Price/Benchmark): <strong>{formatScoreValue(dashboardChartInfo?.rs, 4)}</strong></span>
                 </div>
                 {data?.length ? (
                   <div ref={dashboardCandlestickRef} className="dashboard-candlestick-canvas" />
@@ -3968,7 +4012,7 @@ function App() {
                   <div>
                     <strong>Customizable Indicator Basket</strong>
                     <span>Enable/disable each chart and edit the periods before the data-scoring stage.</span>
-                    <span className="indicator-rs-current">RS Score: <b>{Number.isFinite(Number(technicalSummary?.rs_rating ?? dashboardView?.score_components?.relative_strength)) ? Number(technicalSummary?.rs_rating ?? dashboardView?.score_components?.relative_strength).toFixed(2) : "N/A"}</b></span>
+                    <span className="indicator-rs-current">RS Score: <b>{formatScoreValue(technicalSummary?.rs_rating ?? dashboardView?.score_components?.relative_strength)}</b></span>
                   </div>
                   <div className="indicator-basket-toggles">
                     {[
@@ -4539,7 +4583,7 @@ function App() {
             </div>
           </div>
           {exchange === "US"
-            ? renderUSOwnershipTable()
+            ? renderUSOwnershipTable(true)
             : renderFilterTable("ownership", "Ownership Filters", "Promoter / FII / DII-MF / pledge / insider rules from the handwritten ownership sheet.", true)}
           <div className="fundamental-qualified-panel standalone-qualified-panel">
             <div className="fundamental-qualified-head">
@@ -4589,10 +4633,10 @@ function App() {
         <section className="overview-ranking-card" aria-label="Top 200 qualified stocks">
           <div className="overview-ranking-head">
             <div>
-              <h2>Top 200 Qualified Stocks</h2>
+              <h2>Top 200 preview</h2>
               <p>Ranked by composite score across fundamental, technical, relative-strength and ownership metrics.</p>
             </div>
-            <div className="overview-ranking-controls">
+            <div className="overview-ranking-controls"><button type="button" onClick={() => { setActiveView("ranking"); window.scrollTo({ top: 0 }); }}>Open Top 200 →</button>
               {activeView === "ranking" && (
                 <label>Market
                   <select
@@ -4628,9 +4672,11 @@ function App() {
             <table className="overview-ranking-table">
               <thead><tr><th>#</th><th>Symbol</th><th>Company Name</th><th>Price</th><th>Change</th><th>Composite ↓</th><th>Fundamental</th><th>Technical</th><th>RS</th><th>Ownership</th><th>Market Cap</th><th>Sector</th><th>Watch</th></tr></thead>
               <tbody>
-                {sortedTopCompositeRows.slice(0, 50).map((row, index) => {
-                  const rowPrice = Number(row.close ?? row.price ?? row.last_price);
-                  const rowChange = Number(row.change_percent ?? row.change_pct);
+                {sortedTopCompositeRows.slice(0, 8).map((row, index) => {
+                  const rawPrice = row.close ?? row.price ?? row.last_price;
+                  const rawChange = row.change_percent ?? row.change_pct;
+                  const rowPrice = rawPrice == null ? NaN : Number(rawPrice);
+                  const rowChange = rawChange == null ? NaN : Number(rawChange);
                   return (
                   <tr key={`overview-${row.exchange}-${row.symbol}`} onClick={() => openUniverseStock(row)} className={row.symbol === symbol && row.exchange === exchange ? "selected" : ""}>
                     <td>{index + 1}</td><td><strong>{row.symbol}</strong></td><td>{row.name || row.symbol}</td>
@@ -5345,7 +5391,7 @@ function App() {
         </section>
 
          )}
-        {(activeView === "overview" || activeView === "ranking") && (
+        {activeView === "ranking" && (
         <div className="advanced-workspace">
           <div className="analysis-section-heading"><h2>Stock analysis</h2><p>Full price history, relative strength, financials and ownership for {exchange}:{symbol}.</p><nav aria-label="Stock analysis sections"><a href="#ranking-filters">Ranking factors</a><a href="#stock-price-analysis">Price & overlays</a><a href="#relative-strength-analysis">Relative strength</a><a href="#fundamental-history-analysis">Financial history</a></nav></div>
         <section className="cards">
@@ -5809,8 +5855,18 @@ function App() {
                 {technicalSummary?.rs_universe
                   ? `${Number(technicalSummary.rs_universe.scored_stocks_available || 0).toLocaleString()}/${Number(technicalSummary.rs_universe.target_size || 5000).toLocaleString()} scored stocks available`
                   : "Percentile-weighted score from the enabled RS periods"}
+                {technicalSummary?.rs_universe?.evaluation_date && <span> · As of {technicalSummary.rs_universe.evaluation_date}</span>}
               </small>
             </div>
+          </div>
+          <div className="rs-evaluation-status" role="status" aria-live="polite">
+            {rsBackfillStatus ? <><strong>Universe evaluation</strong><p>{Number(rsBackfillStatus.history_ready_symbols || 0).toLocaleString()} histories ready · {Number(rsBackfillStatus.active_symbols || 0).toLocaleString()} valid listings · {Number(rsBackfillStatus.pending_active_symbols || 0).toLocaleString()} pending.</p>
+            {rsBackfillStatus.symbol_master_shortfall > 0 && <p>The verified symbol master is {Number(rsBackfillStatus.symbol_master_shortfall).toLocaleString()} stocks short of 5,000. Missing listings and history are never invented.</p>}
+            <p>{rsBackfillStatus.scheduler_enabled === false ? "Automatic evaluation is disabled in the backend configuration." : "Automatic batches save real observations and resume after restarts."} {rsBackfillStatus.retry_cooldown_symbols > 0 ? rsBackfillStatus.retry_cooldown_symbols + " provider retries are waiting." : ""}</p>
+            {rsBackfillStatus.last_batch?.error && <p className="provider-warning">Last batch: {rsBackfillStatus.last_batch.error}</p>}
+            </> : <p>Universe progress is currently unavailable. The score stays provisional until its real comparison coverage is confirmed.</p>}
+            <button type="button" disabled={rsBackfillRunning} onClick={evaluateRSBatch}>{rsBackfillRunning ? "Evaluating…" : "Evaluate next batch"}</button>
+            {rsBackfillMessage && <p>{rsBackfillMessage}</p>}
           </div>
           <div className="rs-period-grid">
             {["1w","2w","1m","2m","3m","6m","1y","sector"].filter((key) => rsVisibility[key] !== false).map((key) => {

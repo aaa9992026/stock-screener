@@ -1,0 +1,144 @@
+{
+  "scope": "Local revised backend using previously downloaded real Yahoo history; no production writes",
+  "stocks": {
+    "US:AAPL": {
+      "provider_history": {
+        "rows": 5124,
+        "first": "2006-05-25",
+        "last": "2026-10-07"
+      },
+      "backtest": {
+        "actual_years": 20.060232717316907,
+        "row_count": 5046,
+        "history_status": "Complete",
+        "buy_hold_return_percent": 12621.67156399582,
+        "buy_hold_max_drawdown_percent": -60.86674116426715
+      },
+      "excel": {
+        "valid_xlsx": true,
+        "rows": 5000,
+        "sheets": [
+          "Summary",
+          "OHLCV",
+          "Fundamental_Ownership",
+          "Ranking_Config",
+          "Technical_Filter_Config",
+          "Fundamental_Filter_Config",
+          "Sector_Ranking_Config",
+          "Notes"
+        ],
+        "missing_market_cap": "N/A"
+      },
+      "live_feed": {
+        "bytes": 581118,
+        "pass": true
+      },
+      "rs_persisted": {
+        "market": "US",
+        "evaluation_date": "2026-10-06",
+        "target_rs_universe": 5000,
+        "active_symbols": 1,
+        "history_ready_symbols": 1,
+        "pending_active_symbols": 0,
+        "no_history_symbols": 0,
+        "stale_or_short_history_symbols": 0,
+        "target_coverage_percent": 0.02,
+        "active_coverage_percent": 100.0,
+        "symbol_master_shortfall": 4999,
+        "complete": false,
+        "history_requirements": {
+          "minimum_rows": 180,
+          "minimum_span_days": 350,
+          "maximum_stale_days": 14,
+          "requested_backfill_days": 500
+        },
+        "by_exchange": {
+          "US": {
+            "active": 1,
+            "ready": 1,
+            "pending": 0
+          }
+        },
+        "last_batch": null,
+        "retry_cooldown_symbols": 0,
+        "scheduler_enabled": true,
+        "storage": "compressed provider date/open/close observations"
+      }
+    },
+    "NSE:RELIANCE": {
+      "provider_history": {
+        "rows": 5033,
+        "first": "2006-05-25",
+        "last": "2026-10-08"
+      },
+      "backtest": {
+        "actual_years": 20.06297056810404,
+        "row_count": 4953,
+        "history_status": "Complete",
+        "buy_hold_return_percent": 811.6224126916219,
+        "buy_hold_max_drawdown_percent": -68.34686543595252
+      },
+      "excel": {
+        "valid_xlsx": true,
+        "rows": 5000,
+        "sheets": [
+          "Summary",
+          "OHLCV",
+          "Fundamental_Ownership",
+          "Ranking_Config",
+          "Technical_Filter_Config",
+          "Fundamental_Filter_Config",
+          "Sector_Ranking_Config",
+          "Notes"
+        ],
+        "missing_market_cap": "N/A"
+      },
+      "live_feed": {
+        "bytes": 640219,
+        "pass": true
+      },
+      "rs_persisted": {
+        "market": "INDIA",
+        "evaluation_date": "2026-10-06",
+        "target_rs_universe": 5000,
+        "active_symbols": 1,
+        "history_ready_symbols": 1,
+        "pending_active_symbols": 0,
+        "no_history_symbols": 0,
+        "stale_or_short_history_symbols": 0,
+        "target_coverage_percent": 0.02,
+        "active_coverage_percent": 100.0,
+        "symbol_master_shortfall": 4999,
+        "complete": false,
+        "history_requirements": {
+          "minimum_rows": 180,
+          "minimum_span_days": 350,
+          "maximum_stale_days": 14,
+          "requested_backfill_days": 500
+        },
+        "by_exchange": {
+          "NSE": {
+            "active": 1,
+            "ready": 1,
+            "pending": 0
+          }
+        },
+        "last_batch": null,
+        "retry_cooldown_symbols": 0,
+        "scheduler_enabled": true,
+        "storage": "compressed provider date/open/close observations"
+      }
+    }
+  },
+  "master_package": {
+    "valid_zip": true,
+    "entries": [
+      "StockScreener_Master.xlsx",
+      "excel_bridge.py",
+      "requirements.txt",
+      "README_MASTER_EXCEL.txt",
+      "INSTALL_MASTER_EXCEL.bat",
+      "START_MASTER_EXCEL.bat"
+    ]
+  }
+}

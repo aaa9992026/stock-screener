@@ -1,5 +1,11 @@
 import requests
-from datetime import datetime
+from datetime import datetime, date, timedelta, timezone
+from zoneinfo import ZoneInfo
+from urllib.parse import quote
+import math
+import logging
+
+logger = logging.getLogger(__name__)
 import yfinance as yf
 from app.services.base_provider import BaseMarketDataProvider
 from app.services.providers.sec_provider import SECFundamentalsProvider
@@ -28,51 +34,83 @@ class YahooProvider(BaseMarketDataProvider):
 
         return symbol
 
-    def get_ohlcv(
-        self,
-        symbol: str,
-        exchange: str = "US",
-        start_date=None,
-        end_date=None
-    ):
-        if exchange.upper() == "BSE":
-            rows = self._get_bse_history_direct(symbol)
-
-            if len(rows) >= 10:
-                return rows
-
-        provider_symbol = self.format_symbol(symbol, exchange)
-
-        ticker = yf.Ticker(provider_symbol)
-
-        data = ticker.history(
-            start=start_date,
-            end=end_date,
-            auto_adjust=False
-        )
-
-        # Some BSE symbols may return incomplete history.
-        # Retry using a fixed period.
-        if data.empty or len(data) <= 1:
-            data = ticker.history(
-                period="2y",
-                interval="1d",
-                auto_adjust=False
+    def get_ohlcv(self, symbol: str, exchange: str = "US", start_date=None, end_date=None):
+        provider_symbol = self.format_symbol(symbol.strip(), exchange.strip())
+        rows = []
+        error = None
+        try:
+            data = yf.Ticker(provider_symbol).history(
+                start=start_date, end=end_date, interval="1d", auto_adjust=False, timeout=10, raise_errors=True
             )
+            for dt, row in data.iterrows():
+                values = [float(row[k]) for k in ("Open", "High", "Low", "Close")]
+                if any(not math.isfinite(v) or v <= 0 for v in values):
+                    continue
+                volume = float(row["Volume"]) if row.get("Volume") is not None else None
+                rows.append({"date": dt.date(), "open": values[0], "high": values[1],
+                             "low": values[2], "close": values[3],
+                             "volume": volume if volume is not None and math.isfinite(volume) else None})
+        except Exception as exc:
+            error = str(exc)
+        if not rows:
+            rows = self.get_chart_history(symbol, exchange, start_date, end_date)
+        if not rows and error:
+            raise RuntimeError(f"Yahoo history unavailable for {exchange}:{symbol}: {error}")
+        return rows
 
-        results = []
+    def get_chart_history(self, symbol, exchange="US", start_date=None, end_date=None):
+        """Same approved Yahoo source, without yfinance crumb negotiation."""
+        ticker = self.format_symbol(symbol.strip(), exchange.strip())
+        def timestamp(value, default):
+            if value is None:
+                value = default
+            if isinstance(value, str):
+                value = datetime.fromisoformat(value)
+            elif isinstance(value, date) and not isinstance(value, datetime):
+                value = datetime.combine(value, datetime.min.time())
+            return int(value.replace(tzinfo=timezone.utc).timestamp())
+        end = datetime.now(timezone.utc) + timedelta(days=1)
+        params = {"period1": timestamp(start_date, end - timedelta(days=730)),
+                  "period2": timestamp(end_date, end), "interval": "1d", "events": "history"}
+        for host in ("query1.finance.yahoo.com", "query2.finance.yahoo.com"):
+            try:
+                response = requests.get(f"https://{host}/v8/finance/chart/{quote(ticker, safe='')}",
+                                        params=params, headers={"User-Agent": "Mozilla/5.0", "Accept": "application/json"}, timeout=10)
+                response.raise_for_status()
+                payload = response.json()
+                result = ((payload.get("chart") or {}).get("result") or [None])[0]
+                rows = self.parse_chart_history(result)
+                if rows:
+                    return rows
+            except Exception as exc:
+                logger.warning("Yahoo chart fallback failed for %s:%s: %s", exchange, symbol, exc)
+        return []
 
-        for date, row in data.iterrows():
-            results.append({
-                "date": date.date(),
-                "open": float(row["Open"]),
-                "high": float(row["High"]),
-                "low": float(row["Low"]),
-                "close": float(row["Close"]),
-                "volume": float(row["Volume"])
-            })
-
-        return results
+    @staticmethod
+    def parse_chart_history(result):
+        if not result:
+            return []
+        quotes = ((result.get("indicators") or {}).get("quote") or [{}])[0]
+        timezone_name = (result.get("meta") or {}).get("exchangeTimezoneName") or "UTC"
+        try:
+            tz = ZoneInfo(timezone_name)
+        except (ValueError, KeyError):
+            tz = timezone.utc
+        rows = {}
+        for i, stamp in enumerate(result.get("timestamp") or []):
+            try:
+                values = [quotes.get(k, [])[i] for k in ("open", "high", "low", "close")]
+                if any(v is None or not math.isfinite(float(v)) or float(v) <= 0 for v in values):
+                    continue
+                dt = datetime.fromtimestamp(stamp, tz=tz).date()
+                volume_values = quotes.get("volume") or []
+                volume = volume_values[i] if i < len(volume_values) else None
+                if volume is not None and not math.isfinite(float(volume)):
+                    volume = None
+                rows[dt] = dict(zip(("open", "high", "low", "close"), map(float, values)), date=dt, volume=volume)
+            except (TypeError, ValueError, IndexError, OverflowError):
+                continue
+        return [rows[d] for d in sorted(rows)]
 
     def get_fundamentals(self, symbol: str, exchange: str = "US"):
         provider_symbol = self.format_symbol(symbol, exchange)

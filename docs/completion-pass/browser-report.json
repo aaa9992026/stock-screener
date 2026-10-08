@@ -1,0 +1,3238 @@
+{
+  "scope": "Headless browser using revised backend HTTP responses computed from recorded real stock/benchmark histories; auxiliary missing metadata fixtures",
+  "checks": [
+    {
+      "name": "US search selected stock",
+      "pass": true
+    },
+    {
+      "name": "US Overview has no detailed analysis editors",
+      "pass": true
+    },
+    {
+      "name": "US missing score displays N/A",
+      "pass": true
+    },
+    {
+      "name": "US Weekly timeframe",
+      "pass": true
+    },
+    {
+      "name": "US Monthly timeframe",
+      "pass": true
+    },
+    {
+      "name": "US Daily timeframe",
+      "pass": true
+    },
+    {
+      "name": "US detailed analysis remains accessible",
+      "pass": true
+    },
+    {
+      "name": "US Beta adjacent to standard deviation",
+      "pass": true
+    },
+    {
+      "name": "US incomplete scores labeled provisional",
+      "pass": true
+    },
+    {
+      "name": "US unavailable EPS stays N/A",
+      "pass": true
+    },
+    {
+      "name": "US editable RSI period",
+      "pass": true
+    },
+    {
+      "name": "US basket toggle off",
+      "pass": true
+    },
+    {
+      "name": "US weights saved",
+      "pass": true
+    },
+    {
+      "name": "US ascending symbol sorting",
+      "pass": true
+    },
+    {
+      "name": "US descending symbol sorting",
+      "pass": true
+    },
+    {
+      "name": "US Fundamental columns",
+      "pass": true
+    },
+    {
+      "name": "US Technical columns",
+      "pass": true
+    },
+    {
+      "name": "US Ownership columns",
+      "pass": true
+    },
+    {
+      "name": "US filter weight editor",
+      "pass": true
+    },
+    {
+      "name": "US filter Use toggle off",
+      "pass": true
+    },
+    {
+      "name": "US Settings timeframe works",
+      "pass": true
+    },
+    {
+      "name": "US backtest KPI and equity curve populated",
+      "pass": true
+    },
+    {
+      "name": "US XLSX generated and valid ZIP header",
+      "pass": true
+    },
+    {
+      "name": "US IQY uses selected stock endpoint",
+      "pass": true
+    },
+    {
+      "name": "US Master package download link",
+      "pass": true
+    },
+    {
+      "name": "NSE search selected stock",
+      "pass": true
+    },
+    {
+      "name": "NSE Overview has no detailed analysis editors",
+      "pass": true
+    },
+    {
+      "name": "NSE missing score displays N/A",
+      "pass": true
+    },
+    {
+      "name": "NSE Weekly timeframe",
+      "pass": true
+    },
+    {
+      "name": "NSE Monthly timeframe",
+      "pass": true
+    },
+    {
+      "name": "NSE Daily timeframe",
+      "pass": true
+    },
+    {
+      "name": "NSE detailed analysis remains accessible",
+      "pass": true
+    },
+    {
+      "name": "NSE Beta adjacent to standard deviation",
+      "pass": true
+    },
+    {
+      "name": "NSE incomplete scores labeled provisional",
+      "pass": true
+    },
+    {
+      "name": "NSE unavailable EPS stays N/A",
+      "pass": true
+    },
+    {
+      "name": "NSE editable RSI period",
+      "pass": true
+    },
+    {
+      "name": "NSE basket toggle off",
+      "pass": true
+    },
+    {
+      "name": "NSE weights saved",
+      "pass": true
+    },
+    {
+      "name": "NSE ascending symbol sorting",
+      "pass": true
+    },
+    {
+      "name": "NSE descending symbol sorting",
+      "pass": true
+    },
+    {
+      "name": "NSE Fundamental columns",
+      "pass": true
+    },
+    {
+      "name": "NSE Technical columns",
+      "pass": true
+    },
+    {
+      "name": "NSE Ownership columns",
+      "pass": true
+    },
+    {
+      "name": "NSE filter weight editor",
+      "pass": true
+    },
+    {
+      "name": "NSE filter Use toggle off",
+      "pass": true
+    },
+    {
+      "name": "NSE Settings timeframe works",
+      "pass": true
+    },
+    {
+      "name": "NSE backtest KPI and equity curve populated",
+      "pass": true
+    },
+    {
+      "name": "NSE XLSX generated and valid ZIP header",
+      "pass": true
+    },
+    {
+      "name": "NSE IQY uses selected stock endpoint",
+      "pass": true
+    },
+    {
+      "name": "NSE Master package download link",
+      "pass": true
+    },
+    {
+      "name": "Master package HTTP download",
+      "pass": true
+    }
+  ],
+  "layouts": [
+    {
+      "width": 1366,
+      "clientWidth": 1351,
+      "scrollWidth": 1351,
+      "mainWidth": 1119,
+      "mainLeft": 232,
+      "view": "overview",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "US",
+      "symbol": "AAPL"
+    },
+    {
+      "width": 1366,
+      "clientWidth": 1351,
+      "scrollWidth": 1351,
+      "mainWidth": 1119,
+      "mainLeft": 232,
+      "view": "ranking",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "US",
+      "symbol": "AAPL"
+    },
+    {
+      "width": 1366,
+      "clientWidth": 1351,
+      "scrollWidth": 1351,
+      "mainWidth": 1119,
+      "mainLeft": 232,
+      "view": "filters",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "US",
+      "symbol": "AAPL"
+    },
+    {
+      "width": 1366,
+      "clientWidth": 1351,
+      "scrollWidth": 1351,
+      "mainWidth": 1119,
+      "mainLeft": 232,
+      "view": "filters",
+      "tab": "technical",
+      "overlaps": 0,
+      "visible": true,
+      "market": "US",
+      "symbol": "AAPL"
+    },
+    {
+      "width": 1366,
+      "clientWidth": 1351,
+      "scrollWidth": 1351,
+      "mainWidth": 1119,
+      "mainLeft": 232,
+      "view": "filters",
+      "tab": "ownership",
+      "overlaps": 0,
+      "visible": true,
+      "market": "US",
+      "symbol": "AAPL"
+    },
+    {
+      "width": 1366,
+      "clientWidth": 1351,
+      "scrollWidth": 1351,
+      "mainWidth": 1119,
+      "mainLeft": 232,
+      "view": "filters",
+      "tab": "universe",
+      "overlaps": 0,
+      "visible": true,
+      "market": "US",
+      "symbol": "AAPL"
+    },
+    {
+      "width": 1366,
+      "clientWidth": 1351,
+      "scrollWidth": 1351,
+      "mainWidth": 1119,
+      "mainLeft": 232,
+      "view": "analytics",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "US",
+      "symbol": "AAPL"
+    },
+    {
+      "width": 1366,
+      "clientWidth": 1351,
+      "scrollWidth": 1351,
+      "mainWidth": 1119,
+      "mainLeft": 232,
+      "view": "excel",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "US",
+      "symbol": "AAPL"
+    },
+    {
+      "width": 1366,
+      "clientWidth": 1351,
+      "scrollWidth": 1351,
+      "mainWidth": 1119,
+      "mainLeft": 232,
+      "view": "settings",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "US",
+      "symbol": "AAPL"
+    },
+    {
+      "width": 1440,
+      "clientWidth": 1425,
+      "scrollWidth": 1425,
+      "mainWidth": 1193,
+      "mainLeft": 232,
+      "view": "overview",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "US",
+      "symbol": "AAPL"
+    },
+    {
+      "width": 1440,
+      "clientWidth": 1425,
+      "scrollWidth": 1425,
+      "mainWidth": 1193,
+      "mainLeft": 232,
+      "view": "ranking",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "US",
+      "symbol": "AAPL"
+    },
+    {
+      "width": 1440,
+      "clientWidth": 1425,
+      "scrollWidth": 1425,
+      "mainWidth": 1193,
+      "mainLeft": 232,
+      "view": "filters",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "US",
+      "symbol": "AAPL"
+    },
+    {
+      "width": 1440,
+      "clientWidth": 1425,
+      "scrollWidth": 1425,
+      "mainWidth": 1193,
+      "mainLeft": 232,
+      "view": "filters",
+      "tab": "technical",
+      "overlaps": 0,
+      "visible": true,
+      "market": "US",
+      "symbol": "AAPL"
+    },
+    {
+      "width": 1440,
+      "clientWidth": 1425,
+      "scrollWidth": 1425,
+      "mainWidth": 1193,
+      "mainLeft": 232,
+      "view": "filters",
+      "tab": "ownership",
+      "overlaps": 0,
+      "visible": true,
+      "market": "US",
+      "symbol": "AAPL"
+    },
+    {
+      "width": 1440,
+      "clientWidth": 1425,
+      "scrollWidth": 1425,
+      "mainWidth": 1193,
+      "mainLeft": 232,
+      "view": "filters",
+      "tab": "universe",
+      "overlaps": 0,
+      "visible": true,
+      "market": "US",
+      "symbol": "AAPL"
+    },
+    {
+      "width": 1440,
+      "clientWidth": 1425,
+      "scrollWidth": 1425,
+      "mainWidth": 1193,
+      "mainLeft": 232,
+      "view": "analytics",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "US",
+      "symbol": "AAPL"
+    },
+    {
+      "width": 1440,
+      "clientWidth": 1425,
+      "scrollWidth": 1425,
+      "mainWidth": 1193,
+      "mainLeft": 232,
+      "view": "excel",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "US",
+      "symbol": "AAPL"
+    },
+    {
+      "width": 1440,
+      "clientWidth": 1425,
+      "scrollWidth": 1425,
+      "mainWidth": 1193,
+      "mainLeft": 232,
+      "view": "settings",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "US",
+      "symbol": "AAPL"
+    },
+    {
+      "width": 1600,
+      "clientWidth": 1585,
+      "scrollWidth": 1585,
+      "mainWidth": 1353,
+      "mainLeft": 232,
+      "view": "overview",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "US",
+      "symbol": "AAPL"
+    },
+    {
+      "width": 1600,
+      "clientWidth": 1585,
+      "scrollWidth": 1585,
+      "mainWidth": 1353,
+      "mainLeft": 232,
+      "view": "ranking",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "US",
+      "symbol": "AAPL"
+    },
+    {
+      "width": 1600,
+      "clientWidth": 1585,
+      "scrollWidth": 1585,
+      "mainWidth": 1353,
+      "mainLeft": 232,
+      "view": "filters",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "US",
+      "symbol": "AAPL"
+    },
+    {
+      "width": 1600,
+      "clientWidth": 1585,
+      "scrollWidth": 1585,
+      "mainWidth": 1353,
+      "mainLeft": 232,
+      "view": "filters",
+      "tab": "technical",
+      "overlaps": 0,
+      "visible": true,
+      "market": "US",
+      "symbol": "AAPL"
+    },
+    {
+      "width": 1600,
+      "clientWidth": 1585,
+      "scrollWidth": 1585,
+      "mainWidth": 1353,
+      "mainLeft": 232,
+      "view": "filters",
+      "tab": "ownership",
+      "overlaps": 0,
+      "visible": true,
+      "market": "US",
+      "symbol": "AAPL"
+    },
+    {
+      "width": 1600,
+      "clientWidth": 1585,
+      "scrollWidth": 1585,
+      "mainWidth": 1353,
+      "mainLeft": 232,
+      "view": "filters",
+      "tab": "universe",
+      "overlaps": 0,
+      "visible": true,
+      "market": "US",
+      "symbol": "AAPL"
+    },
+    {
+      "width": 1600,
+      "clientWidth": 1585,
+      "scrollWidth": 1585,
+      "mainWidth": 1353,
+      "mainLeft": 232,
+      "view": "analytics",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "US",
+      "symbol": "AAPL"
+    },
+    {
+      "width": 1600,
+      "clientWidth": 1585,
+      "scrollWidth": 1585,
+      "mainWidth": 1353,
+      "mainLeft": 232,
+      "view": "excel",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "US",
+      "symbol": "AAPL"
+    },
+    {
+      "width": 1600,
+      "clientWidth": 1585,
+      "scrollWidth": 1585,
+      "mainWidth": 1353,
+      "mainLeft": 232,
+      "view": "settings",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "US",
+      "symbol": "AAPL"
+    },
+    {
+      "width": 1920,
+      "clientWidth": 1905,
+      "scrollWidth": 1905,
+      "mainWidth": 1673,
+      "mainLeft": 232,
+      "view": "overview",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "US",
+      "symbol": "AAPL"
+    },
+    {
+      "width": 1920,
+      "clientWidth": 1905,
+      "scrollWidth": 1905,
+      "mainWidth": 1673,
+      "mainLeft": 232,
+      "view": "ranking",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "US",
+      "symbol": "AAPL"
+    },
+    {
+      "width": 1920,
+      "clientWidth": 1905,
+      "scrollWidth": 1905,
+      "mainWidth": 1673,
+      "mainLeft": 232,
+      "view": "filters",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "US",
+      "symbol": "AAPL"
+    },
+    {
+      "width": 1920,
+      "clientWidth": 1905,
+      "scrollWidth": 1905,
+      "mainWidth": 1673,
+      "mainLeft": 232,
+      "view": "filters",
+      "tab": "technical",
+      "overlaps": 0,
+      "visible": true,
+      "market": "US",
+      "symbol": "AAPL"
+    },
+    {
+      "width": 1920,
+      "clientWidth": 1905,
+      "scrollWidth": 1905,
+      "mainWidth": 1673,
+      "mainLeft": 232,
+      "view": "filters",
+      "tab": "ownership",
+      "overlaps": 0,
+      "visible": true,
+      "market": "US",
+      "symbol": "AAPL"
+    },
+    {
+      "width": 1920,
+      "clientWidth": 1905,
+      "scrollWidth": 1905,
+      "mainWidth": 1673,
+      "mainLeft": 232,
+      "view": "filters",
+      "tab": "universe",
+      "overlaps": 0,
+      "visible": true,
+      "market": "US",
+      "symbol": "AAPL"
+    },
+    {
+      "width": 1920,
+      "clientWidth": 1905,
+      "scrollWidth": 1905,
+      "mainWidth": 1673,
+      "mainLeft": 232,
+      "view": "analytics",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "US",
+      "symbol": "AAPL"
+    },
+    {
+      "width": 1920,
+      "clientWidth": 1905,
+      "scrollWidth": 1905,
+      "mainWidth": 1673,
+      "mainLeft": 232,
+      "view": "excel",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "US",
+      "symbol": "AAPL"
+    },
+    {
+      "width": 1920,
+      "clientWidth": 1905,
+      "scrollWidth": 1905,
+      "mainWidth": 1673,
+      "mainLeft": 232,
+      "view": "settings",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "US",
+      "symbol": "AAPL"
+    },
+    {
+      "width": 768,
+      "clientWidth": 753,
+      "scrollWidth": 753,
+      "mainWidth": 753,
+      "mainLeft": 0,
+      "view": "overview",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "US",
+      "symbol": "AAPL"
+    },
+    {
+      "width": 768,
+      "clientWidth": 753,
+      "scrollWidth": 753,
+      "mainWidth": 753,
+      "mainLeft": 0,
+      "view": "ranking",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "US",
+      "symbol": "AAPL"
+    },
+    {
+      "width": 768,
+      "clientWidth": 753,
+      "scrollWidth": 753,
+      "mainWidth": 753,
+      "mainLeft": 0,
+      "view": "filters",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "US",
+      "symbol": "AAPL"
+    },
+    {
+      "width": 768,
+      "clientWidth": 753,
+      "scrollWidth": 753,
+      "mainWidth": 753,
+      "mainLeft": 0,
+      "view": "filters",
+      "tab": "technical",
+      "overlaps": 0,
+      "visible": true,
+      "market": "US",
+      "symbol": "AAPL"
+    },
+    {
+      "width": 768,
+      "clientWidth": 753,
+      "scrollWidth": 753,
+      "mainWidth": 753,
+      "mainLeft": 0,
+      "view": "filters",
+      "tab": "ownership",
+      "overlaps": 0,
+      "visible": true,
+      "market": "US",
+      "symbol": "AAPL"
+    },
+    {
+      "width": 768,
+      "clientWidth": 753,
+      "scrollWidth": 753,
+      "mainWidth": 753,
+      "mainLeft": 0,
+      "view": "filters",
+      "tab": "universe",
+      "overlaps": 0,
+      "visible": true,
+      "market": "US",
+      "symbol": "AAPL"
+    },
+    {
+      "width": 768,
+      "clientWidth": 753,
+      "scrollWidth": 753,
+      "mainWidth": 753,
+      "mainLeft": 0,
+      "view": "analytics",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "US",
+      "symbol": "AAPL"
+    },
+    {
+      "width": 768,
+      "clientWidth": 753,
+      "scrollWidth": 753,
+      "mainWidth": 753,
+      "mainLeft": 0,
+      "view": "excel",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "US",
+      "symbol": "AAPL"
+    },
+    {
+      "width": 768,
+      "clientWidth": 753,
+      "scrollWidth": 753,
+      "mainWidth": 753,
+      "mainLeft": 0,
+      "view": "settings",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "US",
+      "symbol": "AAPL"
+    },
+    {
+      "width": 390,
+      "clientWidth": 375,
+      "scrollWidth": 375,
+      "mainWidth": 375,
+      "mainLeft": 0,
+      "view": "overview",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "US",
+      "symbol": "AAPL"
+    },
+    {
+      "width": 390,
+      "clientWidth": 375,
+      "scrollWidth": 375,
+      "mainWidth": 375,
+      "mainLeft": 0,
+      "view": "ranking",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "US",
+      "symbol": "AAPL"
+    },
+    {
+      "width": 390,
+      "clientWidth": 375,
+      "scrollWidth": 375,
+      "mainWidth": 375,
+      "mainLeft": 0,
+      "view": "filters",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "US",
+      "symbol": "AAPL"
+    },
+    {
+      "width": 390,
+      "clientWidth": 375,
+      "scrollWidth": 375,
+      "mainWidth": 375,
+      "mainLeft": 0,
+      "view": "filters",
+      "tab": "technical",
+      "overlaps": 0,
+      "visible": true,
+      "market": "US",
+      "symbol": "AAPL"
+    },
+    {
+      "width": 390,
+      "clientWidth": 375,
+      "scrollWidth": 375,
+      "mainWidth": 375,
+      "mainLeft": 0,
+      "view": "filters",
+      "tab": "ownership",
+      "overlaps": 0,
+      "visible": true,
+      "market": "US",
+      "symbol": "AAPL"
+    },
+    {
+      "width": 390,
+      "clientWidth": 375,
+      "scrollWidth": 375,
+      "mainWidth": 375,
+      "mainLeft": 0,
+      "view": "filters",
+      "tab": "universe",
+      "overlaps": 0,
+      "visible": true,
+      "market": "US",
+      "symbol": "AAPL"
+    },
+    {
+      "width": 390,
+      "clientWidth": 375,
+      "scrollWidth": 375,
+      "mainWidth": 375,
+      "mainLeft": 0,
+      "view": "analytics",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "US",
+      "symbol": "AAPL"
+    },
+    {
+      "width": 390,
+      "clientWidth": 375,
+      "scrollWidth": 375,
+      "mainWidth": 375,
+      "mainLeft": 0,
+      "view": "excel",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "US",
+      "symbol": "AAPL"
+    },
+    {
+      "width": 390,
+      "clientWidth": 375,
+      "scrollWidth": 375,
+      "mainWidth": 375,
+      "mainLeft": 0,
+      "view": "settings",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "US",
+      "symbol": "AAPL"
+    },
+    {
+      "width": 320,
+      "clientWidth": 305,
+      "scrollWidth": 305,
+      "mainWidth": 305,
+      "mainLeft": 0,
+      "view": "overview",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "US",
+      "symbol": "AAPL"
+    },
+    {
+      "width": 320,
+      "clientWidth": 305,
+      "scrollWidth": 305,
+      "mainWidth": 305,
+      "mainLeft": 0,
+      "view": "ranking",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "US",
+      "symbol": "AAPL"
+    },
+    {
+      "width": 320,
+      "clientWidth": 305,
+      "scrollWidth": 305,
+      "mainWidth": 305,
+      "mainLeft": 0,
+      "view": "filters",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "US",
+      "symbol": "AAPL"
+    },
+    {
+      "width": 320,
+      "clientWidth": 305,
+      "scrollWidth": 305,
+      "mainWidth": 305,
+      "mainLeft": 0,
+      "view": "filters",
+      "tab": "technical",
+      "overlaps": 0,
+      "visible": true,
+      "market": "US",
+      "symbol": "AAPL"
+    },
+    {
+      "width": 320,
+      "clientWidth": 305,
+      "scrollWidth": 305,
+      "mainWidth": 305,
+      "mainLeft": 0,
+      "view": "filters",
+      "tab": "ownership",
+      "overlaps": 0,
+      "visible": true,
+      "market": "US",
+      "symbol": "AAPL"
+    },
+    {
+      "width": 320,
+      "clientWidth": 305,
+      "scrollWidth": 305,
+      "mainWidth": 305,
+      "mainLeft": 0,
+      "view": "filters",
+      "tab": "universe",
+      "overlaps": 0,
+      "visible": true,
+      "market": "US",
+      "symbol": "AAPL"
+    },
+    {
+      "width": 320,
+      "clientWidth": 305,
+      "scrollWidth": 305,
+      "mainWidth": 305,
+      "mainLeft": 0,
+      "view": "analytics",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "US",
+      "symbol": "AAPL"
+    },
+    {
+      "width": 320,
+      "clientWidth": 305,
+      "scrollWidth": 305,
+      "mainWidth": 305,
+      "mainLeft": 0,
+      "view": "excel",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "US",
+      "symbol": "AAPL"
+    },
+    {
+      "width": 320,
+      "clientWidth": 305,
+      "scrollWidth": 305,
+      "mainWidth": 305,
+      "mainLeft": 0,
+      "view": "settings",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "US",
+      "symbol": "AAPL"
+    },
+    {
+      "width": 1366,
+      "clientWidth": 1351,
+      "scrollWidth": 1351,
+      "mainWidth": 1119,
+      "mainLeft": 232,
+      "view": "overview",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "NSE",
+      "symbol": "RELIANCE"
+    },
+    {
+      "width": 1366,
+      "clientWidth": 1351,
+      "scrollWidth": 1351,
+      "mainWidth": 1119,
+      "mainLeft": 232,
+      "view": "ranking",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "NSE",
+      "symbol": "RELIANCE"
+    },
+    {
+      "width": 1366,
+      "clientWidth": 1351,
+      "scrollWidth": 1351,
+      "mainWidth": 1119,
+      "mainLeft": 232,
+      "view": "filters",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "NSE",
+      "symbol": "RELIANCE"
+    },
+    {
+      "width": 1366,
+      "clientWidth": 1351,
+      "scrollWidth": 1351,
+      "mainWidth": 1119,
+      "mainLeft": 232,
+      "view": "filters",
+      "tab": "technical",
+      "overlaps": 0,
+      "visible": true,
+      "market": "NSE",
+      "symbol": "RELIANCE"
+    },
+    {
+      "width": 1366,
+      "clientWidth": 1351,
+      "scrollWidth": 1351,
+      "mainWidth": 1119,
+      "mainLeft": 232,
+      "view": "filters",
+      "tab": "ownership",
+      "overlaps": 0,
+      "visible": true,
+      "market": "NSE",
+      "symbol": "RELIANCE"
+    },
+    {
+      "width": 1366,
+      "clientWidth": 1351,
+      "scrollWidth": 1351,
+      "mainWidth": 1119,
+      "mainLeft": 232,
+      "view": "filters",
+      "tab": "universe",
+      "overlaps": 0,
+      "visible": true,
+      "market": "NSE",
+      "symbol": "RELIANCE"
+    },
+    {
+      "width": 1366,
+      "clientWidth": 1351,
+      "scrollWidth": 1351,
+      "mainWidth": 1119,
+      "mainLeft": 232,
+      "view": "analytics",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "NSE",
+      "symbol": "RELIANCE"
+    },
+    {
+      "width": 1366,
+      "clientWidth": 1351,
+      "scrollWidth": 1351,
+      "mainWidth": 1119,
+      "mainLeft": 232,
+      "view": "excel",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "NSE",
+      "symbol": "RELIANCE"
+    },
+    {
+      "width": 1366,
+      "clientWidth": 1351,
+      "scrollWidth": 1351,
+      "mainWidth": 1119,
+      "mainLeft": 232,
+      "view": "settings",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "NSE",
+      "symbol": "RELIANCE"
+    },
+    {
+      "width": 1440,
+      "clientWidth": 1425,
+      "scrollWidth": 1425,
+      "mainWidth": 1193,
+      "mainLeft": 232,
+      "view": "overview",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "NSE",
+      "symbol": "RELIANCE"
+    },
+    {
+      "width": 1440,
+      "clientWidth": 1425,
+      "scrollWidth": 1425,
+      "mainWidth": 1193,
+      "mainLeft": 232,
+      "view": "ranking",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "NSE",
+      "symbol": "RELIANCE"
+    },
+    {
+      "width": 1440,
+      "clientWidth": 1425,
+      "scrollWidth": 1425,
+      "mainWidth": 1193,
+      "mainLeft": 232,
+      "view": "filters",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "NSE",
+      "symbol": "RELIANCE"
+    },
+    {
+      "width": 1440,
+      "clientWidth": 1425,
+      "scrollWidth": 1425,
+      "mainWidth": 1193,
+      "mainLeft": 232,
+      "view": "filters",
+      "tab": "technical",
+      "overlaps": 0,
+      "visible": true,
+      "market": "NSE",
+      "symbol": "RELIANCE"
+    },
+    {
+      "width": 1440,
+      "clientWidth": 1425,
+      "scrollWidth": 1425,
+      "mainWidth": 1193,
+      "mainLeft": 232,
+      "view": "filters",
+      "tab": "ownership",
+      "overlaps": 0,
+      "visible": true,
+      "market": "NSE",
+      "symbol": "RELIANCE"
+    },
+    {
+      "width": 1440,
+      "clientWidth": 1425,
+      "scrollWidth": 1425,
+      "mainWidth": 1193,
+      "mainLeft": 232,
+      "view": "filters",
+      "tab": "universe",
+      "overlaps": 0,
+      "visible": true,
+      "market": "NSE",
+      "symbol": "RELIANCE"
+    },
+    {
+      "width": 1440,
+      "clientWidth": 1425,
+      "scrollWidth": 1425,
+      "mainWidth": 1193,
+      "mainLeft": 232,
+      "view": "analytics",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "NSE",
+      "symbol": "RELIANCE"
+    },
+    {
+      "width": 1440,
+      "clientWidth": 1425,
+      "scrollWidth": 1425,
+      "mainWidth": 1193,
+      "mainLeft": 232,
+      "view": "excel",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "NSE",
+      "symbol": "RELIANCE"
+    },
+    {
+      "width": 1440,
+      "clientWidth": 1425,
+      "scrollWidth": 1425,
+      "mainWidth": 1193,
+      "mainLeft": 232,
+      "view": "settings",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "NSE",
+      "symbol": "RELIANCE"
+    },
+    {
+      "width": 1600,
+      "clientWidth": 1585,
+      "scrollWidth": 1585,
+      "mainWidth": 1353,
+      "mainLeft": 232,
+      "view": "overview",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "NSE",
+      "symbol": "RELIANCE"
+    },
+    {
+      "width": 1600,
+      "clientWidth": 1585,
+      "scrollWidth": 1585,
+      "mainWidth": 1353,
+      "mainLeft": 232,
+      "view": "ranking",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "NSE",
+      "symbol": "RELIANCE"
+    },
+    {
+      "width": 1600,
+      "clientWidth": 1585,
+      "scrollWidth": 1585,
+      "mainWidth": 1353,
+      "mainLeft": 232,
+      "view": "filters",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "NSE",
+      "symbol": "RELIANCE"
+    },
+    {
+      "width": 1600,
+      "clientWidth": 1585,
+      "scrollWidth": 1585,
+      "mainWidth": 1353,
+      "mainLeft": 232,
+      "view": "filters",
+      "tab": "technical",
+      "overlaps": 0,
+      "visible": true,
+      "market": "NSE",
+      "symbol": "RELIANCE"
+    },
+    {
+      "width": 1600,
+      "clientWidth": 1585,
+      "scrollWidth": 1585,
+      "mainWidth": 1353,
+      "mainLeft": 232,
+      "view": "filters",
+      "tab": "ownership",
+      "overlaps": 0,
+      "visible": true,
+      "market": "NSE",
+      "symbol": "RELIANCE"
+    },
+    {
+      "width": 1600,
+      "clientWidth": 1585,
+      "scrollWidth": 1585,
+      "mainWidth": 1353,
+      "mainLeft": 232,
+      "view": "filters",
+      "tab": "universe",
+      "overlaps": 0,
+      "visible": true,
+      "market": "NSE",
+      "symbol": "RELIANCE"
+    },
+    {
+      "width": 1600,
+      "clientWidth": 1585,
+      "scrollWidth": 1585,
+      "mainWidth": 1353,
+      "mainLeft": 232,
+      "view": "analytics",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "NSE",
+      "symbol": "RELIANCE"
+    },
+    {
+      "width": 1600,
+      "clientWidth": 1585,
+      "scrollWidth": 1585,
+      "mainWidth": 1353,
+      "mainLeft": 232,
+      "view": "excel",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "NSE",
+      "symbol": "RELIANCE"
+    },
+    {
+      "width": 1600,
+      "clientWidth": 1585,
+      "scrollWidth": 1585,
+      "mainWidth": 1353,
+      "mainLeft": 232,
+      "view": "settings",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "NSE",
+      "symbol": "RELIANCE"
+    },
+    {
+      "width": 1920,
+      "clientWidth": 1905,
+      "scrollWidth": 1905,
+      "mainWidth": 1673,
+      "mainLeft": 232,
+      "view": "overview",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "NSE",
+      "symbol": "RELIANCE"
+    },
+    {
+      "width": 1920,
+      "clientWidth": 1905,
+      "scrollWidth": 1905,
+      "mainWidth": 1673,
+      "mainLeft": 232,
+      "view": "ranking",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "NSE",
+      "symbol": "RELIANCE"
+    },
+    {
+      "width": 1920,
+      "clientWidth": 1905,
+      "scrollWidth": 1905,
+      "mainWidth": 1673,
+      "mainLeft": 232,
+      "view": "filters",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "NSE",
+      "symbol": "RELIANCE"
+    },
+    {
+      "width": 1920,
+      "clientWidth": 1905,
+      "scrollWidth": 1905,
+      "mainWidth": 1673,
+      "mainLeft": 232,
+      "view": "filters",
+      "tab": "technical",
+      "overlaps": 0,
+      "visible": true,
+      "market": "NSE",
+      "symbol": "RELIANCE"
+    },
+    {
+      "width": 1920,
+      "clientWidth": 1905,
+      "scrollWidth": 1905,
+      "mainWidth": 1673,
+      "mainLeft": 232,
+      "view": "filters",
+      "tab": "ownership",
+      "overlaps": 0,
+      "visible": true,
+      "market": "NSE",
+      "symbol": "RELIANCE"
+    },
+    {
+      "width": 1920,
+      "clientWidth": 1905,
+      "scrollWidth": 1905,
+      "mainWidth": 1673,
+      "mainLeft": 232,
+      "view": "filters",
+      "tab": "universe",
+      "overlaps": 0,
+      "visible": true,
+      "market": "NSE",
+      "symbol": "RELIANCE"
+    },
+    {
+      "width": 1920,
+      "clientWidth": 1905,
+      "scrollWidth": 1905,
+      "mainWidth": 1673,
+      "mainLeft": 232,
+      "view": "analytics",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "NSE",
+      "symbol": "RELIANCE"
+    },
+    {
+      "width": 1920,
+      "clientWidth": 1905,
+      "scrollWidth": 1905,
+      "mainWidth": 1673,
+      "mainLeft": 232,
+      "view": "excel",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "NSE",
+      "symbol": "RELIANCE"
+    },
+    {
+      "width": 1920,
+      "clientWidth": 1905,
+      "scrollWidth": 1905,
+      "mainWidth": 1673,
+      "mainLeft": 232,
+      "view": "settings",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "NSE",
+      "symbol": "RELIANCE"
+    },
+    {
+      "width": 768,
+      "clientWidth": 753,
+      "scrollWidth": 753,
+      "mainWidth": 753,
+      "mainLeft": 0,
+      "view": "overview",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "NSE",
+      "symbol": "RELIANCE"
+    },
+    {
+      "width": 768,
+      "clientWidth": 753,
+      "scrollWidth": 753,
+      "mainWidth": 753,
+      "mainLeft": 0,
+      "view": "ranking",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "NSE",
+      "symbol": "RELIANCE"
+    },
+    {
+      "width": 768,
+      "clientWidth": 753,
+      "scrollWidth": 753,
+      "mainWidth": 753,
+      "mainLeft": 0,
+      "view": "filters",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "NSE",
+      "symbol": "RELIANCE"
+    },
+    {
+      "width": 768,
+      "clientWidth": 753,
+      "scrollWidth": 753,
+      "mainWidth": 753,
+      "mainLeft": 0,
+      "view": "filters",
+      "tab": "technical",
+      "overlaps": 0,
+      "visible": true,
+      "market": "NSE",
+      "symbol": "RELIANCE"
+    },
+    {
+      "width": 768,
+      "clientWidth": 753,
+      "scrollWidth": 753,
+      "mainWidth": 753,
+      "mainLeft": 0,
+      "view": "filters",
+      "tab": "ownership",
+      "overlaps": 0,
+      "visible": true,
+      "market": "NSE",
+      "symbol": "RELIANCE"
+    },
+    {
+      "width": 768,
+      "clientWidth": 753,
+      "scrollWidth": 753,
+      "mainWidth": 753,
+      "mainLeft": 0,
+      "view": "filters",
+      "tab": "universe",
+      "overlaps": 0,
+      "visible": true,
+      "market": "NSE",
+      "symbol": "RELIANCE"
+    },
+    {
+      "width": 768,
+      "clientWidth": 753,
+      "scrollWidth": 753,
+      "mainWidth": 753,
+      "mainLeft": 0,
+      "view": "analytics",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "NSE",
+      "symbol": "RELIANCE"
+    },
+    {
+      "width": 768,
+      "clientWidth": 753,
+      "scrollWidth": 753,
+      "mainWidth": 753,
+      "mainLeft": 0,
+      "view": "excel",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "NSE",
+      "symbol": "RELIANCE"
+    },
+    {
+      "width": 768,
+      "clientWidth": 753,
+      "scrollWidth": 753,
+      "mainWidth": 753,
+      "mainLeft": 0,
+      "view": "settings",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "NSE",
+      "symbol": "RELIANCE"
+    },
+    {
+      "width": 390,
+      "clientWidth": 375,
+      "scrollWidth": 375,
+      "mainWidth": 375,
+      "mainLeft": 0,
+      "view": "overview",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "NSE",
+      "symbol": "RELIANCE"
+    },
+    {
+      "width": 390,
+      "clientWidth": 375,
+      "scrollWidth": 375,
+      "mainWidth": 375,
+      "mainLeft": 0,
+      "view": "ranking",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "NSE",
+      "symbol": "RELIANCE"
+    },
+    {
+      "width": 390,
+      "clientWidth": 375,
+      "scrollWidth": 375,
+      "mainWidth": 375,
+      "mainLeft": 0,
+      "view": "filters",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "NSE",
+      "symbol": "RELIANCE"
+    },
+    {
+      "width": 390,
+      "clientWidth": 375,
+      "scrollWidth": 375,
+      "mainWidth": 375,
+      "mainLeft": 0,
+      "view": "filters",
+      "tab": "technical",
+      "overlaps": 0,
+      "visible": true,
+      "market": "NSE",
+      "symbol": "RELIANCE"
+    },
+    {
+      "width": 390,
+      "clientWidth": 375,
+      "scrollWidth": 375,
+      "mainWidth": 375,
+      "mainLeft": 0,
+      "view": "filters",
+      "tab": "ownership",
+      "overlaps": 0,
+      "visible": true,
+      "market": "NSE",
+      "symbol": "RELIANCE"
+    },
+    {
+      "width": 390,
+      "clientWidth": 375,
+      "scrollWidth": 375,
+      "mainWidth": 375,
+      "mainLeft": 0,
+      "view": "filters",
+      "tab": "universe",
+      "overlaps": 0,
+      "visible": true,
+      "market": "NSE",
+      "symbol": "RELIANCE"
+    },
+    {
+      "width": 390,
+      "clientWidth": 375,
+      "scrollWidth": 375,
+      "mainWidth": 375,
+      "mainLeft": 0,
+      "view": "analytics",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "NSE",
+      "symbol": "RELIANCE"
+    },
+    {
+      "width": 390,
+      "clientWidth": 375,
+      "scrollWidth": 375,
+      "mainWidth": 375,
+      "mainLeft": 0,
+      "view": "excel",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "NSE",
+      "symbol": "RELIANCE"
+    },
+    {
+      "width": 390,
+      "clientWidth": 375,
+      "scrollWidth": 375,
+      "mainWidth": 375,
+      "mainLeft": 0,
+      "view": "settings",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "NSE",
+      "symbol": "RELIANCE"
+    },
+    {
+      "width": 320,
+      "clientWidth": 305,
+      "scrollWidth": 305,
+      "mainWidth": 305,
+      "mainLeft": 0,
+      "view": "overview",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "NSE",
+      "symbol": "RELIANCE"
+    },
+    {
+      "width": 320,
+      "clientWidth": 305,
+      "scrollWidth": 305,
+      "mainWidth": 305,
+      "mainLeft": 0,
+      "view": "ranking",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "NSE",
+      "symbol": "RELIANCE"
+    },
+    {
+      "width": 320,
+      "clientWidth": 305,
+      "scrollWidth": 305,
+      "mainWidth": 305,
+      "mainLeft": 0,
+      "view": "filters",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "NSE",
+      "symbol": "RELIANCE"
+    },
+    {
+      "width": 320,
+      "clientWidth": 305,
+      "scrollWidth": 305,
+      "mainWidth": 305,
+      "mainLeft": 0,
+      "view": "filters",
+      "tab": "technical",
+      "overlaps": 0,
+      "visible": true,
+      "market": "NSE",
+      "symbol": "RELIANCE"
+    },
+    {
+      "width": 320,
+      "clientWidth": 305,
+      "scrollWidth": 305,
+      "mainWidth": 305,
+      "mainLeft": 0,
+      "view": "filters",
+      "tab": "ownership",
+      "overlaps": 0,
+      "visible": true,
+      "market": "NSE",
+      "symbol": "RELIANCE"
+    },
+    {
+      "width": 320,
+      "clientWidth": 305,
+      "scrollWidth": 305,
+      "mainWidth": 305,
+      "mainLeft": 0,
+      "view": "filters",
+      "tab": "universe",
+      "overlaps": 0,
+      "visible": true,
+      "market": "NSE",
+      "symbol": "RELIANCE"
+    },
+    {
+      "width": 320,
+      "clientWidth": 305,
+      "scrollWidth": 305,
+      "mainWidth": 305,
+      "mainLeft": 0,
+      "view": "analytics",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "NSE",
+      "symbol": "RELIANCE"
+    },
+    {
+      "width": 320,
+      "clientWidth": 305,
+      "scrollWidth": 305,
+      "mainWidth": 305,
+      "mainLeft": 0,
+      "view": "excel",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "NSE",
+      "symbol": "RELIANCE"
+    },
+    {
+      "width": 320,
+      "clientWidth": 305,
+      "scrollWidth": 305,
+      "mainWidth": 305,
+      "mainLeft": 0,
+      "view": "settings",
+      "tab": "fundamental",
+      "overlaps": 0,
+      "visible": true,
+      "market": "NSE",
+      "symbol": "RELIANCE"
+    }
+  ],
+  "errors": [],
+  "requests": [
+    {
+      "path": "/health",
+      "query": "",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/health",
+      "query": "",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/screener",
+      "query": "?page_size=25&page=1&market=ALL&sort_by=data_coverage&sort_dir=desc",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/health",
+      "query": "",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/companies/search",
+      "query": "?q=AAPL&exchange=US&limit=10",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/health",
+      "query": "",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/indicators/AAPL",
+      "query": "?exchange=US&timeframe=daily&sma_short=20&sma_long=50&rsi_period=14",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/benchmark/US",
+      "query": "?limit=1400",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/dashboard/AAPL",
+      "query": "?exchange=US&technical_weight=25&fundamental_weight=30&relative_strength_weight=25&ownership_weight=15&sector_weight=5&technical_ema20_weight=20&technical_ema50_weight=20&technical_ema150_weight=20&technical_ema200_weight=20&technical_rsi_weight=20&fundamental_eps_weight=20&fundamental_net_income_weight=20&fundamental_profit_margin_weight=20&fundamental_roe_weight=20&fundamental_roa_weight=20&ownership_institution_weight=70&ownership_insider_weight=30&rs_1w_weight=30&rs_2w_weight=0&rs_1m_weight=25&rs_2m_weight=0&rs_3m_weight=20&rs_6m_weight=15&rs_1y_weight=10&rs_sector_weight=0",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/technical-summary/AAPL",
+      "query": "?exchange=US&timeframe=daily&rs_1w_weight=30&rs_2w_weight=0&rs_1m_weight=25&rs_2m_weight=0&rs_3m_weight=20&rs_6m_weight=15&rs_1y_weight=10&rs_sector_weight=0",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/ownership-details/AAPL",
+      "query": "?exchange=US",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/fundamentals/AAPL",
+      "query": "?exchange=US",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/fundamentals-history/AAPL",
+      "query": "?exchange=US",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/sec-edgar/AAPL",
+      "query": "?exchange=US&filings_limit=12",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/top-composite",
+      "query": "?market=ALL&limit=200&candidate_limit=220&technical_weight=25&fundamental_weight=30&ownership_weight=15&sector_weight=5&relative_strength_weight=25",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/chart/AAPL",
+      "query": "?exchange=US&timeframe=daily&limit=1040",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/fundamentals/AAPL",
+      "query": "?exchange=US",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/dashboard/AAPL",
+      "query": "?exchange=US&technical_weight=25&fundamental_weight=30&relative_strength_weight=25&ownership_weight=15&sector_weight=5&technical_ema20_weight=20&technical_ema50_weight=20&technical_ema150_weight=20&technical_ema200_weight=20&technical_rsi_weight=20&fundamental_eps_weight=20&fundamental_net_income_weight=20&fundamental_profit_margin_weight=20&fundamental_roe_weight=20&fundamental_roa_weight=20&ownership_institution_weight=70&ownership_insider_weight=30&rs_1w_weight=30&rs_2w_weight=0&rs_1m_weight=25&rs_2m_weight=0&rs_3m_weight=20&rs_6m_weight=15&rs_1y_weight=10&rs_sector_weight=0",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/health",
+      "query": "",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/indicators/AAPL",
+      "query": "?exchange=US&timeframe=daily&sma_short=20&sma_long=50&rsi_period=14",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/benchmark/US",
+      "query": "?limit=1400",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/dashboard/AAPL",
+      "query": "?exchange=US&technical_weight=25&fundamental_weight=30&relative_strength_weight=25&ownership_weight=15&sector_weight=5&technical_ema20_weight=20&technical_ema50_weight=20&technical_ema150_weight=20&technical_ema200_weight=20&technical_rsi_weight=20&fundamental_eps_weight=20&fundamental_net_income_weight=20&fundamental_profit_margin_weight=20&fundamental_roe_weight=20&fundamental_roa_weight=20&ownership_institution_weight=70&ownership_insider_weight=30&rs_1w_weight=30&rs_2w_weight=0&rs_1m_weight=25&rs_2m_weight=0&rs_3m_weight=20&rs_6m_weight=15&rs_1y_weight=10&rs_sector_weight=0",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/technical-summary/AAPL",
+      "query": "?exchange=US&timeframe=daily&rs_1w_weight=30&rs_2w_weight=0&rs_1m_weight=25&rs_2m_weight=0&rs_3m_weight=20&rs_6m_weight=15&rs_1y_weight=10&rs_sector_weight=0",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/ownership-details/AAPL",
+      "query": "?exchange=US",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/fundamentals/AAPL",
+      "query": "?exchange=US",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/fundamentals-history/AAPL",
+      "query": "?exchange=US",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/sec-edgar/AAPL",
+      "query": "?exchange=US&filings_limit=12",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/chart/AAPL",
+      "query": "?exchange=US&timeframe=daily&limit=1040",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/fundamentals/AAPL",
+      "query": "?exchange=US",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/dashboard/AAPL",
+      "query": "?exchange=US&technical_weight=25&fundamental_weight=30&relative_strength_weight=25&ownership_weight=15&sector_weight=5&technical_ema20_weight=20&technical_ema50_weight=20&technical_ema150_weight=20&technical_ema200_weight=20&technical_rsi_weight=20&fundamental_eps_weight=20&fundamental_net_income_weight=20&fundamental_profit_margin_weight=20&fundamental_roe_weight=20&fundamental_roa_weight=20&ownership_institution_weight=70&ownership_insider_weight=30&rs_1w_weight=30&rs_2w_weight=0&rs_1m_weight=25&rs_2m_weight=0&rs_3m_weight=20&rs_6m_weight=15&rs_1y_weight=10&rs_sector_weight=0",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/health",
+      "query": "",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/companies/search",
+      "query": "?q=AAPL&exchange=US&limit=10",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/health",
+      "query": "",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/indicators/AAPL",
+      "query": "?exchange=US&timeframe=weekly&sma_short=20&sma_long=50&rsi_period=14",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/benchmark/US",
+      "query": "?limit=1400",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/dashboard/AAPL",
+      "query": "?exchange=US&technical_weight=25&fundamental_weight=30&relative_strength_weight=25&ownership_weight=15&sector_weight=5&technical_ema20_weight=20&technical_ema50_weight=20&technical_ema150_weight=20&technical_ema200_weight=20&technical_rsi_weight=20&fundamental_eps_weight=20&fundamental_net_income_weight=20&fundamental_profit_margin_weight=20&fundamental_roe_weight=20&fundamental_roa_weight=20&ownership_institution_weight=70&ownership_insider_weight=30&rs_1w_weight=30&rs_2w_weight=0&rs_1m_weight=25&rs_2m_weight=0&rs_3m_weight=20&rs_6m_weight=15&rs_1y_weight=10&rs_sector_weight=0",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/technical-summary/AAPL",
+      "query": "?exchange=US&timeframe=weekly&rs_1w_weight=30&rs_2w_weight=0&rs_1m_weight=25&rs_2m_weight=0&rs_3m_weight=20&rs_6m_weight=15&rs_1y_weight=10&rs_sector_weight=0",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/ownership-details/AAPL",
+      "query": "?exchange=US",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/fundamentals/AAPL",
+      "query": "?exchange=US",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/fundamentals-history/AAPL",
+      "query": "?exchange=US",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/sec-edgar/AAPL",
+      "query": "?exchange=US&filings_limit=12",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/chart/AAPL",
+      "query": "?exchange=US&timeframe=weekly&limit=260",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/fundamentals/AAPL",
+      "query": "?exchange=US",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/dashboard/AAPL",
+      "query": "?exchange=US&technical_weight=25&fundamental_weight=30&relative_strength_weight=25&ownership_weight=15&sector_weight=5&technical_ema20_weight=20&technical_ema50_weight=20&technical_ema150_weight=20&technical_ema200_weight=20&technical_rsi_weight=20&fundamental_eps_weight=20&fundamental_net_income_weight=20&fundamental_profit_margin_weight=20&fundamental_roe_weight=20&fundamental_roa_weight=20&ownership_institution_weight=70&ownership_insider_weight=30&rs_1w_weight=30&rs_2w_weight=0&rs_1m_weight=25&rs_2m_weight=0&rs_3m_weight=20&rs_6m_weight=15&rs_1y_weight=10&rs_sector_weight=0",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/health",
+      "query": "",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/companies/search",
+      "query": "?q=AAPL&exchange=US&limit=10",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/health",
+      "query": "",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/indicators/AAPL",
+      "query": "?exchange=US&timeframe=monthly&sma_short=20&sma_long=50&rsi_period=14",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/benchmark/US",
+      "query": "?limit=1400",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/dashboard/AAPL",
+      "query": "?exchange=US&technical_weight=25&fundamental_weight=30&relative_strength_weight=25&ownership_weight=15&sector_weight=5&technical_ema20_weight=20&technical_ema50_weight=20&technical_ema150_weight=20&technical_ema200_weight=20&technical_rsi_weight=20&fundamental_eps_weight=20&fundamental_net_income_weight=20&fundamental_profit_margin_weight=20&fundamental_roe_weight=20&fundamental_roa_weight=20&ownership_institution_weight=70&ownership_insider_weight=30&rs_1w_weight=30&rs_2w_weight=0&rs_1m_weight=25&rs_2m_weight=0&rs_3m_weight=20&rs_6m_weight=15&rs_1y_weight=10&rs_sector_weight=0",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/technical-summary/AAPL",
+      "query": "?exchange=US&timeframe=monthly&rs_1w_weight=30&rs_2w_weight=0&rs_1m_weight=25&rs_2m_weight=0&rs_3m_weight=20&rs_6m_weight=15&rs_1y_weight=10&rs_sector_weight=0",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/ownership-details/AAPL",
+      "query": "?exchange=US",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/fundamentals/AAPL",
+      "query": "?exchange=US",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/fundamentals-history/AAPL",
+      "query": "?exchange=US",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/sec-edgar/AAPL",
+      "query": "?exchange=US&filings_limit=12",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/chart/AAPL",
+      "query": "?exchange=US&timeframe=monthly&limit=300",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/fundamentals/AAPL",
+      "query": "?exchange=US",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/dashboard/AAPL",
+      "query": "?exchange=US&technical_weight=25&fundamental_weight=30&relative_strength_weight=25&ownership_weight=15&sector_weight=5&technical_ema20_weight=20&technical_ema50_weight=20&technical_ema150_weight=20&technical_ema200_weight=20&technical_rsi_weight=20&fundamental_eps_weight=20&fundamental_net_income_weight=20&fundamental_profit_margin_weight=20&fundamental_roe_weight=20&fundamental_roa_weight=20&ownership_institution_weight=70&ownership_insider_weight=30&rs_1w_weight=30&rs_2w_weight=0&rs_1m_weight=25&rs_2m_weight=0&rs_3m_weight=20&rs_6m_weight=15&rs_1y_weight=10&rs_sector_weight=0",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/health",
+      "query": "",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/companies/search",
+      "query": "?q=AAPL&exchange=US&limit=10",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/health",
+      "query": "",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/indicators/AAPL",
+      "query": "?exchange=US&timeframe=daily&sma_short=20&sma_long=50&rsi_period=14",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/benchmark/US",
+      "query": "?limit=1400",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/dashboard/AAPL",
+      "query": "?exchange=US&technical_weight=25&fundamental_weight=30&relative_strength_weight=25&ownership_weight=15&sector_weight=5&technical_ema20_weight=20&technical_ema50_weight=20&technical_ema150_weight=20&technical_ema200_weight=20&technical_rsi_weight=20&fundamental_eps_weight=20&fundamental_net_income_weight=20&fundamental_profit_margin_weight=20&fundamental_roe_weight=20&fundamental_roa_weight=20&ownership_institution_weight=70&ownership_insider_weight=30&rs_1w_weight=30&rs_2w_weight=0&rs_1m_weight=25&rs_2m_weight=0&rs_3m_weight=20&rs_6m_weight=15&rs_1y_weight=10&rs_sector_weight=0",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/technical-summary/AAPL",
+      "query": "?exchange=US&timeframe=daily&rs_1w_weight=30&rs_2w_weight=0&rs_1m_weight=25&rs_2m_weight=0&rs_3m_weight=20&rs_6m_weight=15&rs_1y_weight=10&rs_sector_weight=0",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/ownership-details/AAPL",
+      "query": "?exchange=US",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/fundamentals/AAPL",
+      "query": "?exchange=US",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/fundamentals-history/AAPL",
+      "query": "?exchange=US",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/sec-edgar/AAPL",
+      "query": "?exchange=US&filings_limit=12",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/chart/AAPL",
+      "query": "?exchange=US&timeframe=daily&limit=1040",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/fundamentals/AAPL",
+      "query": "?exchange=US",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/dashboard/AAPL",
+      "query": "?exchange=US&technical_weight=25&fundamental_weight=30&relative_strength_weight=25&ownership_weight=15&sector_weight=5&technical_ema20_weight=20&technical_ema50_weight=20&technical_ema150_weight=20&technical_ema200_weight=20&technical_rsi_weight=20&fundamental_eps_weight=20&fundamental_net_income_weight=20&fundamental_profit_margin_weight=20&fundamental_roe_weight=20&fundamental_roa_weight=20&ownership_institution_weight=70&ownership_insider_weight=30&rs_1w_weight=30&rs_2w_weight=0&rs_1m_weight=25&rs_2m_weight=0&rs_3m_weight=20&rs_6m_weight=15&rs_1y_weight=10&rs_sector_weight=0",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/companies/rs-backfill/status",
+      "query": "?market=US",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/backtest/AAPL",
+      "query": "?exchange=US&years=20",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/companies/rs-backfill/status",
+      "query": "?market=US",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/backtest/AAPL",
+      "query": "?exchange=US&years=20",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/companies/rs-backfill/status",
+      "query": "?market=US",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/backtest/AAPL",
+      "query": "?exchange=US&years=20",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/companies/rs-backfill/status",
+      "query": "?market=US",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/backtest/AAPL",
+      "query": "?exchange=US&years=20",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/companies/rs-backfill/status",
+      "query": "?market=US",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/backtest/AAPL",
+      "query": "?exchange=US&years=20",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/companies/rs-backfill/status",
+      "query": "?market=US",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/backtest/AAPL",
+      "query": "?exchange=US&years=20",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/companies/rs-backfill/status",
+      "query": "?market=US",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/backtest/AAPL",
+      "query": "?exchange=US&years=20",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/companies/rs-backfill/status",
+      "query": "?market=US",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/health",
+      "query": "",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/top-composite",
+      "query": "?market=ALL&limit=200&candidate_limit=220&technical_weight=25&fundamental_weight=40&ownership_weight=15&sector_weight=5&relative_strength_weight=25",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/health",
+      "query": "",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/top-composite",
+      "query": "?market=ALL&limit=200&candidate_limit=220&technical_weight=25&fundamental_weight=30&ownership_weight=15&sector_weight=5&relative_strength_weight=25",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/health",
+      "query": "",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/companies/search",
+      "query": "?q=AAPL&exchange=US&limit=10",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/health",
+      "query": "",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/indicators/AAPL",
+      "query": "?exchange=US&timeframe=weekly&sma_short=20&sma_long=50&rsi_period=14",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/benchmark/US",
+      "query": "?limit=1400",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/dashboard/AAPL",
+      "query": "?exchange=US&technical_weight=25&fundamental_weight=30&relative_strength_weight=25&ownership_weight=15&sector_weight=5&technical_ema20_weight=20&technical_ema50_weight=20&technical_ema150_weight=20&technical_ema200_weight=20&technical_rsi_weight=20&fundamental_eps_weight=20&fundamental_net_income_weight=20&fundamental_profit_margin_weight=20&fundamental_roe_weight=20&fundamental_roa_weight=20&ownership_institution_weight=70&ownership_insider_weight=30&rs_1w_weight=30&rs_2w_weight=0&rs_1m_weight=25&rs_2m_weight=0&rs_3m_weight=20&rs_6m_weight=15&rs_1y_weight=10&rs_sector_weight=0",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/technical-summary/AAPL",
+      "query": "?exchange=US&timeframe=weekly&rs_1w_weight=30&rs_2w_weight=0&rs_1m_weight=25&rs_2m_weight=0&rs_3m_weight=20&rs_6m_weight=15&rs_1y_weight=10&rs_sector_weight=0",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/ownership-details/AAPL",
+      "query": "?exchange=US",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/fundamentals/AAPL",
+      "query": "?exchange=US",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/fundamentals-history/AAPL",
+      "query": "?exchange=US",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/sec-edgar/AAPL",
+      "query": "?exchange=US&filings_limit=12",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/chart/AAPL",
+      "query": "?exchange=US&timeframe=weekly&limit=260",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/fundamentals/AAPL",
+      "query": "?exchange=US",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/dashboard/AAPL",
+      "query": "?exchange=US&technical_weight=25&fundamental_weight=30&relative_strength_weight=25&ownership_weight=15&sector_weight=5&technical_ema20_weight=20&technical_ema50_weight=20&technical_ema150_weight=20&technical_ema200_weight=20&technical_rsi_weight=20&fundamental_eps_weight=20&fundamental_net_income_weight=20&fundamental_profit_margin_weight=20&fundamental_roe_weight=20&fundamental_roa_weight=20&ownership_institution_weight=70&ownership_insider_weight=30&rs_1w_weight=30&rs_2w_weight=0&rs_1m_weight=25&rs_2m_weight=0&rs_3m_weight=20&rs_6m_weight=15&rs_1y_weight=10&rs_sector_weight=0",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/health",
+      "query": "",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/companies/search",
+      "query": "?q=AAPL&exchange=US&limit=10",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/health",
+      "query": "",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/indicators/AAPL",
+      "query": "?exchange=US&timeframe=daily&sma_short=20&sma_long=50&rsi_period=14",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/benchmark/US",
+      "query": "?limit=1400",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/dashboard/AAPL",
+      "query": "?exchange=US&technical_weight=25&fundamental_weight=30&relative_strength_weight=25&ownership_weight=15&sector_weight=5&technical_ema20_weight=20&technical_ema50_weight=20&technical_ema150_weight=20&technical_ema200_weight=20&technical_rsi_weight=20&fundamental_eps_weight=20&fundamental_net_income_weight=20&fundamental_profit_margin_weight=20&fundamental_roe_weight=20&fundamental_roa_weight=20&ownership_institution_weight=70&ownership_insider_weight=30&rs_1w_weight=30&rs_2w_weight=0&rs_1m_weight=25&rs_2m_weight=0&rs_3m_weight=20&rs_6m_weight=15&rs_1y_weight=10&rs_sector_weight=0",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/technical-summary/AAPL",
+      "query": "?exchange=US&timeframe=daily&rs_1w_weight=30&rs_2w_weight=0&rs_1m_weight=25&rs_2m_weight=0&rs_3m_weight=20&rs_6m_weight=15&rs_1y_weight=10&rs_sector_weight=0",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/ownership-details/AAPL",
+      "query": "?exchange=US",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/fundamentals/AAPL",
+      "query": "?exchange=US",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/fundamentals-history/AAPL",
+      "query": "?exchange=US",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/sec-edgar/AAPL",
+      "query": "?exchange=US&filings_limit=12",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/chart/AAPL",
+      "query": "?exchange=US&timeframe=daily&limit=1040",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/fundamentals/AAPL",
+      "query": "?exchange=US",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/dashboard/AAPL",
+      "query": "?exchange=US&technical_weight=25&fundamental_weight=30&relative_strength_weight=25&ownership_weight=15&sector_weight=5&technical_ema20_weight=20&technical_ema50_weight=20&technical_ema150_weight=20&technical_ema200_weight=20&technical_rsi_weight=20&fundamental_eps_weight=20&fundamental_net_income_weight=20&fundamental_profit_margin_weight=20&fundamental_roe_weight=20&fundamental_roa_weight=20&ownership_institution_weight=70&ownership_insider_weight=30&rs_1w_weight=30&rs_2w_weight=0&rs_1m_weight=25&rs_2m_weight=0&rs_3m_weight=20&rs_6m_weight=15&rs_1y_weight=10&rs_sector_weight=0",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/backtest/AAPL",
+      "query": "?exchange=US&years=20",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/excel-export/AAPL",
+      "query": "?exchange=US&limit=5000",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/health",
+      "query": "",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/companies/search",
+      "query": "?q=RELIANCE&exchange=NSE&limit=10",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/health",
+      "query": "",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/indicators/RELIANCE",
+      "query": "?exchange=NSE&timeframe=daily&sma_short=20&sma_long=50&rsi_period=14",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/benchmark/NSE",
+      "query": "?limit=1400",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/dashboard/RELIANCE",
+      "query": "?exchange=NSE&technical_weight=25&fundamental_weight=30&relative_strength_weight=25&ownership_weight=15&sector_weight=5&technical_ema20_weight=20&technical_ema50_weight=20&technical_ema150_weight=20&technical_ema200_weight=20&technical_rsi_weight=20&fundamental_eps_weight=20&fundamental_net_income_weight=20&fundamental_profit_margin_weight=20&fundamental_roe_weight=20&fundamental_roa_weight=20&ownership_institution_weight=70&ownership_insider_weight=30&rs_1w_weight=30&rs_2w_weight=0&rs_1m_weight=25&rs_2m_weight=0&rs_3m_weight=20&rs_6m_weight=15&rs_1y_weight=10&rs_sector_weight=0",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/technical-summary/RELIANCE",
+      "query": "?exchange=NSE&timeframe=daily&rs_1w_weight=30&rs_2w_weight=0&rs_1m_weight=25&rs_2m_weight=0&rs_3m_weight=20&rs_6m_weight=15&rs_1y_weight=10&rs_sector_weight=0",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/india-shareholding/RELIANCE",
+      "query": "?exchange=NSE&limit=12",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/fundamentals/RELIANCE",
+      "query": "?exchange=NSE",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/fundamentals-history/RELIANCE",
+      "query": "?exchange=NSE",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/chart/RELIANCE",
+      "query": "?exchange=NSE&timeframe=daily&limit=1040",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/fundamentals/RELIANCE",
+      "query": "?exchange=NSE",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/dashboard/RELIANCE",
+      "query": "?exchange=NSE&technical_weight=25&fundamental_weight=30&relative_strength_weight=25&ownership_weight=15&sector_weight=5&technical_ema20_weight=20&technical_ema50_weight=20&technical_ema150_weight=20&technical_ema200_weight=20&technical_rsi_weight=20&fundamental_eps_weight=20&fundamental_net_income_weight=20&fundamental_profit_margin_weight=20&fundamental_roe_weight=20&fundamental_roa_weight=20&ownership_institution_weight=70&ownership_insider_weight=30&rs_1w_weight=30&rs_2w_weight=0&rs_1m_weight=25&rs_2m_weight=0&rs_3m_weight=20&rs_6m_weight=15&rs_1y_weight=10&rs_sector_weight=0",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/health",
+      "query": "",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/indicators/RELIANCE",
+      "query": "?exchange=NSE&timeframe=daily&sma_short=20&sma_long=50&rsi_period=14",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/benchmark/NSE",
+      "query": "?limit=1400",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/dashboard/RELIANCE",
+      "query": "?exchange=NSE&technical_weight=25&fundamental_weight=30&relative_strength_weight=25&ownership_weight=15&sector_weight=5&technical_ema20_weight=20&technical_ema50_weight=20&technical_ema150_weight=20&technical_ema200_weight=20&technical_rsi_weight=20&fundamental_eps_weight=20&fundamental_net_income_weight=20&fundamental_profit_margin_weight=20&fundamental_roe_weight=20&fundamental_roa_weight=20&ownership_institution_weight=70&ownership_insider_weight=30&rs_1w_weight=30&rs_2w_weight=0&rs_1m_weight=25&rs_2m_weight=0&rs_3m_weight=20&rs_6m_weight=15&rs_1y_weight=10&rs_sector_weight=0",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/technical-summary/RELIANCE",
+      "query": "?exchange=NSE&timeframe=daily&rs_1w_weight=30&rs_2w_weight=0&rs_1m_weight=25&rs_2m_weight=0&rs_3m_weight=20&rs_6m_weight=15&rs_1y_weight=10&rs_sector_weight=0",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/fundamentals/RELIANCE",
+      "query": "?exchange=NSE",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/fundamentals-history/RELIANCE",
+      "query": "?exchange=NSE",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/india-shareholding/RELIANCE",
+      "query": "?exchange=NSE&limit=12",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/chart/RELIANCE",
+      "query": "?exchange=NSE&timeframe=daily&limit=1040",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/fundamentals/RELIANCE",
+      "query": "?exchange=NSE",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/dashboard/RELIANCE",
+      "query": "?exchange=NSE&technical_weight=25&fundamental_weight=30&relative_strength_weight=25&ownership_weight=15&sector_weight=5&technical_ema20_weight=20&technical_ema50_weight=20&technical_ema150_weight=20&technical_ema200_weight=20&technical_rsi_weight=20&fundamental_eps_weight=20&fundamental_net_income_weight=20&fundamental_profit_margin_weight=20&fundamental_roe_weight=20&fundamental_roa_weight=20&ownership_institution_weight=70&ownership_insider_weight=30&rs_1w_weight=30&rs_2w_weight=0&rs_1m_weight=25&rs_2m_weight=0&rs_3m_weight=20&rs_6m_weight=15&rs_1y_weight=10&rs_sector_weight=0",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/health",
+      "query": "",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/companies/search",
+      "query": "?q=RELIANCE&exchange=NSE&limit=10",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/health",
+      "query": "",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/indicators/RELIANCE",
+      "query": "?exchange=NSE&timeframe=weekly&sma_short=20&sma_long=50&rsi_period=14",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/benchmark/NSE",
+      "query": "?limit=1400",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/dashboard/RELIANCE",
+      "query": "?exchange=NSE&technical_weight=25&fundamental_weight=30&relative_strength_weight=25&ownership_weight=15&sector_weight=5&technical_ema20_weight=20&technical_ema50_weight=20&technical_ema150_weight=20&technical_ema200_weight=20&technical_rsi_weight=20&fundamental_eps_weight=20&fundamental_net_income_weight=20&fundamental_profit_margin_weight=20&fundamental_roe_weight=20&fundamental_roa_weight=20&ownership_institution_weight=70&ownership_insider_weight=30&rs_1w_weight=30&rs_2w_weight=0&rs_1m_weight=25&rs_2m_weight=0&rs_3m_weight=20&rs_6m_weight=15&rs_1y_weight=10&rs_sector_weight=0",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/technical-summary/RELIANCE",
+      "query": "?exchange=NSE&timeframe=weekly&rs_1w_weight=30&rs_2w_weight=0&rs_1m_weight=25&rs_2m_weight=0&rs_3m_weight=20&rs_6m_weight=15&rs_1y_weight=10&rs_sector_weight=0",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/india-shareholding/RELIANCE",
+      "query": "?exchange=NSE&limit=12",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/fundamentals/RELIANCE",
+      "query": "?exchange=NSE",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/fundamentals-history/RELIANCE",
+      "query": "?exchange=NSE",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/chart/RELIANCE",
+      "query": "?exchange=NSE&timeframe=weekly&limit=260",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/fundamentals/RELIANCE",
+      "query": "?exchange=NSE",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/dashboard/RELIANCE",
+      "query": "?exchange=NSE&technical_weight=25&fundamental_weight=30&relative_strength_weight=25&ownership_weight=15&sector_weight=5&technical_ema20_weight=20&technical_ema50_weight=20&technical_ema150_weight=20&technical_ema200_weight=20&technical_rsi_weight=20&fundamental_eps_weight=20&fundamental_net_income_weight=20&fundamental_profit_margin_weight=20&fundamental_roe_weight=20&fundamental_roa_weight=20&ownership_institution_weight=70&ownership_insider_weight=30&rs_1w_weight=30&rs_2w_weight=0&rs_1m_weight=25&rs_2m_weight=0&rs_3m_weight=20&rs_6m_weight=15&rs_1y_weight=10&rs_sector_weight=0",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/health",
+      "query": "",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/companies/search",
+      "query": "?q=RELIANCE&exchange=NSE&limit=10",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/health",
+      "query": "",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/indicators/RELIANCE",
+      "query": "?exchange=NSE&timeframe=monthly&sma_short=20&sma_long=50&rsi_period=14",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/benchmark/NSE",
+      "query": "?limit=1400",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/dashboard/RELIANCE",
+      "query": "?exchange=NSE&technical_weight=25&fundamental_weight=30&relative_strength_weight=25&ownership_weight=15&sector_weight=5&technical_ema20_weight=20&technical_ema50_weight=20&technical_ema150_weight=20&technical_ema200_weight=20&technical_rsi_weight=20&fundamental_eps_weight=20&fundamental_net_income_weight=20&fundamental_profit_margin_weight=20&fundamental_roe_weight=20&fundamental_roa_weight=20&ownership_institution_weight=70&ownership_insider_weight=30&rs_1w_weight=30&rs_2w_weight=0&rs_1m_weight=25&rs_2m_weight=0&rs_3m_weight=20&rs_6m_weight=15&rs_1y_weight=10&rs_sector_weight=0",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/technical-summary/RELIANCE",
+      "query": "?exchange=NSE&timeframe=monthly&rs_1w_weight=30&rs_2w_weight=0&rs_1m_weight=25&rs_2m_weight=0&rs_3m_weight=20&rs_6m_weight=15&rs_1y_weight=10&rs_sector_weight=0",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/india-shareholding/RELIANCE",
+      "query": "?exchange=NSE&limit=12",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/fundamentals/RELIANCE",
+      "query": "?exchange=NSE",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/fundamentals-history/RELIANCE",
+      "query": "?exchange=NSE",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/chart/RELIANCE",
+      "query": "?exchange=NSE&timeframe=monthly&limit=300",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/fundamentals/RELIANCE",
+      "query": "?exchange=NSE",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/dashboard/RELIANCE",
+      "query": "?exchange=NSE&technical_weight=25&fundamental_weight=30&relative_strength_weight=25&ownership_weight=15&sector_weight=5&technical_ema20_weight=20&technical_ema50_weight=20&technical_ema150_weight=20&technical_ema200_weight=20&technical_rsi_weight=20&fundamental_eps_weight=20&fundamental_net_income_weight=20&fundamental_profit_margin_weight=20&fundamental_roe_weight=20&fundamental_roa_weight=20&ownership_institution_weight=70&ownership_insider_weight=30&rs_1w_weight=30&rs_2w_weight=0&rs_1m_weight=25&rs_2m_weight=0&rs_3m_weight=20&rs_6m_weight=15&rs_1y_weight=10&rs_sector_weight=0",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/health",
+      "query": "",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/companies/search",
+      "query": "?q=RELIANCE&exchange=NSE&limit=10",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/health",
+      "query": "",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/indicators/RELIANCE",
+      "query": "?exchange=NSE&timeframe=daily&sma_short=20&sma_long=50&rsi_period=14",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/benchmark/NSE",
+      "query": "?limit=1400",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/dashboard/RELIANCE",
+      "query": "?exchange=NSE&technical_weight=25&fundamental_weight=30&relative_strength_weight=25&ownership_weight=15&sector_weight=5&technical_ema20_weight=20&technical_ema50_weight=20&technical_ema150_weight=20&technical_ema200_weight=20&technical_rsi_weight=20&fundamental_eps_weight=20&fundamental_net_income_weight=20&fundamental_profit_margin_weight=20&fundamental_roe_weight=20&fundamental_roa_weight=20&ownership_institution_weight=70&ownership_insider_weight=30&rs_1w_weight=30&rs_2w_weight=0&rs_1m_weight=25&rs_2m_weight=0&rs_3m_weight=20&rs_6m_weight=15&rs_1y_weight=10&rs_sector_weight=0",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/technical-summary/RELIANCE",
+      "query": "?exchange=NSE&timeframe=daily&rs_1w_weight=30&rs_2w_weight=0&rs_1m_weight=25&rs_2m_weight=0&rs_3m_weight=20&rs_6m_weight=15&rs_1y_weight=10&rs_sector_weight=0",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/india-shareholding/RELIANCE",
+      "query": "?exchange=NSE&limit=12",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/fundamentals/RELIANCE",
+      "query": "?exchange=NSE",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/fundamentals-history/RELIANCE",
+      "query": "?exchange=NSE",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/chart/RELIANCE",
+      "query": "?exchange=NSE&timeframe=daily&limit=1040",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/fundamentals/RELIANCE",
+      "query": "?exchange=NSE",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/dashboard/RELIANCE",
+      "query": "?exchange=NSE&technical_weight=25&fundamental_weight=30&relative_strength_weight=25&ownership_weight=15&sector_weight=5&technical_ema20_weight=20&technical_ema50_weight=20&technical_ema150_weight=20&technical_ema200_weight=20&technical_rsi_weight=20&fundamental_eps_weight=20&fundamental_net_income_weight=20&fundamental_profit_margin_weight=20&fundamental_roe_weight=20&fundamental_roa_weight=20&ownership_institution_weight=70&ownership_insider_weight=30&rs_1w_weight=30&rs_2w_weight=0&rs_1m_weight=25&rs_2m_weight=0&rs_3m_weight=20&rs_6m_weight=15&rs_1y_weight=10&rs_sector_weight=0",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/companies/rs-backfill/status",
+      "query": "?market=INDIA",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/backtest/RELIANCE",
+      "query": "?exchange=NSE&years=20",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/companies/rs-backfill/status",
+      "query": "?market=INDIA",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/backtest/RELIANCE",
+      "query": "?exchange=NSE&years=20",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/companies/rs-backfill/status",
+      "query": "?market=INDIA",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/backtest/RELIANCE",
+      "query": "?exchange=NSE&years=20",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/companies/rs-backfill/status",
+      "query": "?market=INDIA",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/backtest/RELIANCE",
+      "query": "?exchange=NSE&years=20",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/companies/rs-backfill/status",
+      "query": "?market=INDIA",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/backtest/RELIANCE",
+      "query": "?exchange=NSE&years=20",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/companies/rs-backfill/status",
+      "query": "?market=INDIA",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/backtest/RELIANCE",
+      "query": "?exchange=NSE&years=20",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/companies/rs-backfill/status",
+      "query": "?market=INDIA",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/backtest/RELIANCE",
+      "query": "?exchange=NSE&years=20",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/companies/rs-backfill/status",
+      "query": "?market=INDIA",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/health",
+      "query": "",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/top-composite",
+      "query": "?market=ALL&limit=200&candidate_limit=220&technical_weight=25&fundamental_weight=40&ownership_weight=15&sector_weight=5&relative_strength_weight=25",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/health",
+      "query": "",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/top-composite",
+      "query": "?market=ALL&limit=200&candidate_limit=220&technical_weight=25&fundamental_weight=30&ownership_weight=15&sector_weight=5&relative_strength_weight=25",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/health",
+      "query": "",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/companies/search",
+      "query": "?q=RELIANCE&exchange=NSE&limit=10",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/health",
+      "query": "",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/indicators/RELIANCE",
+      "query": "?exchange=NSE&timeframe=weekly&sma_short=20&sma_long=50&rsi_period=14",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/benchmark/NSE",
+      "query": "?limit=1400",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/dashboard/RELIANCE",
+      "query": "?exchange=NSE&technical_weight=25&fundamental_weight=30&relative_strength_weight=25&ownership_weight=15&sector_weight=5&technical_ema20_weight=20&technical_ema50_weight=20&technical_ema150_weight=20&technical_ema200_weight=20&technical_rsi_weight=20&fundamental_eps_weight=20&fundamental_net_income_weight=20&fundamental_profit_margin_weight=20&fundamental_roe_weight=20&fundamental_roa_weight=20&ownership_institution_weight=70&ownership_insider_weight=30&rs_1w_weight=30&rs_2w_weight=0&rs_1m_weight=25&rs_2m_weight=0&rs_3m_weight=20&rs_6m_weight=15&rs_1y_weight=10&rs_sector_weight=0",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/technical-summary/RELIANCE",
+      "query": "?exchange=NSE&timeframe=weekly&rs_1w_weight=30&rs_2w_weight=0&rs_1m_weight=25&rs_2m_weight=0&rs_3m_weight=20&rs_6m_weight=15&rs_1y_weight=10&rs_sector_weight=0",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/india-shareholding/RELIANCE",
+      "query": "?exchange=NSE&limit=12",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/fundamentals/RELIANCE",
+      "query": "?exchange=NSE",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/fundamentals-history/RELIANCE",
+      "query": "?exchange=NSE",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/chart/RELIANCE",
+      "query": "?exchange=NSE&timeframe=weekly&limit=260",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/fundamentals/RELIANCE",
+      "query": "?exchange=NSE",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/dashboard/RELIANCE",
+      "query": "?exchange=NSE&technical_weight=25&fundamental_weight=30&relative_strength_weight=25&ownership_weight=15&sector_weight=5&technical_ema20_weight=20&technical_ema50_weight=20&technical_ema150_weight=20&technical_ema200_weight=20&technical_rsi_weight=20&fundamental_eps_weight=20&fundamental_net_income_weight=20&fundamental_profit_margin_weight=20&fundamental_roe_weight=20&fundamental_roa_weight=20&ownership_institution_weight=70&ownership_insider_weight=30&rs_1w_weight=30&rs_2w_weight=0&rs_1m_weight=25&rs_2m_weight=0&rs_3m_weight=20&rs_6m_weight=15&rs_1y_weight=10&rs_sector_weight=0",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/health",
+      "query": "",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/companies/search",
+      "query": "?q=RELIANCE&exchange=NSE&limit=10",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/health",
+      "query": "",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/indicators/RELIANCE",
+      "query": "?exchange=NSE&timeframe=daily&sma_short=20&sma_long=50&rsi_period=14",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/benchmark/NSE",
+      "query": "?limit=1400",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/dashboard/RELIANCE",
+      "query": "?exchange=NSE&technical_weight=25&fundamental_weight=30&relative_strength_weight=25&ownership_weight=15&sector_weight=5&technical_ema20_weight=20&technical_ema50_weight=20&technical_ema150_weight=20&technical_ema200_weight=20&technical_rsi_weight=20&fundamental_eps_weight=20&fundamental_net_income_weight=20&fundamental_profit_margin_weight=20&fundamental_roe_weight=20&fundamental_roa_weight=20&ownership_institution_weight=70&ownership_insider_weight=30&rs_1w_weight=30&rs_2w_weight=0&rs_1m_weight=25&rs_2m_weight=0&rs_3m_weight=20&rs_6m_weight=15&rs_1y_weight=10&rs_sector_weight=0",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/technical-summary/RELIANCE",
+      "query": "?exchange=NSE&timeframe=daily&rs_1w_weight=30&rs_2w_weight=0&rs_1m_weight=25&rs_2m_weight=0&rs_3m_weight=20&rs_6m_weight=15&rs_1y_weight=10&rs_sector_weight=0",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/india-shareholding/RELIANCE",
+      "query": "?exchange=NSE&limit=12",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/fundamentals/RELIANCE",
+      "query": "?exchange=NSE",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/fundamentals-history/RELIANCE",
+      "query": "?exchange=NSE",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/chart/RELIANCE",
+      "query": "?exchange=NSE&timeframe=daily&limit=1040",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/fundamentals/RELIANCE",
+      "query": "?exchange=NSE",
+      "status": 200,
+      "source": "auxiliary missing-data fixture"
+    },
+    {
+      "path": "/market/dashboard/RELIANCE",
+      "query": "?exchange=NSE&technical_weight=25&fundamental_weight=30&relative_strength_weight=25&ownership_weight=15&sector_weight=5&technical_ema20_weight=20&technical_ema50_weight=20&technical_ema150_weight=20&technical_ema200_weight=20&technical_rsi_weight=20&fundamental_eps_weight=20&fundamental_net_income_weight=20&fundamental_profit_margin_weight=20&fundamental_roe_weight=20&fundamental_roa_weight=20&ownership_institution_weight=70&ownership_insider_weight=30&rs_1w_weight=30&rs_2w_weight=0&rs_1m_weight=25&rs_2m_weight=0&rs_3m_weight=20&rs_6m_weight=15&rs_1y_weight=10&rs_sector_weight=0",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/backtest/RELIANCE",
+      "query": "?exchange=NSE&years=20",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    },
+    {
+      "path": "/market/excel-export/RELIANCE",
+      "query": "?exchange=NSE&limit=5000",
+      "status": 200,
+      "source": "revised backend HTTP replay"
+    }
+  ]
+}

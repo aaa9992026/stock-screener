@@ -1,4 +1,5 @@
 import os
+import re
 import requests
 from datetime import datetime
 from dotenv import load_dotenv
@@ -10,6 +11,31 @@ class BSEProvider:
 
     def __init__(self):
         self.api_key = os.getenv("TWELVE_DATA_API_KEY")
+
+    def get_companies(self):
+        """Public instrument directory from the already-approved BSE provider."""
+        response = requests.get(f"{self.BASE_URL}/stocks",
+                                params={"mic_code": "XBOM", "type": "Common Stock"}, timeout=25)
+        response.raise_for_status()
+        payload = response.json()
+        if payload.get("status") == "error":
+            raise RuntimeError(payload.get("message", "BSE symbol directory unavailable"))
+        result = []
+        for row in payload.get("data") or []:
+            name, symbol = str(row.get("name") or "").strip(), str(row.get("symbol") or "").strip().upper()
+            if not name or not symbol or row.get("mic_code") != "XBOM" or row.get("type") != "Common Stock":
+                continue
+            # Provider type labels can include mutual funds. Do not count funds,
+            # rights, bonds or preference securities toward the equity universe.
+            if re.search(r"\b(mutual fund|exchange traded|ETF|warrant|debenture|bond|preference|preferred|NCD)\b", name, re.I):
+                continue
+            isin = str(row.get("isin") or "").strip().upper()
+            if not re.fullmatch(r"[A-Z]{2}[A-Z0-9]{9}[0-9]", isin):
+                isin = None
+            result.append({"symbol": symbol, "name": name, "exchange": "BSE", "isin": isin, "sector": None, "industry": None})
+        if not result:
+            raise RuntimeError("BSE symbol directory returned no verified ordinary equities")
+        return result
 
     def get_ohlcv(self, symbol: str):
         if not self.api_key:
