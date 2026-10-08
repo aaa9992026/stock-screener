@@ -1,8 +1,8 @@
-# One-pass deploy — UI V28 overview alignment
+# One-pass deploy — UI V30 Top 200 full-page geometry rebuild
 
 ```bash
 git add .
-git commit -m "Align overview company and chart cards"
+git commit -m "Rebuild Top 200 ranking page geometry"
 git push origin main
 ```
 

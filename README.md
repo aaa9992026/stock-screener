@@ -328,3 +328,7 @@ The selected-company card and the corrected multi-pane chart now share one deskt
 ## 2026-10-07 UI V29 — Top 200 Ranking render repair
 
 Fixed an SVG sizing regression on the Top 200 Ranking workspace. Shared toolbar and score-card SVGs are now explicitly bounded outside Overview, the Ranking command bar is restored to a compact desktop layout, and the five ranking score cards use the same structured label/value/progress treatment without oversized icons or collapsed text. No ranking or provider logic changed.
+
+## 2026-10-07 UI V30 — Top 200 full-page geometry rebuild
+
+The Top 200 Ranking detail page was rebuilt to remove the severe vertical stretching seen after V29. The selected company card now aligns only with the price chart, the indicator basket spans the full width below, indicator charts use a responsive multi-column grid, and composite weights are compact cards again. No ranking/data logic changed. See `docs/UI_V30_TOP200_FULL_PAGE_GEOMETRY_REBUILD_2026-10-07.md`.
