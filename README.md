@@ -357,3 +357,7 @@ All primary workspaces now share one calmer typography and color system. Tiny mi
 ## 2026-10-08 UI V35 — full workspace spacing / margin rhythm
 
 The complete dashboard now uses one spacing system across Overview, Top 200 Ranking, Filters, Backtesting, Export / Excel, and Settings. Accumulated double padding, oversized vertical gaps, forced empty card heights, and inconsistent section margins were removed. Settings cards now fit their content naturally, Excel cards no longer use artificial minimum heights, and Filters use a more compact rule/qualification rhythm. No business logic, formulas, market data, filtering, ranking, chart calculations, or backend behavior changed. See `docs/UI_V35_FULL_WORKSPACE_SPACING_2026-10-08.md`.
+
+## 2026-10-08 UI V37 — simple clean rebuild
+
+The dashboard now uses a deliberately low-noise UI: one accent color, flatter cards, fewer decorative icons and helper labels, simpler spacing, and consistent typography across every workspace. Functional data and controls remain intact.

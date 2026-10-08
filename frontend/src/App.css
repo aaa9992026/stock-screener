@@ -827,3 +827,425 @@ td small { display: block; margin-top: 2px; font-size: 9.5px; color: #7f8fa2; }
   .excel-action-cards { grid-template-columns: 1fr; }
   .utility-premium-title h2 { font-size: 19px; }
 }
+
+/* ========================================================================== */
+/* V37 — SIMPLE / CLEAN / LOW-NOISE INTERFACE                                */
+/* This pass deliberately removes decorative UI and keeps one visual system.  */
+/* ========================================================================== */
+:root {
+  --bg: #f6f8fb;
+  --surface: #ffffff;
+  --surface-soft: #fafbfd;
+  --surface-blue: #f6f9fe;
+  --ink: #142033;
+  --ink-2: #33445a;
+  --muted: #66778c;
+  --muted-2: #8b98a8;
+  --line: #e1e7ef;
+  --line-strong: #ccd6e2;
+  --blue: #2563c7;
+  --blue-700: #1e52a8;
+  --blue-soft: #f0f5fc;
+  --green: #14855e;
+  --green-soft: #f0f8f4;
+  --amber: #a96b16;
+  --amber-soft: #faf6ef;
+  --red: #b84b50;
+  --red-soft: #fbf2f3;
+  --violet: #6b5bc6;
+  --violet-soft: #f4f2fa;
+  --shadow: none;
+  --shadow-lg: 0 10px 28px rgba(25, 39, 59, .10);
+  --radius: 10px;
+  --radius-sm: 8px;
+  --sidebar: 210px;
+  --page-max: 1520px;
+}
+
+body {
+  font-family: Inter, "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.42;
+  color: var(--ink);
+  background: var(--bg);
+}
+
+/* Shell: smaller, quieter, consistent */
+.app-sidebar {
+  width: var(--sidebar);
+  padding: 16px 12px;
+  border-right: 1px solid var(--line);
+  box-shadow: none;
+}
+.app-content { margin-left: var(--sidebar); }
+.app-content > header {
+  min-height: 66px;
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--line);
+  backdrop-filter: none;
+  background: rgba(255,255,255,.98);
+}
+.app-content > header h1 { font-size: 22px; font-weight: 700; letter-spacing: -.02em; }
+.app-content > header p { margin-top: 2px; font-size: 11.5px; }
+.app-content > header .status {
+  min-height: 34px;
+  padding: 6px 11px;
+  border-radius: 8px;
+  border-color: #d9e8e1;
+  background: #f7fbf9;
+  font-size: 11.5px;
+}
+.app-content > header .status small { display: none; }
+.dot { width: 7px; height: 7px; }
+main { max-width: var(--page-max); padding: 16px 20px 36px; }
+
+/* Sidebar: remove secondary decoration and helper cards */
+.sidebar-brand { padding: 2px 6px 14px; gap: 9px; }
+.sidebar-logo { width: 34px; height: 34px; flex-basis: 34px; border-radius: 9px; padding: 7px; }
+.sidebar-logo span { width: 4px; }
+.sidebar-logo span:nth-child(1) { height: 10px; }
+.sidebar-logo span:nth-child(2) { height: 15px; }
+.sidebar-logo span:nth-child(3) { height: 20px; }
+.sidebar-brand-copy strong { font-size: 13px; }
+.sidebar-brand-copy small { font-size: 10px; }
+.sidebar-section-title { padding: 16px 8px 6px; font-size: 9px; }
+.sidebar-nav { gap: 3px; }
+.sidebar-nav button {
+  min-height: 42px;
+  padding: 5px 8px;
+  border-radius: 8px;
+  grid-template-columns: 28px 1fr 8px;
+  gap: 7px;
+  color: #586b82;
+}
+.sidebar-nav button:hover { background: #f7f9fc; }
+.sidebar-nav button.active {
+  background: #f1f6fd;
+  border-color: #d9e5f4;
+  color: #255da7;
+  box-shadow: inset 2px 0 0 var(--blue);
+}
+.sidebar-nav-icon { width: 28px; height: 28px; border-radius: 7px; background: transparent; border-color: transparent; }
+.sidebar-nav button.active .sidebar-nav-icon { background: transparent; color: #255da7; border-color: transparent; }
+.sidebar-nav-icon svg { width: 16px; height: 16px; }
+.sidebar-nav-label { font-size: 12.5px; font-weight: 600; }
+.sidebar-nav-arrow { display: none; }
+.sidebar-footer { display: none; }
+
+/* One clean command row */
+.overview-top-toolbar {
+  grid-template-columns: minmax(0, 1fr) 224px;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.controls {
+  grid-template-columns: 172px minmax(240px, 1fr) auto auto auto;
+  min-height: 54px;
+  gap: 6px;
+  padding: 5px;
+  border-radius: 10px;
+  box-shadow: none;
+}
+.toolbar-market-trigger,
+.toolbar-symbol-input,
+.toolbar-action {
+  min-height: 42px;
+  border-radius: 8px;
+  background: #fff;
+}
+.toolbar-market-home,
+.toolbar-action-icon { display: none; }
+.toolbar-market-trigger { grid-template-columns: 1fr 16px; padding: 0 10px; }
+.toolbar-market-trigger-label { font-size: 12.5px; font-weight: 600; }
+.toolbar-search-field-icon { left: 11px; }
+.toolbar-search-field-icon svg { width: 15px; height: 15px; }
+.toolbar-symbol-input { padding-left: 33px; font-size: 12.5px; font-weight: 550; }
+.toolbar-action { padding: 0 13px; font-size: 12px; font-weight: 650; }
+.toolbar-action:hover { transform: none; background: #f8fafc; }
+.toolbar-action-primary { background: var(--blue); border-color: var(--blue); box-shadow: none; }
+.toolbar-action-primary:hover { background: var(--blue-700); }
+.toolbar-action-export { background: #fff; border-color: var(--line-strong); color: #32506e; }
+.timeframes {
+  min-width: 224px;
+  height: 54px;
+  padding: 5px;
+  gap: 2px;
+  border-radius: 10px;
+  box-shadow: none;
+}
+.timeframe-tab { height: 42px; border-radius: 7px; font-size: 11.5px; font-weight: 600; }
+.timeframe-tab.active { background: #eef4fb; color: #255da7; box-shadow: none; }
+.toolbar-market-menu, .suggestions { border-radius: 9px; box-shadow: var(--shadow-lg); }
+
+/* Score row: no icons, no rainbow colors, one hierarchy */
+.score-overview-grid { gap: 10px; margin-bottom: 10px; }
+.score-overview-card,
+.score-overview-card.composite,
+.score-overview-card.fundamental,
+.score-overview-card.technical,
+.score-overview-card.rs,
+.score-overview-card.ownership {
+  --tone: var(--blue);
+  --tone-soft: var(--blue-soft);
+  min-height: 88px;
+  padding: 12px 13px 10px;
+  border-radius: 10px;
+  box-shadow: none;
+}
+.score-overview-card::before { display: none; }
+.score-card-head { gap: 0; }
+.score-icon { display: none; }
+.score-card-heading { gap: 0; }
+.score-card-heading > span { font-size: 11.5px; font-weight: 650; color: #415269; }
+.score-card-heading > small { display: none; }
+.score-card-value { margin: 7px 0 8px; gap: 4px; }
+.score-card-value strong { font-size: 23px; font-weight: 700; }
+.score-card-value span { font-size: 10px; }
+.score-card-progress { height: 4px; margin-left: 0; background: #edf1f5; }
+.score-card-progress > span { background: var(--blue); }
+
+/* All cards: flat, clear, one border language */
+.composite-dashboard-card,
+.overview-company-card,
+.framework-price-card,
+.overview-filter-preview-card,
+.overview-ranking-card,
+.filter-workspace-shell,
+.standalone-fundamental-filters,
+.universe-screener-card,
+.bt-v16-command-card,
+.bt-pro-kpi,
+.bt-pro-chart-card,
+.bt-pro-rules-card,
+.bt-pro-table-card,
+.utility-premium-hero,
+.excel-action-card,
+.utility-info-panel,
+.settings-card,
+.card,
+.chart-card,
+.table-card,
+.dashboard-summary,
+.fundamental-section {
+  border-radius: 10px;
+  border-color: var(--line);
+  box-shadow: none;
+  background: #fff;
+}
+.section-eyebrow,
+.dashboard-kicker,
+.utility-eyebrow,
+.bt-pro-section-label,
+.overview-company-eyebrow { display: none; }
+
+/* Overview and Ranking: flatter company + chart composition */
+#client-framework-dashboard { margin-bottom: 10px; }
+.app[data-view="ranking"] #client-framework-dashboard { padding: 14px; }
+.composite-dashboard-header { margin-bottom: 10px; }
+.composite-dashboard-header h2 { font-size: 17px; }
+.composite-dashboard-header p { display: none; }
+.framework-mode-banner { display: none; }
+.dashboard-selected-grid,
+.app[data-view="ranking"] .dashboard-selected-grid { gap: 10px; }
+.overview-company-card { padding: 14px; }
+.overview-company-mark { display: none; }
+.overview-company-heading { grid-template-columns: minmax(0,1fr) auto; gap: 10px; }
+.overview-company-heading-copy { min-width: 0; }
+.overview-company-name-row strong { font-size: 18px; font-weight: 700; }
+.overview-live-badge { font-size: 9.5px; }
+.dashboard-selected-meta { gap: 5px; margin-top: 5px; }
+.dashboard-selected-meta span,
+.overview-symbol-badge { min-height: 23px; padding: 3px 7px; border-radius: 6px; font-size: 9.5px; }
+.overview-watchlist-button { min-height: 34px; padding: 0 10px; border-radius: 7px; font-size: 10.5px; }
+.overview-company-stats { gap: 7px; margin-top: 12px; }
+.overview-company-stats > div { min-height: 62px; padding: 9px 10px; border-radius: 8px; background: #fbfcfd; }
+.overview-company-stats span { font-size: 9px; }
+.overview-company-stats strong { font-size: 14px; }
+.overview-indicator-heading { margin-top: 12px; padding-top: 10px; }
+.overview-indicator-heading strong { font-size: 11.5px; }
+.overview-indicator-heading span { display: none; }
+.overview-mini-indicator-row { gap: 6px; }
+.overview-mini-indicator { min-height: 54px; padding: 8px; border-radius: 8px; background: #fbfcfd; }
+.overview-mini-indicator::before { display: none; }
+.overview-mini-indicator span { font-size: 8.5px; }
+.overview-mini-indicator strong { font-size: 13px; }
+.overview-mini-indicator small { display: none; }
+.framework-price-card { padding: 12px; }
+.dashboard-chart-header h3 { font-size: 16px; }
+.dashboard-chart-header p { display: none; }
+.dashboard-chart-toggles button,
+.chart-toggle { min-height: 30px; padding: 0 8px; border-radius: 6px; font-size: 9.5px; }
+.dashboard-candlestick-canvas,
+.app[data-view="ranking"] .dashboard-candlestick-canvas { border-radius: 7px; }
+.chart-hover-values,
+.dashboard-hover-values { font-size: 9.5px; }
+
+/* Ranking: collapse decorative complexity, retain controls/data */
+.app[data-view="ranking"] .dashboard-indicator-section { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
+.indicator-toolbar-title h3 { font-size: 14px; }
+.indicator-toolbar-title p { display: none; }
+.indicator-toggle-row { gap: 5px; }
+.indicator-toggle-row button { min-height: 29px; padding: 0 8px; border-radius: 6px; font-size: 9.5px; }
+.indicator-period-editor { gap: 6px; padding: 8px; border-radius: 8px; background: #fafbfd; }
+.indicator-period-editor label { font-size: 9px; }
+.indicator-period-editor input { min-height: 31px; border-radius: 6px; }
+.dashboard-indicator-grid { gap: 8px; }
+.indicator-chart-card { border-radius: 8px; padding: 9px; box-shadow: none; }
+.indicator-chart-card h4 { font-size: 10.5px; }
+.composite-weight-strip { gap: 7px; }
+.composite-weight-item { padding: 8px; border-radius: 8px; background: #fbfcfd; }
+.composite-weight-item label { font-size: 10px; }
+.composite-weight-item input { min-height: 31px; }
+.composite-dashboard-note { font-size: 9.5px; color: var(--muted); }
+
+/* Overview preview cards and ranking table */
+.overview-filter-preview-grid { gap: 10px; margin-bottom: 10px; }
+.overview-filter-preview-card { padding: 12px; }
+.overview-filter-preview-card h3 { font-size: 14px; }
+.overview-filter-preview-card p { display: none; }
+.overview-filter-preview-card .preview-list { margin-top: 7px; }
+.overview-filter-preview-card .preview-row { min-height: 34px; }
+.overview-ranking-card { padding: 12px; }
+.overview-ranking-card h3 { font-size: 15px; }
+
+/* Tables: readable without looking busy */
+table { font-size: 11.5px; }
+th { color: #62738a; font-size: 9.5px; font-weight: 650; background: #fafbfd; }
+th, td { padding: 9px 10px; border-bottom-color: #e8edf3; }
+tbody tr:hover { background: #fafcff; }
+.table-wrap, .composite-table-wrap, .qualified-table-wrap { border-radius: 8px; border-color: var(--line); }
+
+/* Filters: one active family, no nested visual noise */
+.filter-workspace-shell { padding: 13px; margin-bottom: 10px; }
+.filter-workspace-heading h2 { font-size: 17px; }
+.filter-workspace-heading p { display: none; }
+.filter-workspace-summary { min-width: 0; padding: 7px 10px; border-radius: 7px; }
+.filter-workspace-tabs { gap: 5px; margin-top: 10px; }
+.filter-workspace-tab { min-height: 38px; border-radius: 7px; font-size: 11px; font-weight: 600; }
+.standalone-fundamental-filters,
+#technical-filters,
+#ownership-filters,
+.universe-screener-card { padding: 13px; }
+.standalone-fundamental-header,
+.filter-section-header,
+.universe-screener-header { margin-bottom: 9px; padding-bottom: 9px; }
+.standalone-fundamental-header h2,
+.filter-section-header h2,
+.universe-screener-header h2 { font-size: 16px; }
+.standalone-fundamental-header p,
+.filter-section-header p,
+.universe-screener-header p { display: none; }
+.standalone-fundamental-score { padding: 7px 10px; border-radius: 7px; }
+.fundamental-filter-table,
+.technical-filter-table,
+.ownership-filter-table { border-radius: 8px; }
+.fundamental-filter-table .filter-description,
+.technical-filter-table .filter-description,
+.ownership-filter-table .filter-description { color: #8290a1; font-size: 9px; }
+.qualified-section { margin-top: 10px; padding-top: 10px; }
+.qualified-section > p { display: none; }
+.qualified-sort-toolbar { padding: 8px; gap: 8px; border-radius: 8px; }
+.qualified-sort-toolbar label { font-size: 9px; }
+.qualified-sort-toolbar select { min-height: 34px; }
+
+/* Universe: simplify cards and controls */
+.universe-filter-grid { gap: 7px; }
+.universe-filter-grid label { font-size: 9.5px; }
+.universe-filter-grid input,
+.universe-filter-grid select { min-height: 35px; border-radius: 7px; }
+.universe-coverage-strip { gap: 7px; }
+.universe-coverage-strip > div { padding: 8px; border-radius: 7px; background: #fbfcfd; }
+.universe-column-picker { gap: 5px; }
+.universe-column-picker label { padding: 6px 7px; border-radius: 6px; background: #fbfcfd; }
+
+/* Backtesting: simple work surface */
+.backtesting-workspace { gap: 10px; }
+.bt-v16-command-card { padding: 13px; }
+.bt-v16-heading-row h2 { font-size: 17px; }
+.bt-v16-heading-row p { display: none; }
+.bt-v16-toolbar { gap: 7px; }
+.bt-v16-toolbar label { font-size: 9px; }
+.bt-v16-toolbar input,
+.bt-v16-toolbar select,
+.bt-v16-toolbar button { min-height: 36px; border-radius: 7px; }
+.bt-pro-kpis { gap: 8px; }
+.bt-pro-kpi { min-height: 78px; padding: 10px; }
+.bt-pro-kpi span { font-size: 9px; }
+.bt-pro-kpi strong { font-size: 17px; }
+.bt-pro-main-grid { gap: 10px; }
+.bt-pro-chart-card,
+.bt-pro-rules-card,
+.bt-pro-table-card { padding: 12px; }
+.bt-pro-chart-card h3,
+.bt-pro-rules-card h3,
+.bt-pro-table-card h3 { font-size: 14px; }
+
+/* Excel + Settings: remove showcase-card feel */
+.utility-workspace { gap: 10px; }
+.utility-premium-hero { padding: 14px; border-radius: 10px; }
+.utility-premium-icon { display: none; }
+.utility-premium-title h2 { font-size: 18px; }
+.utility-premium-title p { display: none; }
+.utility-selection-card { min-width: 170px; padding: 9px 10px; border-radius: 8px; }
+.excel-action-cards { gap: 10px; }
+.excel-action-card { min-height: 0; padding: 13px; }
+.excel-action-card::before { display: none; }
+.excel-action-number { width: 26px; height: 26px; border-radius: 6px; font-size: 9px; }
+.excel-action-card h3 { font-size: 14px; }
+.excel-action-card p { min-height: 0; font-size: 10.5px; }
+.excel-action-meta { background: #fafbfd; border-radius: 7px; }
+.excel-workflow-grid { gap: 10px; }
+.utility-info-panel { padding: 13px; }
+.utility-info-panel h3 { font-size: 14px; }
+.excel-workflow-steps > div { padding: 8px; background: #fbfcfd; }
+.settings-dashboard-grid { gap: 10px; }
+.settings-card { padding: 13px; }
+.settings-card-head h3 { font-size: 14px; }
+.settings-card-head p { display: none; }
+.settings-field { margin-top: 9px; }
+.settings-field select { min-height: 36px; }
+.settings-policy-list > div,
+.settings-session-grid > div { background: #fbfcfd; border-radius: 7px; }
+.settings-policy-list small { display: none; }
+.policy-check { width: 23px; height: 23px; border-radius: 6px; }
+
+/* Reduce secondary copy across dense areas while preserving data */
+.help-text,
+.helper-text,
+.card-subtitle,
+.table-note,
+.control-note { color: var(--muted); font-size: 10px; }
+
+/* Small-screen adjustments */
+@media (max-width: 1320px) {
+  :root { --sidebar: 190px; }
+  .controls { grid-template-columns: 155px minmax(220px, 1fr) auto auto; }
+  .toolbar-action-export { display: none; }
+  .overview-top-toolbar { grid-template-columns: minmax(0,1fr) 210px; }
+  .timeframes { min-width: 210px; }
+}
+@media (max-width: 1100px) {
+  :root { --sidebar: 72px; }
+  .app-sidebar { padding: 12px 8px; }
+  .sidebar-brand-copy, .sidebar-section-title, .sidebar-nav-label { display: none; }
+  .sidebar-brand { justify-content: center; }
+  .sidebar-nav button { grid-template-columns: 1fr; place-items: center; }
+  .overview-top-toolbar { grid-template-columns: 1fr; }
+  .timeframes { width: 100%; min-width: 0; }
+}
+@media (max-width: 820px) {
+  :root { --sidebar: 0px; }
+  .app-sidebar { display: none; }
+  .app-content { margin-left: 0; }
+  .app-content > header { padding: 11px 14px; }
+  main { padding: 12px 12px 30px; }
+  .controls { grid-template-columns: 1fr 1fr; }
+  .score-overview-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .settings-dashboard-grid, .excel-action-cards, .excel-workflow-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 560px) {
+  .controls { grid-template-columns: 1fr; }
+  .score-overview-grid { grid-template-columns: 1fr; }
+  .overview-company-heading { grid-template-columns: 1fr; }
+  .overview-watchlist-button { width: auto; justify-self: start; }
+}
