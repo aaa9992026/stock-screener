@@ -349,3 +349,7 @@ Backtesting, Export / Excel and Settings now use the same 1600px content rail an
 
 All primary workspaces now share one calmer typography and color system. Tiny micro-copy has been raised to a readable scale, excessive bold weight and saturated accents have been reduced, tables/forms/chart labels are more legible, and Overview / Top 200 / Filters / Backtesting / Export / Settings now use consistent visual hierarchy without changing application logic. See `docs/UI_V34_FULL_PAGE_COMFORT_AUDIT_2026-10-08.md`.
 
+
+## 2026-10-08 UI V35 — full workspace spacing / margin rhythm
+
+The complete dashboard now uses one spacing system across Overview, Top 200 Ranking, Filters, Backtesting, Export / Excel, and Settings. Accumulated double padding, oversized vertical gaps, forced empty card heights, and inconsistent section margins were removed. Settings cards now fit their content naturally, Excel cards no longer use artificial minimum heights, and Filters use a more compact rule/qualification rhythm. No business logic, formulas, market data, filtering, ranking, chart calculations, or backend behavior changed. See `docs/UI_V35_FULL_WORKSPACE_SPACING_2026-10-08.md`.

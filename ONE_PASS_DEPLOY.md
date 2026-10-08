@@ -1,8 +1,8 @@
-# One-pass deploy — UI V34 full-page comfort audit
+# One-pass deploy — UI V35 spacing / margin rhythm
 
 ```bash
 git add .
-git commit -m "Standardize full dashboard typography and color comfort"
+git commit -m "Normalize dashboard spacing and page margins"
 git push origin main
 ```
 

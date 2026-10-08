@@ -10395,3 +10395,390 @@ button{letter-spacing:0!important;}
 .app .score-overview-card.ownership{--score-accent:#20836a!important;--score-wash:#f6fbf9!important;}
 .app .score-icon{box-shadow:none!important;}
 .app .filter-workspace-tabs button,.app .indicator-basket-toggles button,.app .framework-overlay-toggles button{box-shadow:none!important;}
+
+/* =========================================================
+   UI V35 — full-workspace spacing / margin rhythm (2026-10-08)
+   Purpose: remove accumulated double padding, forced empty heights and
+   inconsistent vertical gaps across every workspace. Keep the shared 1600px
+   content rail while making the dashboard calmer and more compact to scan.
+   ========================================================= */
+:root{
+  --v35-page-gutter:22px;
+  --v35-page-top:16px;
+  --v35-page-bottom:48px;
+  --v35-section-gap:12px;
+  --v35-card-gap:12px;
+  --v35-card-pad:15px;
+  --v35-card-radius:14px;
+}
+
+/* One outer content rhythm for every main workspace. */
+.app[data-view="overview"] main,
+.app[data-view="ranking"] main,
+.app[data-view="filters"] main,
+.app[data-view="analytics"] main,
+.app[data-view="excel"] main,
+.app[data-view="settings"] main{
+  width:100%!important;
+  max-width:1600px!important;
+  margin:var(--v35-page-top) auto var(--v35-page-bottom)!important;
+  padding:0 var(--v35-page-gutter)!important;
+  box-sizing:border-box!important;
+}
+
+/* Shared Overview / Ranking / Filters top block — same visual cadence. */
+.app[data-view="overview"] .overview-top-toolbar,
+.app[data-view="ranking"] .overview-top-toolbar,
+.app[data-view="filters"] .overview-top-toolbar{
+  margin-bottom:12px!important;
+  padding:8px!important;
+  min-height:62px!important;
+  gap:8px!important;
+  border-radius:15px!important;
+}
+.app[data-view="overview"] .overview-top-toolbar .controls,
+.app[data-view="ranking"] .overview-top-toolbar .controls,
+.app[data-view="filters"] .overview-top-toolbar .controls{
+  gap:7px!important;
+}
+.app[data-view="overview"] .score-overview-grid,
+.app[data-view="ranking"] .score-overview-grid{
+  gap:12px!important;
+  margin-bottom:12px!important;
+}
+.app[data-view="overview"] #client-framework-dashboard{
+  margin-bottom:12px!important;
+}
+.app[data-view="overview"] .dashboard-selected-grid,
+.app[data-view="ranking"] .dashboard-selected-grid{
+  gap:12px!important;
+}
+.app[data-view="overview"] .overview-filter-preview-grid{
+  gap:12px!important;
+  margin-bottom:12px!important;
+}
+.app[data-view="overview"] .overview-ranking-card{
+  margin-bottom:16px!important;
+}
+
+/* Filters: remove card-inside-card air and use a steady 10–12px vertical rhythm. */
+.app[data-view="filters"] .filter-workspace-shell{
+  margin:0 0 12px!important;
+  padding:14px!important;
+  border-radius:14px!important;
+}
+.app[data-view="filters"] .filter-workspace-heading{
+  gap:12px!important;
+  margin-bottom:10px!important;
+}
+.app[data-view="filters"] .filter-workspace-heading p{
+  margin-top:4px!important;
+}
+.app[data-view="filters"] .filter-workspace-summary{
+  min-width:118px!important;
+  padding:8px 10px!important;
+}
+.app[data-view="filters"] .filter-workspace-tabs{
+  gap:6px!important;
+}
+.app[data-view="filters"] .filter-workspace-tabs button{
+  min-height:42px!important;
+  padding:7px 10px!important;
+  border-radius:9px!important;
+}
+.app[data-view="filters"] .filter-workspace-grid{
+  gap:0!important;
+  margin:0!important;
+}
+.app[data-view="filters"] .standalone-fundamental-filters{
+  margin:0!important;
+  padding:14px!important;
+  border-radius:14px!important;
+}
+.app[data-view="filters"] .standalone-fundamental-header{
+  gap:12px!important;
+  padding-bottom:10px!important;
+}
+.app[data-view="filters"] .standalone-fundamental-header p{
+  margin-top:3px!important;
+}
+.app[data-view="filters"] .standalone-fundamental-score{
+  min-width:112px!important;
+  padding:8px 10px!important;
+}
+.app[data-view="filters"] .compact-filter-card{
+  margin-top:10px!important;
+  border-radius:10px!important;
+}
+.app[data-view="filters"] .compact-filter-card>.compact-table-scroll{
+  max-height:460px!important;
+}
+.app[data-view="filters"] .filter-config-table th,
+.app[data-view="filters"] .filter-config-table td{
+  padding:8px 9px!important;
+}
+.app[data-view="filters"] .fundamental-score-strip{
+  gap:6px!important;
+  padding:8px 0 0!important;
+}
+.app[data-view="filters"] .fundamental-score-strip>div{
+  padding:7px 9px!important;
+}
+.app[data-view="filters"] .standalone-fundamental-actions{
+  margin-top:10px!important;
+  padding:9px 10px!important;
+  gap:10px!important;
+}
+.app[data-view="filters"] .fundamental-qualified-panel{
+  margin-top:10px!important;
+  padding:11px!important;
+}
+.app[data-view="filters"] .fundamental-qualified-head{
+  padding-bottom:8px!important;
+  margin-bottom:8px!important;
+}
+.app[data-view="filters"] .qualified-list-toolbar{
+  gap:10px!important;
+  padding:8px 0!important;
+}
+.app[data-view="filters"] .fundamental-qualified-panel .compact-table-scroll{
+  max-height:360px!important;
+}
+.app[data-view="filters"] #universe-screener{
+  margin-top:0!important;
+}
+
+/* Top-200 detail: compact the major blocks without squeezing chart content. */
+.app[data-view="ranking"] #client-framework-dashboard{
+  gap:12px!important;
+}
+.app[data-view="ranking"] .dashboard-selected-grid{
+  margin-bottom:12px!important;
+}
+.app[data-view="ranking"] .dashboard-selected-stock,
+.app[data-view="ranking"] .framework-price-card,
+.app[data-view="ranking"] .dashboard-indicator-section,
+.app[data-view="ranking"] .composite-weight-strip,
+.app[data-view="ranking"] .composite-weight-controls,
+.app[data-view="ranking"] .composite-table-wrap{
+  border-radius:14px!important;
+}
+.app[data-view="ranking"] .dashboard-indicator-section,
+.app[data-view="ranking"] .composite-weight-strip,
+.app[data-view="ranking"] .composite-weight-controls,
+.app[data-view="ranking"] .composite-dashboard-note{
+  margin-top:12px!important;
+  padding-top:12px!important;
+}
+.app[data-view="ranking"] .dashboard-indicator-grid{
+  gap:10px!important;
+}
+.app[data-view="ranking"] .indicator-period-editor{
+  gap:8px!important;
+}
+.app[data-view="ranking"] .composite-weight-strip.editable-composite-weights{
+  gap:10px!important;
+}
+
+/* Backtesting: same section rhythm as the rest of the product. */
+.app[data-view="analytics"] .backtesting-workspace.bt-pro-workspace{
+  gap:12px!important;
+}
+.app[data-view="analytics"] .bt-v16-command-card{
+  margin-bottom:12px!important;
+  padding:16px!important;
+  border-radius:14px!important;
+}
+.app[data-view="analytics"] .bt-pro-kpis{
+  gap:10px!important;
+  margin-bottom:12px!important;
+}
+.app[data-view="analytics"] .bt-pro-main-grid{
+  gap:12px!important;
+  margin-bottom:12px!important;
+}
+.app[data-view="analytics"] .bt-pro-chart-card,
+.app[data-view="analytics"] .bt-pro-rules-card,
+.app[data-view="analytics"] .bt-pro-table-card{
+  border-radius:14px!important;
+}
+.app[data-view="analytics"] .bt-pro-rules-card{
+  padding:16px!important;
+}
+.app[data-view="analytics"] .bt-pro-table-card{
+  padding:16px 16px 12px!important;
+}
+.app[data-view="analytics"] .bt-pro-card-head{
+  gap:10px!important;
+  margin-bottom:10px!important;
+}
+
+/* Export / Excel: remove forced card heights and excess inner padding. */
+.app[data-view="excel"] .utility-workspace.excel-workspace,
+.app[data-view="settings"] .utility-workspace.settings-workspace{
+  margin:0!important;
+  padding:0!important;
+}
+.app[data-view="excel"] .utility-workspace-premium,
+.app[data-view="settings"] .utility-workspace-premium{
+  gap:12px!important;
+}
+.app[data-view="excel"] .utility-premium-hero,
+.app[data-view="settings"] .utility-premium-hero{
+  gap:18px!important;
+  padding:18px 20px!important;
+  border-radius:15px!important;
+}
+.app[data-view="excel"] .utility-premium-title,
+.app[data-view="settings"] .utility-premium-title{
+  gap:13px!important;
+}
+.app[data-view="excel"] .utility-premium-icon,
+.app[data-view="settings"] .utility-premium-icon{
+  width:46px!important;
+  height:46px!important;
+  flex-basis:46px!important;
+  border-radius:12px!important;
+}
+.app[data-view="excel"] .utility-premium-title p,
+.app[data-view="settings"] .utility-premium-title p{
+  margin-top:5px!important;
+}
+.app[data-view="excel"] .utility-selection-card,
+.app[data-view="settings"] .settings-health-summary{
+  min-width:190px!important;
+  padding:11px 13px!important;
+  border-radius:12px!important;
+}
+.app[data-view="excel"] .excel-action-cards{
+  gap:12px!important;
+  align-items:stretch!important;
+}
+.app[data-view="excel"] .excel-action-card{
+  min-height:0!important;
+  padding:16px!important;
+  border-radius:14px!important;
+}
+.app[data-view="excel"] .excel-action-card-top{
+  margin-bottom:11px!important;
+}
+.app[data-view="excel"] .excel-action-card p{
+  min-height:0!important;
+  margin:6px 0 12px!important;
+}
+.app[data-view="excel"] .excel-action-meta{
+  gap:6px 10px!important;
+  margin-bottom:12px!important;
+  padding:9px 10px!important;
+}
+.app[data-view="excel"] .excel-workflow-grid{
+  gap:12px!important;
+}
+.app[data-view="excel"] .utility-info-panel{
+  padding:16px!important;
+  border-radius:14px!important;
+}
+.app[data-view="excel"] .excel-workflow-steps{
+  gap:8px!important;
+  margin-top:12px!important;
+}
+.app[data-view="excel"] .excel-workflow-steps>div{
+  grid-template-columns:30px 1fr!important;
+  gap:10px!important;
+  padding:10px!important;
+}
+.app[data-view="excel"] .utility-detail-list{
+  margin-top:10px!important;
+}
+.app[data-view="excel"] .utility-detail-list>div{
+  padding:8px 0!important;
+}
+
+/* Settings: cards should fit their content, not create large empty lower halves. */
+.app[data-view="settings"] .settings-dashboard-grid{
+  gap:12px!important;
+  align-items:start!important;
+}
+.app[data-view="settings"] .settings-card,
+.app[data-view="settings"] .settings-card.controls-card,
+.app[data-view="settings"] .settings-card.connection-card{
+  min-height:0!important;
+  height:auto!important;
+  padding:16px!important;
+  border-radius:14px!important;
+}
+.app[data-view="settings"] .settings-card-head{
+  gap:10px!important;
+}
+.app[data-view="settings"] .settings-card-head p{
+  margin-top:4px!important;
+}
+.app[data-view="settings"] .settings-field{
+  gap:6px!important;
+  margin-top:12px!important;
+}
+.app[data-view="settings"] .settings-actions-row{
+  gap:8px!important;
+  margin-top:14px!important;
+}
+.app[data-view="settings"] .settings-api-box{
+  gap:6px 9px!important;
+  margin-top:12px!important;
+  padding:10px!important;
+}
+.app[data-view="settings"] .settings-policy-list{
+  gap:8px!important;
+  margin-top:12px!important;
+}
+.app[data-view="settings"] .settings-policy-list>div{
+  grid-template-columns:28px 1fr!important;
+  gap:9px!important;
+  padding:9px 10px!important;
+}
+.app[data-view="settings"] .settings-session-grid{
+  gap:8px!important;
+  margin-top:12px!important;
+}
+.app[data-view="settings"] .settings-session-grid>div{
+  padding:11px!important;
+}
+
+/* Keep responsive gutters proportional rather than suddenly changing rhythm. */
+@media(max-width:900px){
+  .app[data-view="overview"] main,
+  .app[data-view="ranking"] main,
+  .app[data-view="filters"] main,
+  .app[data-view="analytics"] main,
+  .app[data-view="excel"] main,
+  .app[data-view="settings"] main{
+    padding-left:16px!important;
+    padding-right:16px!important;
+    margin-top:14px!important;
+  }
+  .app[data-view="excel"] .utility-premium-hero,
+  .app[data-view="settings"] .utility-premium-hero{
+    align-items:flex-start!important;
+  }
+}
+@media(max-width:620px){
+  .app[data-view="overview"] main,
+  .app[data-view="ranking"] main,
+  .app[data-view="filters"] main,
+  .app[data-view="analytics"] main,
+  .app[data-view="excel"] main,
+  .app[data-view="settings"] main{
+    padding-left:10px!important;
+    padding-right:10px!important;
+    margin-top:10px!important;
+    margin-bottom:36px!important;
+  }
+  .app[data-view="filters"] .filter-workspace-shell,
+  .app[data-view="filters"] .standalone-fundamental-filters,
+  .app[data-view="excel"] .utility-premium-hero,
+  .app[data-view="settings"] .utility-premium-hero,
+  .app[data-view="excel"] .excel-action-card,
+  .app[data-view="excel"] .utility-info-panel,
+  .app[data-view="settings"] .settings-card{
+    padding:12px!important;
+  }
+}
