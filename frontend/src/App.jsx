@@ -78,6 +78,12 @@ const formatScoreValue = (value, digits = 2) => {
   return Number(numeric.toFixed(digits)).toLocaleString(undefined, { maximumFractionDigits: digits });
 };
 
+const verifiedVolume = (value) => {
+  if (value === null || value === undefined || value === "") return null;
+  const numeric = Number(value);
+  return Number.isFinite(numeric) && numeric >= 0 ? numeric : null;
+};
+
 const formatChartDate = (value) => {
   if (!value) return "";
   const text = String(value).slice(0, 10);
@@ -356,7 +362,7 @@ const handwrittenFactorMeta = {
     ["distance52", "Distance from 52-week high", "Handwritten 10 / 17 / 20% distance bands", ["t1", "t2", "t3"]],
     ["distance52_low", "Distance from 52-week low", "Client technical filter; threshold/weight remain editable.", ["threshold"]],
     ["rs_score", "RS Score", "Client percentile RS score, bounded 0–100.", ["threshold"]],
-    ["roc20", "ROC (20)", "20-period / approximately 1-month rate of change.", ["threshold"]],
+    ["roc20", "ROC (20)", "Rate of change over 20 bars of the selected timeframe.", ["threshold"]],
     ["adx14", "ADX (14)", "ADX > editable threshold.", ["threshold"]],
     ["rsi14", "RSI (14)", "RSI > 50 = 5 points; 40-50 = 4; 30-40 = 3; below 30 = 2", ["t1", "t2", "t3", "p1", "p2", "p3", "p4"]],
     ["bb_width", "BB Width %", "Bollinger Band width percentage.", ["threshold"]],
@@ -683,6 +689,8 @@ function App() {
   };
   const [watchlisted, setWatchlisted] = useState(false);
   const [data, setData] = useState([]);
+  const [calculationHistory, setCalculationHistory] = useState([]);
+  const [rankingSelection, setRankingSelection] = useState(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [fundamentals, setFundamentals] = useState(null);
@@ -871,6 +879,8 @@ function App() {
       const res = await axios.get(`${API}/market/sector-analysis`, { params, timeout: 30000 });
       setSectorAnalysis({
         rows: res.data.rows || [],
+        snapshot_at: res.data.snapshot_at || null,
+        score_version: res.data.score_version || null,
         formula: res.data.formula || "",
         aggregation: res.data.aggregation || "",
         data_rule: res.data.data_rule || "",
@@ -917,7 +927,7 @@ function App() {
         timeout,
       });
 
-    const cacheKey = `demo1:top200:${marketOverride || "ALL"}:${JSON.stringify(safeWeights)}`;
+    const cacheKey = `logic2:top200:${marketOverride || "ALL"}:${JSON.stringify(safeWeights)}`;
     try {
       let res;
       try {
@@ -996,6 +1006,7 @@ function App() {
     });
     return {
       ...row,
+      score_status: row.score_status === "Final" && coverage >= 99.99 ? "Final" : "Provisional",
       display_composite_score: coverage > 0 ? Number(score.toFixed(2)) : null,
       display_coverage_percent: Number(coverage.toFixed(2)),
     };
@@ -1230,8 +1241,9 @@ function App() {
     setSymbolInput(row.symbol);
     setSymbol(row.symbol);
     setSelectedCompany({ name: row.name || row.symbol, isin: row.isin || null });
-    setData([]);
-    setDashboard(null);
+    if (row.symbol !== symbol || row.exchange !== exchange) {
+    setData([]); setCalculationHistory([]);
+    setDashboard(null); setRankingSelection(null);
     setFundamentals(null);
     setFundamentalHistory(null);
     setTechnicalSummary(null);
@@ -1239,7 +1251,9 @@ function App() {
     setOwnershipDetails(null);
     setIndiaShareholding(null);
     setSecEdgar(null);
+    }
     setMessage("");
+    setRankingSelection(row.snapshot_id ? row : null);
     window.setTimeout(() => {
       document.getElementById("selected-stock-summary")?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 80);
@@ -1356,7 +1370,7 @@ function App() {
       }
     } catch {
       if (activeSelectionRef.current !== requestKey) return;
-      setDashboard(null);
+      setDashboard(null); setRankingSelection(null);
     }
   };
 
@@ -1552,7 +1566,7 @@ function App() {
     const rows = (rawRows || [])
       .map((row) => ({
         date: String(row.date || "").slice(0, 10),
-        open: Number(row.open), high: Number(row.high), low: Number(row.low), close: Number(row.close), volume: Number(row.volume || 0),
+        open: Number(row.open), high: Number(row.high), low: Number(row.low), close: Number(row.close), volume: verifiedVolume(row.volume),
       }))
       .filter((row) => row.date && [row.open, row.high, row.low, row.close].every(Number.isFinite))
       .sort((a, b) => a.date.localeCompare(b.date));
@@ -1705,7 +1719,7 @@ function App() {
 
   const loadChart = async () => {
     const requestKey = `${exchange}:${symbol}:${timeframe}`;
-    const cacheKey = `demo1:chart:${requestKey}`;
+    const cacheKey = `logic2:chart:${requestKey}`;
     const chartUrl = `${API}/market/chart/${symbol}?exchange=${exchange}&timeframe=${timeframe}&limit=${chartLimitForTimeframe(timeframe)}`;
 
     const validRows = (payload) => (payload?.data || []).filter((row) => (
@@ -1722,11 +1736,13 @@ function App() {
       await waitForApiReady(10000);
 
       let rows = [];
+      let completeRows = [];
       let lastError = null;
       for (let attempt = 0; attempt < 2; attempt += 1) {
         try {
           const res = await axios.get(chartUrl, { timeout: 25000 });
           rows = validRows(res.data);
+          completeRows = validRows({ data: res.data.calculation_data || res.data.data });
           if (rows.length) break;
           lastError = new Error("No stored market data");
         } catch (error) {
@@ -1742,6 +1758,7 @@ function App() {
           await axios.post(`${API}/market/refresh/${symbol}?exchange=${exchange}`, null, { timeout: 60000 });
           const retry = await axios.get(chartUrl, { timeout: 25000 });
           rows = validRows(retry.data);
+          completeRows = validRows({ data: retry.data.calculation_data || retry.data.data });
         } catch (refreshError) {
           lastError = refreshError;
         }
@@ -1750,26 +1767,28 @@ function App() {
       if (activeSelectionRef.current !== requestKey) return;
       if (rows.length) {
         setData(rows);
+        setCalculationHistory(completeRows);
         setDataStale(false);
         setDataStatus("fresh");
         setMessage("");
-        writeSessionCache(cacheKey, { saved_at: new Date().toISOString(), rows });
+        writeSessionCache(cacheKey, { saved_at: new Date().toISOString(), rows, calculation_rows: completeRows });
         return;
       }
       throw lastError || new Error("No market data is currently available.");
 
     } catch (err) {
-      console.error("Chart load error:", err);
       if (activeSelectionRef.current !== requestKey) return;
+      console.error("Chart load error:", err);
 
       const cached = readSessionCache(cacheKey);
       if (cached?.rows?.length) {
         setData(cached.rows);
+        setCalculationHistory(cached.calculation_rows || cached.rows);
         setDataStale(false);
         setDataStatus("cached");
         setMessage(`Live market data is temporarily unavailable. Showing the last verified chart saved ${cached.saved_at || "earlier"}.`);
       } else {
-        setData([]);
+        setData([]); setCalculationHistory([]);
         setDataStale(true);
         setDataStatus("stale");
         setMessage(err?.response?.data?.detail || "Market data could not be loaded. The backend is reconnecting; please retry shortly.");
@@ -1795,6 +1814,7 @@ function App() {
   };
 
   const refreshData = async () => {
+    setRankingSelection(null);
     setShowSuggestions(false);
     setSuggestions([]);
     suggestionRequestRef.current += 1;
@@ -1804,8 +1824,8 @@ function App() {
     const selectionChanged = requestedSymbol !== symbol;
 
     if (selectionChanged) {
-      setData([]);
-      setDashboard(null);
+      setData([]); setCalculationHistory([]);
+      setDashboard(null); setRankingSelection(null);
       setFundamentals(null);
       setFundamentalHistory(null);
       setTechnicalSummary(null);
@@ -1971,6 +1991,8 @@ function App() {
     }));
 
     candleSeries.setData(candleData);
+    const calculationCandles = (calculationHistory.length ? calculationHistory : data).map(row => ({time: String(row.date).slice(0, 10), open: Number(row.open), high: Number(row.high), low: Number(row.low), close: Number(row.close)}));
+    const displayedDates = new Set(candleData.map(row => row.time));
 
     const calculateEmaSeries = (rows, period) => {
       if (rows.length < period) return [];
@@ -1986,7 +2008,7 @@ function App() {
 
     if (chartOverlays.ema) {
       [10, 20, 34, 50, 100, 150, 200].forEach((period) => {
-        const values = calculateEmaSeries(candleData, period);
+        const values = calculateEmaSeries(calculationCandles, period).filter(row => displayedDates.has(row.time));
         if (!values.length) return;
         const series = chart.addSeries(LineSeries, {
           color: FRAMEWORK_EMA_COLORS[period],
@@ -2011,7 +2033,7 @@ function App() {
 
     if (chartOverlays.sma) {
       [20, 50].forEach((period) => {
-        const values = calculateSmaSeries(candleData, period);
+        const values = calculateSmaSeries(calculationCandles, period).filter(row => displayedDates.has(row.time));
         if (!values.length) return;
         const series = chart.addSeries(LineSeries, {
           lineWidth: 1,
@@ -2024,16 +2046,17 @@ function App() {
     }
 
     // Bollinger Bands: 20-period SMA +/- 2 standard deviations.
-    if (chartOverlays.bollinger && candleData.length >= 20) {
+    if (chartOverlays.bollinger && calculationCandles.length >= 20) {
       const upper = [];
       const lower = [];
-      for (let i = 19; i < candleData.length; i += 1) {
-        const window = candleData.slice(i - 19, i + 1).map((row) => row.close);
+      for (let i = 19; i < calculationCandles.length; i += 1) {
+        if (!displayedDates.has(calculationCandles[i].time)) continue;
+        const window = calculationCandles.slice(i - 19, i + 1).map((row) => row.close);
         const mean = window.reduce((a, b) => a + b, 0) / window.length;
         const variance = window.reduce((sum, value) => sum + ((value - mean) ** 2), 0) / window.length;
         const sd = Math.sqrt(variance);
-        upper.push({ time: candleData[i].time, value: mean + (2 * sd) });
-        lower.push({ time: candleData[i].time, value: mean - (2 * sd) });
+        upper.push({ time: calculationCandles[i].time, value: mean + (2 * sd) });
+        lower.push({ time: calculationCandles[i].time, value: mean - (2 * sd) });
       }
       const bbUpper = chart.addSeries(LineSeries, { lineWidth: 1, priceLineVisible: false, lastValueVisible: false, title: "" });
       const bbLower = chart.addSeries(LineSeries, { lineWidth: 1, priceLineVisible: false, lastValueVisible: false, title: "" });
@@ -2049,20 +2072,24 @@ function App() {
         priceLineVisible: false,
         lastValueVisible: false,
       });
-      volumeSeries.setData(data.map((row) => ({
+      volumeSeries.setData(data.filter(row => verifiedVolume(row.volume) != null).map((row) => ({
         time: String(row.date).slice(0, 10),
-        value: Number(row.volume || 0),
+        value: verifiedVolume(row.volume),
         color: Number(row.close) >= Number(row.open) ? "#16a34a" : "#dc2626",
       })));
       chart.priceScale("volume").applyOptions({ scaleMargins: { top: 0.78, bottom: 0 } });
 
-      if (data.length >= 50) {
+      const volumeHistory = calculationHistory.length ? calculationHistory : data;
+      if (volumeHistory.length >= 50) {
         const avg50 = [];
-        for (let i = 49; i < data.length; i += 1) {
-          const window = data.slice(i - 49, i + 1);
+        for (let i = 49; i < volumeHistory.length; i += 1) {
+          const date = String(volumeHistory[i].date).slice(0, 10);
+          if (!displayedDates.has(date)) continue;
+          const window = volumeHistory.slice(i - 49, i + 1).map(row => verifiedVolume(row.volume));
+          if (window.some(value => value == null)) continue;
           avg50.push({
-            time: String(data[i].date).slice(0, 10),
-            value: window.reduce((sum, row) => sum + Number(row.volume || 0), 0) / 50,
+            time: date,
+            value: window.reduce((sum, value) => sum + value, 0) / 50,
           });
         }
         const volumeAvg = chart.addSeries(LineSeries, {
@@ -2167,7 +2194,7 @@ function App() {
     const latestRow = data[data.length - 1];
     setChartInfo(latestRow ? {
       date: String(latestRow.date).slice(0, 10),
-      open: Number(latestRow.open), high: Number(latestRow.high), low: Number(latestRow.low), close: Number(latestRow.close), volume: Number(latestRow.volume || 0),
+      open: Number(latestRow.open), high: Number(latestRow.high), low: Number(latestRow.low), close: Number(latestRow.close), volume: verifiedVolume(latestRow.volume),
     } : null);
 
     chart.subscribeCrosshairMove((param) => {
@@ -2176,7 +2203,7 @@ function App() {
         setChartInfo({
           date: typeof param.time === "string" ? param.time : String(param.time ?? ""),
           open: Number(point.open), high: Number(point.high), low: Number(point.low), close: Number(point.close),
-          volume: Number((data || []).find((row) => String(row.date).slice(0, 10) === String(param.time).slice(0, 10))?.volume || 0),
+          volume: verifiedVolume((data || []).find((row) => String(row.date).slice(0, 10) === String(param.time).slice(0, 10))?.volume),
         });
       }
     });
@@ -2194,7 +2221,7 @@ function App() {
       window.removeEventListener("resize", handleResize);
       chart.remove();
     };
-  }, [data, benchmark, timeframe, fundamentalHistory, chartOverlays, activeView]);
+  }, [data, calculationHistory, benchmark, timeframe, fundamentalHistory, chartOverlays, activeView]);
 
   // Client framework chart: a compact candlestick chart sits directly above
   // the indicator basket in the Top-200 workflow.  This intentionally reuses
@@ -2224,12 +2251,12 @@ function App() {
       localization: { dateFormat: "dd/MM/yyyy" },
     });
 
-    const allRows = (data || []).map((row) => ({
+    const allRows = (calculationHistory.length ? calculationHistory : data).map((row) => ({
       time: String(row.date).slice(0, 10),
       open: Number(row.open), high: Number(row.high), low: Number(row.low), close: Number(row.close),
-      volume: Number(row.volume || 0),
+      volume: verifiedVolume(row.volume),
     })).filter((row) => [row.open, row.high, row.low, row.close].every(Number.isFinite));
-    const compactRows = allRows.slice(-420);
+    const compactRows = allRows.slice(-Math.min(420, data.length));
     if (!compactRows.length) return () => chart.remove();
 
     const candleSeries = chart.addSeries(CandlestickSeries, {
@@ -2326,7 +2353,7 @@ function App() {
         lastValueVisible: false,
         title: "",
       }, volumePaneIndex);
-      volume.setData(compactRows.map((row) => ({
+      volume.setData(compactRows.filter(row => row.volume != null).map((row) => ({
         time: row.time,
         value: row.volume,
         color: row.close >= row.open ? "#86efac" : "#fca5a5",
@@ -2444,7 +2471,7 @@ function App() {
           ...metric,
           time: dateKey,
           open: Number(point.open), high: Number(point.high), low: Number(point.low), close: Number(point.close),
-          volume: Number(metric.volume || 0),
+          volume: verifiedVolume(metric.volume),
         });
       } else if (!param.time || !point) {
         // When the cursor leaves the candles, immediately return the strip to
@@ -2461,7 +2488,7 @@ function App() {
     };
     window.addEventListener("resize", resize);
     return () => { window.removeEventListener("resize", resize); chart.remove(); };
-  }, [data, benchmark, fundamentalHistory, chartOverlays, symbol, timeframe, activeView]);
+  }, [data, calculationHistory, benchmark, fundamentalHistory, chartOverlays, symbol, timeframe, activeView]);
 
   const latest = !dataStale && data.length
     ? data[data.length - 1]
@@ -2472,7 +2499,7 @@ function App() {
   // chart. Keep this helper at component scope because both the dashboard score
   // and the factor-evaluation table need it.
   const latestEmaFromChart = (period) => {
-    const closes = (data || [])
+    const closes = (calculationHistory.length ? calculationHistory : data)
       .map((row) => Number(row?.close))
       .filter((value) => Number.isFinite(value) && value > 0);
     if (closes.length < period) return null;
@@ -2487,151 +2514,6 @@ function App() {
   // Final client ranking: calculate the visible score only from the factors in
   // the handwritten sheets. Missing source fields are excluded rather than
   // guessed; Indian fundamental data remains a required category when weighted.
-  const dashboardView = (() => {
-    if (!dashboard) return null;
-
-    const finite = (value) => {
-      if (value === null || value === undefined || value === "") return null;
-      const n = Number(value);
-      return Number.isFinite(n) ? n : null;
-    };
-    const isRising3 = (a, b, c) => [a,b,c].every((v) => finite(v) != null) && Number(a) > Number(b) && Number(b) > Number(c);
-    const factorScore = (group, rawScores) => {
-      let points = 0;
-      let weights = 0;
-      Object.entries(rawScores).forEach(([key, score]) => {
-        const factor = handwrittenFactors[group]?.[key] || {};
-        const weight = Number(factor.weight) || 0;
-        const enabled = factor.enabled !== false;
-        if (!enabled || weight <= 0 || score == null || !Number.isFinite(Number(score))) return;
-        points += Number(score) * weight;
-        weights += weight;
-      });
-      return weights > 0 ? Math.max(0, Math.min(100, points / weights)) : null;
-    };
-
-    const tech = handwrittenFactors.technical;
-    const em = technicalSummary?.ema || {};
-    const d52 = finite(technicalSummary?.distance_from_52w_high_percent);
-    let distanceScore = null;
-    if (d52 != null) {
-      const cfg = tech.distance52;
-      const rawPoints = d52 <= Number(cfg.t1) ? Number(cfg.p1) : d52 <= Number(cfg.t2) ? Number(cfg.p2) : d52 <= Number(cfg.t3) ? Number(cfg.p3) : Number(cfg.p4);
-      distanceScore = Number(cfg.p1) > 0 ? (rawPoints / Number(cfg.p1)) * 100 : 0;
-    }
-    const rsiValue = finite(technicalSummary?.rsi_14 ?? indicators?.rsi);
-    let rsiScore = null;
-    if (rsiValue != null) {
-      const cfg = tech.rsi14;
-      const rawPoints = rsiValue < Number(cfg.t1)
-        ? Number(cfg.p1)
-        : rsiValue < Number(cfg.t2)
-          ? Number(cfg.p2)
-          : rsiValue <= Number(cfg.t3)
-            ? Number(cfg.p3)
-            : Number(cfg.p4);
-      const maxPoints = Math.max(Number(cfg.p1) || 0, Number(cfg.p2) || 0, Number(cfg.p3) || 0, Number(cfg.p4) || 0);
-      rsiScore = maxPoints > 0 ? (rawPoints / maxPoints) * 100 : 0;
-    }
-    const technicalComponent = factorScore("technical", {
-      bb_width: finite(technicalSummary?.bollinger_width_percent) == null ? null : (compareNumeric(technicalSummary.bollinger_width_percent, tech.bb_width.comparator || "<=", tech.bb_width.threshold) ? 100 : 0),
-      atr5_lt20: finite(technicalSummary?.average_atr_percent_5) == null || finite(technicalSummary?.average_atr_percent_20) == null ? null : (Number(technicalSummary.average_atr_percent_5) < Number(technicalSummary.average_atr_percent_20) ? 100 : 0),
-      atr10_lt20: finite(technicalSummary?.average_atr_percent_10) == null || finite(technicalSummary?.average_atr_percent_20) == null ? null : (Number(technicalSummary.average_atr_percent_10) < Number(technicalSummary.average_atr_percent_20) ? 100 : 0),
-      rsi14: rsiScore,
-      volume10_lt20: finite(technicalSummary?.average_volume_10) == null || finite(technicalSummary?.average_volume_20) == null ? null : (Number(technicalSummary.average_volume_10) < Number(technicalSummary.average_volume_20) ? 100 : 0),
-      volume20_lt40: finite(technicalSummary?.average_volume_20) == null || finite(technicalSummary?.average_volume_40) == null ? null : (Number(technicalSummary.average_volume_20) < Number(technicalSummary.average_volume_40) ? 100 : 0),
-      distance52: distanceScore,
-      ema20_gt50: finite(em["20"]) == null || finite(em["50"]) == null ? null : (Number(em["20"]) > Number(em["50"]) ? 100 : 0),
-      ema50_gt150: finite(em["50"]) == null || finite(em["150"]) == null ? null : (Number(em["50"]) > Number(em["150"]) ? 100 : 0),
-    });
-
-    const fundamentalRowsForDashboard = buildClientFundamentalRows({
-      fundamentalHistory,
-      fundamentals,
-      dashboard,
-      factors: handwrittenFactors.fundamental,
-    });
-    const fundamentalComponent = factorScore(
-      "fundamental",
-      Object.fromEntries(Object.entries(fundamentalRowsForDashboard).map(([key, value]) => [key, value?.score ?? null]))
-    );
-
-    let ownershipComponent = null;
-    if (exchange !== "US" && Array.isArray(indiaShareholding?.history) && indiaShareholding.history.length) {
-      const h = indiaShareholding.history;
-      const latestH = h[0] || {};
-      const priorQuarterH = h[1] || {};
-      const secondPriorQuarterH = h[2] || {};
-      const previousYearH = h[4] || {};
-      const ocfg = handwrittenFactors.ownership;
-      const diiMf = (row) => {
-        const values = [finite(row?.dii), finite(row?.mutual_funds)].filter((v) => v != null);
-        return values.length ? values.reduce((x, y) => x + y, 0) : null;
-      };
-      const priorDiiMf = diiMf(priorQuarterH);
-      const secondPriorDiiMf = diiMf(secondPriorQuarterH);
-      const latestDiiMfChange = [finite(latestH.dii_change), finite(latestH.mutual_funds_change)].filter((v) => v != null);
-      const changeSum = latestDiiMfChange.length ? latestDiiMfChange.reduce((x, y) => x + y, 0) : null;
-      ownershipComponent = factorScore("ownership", {
-        promoter_qoq: finite(latestH.promoter_change) == null ? null : (compareNumeric(latestH.promoter_change, ocfg.promoter_qoq.comparator || ">", ocfg.promoter_qoq.threshold) ? 100 : 0),
-        promoter_above: finite(latestH.promoter) == null ? null : (compareNumeric(latestH.promoter, ocfg.promoter_above.comparator || ">", ocfg.promoter_above.threshold) ? 100 : 0),
-        promoter_rising: finite(latestH.promoter) == null || finite(previousYearH.promoter) == null ? null : (Number(latestH.promoter) > Number(previousYearH.promoter) ? 100 : 0),
-        pledge: null,
-        fii_qoq: finite(latestH.fii_change) == null ? null : (compareNumeric(latestH.fii_change, ocfg.fii_qoq.comparator || ">", ocfg.fii_qoq.threshold) ? 100 : 0),
-        fii_rising:
-          finite(latestH.fii) == null || finite(previousYearH.fii) == null ||
-          finite(priorQuarterH.fii) == null || finite(secondPriorQuarterH.fii) == null
-            ? null
-            : (Number(latestH.fii) > Number(previousYearH.fii) && Number(priorQuarterH.fii) > Number(secondPriorQuarterH.fii) ? 100 : 0),
-        dii_mf_qoq: changeSum == null ? null : (compareNumeric(changeSum, ocfg.dii_mf_qoq.comparator || ">", ocfg.dii_mf_qoq.threshold) ? 100 : 0),
-        dii_mf_rising: priorDiiMf == null || secondPriorDiiMf == null ? null : (priorDiiMf > secondPriorDiiMf ? 100 : 0),
-        insider_activity: null,
-      });
-    } else if (exchange === "US") {
-      // US ownership uses the market-appropriate Institutional + Insider
-      // aggregate score calculated by the backend. Retail/Public is displayed
-      // as the transparent remainder when both aggregates are available.
-      ownershipComponent = finite(dashboard?.score_components?.ownership);
-    }
-
-    const components = {
-      technical: technicalComponent,
-      fundamental: fundamentalComponent,
-      relative_strength: technicalSummary?.rs_available === false ? null : finite(technicalSummary?.rs_rating),
-      ownership: ownershipComponent,
-      sector: finite(dashboard?.score_components?.sector),
-    };
-    const enteredTotal = Object.values(scoreWeights).reduce((sum, value) => sum + Math.max(0, Number(value) || 0), 0);
-    const normalizedWeights = Object.fromEntries(Object.entries(scoreWeights).map(([key,value]) => [key, enteredTotal > 0 ? Math.max(0, Number(value) || 0) / enteredTotal * 100 : 0]));
-    let points = 0;
-    let availableWeight = 0;
-    Object.entries(normalizedWeights).forEach(([key, weight]) => {
-      const value = components[key];
-      if (weight <= 0 || value == null || !Number.isFinite(Number(value))) return;
-      points += Number(value) * weight;
-      availableWeight += weight;
-    });
-    const missingRequiredScoreCategories = Object.entries(normalizedWeights)
-      .filter(([key, weight]) => Number(weight) > 0 && (components[key] == null || !Number.isFinite(Number(components[key]))))
-      .map(([key]) => key);
-    const provisionalScore = availableWeight <= 0
-      ? null
-      : Math.max(0, Math.min(100, Math.round(points / availableWeight)));
-    const score = missingRequiredScoreCategories.length ? null : provisionalScore;
-    const signal = score == null ? "Insufficient Data" : score >= 70 ? "Buy" : score >= 45 ? "Watch" : "Sell";
-    return {
-      ...dashboard,
-      score,
-      provisional_score: provisionalScore,
-      signal,
-      missing_required_score_categories: missingRequiredScoreCategories,
-      score_coverage_percent: Math.round(availableWeight),
-      score_components: components,
-      score_weights: normalizedWeights,
-      handwritten_ranking: true,
-    };
-  })();
-
   const factorEvaluationRows = (() => {
     const finite = (value) => {
       if (value === null || value === undefined || value === "") return null;
@@ -2670,12 +2552,7 @@ function App() {
     const ema34 = latestEmaFromChart(34) ?? finite(em["34"]);
     const ema50 = latestEmaFromChart(50) ?? finite(em["50"]);
     const ema150 = latestEmaFromChart(150) ?? finite(em["150"]);
-    const distance52Low = (() => {
-      const closes = (data || []).slice(-260).map((item) => finite(item?.low ?? item?.close)).filter((value) => value != null && value > 0);
-      if (!closes.length || latestPrice == null) return null;
-      const low52 = Math.min(...closes);
-      return low52 > 0 ? ((latestPrice - low52) / low52) * 100 : null;
-    })();
+    const distance52Low = finite(technicalSummary?.distance_from_52w_low_percent);
     const rsScoreCurrent = finite(technicalSummary?.rs_rating);
     const roc20Current = finite(technicalSummary?.client_technical_filters?.momentum?.roc_1m_percent);
     const adxCurrent = finite(technicalSummary?.client_technical_filters?.strength?.adx_14);
@@ -2791,8 +2668,41 @@ function App() {
         fundamental: scoreGroup("fundamental", fundamental),
         ownership: scoreGroup("ownership", ownership),
       },
+      groupCoverage: Object.fromEntries(Object.entries({fundamental, technical, ownership}).map(([group, rows]) => {
+        const enabled = Object.entries(handwrittenFactors[group]).filter(([, cfg]) => cfg.enabled !== false && Number(cfg.weight) > 0);
+        const available = enabled.filter(([key]) => rows[key]?.score != null).length;
+        return [group, {required: enabled.length, available, complete: enabled.length > 0 && available === enabled.length}];
+      })),
       fundamentalGroupScores: groupedFundamentalScores,
     };
+  })();
+
+  const dashboardView = (() => {
+    const selected = rankingSelection?.symbol === symbol && rankingSelection?.exchange === exchange;
+    const row = selected ? (topCompositeDisplayRows.find(r => r.snapshot_id === rankingSelection.snapshot_id) || rankingSelection) : null;
+    if (!row && !dashboard) return null;
+    const components = row ? {
+      fundamental: row.fundamental_score, technical: row.technical_score,
+      relative_strength: row.rs_score, ownership: row.ownership_score, sector: row.sector_score,
+    } : {
+      fundamental: factorEvaluationRows.groupScores.fundamental,
+      technical: factorEvaluationRows.groupScores.technical,
+      ownership: factorEvaluationRows.groupScores.ownership,
+      relative_strength: technicalSummary?.rs_available === false ? null : technicalSummary?.rs_rating ?? null,
+      sector: dashboard?.score_components?.sector ?? null,
+    };
+    const total = Object.values(scoreWeights).reduce((s, w) => s + Math.max(0, Number(w) || 0), 0);
+    const normalizedWeights = Object.fromEntries(Object.entries(scoreWeights).map(([k, w]) => [k, total > 0 ? Math.max(0, Number(w) || 0) / total * 100 : 0]));
+    const available = Object.entries(components).filter(([k, v]) => normalizedWeights[k] > 0 && v != null && Number.isFinite(Number(v)));
+    const provisional = available.length && total > 0 ? Number(available.reduce((s, [k, v]) => s + Number(v) * normalizedWeights[k] / 100, 0).toFixed(2)) : null;
+    const missing = Object.keys(components).filter(k => normalizedWeights[k] > 0 && components[k] == null);
+    const incompleteRules = !row && ["fundamental", "technical", "ownership"].some(k => normalizedWeights[k] > 0 && !factorEvaluationRows.groupCoverage[k].complete);
+    const final = row ? row.score_status === "Final" && !missing.length : !missing.length && !incompleteRules && (normalizedWeights.relative_strength <= 0 || technicalSummary?.rs_universe?.complete);
+    return {...dashboard, score: final ? provisional : null, provisional_score: provisional,
+      score_components: components, score_weights: normalizedWeights,
+      score_coverage_percent: available.reduce((s, [k]) => s + normalizedWeights[k], 0),
+      missing_required_score_categories: missing, signal: final ? (provisional >= 70 ? "Buy" : provisional >= 45 ? "Watch" : "Sell") : "Provisional",
+      snapshot_at: row?.snapshot_at, score_version: row?.score_version};
   })();
 
   const selectedFundamentalQualification = (() => {
@@ -2866,7 +2776,7 @@ function App() {
     try {
       setExcelCopyMessage(`Preparing Excel for ${exchange}:${symbol}…`);
       const res = await axios.get(`${API}/market/excel-export/${encodeURIComponent(symbol)}`, {
-        params: { exchange, limit: 5000 },
+        params: { exchange, limit: 5000, snapshot_id: rankingSelection?.symbol === symbol && rankingSelection?.exchange === exchange ? rankingSelection.snapshot_id : undefined, score_weights: JSON.stringify(scoreWeights) },
         responseType: "blob",
         timeout: 120000,
       });
@@ -2920,13 +2830,13 @@ function App() {
   })();
 
   const dashboardIndicatorChartData = (() => {
-    const rows = (data || [])
+    const rows = (calculationHistory.length ? calculationHistory : data)
       .map((row) => ({
         date: String(row.date || "").slice(0, 10),
         close: Number(row.close),
         high: Number(row.high),
         low: Number(row.low),
-        volume: Number(row.volume),
+        volume: verifiedVolume(row.volume),
       }))
       .filter((row) => Number.isFinite(row.close) && row.close > 0 && Number.isFinite(row.high) && Number.isFinite(row.low));
 
@@ -3179,12 +3089,12 @@ function App() {
     setShowMarketMenu(false);
     setSuggestions([]);
     setExchange(value);
-    setData([]);
+    setData([]); setCalculationHistory([]);
     setMessage("");
     setIndicators(null);
     setFundamentals(null);
     setFundamentalHistory(null);
-    setDashboard(null);
+    setDashboard(null); setRankingSelection(null);
     setTechnicalSummary(null);
     setOwnershipDetails(null);
     setIndiaShareholding(null);
@@ -3200,9 +3110,9 @@ function App() {
       setSymbol("RELIANCE");
       setSymbolInput("RELIANCE");
     } else {
-      setSelectedCompany({ name: "INFY", isin: null });
-      setSymbol("INFY");
-      setSymbolInput("INFY");
+      setSelectedCompany({ name: "TCS", isin: null });
+      setSymbol("TCS");
+      setSymbolInput("TCS");
     }
   };
 
@@ -3297,12 +3207,9 @@ function App() {
     const rows = (handwrittenFactorMeta[group] || []).map((row) => {
       if (group !== "technical") return row;
       const [key, label, description, editableValues, category] = row;
-      const timeframeLabel = label
-        .replace(/5-day/g, `5-${periodWord}`)
-        .replace(/10-day/g, `10-${periodWord}`)
-        .replace(/20-day/g, `20-${periodWord}`)
-        .replace(/40-day/g, `40-${periodWord}`);
-      return [key, timeframeLabel, description, editableValues, category];
+      const timeframeLabel = label.replace(/(\d+)-day/g, `$1-${periodWord}`);
+      const timeframeDescription = description.replace(/(\d+)-day/g, `$1-${periodWord}`);
+      return [key, timeframeLabel, key.startsWith("distance52") ? `${description} Trailing one-year daily history; independent of chart timeframe.` : `${timeframeDescription} Periods refer to ${timeframe} bars.`, editableValues, category];
     });
     const evalRows = factorEvaluationRows[group] || {};
     return (
@@ -3313,7 +3220,7 @@ function App() {
             <p>{subtitle}</p>
           </div>
           <div className="compact-filter-score">
-            <span>{group === "fundamental" ? "Fundamental score" : "Group score"}</span>
+            <span>Live {group === "fundamental" ? "Fundamental score" : "Group score"}</span>
             <strong>{filterScoreText(factorEvaluationRows.groupScores?.[group])}</strong>
           </div>
         </div>}
@@ -3689,8 +3596,8 @@ function App() {
                       setSymbolInput(item.symbol);
                       setSymbol(item.symbol);
                       setSelectedCompany({ name: item.name || item.symbol, isin: item.isin || null });
-                      setData([]);
-                      setDashboard(null);
+                      setData([]); setCalculationHistory([]);
+                      setDashboard(null); setRankingSelection(null);
                       setFundamentals(null);
                       setFundamentalHistory(null);
                       setTechnicalSummary(null);
@@ -3728,8 +3635,8 @@ function App() {
                 // searches/selects it. This prevents requests for partial
                 // keystrokes such as I -> IN -> INF -> INFY from racing and
                 // overwriting the final stock with stale data.
-                setData([]);
-                setDashboard(null);
+                setData([]); setCalculationHistory([]);
+                setDashboard(null); setRankingSelection(null);
                 setFundamentals(null);
                 setFundamentalHistory(null);
                 setTechnicalSummary(null);
@@ -3794,6 +3701,7 @@ function App() {
         </div>
 
         {excelCopyMessage && activeView !== "excel" && activeView !== "settings" && <div className="utility-feedback-banner" role="status" aria-live="polite">{excelCopyMessage}</div>}
+        <div className="utility-feedback-banner" role="status">{rankingSelection?.symbol === symbol && rankingSelection?.exchange === exchange ? `Score source: ranking snapshot ${rankingSelection.snapshot_at} · ${rankingSelection.score_version}. Snapshot price ${formatScoreValue(rankingSelection.close)}; EPS (TTM) ${formatScoreValue(rankingSelection.trailing_eps)}. Chart and filter rules are live ${timeframe} data; export identifies both sources.` : `Score source: live ${timeframe} rule evaluation as of ${technicalSummary?.daily_price_date || "loading"}; missing inputs remain N/A. Ranking rows have a separate dated daily snapshot.`}{rankingSelection && <button type="button" className="utility-secondary-btn" onClick={() => setRankingSelection(null)}>Use live scores</button>}</div>
         <section className="score-overview-grid" aria-label="Ranking score overview">
           {[
             ["Composite Score", dashboardView?.score ?? dashboardView?.provisional_score, "composite"],
@@ -3925,7 +3833,7 @@ function App() {
               <div className="overview-company-stats">
                 <div className="primary-stat"><span>Price</span><strong>{latest ? `${currency}${Number(latest.close).toFixed(2)}` : "N/A"}</strong>{data?.length > 1 && Number(data[data.length - 2]?.close) ? <small className={Number(latest?.close) >= Number(data[data.length - 2]?.close) ? "is-up" : "is-down"}>{`${(((Number(latest?.close) / Number(data[data.length - 2]?.close)) - 1) * 100).toFixed(2)}%`}</small> : null}</div>
                 <div><span>Market Cap</span><strong>{fundamentals?.fundamentals?.market_cap != null ? formatMarketMoney(fundamentals.fundamentals.market_cap, exchange) : "N/A"}</strong></div>
-                <div><span>EPS</span><strong>{fundamentals?.fundamentals?.trailing_eps ?? "N/A"}</strong></div>
+                <div><span>EPS (TTM)</span><strong>{fundamentals?.fundamentals?.trailing_eps ?? "N/A"}</strong></div>
                 <div><span>Sector</span><strong>{fundamentals?.fundamentals?.sector || dashboard?.sector || "N/A"}</strong></div>
                 <div><span>Industry</span><strong>{fundamentals?.fundamentals?.industry || dashboard?.industry || "N/A"}</strong></div>
               </div>
@@ -3974,7 +3882,7 @@ function App() {
                     <span>H {Number(dashboardChartInfo.high).toFixed(2)}</span>
                     <span>L {Number(dashboardChartInfo.low).toFixed(2)}</span>
                     <span>C {Number(dashboardChartInfo.close).toFixed(2)}</span>
-                    <span>V {Number(dashboardChartInfo.volume || 0).toLocaleString()}</span>
+                    <span>V {formatScoreValue(dashboardChartInfo.volume, 0)}</span>
                   </div>
                 )}
                 <div className="indicator-color-key framework-ema-color-key" aria-label="EMA color legend">
@@ -3995,7 +3903,7 @@ function App() {
                   <span>BB Upper: <strong>{formatScoreValue(dashboardChartInfo?.bbUpper, 2)}</strong></span>
                   <span>BB Middle: <strong>{formatScoreValue(dashboardChartInfo?.bbMiddle, 2)}</strong></span>
                   <span>BB Lower: <strong>{formatScoreValue(dashboardChartInfo?.bbLower, 2)}</strong></span>
-                  <span>EPS: <strong>{dashboardChartInfo?.eps != null && dashboardChartInfo.eps !== "" && Number.isFinite(Number(dashboardChartInfo.eps)) ? Number(dashboardChartInfo.eps).toFixed(2) : "N/A"}</strong></span>
+                  <span>EPS (quarterly): <strong>{dashboardChartInfo?.eps != null && dashboardChartInfo.eps !== "" && Number.isFinite(Number(dashboardChartInfo.eps)) ? Number(dashboardChartInfo.eps).toFixed(2) : "N/A"}</strong></span>
                   <span>RS ratio (Price/Benchmark): <strong>{formatScoreValue(dashboardChartInfo?.rs, 4)}</strong></span>
                 </div>
                 {data?.length ? (
@@ -4011,7 +3919,7 @@ function App() {
                 <div className="dashboard-mini-chart-title dashboard-indicator-heading">
                   <div>
                     <strong>Customizable Indicator Basket</strong>
-                    <span>Enable/disable each chart and edit the periods before the data-scoring stage.</span>
+                    <span>Periods use {timeframe} bars; basket ADR uses active bars, while summary ADR uses daily bars.</span>
                     <span className="indicator-rs-current">RS Score: <b>{formatScoreValue(technicalSummary?.rs_rating ?? dashboardView?.score_components?.relative_strength)}</b></span>
                   </div>
                   <div className="indicator-basket-toggles">
@@ -4171,7 +4079,7 @@ function App() {
 
                     {frameworkIndicatorVisibility.volumeRatio && (
                       <div className="dashboard-mini-chart dashboard-indicator-chart">
-                        <strong>Volume Ratio ({frameworkIndicatorSettings.volumeRatio}D)</strong>
+                        <strong>Volume Ratio ({frameworkIndicatorSettings.volumeRatio} {timeframe} bars)</strong>
                         <ResponsiveContainer width="100%" height={200}>
                           <LineChart data={dashboardIndicatorChartData}>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -4214,7 +4122,7 @@ function App() {
 
                     {frameworkIndicatorVisibility.volumeContraction && (
                       <div className="dashboard-mini-chart dashboard-indicator-chart">
-                        <strong>Volume Contraction ({frameworkIndicatorSettings.volumeShort}D / {frameworkIndicatorSettings.volumeLong}D Avg)</strong>
+                        <strong>Volume Contraction ({frameworkIndicatorSettings.volumeShort} / {frameworkIndicatorSettings.volumeLong} {timeframe} bars Avg)</strong>
                         <ResponsiveContainer width="100%" height={200}>
                           <LineChart data={dashboardIndicatorChartData}>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -4228,7 +4136,7 @@ function App() {
 
                     {frameworkIndicatorVisibility.volumeDryUp && (
                       <div className="dashboard-mini-chart dashboard-indicator-chart">
-                        <strong>Volume Dry-Up ({frameworkIndicatorSettings.volumeDryUp}D Avg)</strong>
+                        <strong>Volume Dry-Up ({frameworkIndicatorSettings.volumeDryUp} {timeframe} bars Avg)</strong>
                         <ResponsiveContainer width="100%" height={200}>
                           <LineChart data={dashboardIndicatorChartData}>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -4344,13 +4252,13 @@ function App() {
                 <option value="desc">Descending ↓</option><option value="asc">Ascending ↑</option>
               </select>
             </label>
-            <small>Sorting is applied directly to the Top-200 list below.</small>
+            <small>Snapshot {topComposite.snapshot_at || "unavailable"} · {topComposite.score_version || "unversioned"}. Daily scoring; displayed weights apply to these saved components.</small>
           </div>
           <div id="ranking-results" className="composite-table-wrap">
             <table className="composite-ranking-table">
               <thead>
                 <tr>
-                  <th>#</th><th>Stock</th><th>Composite</th><th>Technical</th><th>Fundamental</th><th>Ownership</th><th>Sector</th><th>RS</th><th>EPS</th><th>PAT</th><th>Sales</th><th>Alpha</th><th>Beta</th><th>Std Deviation</th><th>Coverage</th>
+                  <th>#</th><th>Stock</th><th>Composite</th><th>Technical</th><th>Fundamental</th><th>Ownership</th><th>Sector</th><th>RS</th><th>EPS Score</th><th>PAT Score</th><th>Sales Score</th><th>Alpha</th><th>Beta</th><th>Std Deviation</th><th>Coverage</th>
                 </tr>
               </thead>
               <tbody>
@@ -4419,7 +4327,7 @@ function App() {
                 <span>Technical</span><strong>{filterScoreText(factorEvaluationRows.groupScores?.technical)}</strong>
               </button>
               <button type="button" className={filterWorkspaceTab === "ownership" ? "active" : ""} onClick={() => setFilterWorkspaceTab("ownership")}>
-                <span>Ownership</span><strong>{filterScoreText(dashboardView?.score_components?.ownership ?? factorEvaluationRows.groupScores?.ownership)}</strong>
+                <span>Ownership</span><strong>{filterScoreText(factorEvaluationRows.groupScores?.ownership)}</strong>
               </button>
               <button type="button" className={filterWorkspaceTab === "universe" ? "active" : ""} onClick={() => setFilterWorkspaceTab("universe")}>
                 <span>Universe Screener</span><strong>All stocks</strong>
@@ -5216,7 +5124,7 @@ function App() {
                     setSuggestions([]);
                     suggestionRequestRef.current += 1;
                     if (nextSymbol !== symbol) {
-                      setData([]); setDashboard(null); setFundamentals(null); setFundamentalHistory(null);
+                      setData([]); setCalculationHistory([]); setDashboard(null); setRankingSelection(null); setFundamentals(null); setFundamentalHistory(null);
                       setTechnicalSummary(null); setIndicators(null); setOwnershipDetails(null);
                       setIndiaShareholding(null); setSecEdgar(null);
                       setSelectedCompany({ name: nextSymbol, isin: null });
@@ -5697,7 +5605,7 @@ function App() {
               {new Date(`${chartInfo.date}T00:00:00`).toLocaleDateString("en-GB")} &nbsp;
               O {chartInfo.open.toFixed(2)} &nbsp; H {chartInfo.high.toFixed(2)} &nbsp;
               L {chartInfo.low.toFixed(2)} &nbsp; C {chartInfo.close.toFixed(2)} &nbsp;
-              V {Number(chartInfo.volume || 0).toLocaleString()}
+              V {formatScoreValue(chartInfo.volume, 0)}
             </div>
           )}
 
@@ -5776,7 +5684,7 @@ function App() {
               <div className="technical-metric-value-grid">
                 <div className="metric"><span>ADR % (20D)</span><strong>{technicalSummary.adr_percent != null ? `${technicalSummary.adr_percent}%` : "-"}</strong><small>Daily ADR reference</small></div>
                 <div className="metric"><span>ATR % (14)</span><strong>{technicalSummary.atr_percent != null ? `${technicalSummary.atr_percent}%` : "-"}</strong></div>
-                <div className="metric"><span>BB Width %</span><strong>{technicalSummary.bollinger_width_percent != null ? `${technicalSummary.bollinger_width_percent}%` : "-"}</strong><small>(Upper BB - Lower BB) × 100 / Lower BB</small></div>
+                <div className="metric"><span>BB Width %</span><strong>{technicalSummary.bollinger_width_percent != null ? `${technicalSummary.bollinger_width_percent}%` : "-"}</strong><small>(Upper Band - Lower Band) / Middle Band × 100</small></div>
                 <div className="metric"><span>{`20-${timeframe === "daily" ? "Day" : timeframe === "weekly" ? "Week" : "Month"} Price Range`}</span><strong>{technicalSummary.range_20d_percent != null ? `${technicalSummary.range_20d_percent}%` : "-"}</strong></div>
               </div>
               {technicalSummary.technical_metric_series?.length > 1 && (

@@ -1,4 +1,4 @@
-from app.models import OHLCV
+from app.models import ScoreSnapshot, OHLCV
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi import Query
@@ -22,6 +22,7 @@ from app.services.company_sync import repair_company_identity, bootstrap_compani
 import os
 import math
 import json
+import uuid
 import time
 import csv
 import requests
@@ -67,7 +68,7 @@ def _live_provider_rows(symbol: str, exchange: str, years: int = 2):
     """
     symbol = str(symbol or "").upper().strip()
     exchange = str(exchange or "US").upper().strip()
-    years = max(1, min(6, int(years or 2)))
+    years = max(1, min(20, int(years or 2)))
     cache_key = (exchange, symbol, years)
     cached = _LIVE_ROW_CACHE.get(cache_key)
     now = time.time()
@@ -100,11 +101,11 @@ def _live_provider_rows(symbol: str, exchange: str, years: int = 2):
                 continue
             volume = item.get("volume")
             try:
-                volume = float(volume or 0)
-                if not math.isfinite(volume):
-                    volume = 0.0
+                volume = float(volume) if volume is not None else None
+                if volume is not None and not math.isfinite(volume):
+                    volume = None
             except Exception:
-                volume = 0.0
+                volume = None
             normalized.append(SimpleNamespace(
                 date=dt, symbol=symbol, exchange=exchange,
                 open=values[0], high=values[1], low=values[2], close=values[3],
@@ -168,10 +169,9 @@ def _market_rows_with_live_fallback(db: Session, symbol: str, exchange: str, min
             for row in live:
                 merged[row.date] = row
             merged_rows = [merged[key] for key in sorted(merged)]
-            if len(merged_rows) >= min_rows:
-                return merged_rows
-            if len(live) >= min_rows:
-                return live
+            # min_rows triggers a provider fetch; it must not discard fresher
+            # observations when a listing genuinely has less history.
+            return merged_rows
         return stored or live
 
     # Non-free deployments may use the persisted cache when it already contains
@@ -191,10 +191,7 @@ def _market_rows_with_live_fallback(db: Session, symbol: str, exchange: str, min
         for row in live:
             merged[row.date] = row
         merged_rows = [merged[key] for key in sorted(merged)]
-        if len(merged_rows) >= min_rows:
-            return merged_rows
-        if len(live) >= min_rows:
-            return live
+        return merged_rows
     return stored or live
 
 
@@ -2416,7 +2413,7 @@ def _weighted_rs_against_benchmark(daily_rows, exchange: str, period_weights=Non
         if db is not None and target_symbol and len(daily_rows) >= 180:
             try:
                 stored = db.query(RSHistory).filter_by(symbol=target_symbol.upper(), exchange=exchange.upper()).first()
-                if stored is None or stored.last_date < daily_rows[-1].date:
+                if stored is None or stored.last_date is None or stored.last_date < daily_rows[-1].date:
                     persist_history(db, target_symbol, exchange, daily_rows)
             except Exception:
                 db.rollback()
@@ -2687,7 +2684,7 @@ def _score_symbol(db: Session, symbol: str, exchange: str, weights=None, include
     if available_weight <= 0:
         return (None, 0, components, normalized_weights) if include_components else (None, 0)
 
-    score = round(weighted_points / available_weight)
+    score = round(weighted_points / 100.0, 2)
     coverage = round(available_weight)
     result = (max(0, min(100, score)), max(0, min(100, coverage)))
     if include_components:
@@ -3018,7 +3015,7 @@ def get_dashboard_summary(
 
     # Repair exact NSE identity before reading the dashboard record. This fixes
     # stale database metadata without touching OHLC/fundamental history.
-    if exchange == "NSE":
+    if exchange in {"NSE", "BSE"}:
         try:
             repair_company_identity(db, symbol, exchange)
         except Exception:
@@ -3067,7 +3064,7 @@ def get_dashboard_summary(
             weighted_points += float(value) * float(weight)
             available_weight += float(weight)
         if available_weight > 0:
-            score = max(0, min(100, round(weighted_points / available_weight)))
+            score = max(0, min(100, round(weighted_points / 100.0, 2)))
             coverage = max(0, min(100, round(available_weight)))
 
     # Refresh the ORM object after a snapshot/live classification repair.
@@ -3079,12 +3076,12 @@ def get_dashboard_summary(
     # Do not present a seemingly complete Indian-market ranking when weighted
     # fundamental/ownership categories are unavailable. This directly exposes
     # the data-coverage limitation instead of silently re-normalizing it away.
-    missing_required = []
-    if exchange in {"NSE", "BSE"}:
-        if normalized_weights.get("fundamental", 0) > 0 and components.get("fundamental") is None:
-            missing_required.append("fundamental")
-        if normalized_weights.get("ownership", 0) > 0 and components.get("ownership") is None:
-            missing_required.append("ownership")
+    missing_required = [key for key, weight in normalized_weights.items()
+                        if weight > 0 and components.get(key) is None]
+    from app.services.rs_universe_backfill import universe_backfill_status
+    rs_progress = universe_backfill_status(db, _rs_market_group(exchange))
+    if normalized_weights.get("relative_strength", 0) > 0 and not rs_progress["complete"]:
+        missing_required.append("relative_strength_universe")
 
     if missing_required:
         displayed_score = None
@@ -3143,6 +3140,10 @@ def get_dashboard_summary(
         "isin": company.isin if company else None,
         "exchange": exchange,
         "score": displayed_score,
+        "provisional_score": score,
+        "score_source": "Live baseline daily components; frontend rule editor is labeled separately",
+        "score_version": "client-rs5000-v2",
+        "rs_universe": rs_progress,
         "signal": signal,
         "missing_required_score_categories": missing_required,
         "score_coverage_percent": coverage,
@@ -3420,7 +3421,7 @@ def get_excel_live_csv(symbol: str, exchange: str = "US", limit: int = Query(EXC
 
 
 @router.get("/excel-export/{symbol}")
-def export_excel_snapshot(symbol: str, exchange: str = "US", limit: int = Query(EXCEL_DEFAULT_HISTORY_ROWS, ge=20, le=5000), db: Session = Depends(get_db)):
+def export_excel_snapshot(symbol: str, exchange: str = "US", limit: int = Query(EXCEL_DEFAULT_HISTORY_ROWS, ge=20, le=5000), db: Session = Depends(get_db), snapshot_id: str | None = None, score_weights: str | None = None):
     """Download an editable workbook containing real stored data + client ranking formula sheets."""
     try:
         from openpyxl import Workbook
@@ -3431,6 +3432,23 @@ def export_excel_snapshot(symbol: str, exchange: str = "US", limit: int = Query(
     symbol = symbol.upper()
     exchange = exchange.upper()
     feed = get_excel_feed(symbol=symbol, exchange=exchange, limit=limit, db=db)
+    scoring = None
+    if snapshot_id:
+        saved = db.query(ScoreSnapshot).filter_by(id=snapshot_id, symbol=symbol, exchange=exchange).first()
+        if saved is None:
+            raise HTTPException(status_code=410, detail="Ranking snapshot expired; refresh Ranking and reopen the stock before exporting.")
+        scoring = json.loads(saved.payload_json)
+    export_weights = dict(CLIENT_COMPOSITE_WEIGHTS)
+    if score_weights:
+        try:
+            parsed = json.loads(score_weights)
+            export_weights = {k: max(0, float(parsed[k])) for k in export_weights}
+            total = sum(export_weights.values())
+            if total <= 0 or not all(math.isfinite(v) for v in export_weights.values()):
+                raise ValueError()
+            export_weights = {k: v / total * 100 for k, v in export_weights.items()}
+        except (ValueError, TypeError, KeyError):
+            raise HTTPException(status_code=400, detail="Invalid composite weights")
     wb = Workbook()
     ws = wb.active
     ws.title = "Summary"
@@ -3446,6 +3464,15 @@ def export_excel_snapshot(symbol: str, exchange: str = "US", limit: int = Query(
         ws.append([value if value is not None else "N/A" for value in row])
     ws["A1"].font = Font(bold=True)
 
+    ws.append(["Price Data Source", "Live daily provider history; score snapshot is separate"])
+    if scoring:
+        ws.append(["Score Source", "Ranking snapshot"])
+        ws.append(["Score Snapshot ID", scoring["snapshot_id"]])
+        ws.append(["Score Snapshot At", scoring["snapshot_at"]])
+        ws.append(["Score Version", scoring["score_version"]])
+        ws.append(["Snapshot Price", scoring.get("close")])
+        ws.append(["Snapshot EPS", scoring.get("trailing_eps") if scoring.get("trailing_eps") is not None else "N/A"])
+        ws.append(["Score Status", scoring.get("score_status")])
     raw = wb.create_sheet("OHLCV")
     raw.append(["Date", "Open", "High", "Low", "Close", "Volume"])
     for cell in raw[1]: cell.font = Font(bold=True)
@@ -3464,11 +3491,11 @@ def export_excel_snapshot(symbol: str, exchange: str = "US", limit: int = Query(
     order = ["fundamental", "technical", "relative_strength", "ownership", "sector"]
     for idx, key in enumerate(order, start=2):
         cfg.cell(idx, 1, key)
-        cfg.cell(idx, 2, None)
-        cfg.cell(idx, 3, CLIENT_COMPOSITE_WEIGHTS[key])
+        cfg.cell(idx, 2, (scoring.get({"relative_strength": "rs_score"}.get(key, key + "_score")) if scoring else None))
+        cfg.cell(idx, 3, export_weights[key])
         cfg.cell(idx, 4, f"=IF(ISNUMBER(B{idx}),B{idx}*C{idx}/100,0)")
     cfg["A8"] = "Composite Score"
-    cfg["B8"] = "=IF(COUNT(B2:B6)=0,\"\",SUM(D2:D6)/SUMPRODUCT(--ISNUMBER(B2:B6),C2:C6)*100)"
+    cfg["B8"] = "=IF(COUNT(B2:B6)=0,\"\",SUM(D2:D6)/SUM(C2:C6)*100)"
     cfg["A10"] = "Client formula"
     cfg["B10"] = "Fundamental*0.30 + Technical*0.25 + RS*0.25 + Ownership*0.15 + Sector*0.05"
 
@@ -3620,7 +3647,7 @@ def get_technical_summary(
     exchange = exchange.upper()
 
     daily_rows = _market_rows_with_live_fallback(
-        db, symbol=symbol, exchange=exchange, min_rows=20, years=5
+        db, symbol=symbol, exchange=exchange, min_rows=5200 if timeframe == "monthly" else 1500, years=20 if timeframe == "monthly" else 6
     )
     if len(daily_rows) < 20:
         raise HTTPException(status_code=404, detail="Not enough historical data for technical summary")
@@ -3637,7 +3664,7 @@ def get_technical_summary(
                 "high": float(row.high),
                 "low": float(row.low),
                 "close": float(row.close),
-                "volume": float(row.volume or 0),
+                "volume": row.volume,
             }
             for row in daily_rows
         ])
@@ -3650,7 +3677,7 @@ def get_technical_summary(
             "high": "max",
             "low": "min",
             "close": "last",
-            "volume": "sum",
+            "volume": lambda values: values.sum(min_count=len(values)),
             "actual_date": "last",
         }).dropna(subset=["open", "high", "low", "close"])
 
@@ -3661,7 +3688,7 @@ def get_technical_summary(
                 high=float(item.high),
                 low=float(item.low),
                 close=float(item.close),
-                volume=float(item.volume or 0),
+                volume=float(item.volume) if pd.notna(item.volume) else None,
             )
             for item in frame.itertuples()
         ]
@@ -3673,8 +3700,6 @@ def get_technical_summary(
     highs = [float(row.high) for row in rows]
     lows = [float(row.low) for row in rows]
     opens = [float(row.open) for row in rows]
-    volumes = [float(row.volume or 0) for row in rows]
-
     ema_periods = [10, 20, 34, 50, 100, 150, 200]
     emas = {str(period): _ema(closes, period) for period in ema_periods}
     available_emas = [emas[str(p)] for p in ema_periods if emas[str(p)] is not None]
@@ -3684,12 +3709,12 @@ def get_technical_summary(
         bearish = all(available_emas[i] < available_emas[i + 1] for i in range(len(available_emas) - 1))
         ema_alignment = "Bullish" if bullish else "Bearish" if bearish else "Mixed"
 
-    avg_volume_10 = sum(volumes[-10:]) / 10 if len(volumes) >= 10 else None
-    avg_volume_20 = sum(volumes[-20:]) / 20
-    avg_volume_40 = sum(volumes[-40:]) / 40 if len(volumes) >= 40 else None
-    avg_volume_50 = sum(volumes[-50:]) / 50 if len(volumes) >= 50 else None
-    volume_ratio = (volumes[-1] / avg_volume_20) if avg_volume_20 else None
-    volume_ratio_50 = (volumes[-1] / avg_volume_50) if avg_volume_50 else None
+    def verified_volume_average(period):
+        window = rows[-period:]
+        return sum(float(r.volume) for r in window) / period if len(window) == period and all(r.volume is not None for r in window) else None
+    avg_volume_10, avg_volume_20, avg_volume_40, avg_volume_50 = [verified_volume_average(n) for n in (10, 20, 40, 50)]
+    volume_ratio = rows[-1].volume / avg_volume_20 if rows[-1].volume is not None and avg_volume_20 else None
+    volume_ratio_50 = rows[-1].volume / avg_volume_50 if rows[-1].volume is not None and avg_volume_50 else None
 
     # ADR is a DAILY metric even when the chart is weekly/monthly.
     # Client/TradingView reference displays ADR(20) as an absolute price range:
@@ -3819,7 +3844,7 @@ def get_technical_summary(
         sd = variance ** 0.5
         upper = mean20 + 2 * sd
         lower = mean20 - 2 * sd
-        bb_pct = ((upper - lower) / lower * 100) if lower else None
+        bb_pct = ((upper - lower) / mean20 * 100) if mean20 else None
         price_range_pct = ((max(highs20) - min(lows20)) / min(lows20) * 100) if min(lows20) else None
         atr_pct_period = (running_metric_atr / c * 100) if running_metric_atr is not None and c else None
 
@@ -3832,13 +3857,16 @@ def get_technical_summary(
             # its window is 20 periods of the selected timeframe.
             "range_20d_percent": round(price_range_pct, 2) if price_range_pct is not None else None,
         })
-    periods_per_52w = 252 if timeframe == "daily" else 52 if timeframe == "weekly" else 12
-    lookback_52w = min(periods_per_52w, len(rows))
-    high_52w = max(highs[-lookback_52w:])
-    distance_52w_high = ((high_52w - closes[-1]) / high_52w * 100) if high_52w else None
-    high_52w_slice = highs[-lookback_52w:]
-    high_52w_index = max(range(len(high_52w_slice)), key=lambda i: high_52w_slice[i]) if high_52w_slice else None
-    periods_since_52w_high = (len(high_52w_slice) - 1 - high_52w_index) if high_52w_index is not None else None
+    # True trailing calendar-year daily history, independent of chart bars.
+    latest_daily = daily_rows[-1]
+    trailing_daily = [r for r in daily_rows if r.date >= latest_daily.date - timedelta(days=365)]
+    high_row = max(trailing_daily, key=lambda r: float(r.high))
+    high_52w = float(high_row.high)
+    low_52w = min(float(r.low) for r in trailing_daily)
+    current_daily_price = float(latest_daily.close)
+    distance_52w_high = (high_52w - current_daily_price) / high_52w * 100 if high_52w else None
+    distance_52w_low = (current_daily_price - low_52w) / low_52w * 100 if low_52w else None
+    periods_since_52w_high = sum(r.date > high_row.date for r in trailing_daily)
 
     # VCP/consolidation detection. Three successive 20-period windows are used
     # as transparent contractions. When both price depth and ATR% contract in
@@ -3861,7 +3889,7 @@ def get_technical_summary(
             seg_mean = (sum(seg_closes) / len(seg_closes)) if seg_closes else None
             seg_std = (sum((x - seg_mean) ** 2 for x in seg_closes) / len(seg_closes)) ** 0.5 if seg_closes and seg_mean else None
             seg_std_pct = (seg_std / seg_mean * 100) if seg_std is not None and seg_mean else None
-            seg_avg_volume = (sum(float(r.volume or 0) for r in segment) / len(segment)) if segment else None
+            seg_avg_volume = (sum(float(r.volume) for r in segment) / len(segment)) if segment and all(r.volume is not None for r in segment) else None
             contractions.append({
                 "depth_percent": depth,
                 "atr_percent": seg_atr_pct,
@@ -4036,6 +4064,8 @@ def get_technical_summary(
             "di_spread_gt_10": (di_spread14 > 10) if di_spread14 is not None else None,
         },
         "momentum": {
+            "roc_20_period_percent": roc_1m,
+            "roc_timeframe": timeframe,
             "roc_1m_percent": roc_1m,
             "roc_3m_percent": roc_3m,
             "roc_6m_percent": roc_6m,
@@ -4077,7 +4107,7 @@ def get_technical_summary(
         "ema": {key: (round(value, 2) if value is not None else None) for key, value in emas.items()},
         "ema_alignment": ema_alignment,
         "average_volume_10": round(avg_volume_10, 2) if avg_volume_10 is not None else None,
-        "average_volume_20": round(avg_volume_20, 2),
+        "average_volume_20": round(avg_volume_20, 2) if avg_volume_20 is not None else None,
         "average_volume_40": round(avg_volume_40, 2) if avg_volume_40 is not None else None,
         "average_volume_50": round(avg_volume_50, 2) if avg_volume_50 is not None else None,
         "volume_ratio": round(volume_ratio, 2) if volume_ratio is not None else None,
@@ -4098,6 +4128,12 @@ def get_technical_summary(
         "technical_metric_timeframe": timeframe,
         "technical_metric_window_periods": 20,
         "distance_from_52w_high_percent": round(distance_52w_high, 2) if distance_52w_high is not None else None,
+        "distance_from_52w_low_percent": round(distance_52w_low, 2) if distance_52w_low is not None else None,
+        "high_52w": high_52w, "low_52w": low_52w,
+        "daily_price": current_daily_price, "daily_price_date": str(latest_daily.date),
+        "daily_52w_rows": len(trailing_daily),
+        "indicator_bars_available": len(rows),
+        "indicator_semantics": {"period_metrics": timeframe + " bars", "52w": "Trailing 365 calendar days of daily OHLCV", "adr_20": "20 daily bars", "bollinger_width": "(Upper Band - Lower Band) / Middle Band * 100"},
         "pivot": round(pivot, 2) if pivot is not None else None,
         "breakout_status": breakout_status,
         "breakout_strength": breakout_strength,
@@ -4192,7 +4228,7 @@ def get_chart_data(
     db: Session = Depends(get_db)
 ):
     rows = _market_rows_with_live_fallback(
-        db, symbol=symbol, exchange=exchange, min_rows=1, years=5
+        db, symbol=symbol, exchange=exchange, min_rows=5200 if timeframe == "monthly" else 1500, years=20 if timeframe == "monthly" else 6
     )
 
     if not rows:
@@ -4228,7 +4264,7 @@ def get_chart_data(
             "high": "max",
             "low": "min",
             "close": "last",
-            "volume": "sum",
+            "volume": lambda values: values.sum(min_count=len(values)),
             "actual_date": "last"
         }).dropna(subset=["open", "high", "low", "close"])
 
@@ -4241,7 +4277,11 @@ def get_chart_data(
         "exchange": exchange.upper(),
         "timeframe": timeframe,
         "count": len(result[-limit:]),
-        "data": result[-limit:]
+        "data": result[-limit:],
+        "calculation_data": result,
+        "calculation_count": len(result),
+        "history_as_of": str(rows[-1].date),
+        "indicator_history_note": "Indicators use the full calculation history before the display window is sliced."
     })
 
 
@@ -4317,7 +4357,12 @@ def get_backtest(
         provider_error = str(exc)
         rows = []
 
-    direct_rows = _backtest_direct_yahoo_history(symbol, exchange, years) if len(rows) < 60 else []
+    direct_rows = []
+    if len(rows) < 60:
+        try:
+            direct_rows = _backtest_direct_yahoo_history(symbol, exchange, years)
+        except Exception as exc:
+            provider_error = str(exc)
     # Prefer whichever verified provider result contains materially more history.
     if len(direct_rows) > len(rows):
         rows = direct_rows
@@ -4347,7 +4392,6 @@ def get_backtest(
     # Keep a small indicator warm-up internally, but report/backtest only within
     # the selected horizon. For long-listed stocks like AAPL, 20Y therefore
     # means an actual ~20-year test rather than a 5-year browser-chart fallback.
-    frame = frame[frame["Date"] >= requested_start].reset_index(drop=True)
     for src, dst in [("open", "Open"), ("high", "High"), ("low", "Low"), ("close", "Close"), ("volume", "Volume")]:
         frame[dst] = pd.to_numeric(frame[src], errors="coerce")
     frame = frame.dropna(subset=["Close"])
@@ -4385,6 +4429,13 @@ def get_backtest(
     vote_count = sum(positions.values())
     positions["Combined"] = (vote_count >= 3).astype(float)
 
+    # Calculate signals with real warm-up data, then slice the test horizon.
+    horizon = frame["Date"] >= requested_start
+    positions = {key: value[horizon].reset_index(drop=True) for key, value in positions.items()}
+    frame = frame[horizon].reset_index(drop=True)
+    if len(frame) < 60:
+        raise HTTPException(status_code=404, detail="Not enough valid history within the requested horizon")
+    close = frame["Close"]
     daily_ret = close.pct_change().fillna(0.0)
     buy_hold_curve = (1 + daily_ret).cumprod() - 1
     first_date = frame["Date"].iloc[0]
@@ -4471,14 +4522,14 @@ def refresh_fundamentals(
         # Repair exact NSE company identity before refreshing any related data.
         # This prevents stale name/ISIN metadata from surviving when the user
         # switches symbols and the provider response omits identity fields.
-        if exchange == "NSE":
+        if exchange in {"NSE", "BSE"}:
             try:
                 repair_company_identity(db, symbol.upper(), exchange)
             except Exception:
                 pass
 
         provider = YahooProvider()
-        data = provider.get_fundamentals(symbol.upper(), exchange)
+        data = dict(provider.get_fundamentals(symbol.upper(), exchange))
 
         # Use statement-derived ratios for ROE/ROA when available. This keeps
         # the snapshot consistent with the annual table and uses average balance
@@ -4501,6 +4552,9 @@ def refresh_fundamentals(
             data=data
         )
 
+        company = db.query(Company).filter_by(symbol=symbol.upper(), exchange=exchange).first()
+        if not data.get("isin") and company and company.isin:
+            data["isin"] = company.isin
         return {
             **result,
             "fundamentals": data
@@ -4523,7 +4577,7 @@ def get_fundamentals(
 ):
     exchange = exchange.upper()
     symbol = symbol.upper()
-    if exchange == "NSE":
+    if exchange in {"NSE", "BSE"}:
         try:
             repair_company_identity(db, symbol, exchange)
         except Exception:
@@ -4635,7 +4689,7 @@ def get_indicators(
     db: Session = Depends(get_db)
 ):
     rows = _market_rows_with_live_fallback(
-        db, symbol=symbol, exchange=exchange, min_rows=20, years=5
+        db, symbol=symbol, exchange=exchange, min_rows=5200 if timeframe == "monthly" else 1500, years=20 if timeframe == "monthly" else 6
     )
 
     if not rows:
@@ -5337,24 +5391,35 @@ def get_top_composite_dashboard(
             if total else None
         )
 
-    periods = {"1w": 5, "1m": 21, "3m": 63, "6m": 126, "1y": 252}
-    period_weights = {"1w": 30.0, "1m": 25.0, "3m": 20.0, "6m": 15.0, "1y": 10.0}
-    raw_returns = {}
-    peers_by_group = {
-        "US": {key: [] for key in periods},
-        "INDIA": {key: [] for key in periods},
-    }
-    for row in base_rows:
-        key = (row.get("exchange"), row.get("symbol"))
-        closes = grouped.get(key, [])
-        values = {}
-        for label, days in periods.items():
-            if len(closes) > days and closes[-1 - days] not in (None, 0):
-                values[label] = ((closes[-1] / closes[-1 - days]) - 1.0) * 100.0
-        raw_returns[key] = values
-        group = "US" if row.get("exchange") == "US" else "INDIA"
-        for label, value in values.items():
-            peers_by_group[group][label].append(value)
+    # One RS formula/cohort for rankings and selected-stock detail. A bounded
+    # candidate peer percentile is never a substitute for the 5,000 denominator.
+    rs_scores, rs_progress = {}, {}
+    from app.services.rs_universe_backfill import evaluation_date
+    for ex in {r["exchange"] for r in base_rows}:
+        group = _rs_market_group(ex)
+        if group in rs_progress:
+            continue
+        points, *_ = _benchmark_close_points(ex, db=db)
+        as_of = evaluation_date(db, group)
+        points = [p for p in points if _point_date(p) <= as_of]
+        metrics, _ = _rs_universe_metrics(db, ex, points)
+        periods = {"1w": 30, "1m": 25, "3m": 20, "6m": 15, "1y": 10}
+        distributions = {p: [v[p]["relative_return_percent"] for v in metrics.values()] for p in periods}
+        targets = dict(metrics)
+        candidate_keys = {(r["exchange"], r["symbol"]) for r in base_rows if _rs_market_group(r["exchange"]) == group}
+        for cached in db.query(RSHistory).filter(RSHistory.exchange.in_(_rs_market_exchanges(ex)), RSHistory.last_date >= as_of).all():
+            identity = f"{cached.exchange}:{cached.symbol}"
+            if (cached.exchange, cached.symbol) not in candidate_keys or identity in targets:
+                continue
+            _, values = _weighted_relative_return_from_points(decode_points(cached.points_payload), points, {p: 1 for p in periods})
+            if all(p in values for p in periods):
+                targets[identity] = values
+        for identity, values in targets.items():
+            if not metrics:
+                continue
+            rs_scores[identity] = round(sum(_percentile_rank(distributions[p], values[p]["relative_return_percent"], 5000) * w for p, w in periods.items()) / 100, 2)
+        rs_progress[group] = {"scored_stocks_available": len(metrics), "target_size": 5000,
+                              "evaluation_date": as_of.isoformat(), "complete": len(metrics) >= 5000}
 
     # First compute the inexpensive market-based components for the full bounded
     # candidate set.  We then enrich only the strongest live candidates with
@@ -5367,17 +5432,7 @@ def get_top_composite_dashboard(
         closes = grouped.get((ex, symbol), [])
         technical = technical_score(closes)
         ownership = ownership_score(row)
-        group = "US" if ex == "US" else "INDIA"
-        rs_points = []
-        rs_weight = 0.0
-        for label, weight in period_weights.items():
-            value = raw_returns.get((ex, symbol), {}).get(label)
-            peers = peers_by_group[group][label]
-            percentile = _percentile_rank(peers, value) if value is not None and peers else None
-            if percentile is not None:
-                rs_points.append(percentile * weight)
-                rs_weight += weight
-        rs = round(sum(rs_points) / rs_weight, 2) if rs_weight else None
+        rs = rs_scores.get(f"{ex}:{symbol}")
         simple = {"technical": technical, "ownership": ownership, "relative_strength": rs}
         simple_weight = sum(weights[k] for k, v in simple.items() if v is not None)
         pre_score = (
@@ -5526,7 +5581,7 @@ def get_top_composite_dashboard(
             and float(payload.get("fundamental_rule_coverage") or 0) >= 99.9
             and int(sector_info.get("peer_count") or 0) >= 5
         )
-        final_allowed = all_required_available and exact_history_available and not _free_tier_mode()
+        final_allowed = all_required_available and exact_history_available and bool(rs_progress.get(group_key, {}).get("complete"))
         final_composite = provisional if final_allowed else None
         latest_close = _finite_number(closes[-1]) if closes else None
         previous_close = _finite_number(closes[-2]) if len(closes) >= 2 else None
@@ -5588,14 +5643,27 @@ def get_top_composite_dashboard(
     for index, row in enumerate(rows, start=1):
         row["rank"] = index
 
+    snapshot_at = datetime.utcnow().isoformat() + "Z"
+    for row in rows:
+        row["snapshot_id"] = uuid.uuid4().hex
+        row["snapshot_at"] = snapshot_at
+        row["score_version"] = "client-rs5000-v2"
+        row["score_source"] = "Ranking snapshot; daily technical rules and persisted statement inputs"
+        row["rs_universe"] = rs_progress.get(_rs_market_group(row["exchange"]), {})
+        db.add(ScoreSnapshot(id=row["snapshot_id"], symbol=row["symbol"], exchange=row["exchange"], payload_json=json.dumps(_json_safe(row))))
+    db.query(ScoreSnapshot).filter(ScoreSnapshot.created_at < datetime.utcnow() - timedelta(days=1)).delete(synchronize_session=False)
+    db.commit()
+
     return _json_safe({
+        "snapshot_at": snapshot_at, "score_version": "client-rs5000-v2",
+        "rs_progress": rs_progress,
         "market": market.upper(),
         "rows": rows,
         "candidate_count": len(base_rows),
         "formula": formula_text,
         "score_weights": {key: round(value, 2) for key, value in weights.items()},
         "entered_weight_total": round(entered_weight_total, 2),
-        "rs_note": "RS percentiles on this dashboard use the bounded live candidate peer set and remain provisional until the full client 5,000-stock market universe is populated.",
+        "rs_note": "RS uses the same persisted market cohort and fixed 5,000-stock percentile formula as selected-stock detail. Missing cohort observations stay N/A; incomplete cohorts stay provisional.",
         "data_rule": "The free-tier dashboard uses a compact persisted real-provider enrichment cache for statement history, sector metadata and EPS/PAT/Sales handwritten-rule scores, while price history remains live and is never stored as a huge universe cache. Missing provider values remain N/A. Fundamental excludes ambiguous NPM/CFO point allocations, and sector/RS peer ranks remain Provisional until the full client universe is available.",
         "enrichment_cached_count": len(enrichment) if _free_tier_mode() else len(base_rows),
         "enrichment_target_count": min(200, len(enrichment_rows)),

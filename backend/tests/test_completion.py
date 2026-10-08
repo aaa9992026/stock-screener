@@ -44,6 +44,76 @@ class CompletionTests(unittest.TestCase):
         self.db.close()
         self.engine.dispose()
 
+    def test_bse_isin_requires_matching_issuer(self):
+        from app.services.company_sync import repair_company_identity
+        self.db.add(Company(symbol="RELIANCE",exchange="BSE",name="Reliance Industries Limited",is_active=1))
+        self.db.commit()
+        self.assertEqual(repair_company_identity(self.db,"RELIANCE","BSE").isin,"INE002A01018")
+        self.db.query(Company).filter_by(symbol="RELIANCE",exchange="BSE").update({"isin":None,"name":"Different Issuer"})
+        self.db.commit()
+        self.assertIsNone(repair_company_identity(self.db,"RELIANCE","BSE"))
+        self.assertIsNone(self.db.query(Company).filter_by(symbol="RELIANCE",exchange="BSE").one().isin)
+
+    def test_missing_volume_cannot_pass_volume_rules(self):
+        rows = [SimpleNamespace(symbol="AAPL",exchange="US",**r) for r in observations(years=3)]
+        rows[-1].volume = None
+        with patch.object(market,"_market_rows_with_live_fallback",return_value=rows), patch.object(market,"_weighted_rs_against_benchmark",return_value=(None,None,{},"Benchmark",[])), patch.object(market,"_yf_period_returns",return_value={}):
+            for timeframe in ("daily", "weekly", "monthly"):
+                value=market.get_technical_summary("AAPL","US",timeframe,db=self.db)
+                self.assertIsNone(value["average_volume_10"])
+                self.assertIsNone(value["volume_ratio"])
+                chart=market.get_chart_data("AAPL","US",timeframe,12,self.db)
+                self.assertIsNone(chart["data"][-1]["volume"])
+
+    def test_short_provider_history_keeps_fresh_merge(self):
+        rows = observations(years=3)
+        self.db.add_all([OHLCV(symbol="AAPL", exchange="US", **r) for r in rows[:-1]])
+        self.db.commit()
+        live = [SimpleNamespace(symbol="AAPL", exchange="US", **r) for r in rows[-10:]]
+        with patch.object(market, "_live_provider_rows", return_value=live):
+            merged = market._market_rows_with_live_fallback(self.db, "AAPL", "US", min_rows=5200, years=20)
+        self.assertEqual(merged[-1].date, rows[-1]["date"])
+        self.assertEqual(len(merged), len(rows))
+
+    def test_daily_52w_invariant_and_monthly_full_history(self):
+        rows = [SimpleNamespace(symbol="AAPL", exchange="US", **r) for r in observations(years=20)]
+        # An extreme old low outside the calendar-year window must not leak in.
+        rows[0].low = 0.01
+        window = [r for r in rows if r.date >= rows[-1].date - timedelta(days=365)]
+        expected_low = min(r.low for r in window)
+        with patch.object(market, "_market_rows_with_live_fallback", return_value=rows), patch.object(market, "_weighted_rs_against_benchmark", return_value=(None,None,{},"Benchmark",[])), patch.object(market, "_yf_period_returns", return_value={}):
+            values = [market.get_technical_summary("AAPL","US",tf,db=self.db) for tf in ["daily","weekly","monthly"]]
+            for value in values:
+                self.assertEqual(value["low_52w"], expected_low)
+                self.assertAlmostEqual(value["distance_from_52w_low_percent"], round((rows[-1].close/expected_low-1)*100,2))
+                self.assertEqual(value["high_52w"], values[0]["high_52w"])
+                self.assertAlmostEqual(value["bollinger_width_percent"], value["technical_metric_series"][-1]["bollinger_width_percent"])
+            self.assertIsNotNone(values[-1]["ema"]["200"])
+            chart = market.get_chart_data("AAPL","US","monthly",12,self.db)
+            self.assertEqual(chart["count"],12)
+            self.assertGreater(chart["calculation_count"],200)
+            self.assertEqual(chart["calculation_data"][-1]["date"],chart["data"][-1]["date"])
+
+    def test_ranking_rs_and_snapshot_match_selected_stock(self):
+        rows = observations()
+        for symbol,exchange in [("AAPL","US"),("RELIANCE","NSE")]:
+            persist_history(self.db,symbol,exchange,rows)
+        benchmark = [(r["date"],r["open"],r["close"]) for r in rows]
+        with patch.object(market,"_benchmark_close_points",return_value=(benchmark,"INDEX","Benchmark","test")), patch.object(market,"_live_close_history_for_candidates",return_value={("US","AAPL"):[r["close"] for r in rows],("NSE","RELIANCE"):[r["close"] for r in rows]}), patch.object(market,"_load_persisted_ranking_enrichment",return_value={}), patch.object(market,"_apply_cached_ranking_enrichment",return_value={}), patch.object(market,"_apply_ranking_enrichment",return_value={}), patch.object(market,"_warm_ranking_enrichment_background"), patch.object(market,"_live_benchmark_closes",return_value=[r["close"] for r in rows]):
+            ranking = market.get_top_composite_dashboard("ALL",200,200,25,30,15,5,25,self.db)
+            for row in ranking["rows"]:
+                stock_rows = [SimpleNamespace(symbol=row["symbol"],exchange=row["exchange"],**r) for r in rows]
+                score,*_ = market._weighted_rs_against_benchmark(stock_rows,row["exchange"],db=self.db)
+                self.assertEqual(row["rs_score"],round(score,2))
+                self.assertEqual(row["score_version"],"client-rs5000-v2")
+                expected = sum((row.get(field) or 0)*weight/100 for field,weight in [("fundamental_score",30),("technical_score",25),("rs_score",25),("ownership_score",15),("sector_score",5)])
+                self.assertEqual(row["composite_score"],round(expected,2))
+                with patch.object(YahooProvider,"get_ohlcv",return_value=rows):
+                    exported=market.export_excel_snapshot(row["symbol"],row["exchange"],5000,self.db,snapshot_id=row["snapshot_id"])
+                book=load_workbook(BytesIO(exported.body))
+                self.assertEqual(book["Ranking_Config"]["B4"].value,row["rs_score"])
+                self.assertIn(row["snapshot_id"],[r[1] for r in book["Summary"].values])
+
     def test_legacy_history_is_migrated_before_compaction(self):
         rows = observations()
         self.db.add_all([OHLCV(symbol="AAPL", exchange="US", **r) for r in rows])

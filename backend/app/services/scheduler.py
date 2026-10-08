@@ -122,7 +122,7 @@ def _env_flag(name: str, default: bool = False) -> bool:
 
 def refresh_rs_universe_history():
     """Run a small resumable batch for each client-defined RS market."""
-    batch_size = max(1, min(100, int(os.getenv("RS_BACKFILL_BATCH_SIZE", "10") or 10)))
+    batch_size = max(1, min(100, int(os.getenv("RS_BACKFILL_BATCH_SIZE", "25") or 25)))
     try:
         result = backfill_all_markets_once(batch_size=batch_size)
         logger.info("RS universe backfill batch completed: %s", result)
@@ -200,7 +200,7 @@ def start_scheduler():
         )
 
     if _env_flag("RS_BACKFILL_ENABLED", True):
-        interval_minutes = max(5, int(os.getenv("RS_BACKFILL_INTERVAL_MINUTES", "10") or 10))
+        interval_minutes = max(5, int(os.getenv("RS_BACKFILL_INTERVAL_MINUTES", "5") or 5))
         scheduler.add_job(
             refresh_rs_universe_history,
             "interval",

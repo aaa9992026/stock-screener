@@ -47,10 +47,8 @@ MAX_STALE_DAYS = 14
 _market_locks = {"US": threading.Lock(), "INDIA": threading.Lock()}
 _last_results: dict[str, dict] = {}
 
-# Provider failures must not cause the same unsupported symbol to be retried
-# every scheduler cycle. This is deliberately an in-process cooldown rather
-# than a permanent delisting decision: the authoritative company sync remains
-# responsible for listing/delisting state.
+# Cooldowns are persisted in RSHistory and mirrored here for fast access.
+# They never mark a company delisted; the listing master controls eligibility.
 _symbol_retry_after: dict[tuple[str, str], datetime] = {}
 EMPTY_RETRY_HOURS = 6
 ERROR_RETRY_HOURS = 2
@@ -418,7 +416,7 @@ def backfill_market_batch(market: str, batch_size: int | None = None) -> dict:
                 "started_at": started_at.isoformat() + "Z",
                 "finished_at": datetime.now(timezone.utc).replace(tzinfo=None).isoformat() + "Z",
             }
-            _last_results[market] = result
+            _save_result(db, market, result)
             return result
 
         mapping = {

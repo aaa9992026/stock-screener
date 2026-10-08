@@ -45,9 +45,9 @@ def search_companies(
     # identity metadata from NSE's authoritative equity symbol master before
     # returning suggestions. This prevents a valid ticker such as INFY from
     # ever being paired with another company's name/ISIN in the UI.
-    if exchange and exchange.upper() == "NSE" and q and q.strip() and " " not in q.strip():
+    if exchange and exchange.upper() in {"NSE", "BSE"} and q and q.strip() and " " not in q.strip():
         try:
-            repair_company_identity(db, q.strip().upper(), "NSE")
+            repair_company_identity(db, q.strip().upper(), exchange.upper())
         except Exception:
             pass
 

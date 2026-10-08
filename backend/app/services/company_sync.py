@@ -192,6 +192,28 @@ def repair_company_identity(db: Session, symbol: str, exchange: str):
     """
     symbol = str(symbol or "").strip().upper()
     exchange = str(exchange or "").strip().upper()
+    if exchange == "BSE":
+        # The official NSE master can identify a dual-listed issuer only when
+        # both the ticker AND full issuer name match. Never guess an ISIN.
+        company = db.query(Company).filter_by(symbol=symbol, exchange="BSE").first()
+        peer = db.query(Company).filter_by(symbol=symbol, exchange="NSE").first()
+        if company is None:
+            return None
+        def issuer_name(value):
+            import re
+            return re.sub(r"[^A-Z0-9]", "", re.sub(r"\b(LIMITED|LTD)\.?\b", "", str(value or "").upper()))
+        official = {"name": peer.name, "isin": peer.isin} if peer and peer.isin else None
+        if official is None:
+            try:
+                from app.services.nse_company_provider import NSECompanyProvider
+                official = NSECompanyProvider().get_company(symbol)
+            except Exception:
+                return None
+        if official and official.get("isin") and issuer_name(company.name) == issuer_name(official.get("name")):
+            company.isin = official["isin"]
+            db.commit()
+            return company
+        return None
     if not symbol or exchange != "NSE":
         return None
 

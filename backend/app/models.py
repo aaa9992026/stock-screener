@@ -163,3 +163,13 @@ class RSBackfillState(Base):
     evaluation_date = Column(Date)
     payload_json = Column(Text, nullable=False)
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+
+
+class ScoreSnapshot(Base):
+    """Immutable, compact scoring source for a ranking row and its detail/export."""
+    __tablename__ = "score_snapshots"
+    id = Column(String, primary_key=True)
+    symbol = Column(String, nullable=False, index=True)
+    exchange = Column(String, nullable=False, index=True)
+    payload_json = Column(Text, nullable=False)
+    created_at = Column(DateTime, server_default=func.now(), index=True)
