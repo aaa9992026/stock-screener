@@ -1,0 +1,800 @@
+[
+  {
+    "view": "overview",
+    "width": 1366,
+    "clientWidth": 1351,
+    "scrollWidth": 1351,
+    "main": {
+      "left": 232,
+      "width": 1119
+    },
+    "tiny": [],
+    "overflow": [],
+    "company": 753,
+    "chart": 753,
+    "canvas": 637,
+    "overlaps": []
+  },
+  {
+    "view": "ranking",
+    "width": 1366,
+    "clientWidth": 1351,
+    "scrollWidth": 1351,
+    "main": {
+      "left": 232,
+      "width": 1119
+    },
+    "tiny": [],
+    "overflow": [],
+    "company": 753,
+    "chart": 753,
+    "canvas": 637,
+    "overlaps": []
+  },
+  {
+    "view": "filters",
+    "width": 1366,
+    "clientWidth": 1351,
+    "scrollWidth": 1351,
+    "main": {
+      "left": 232,
+      "width": 1119
+    },
+    "tiny": [],
+    "overflow": [],
+    "company": 0,
+    "chart": 0,
+    "canvas": 0,
+    "overlaps": []
+  },
+  {
+    "tab": "technical",
+    "scrollWidth": 1351,
+    "width": 1366,
+    "view": "filters"
+  },
+  {
+    "tab": "ownership",
+    "scrollWidth": 1351,
+    "width": 1366,
+    "view": "filters"
+  },
+  {
+    "tab": "universe",
+    "scrollWidth": 1351,
+    "width": 1366,
+    "view": "filters"
+  },
+  {
+    "view": "analytics",
+    "width": 1366,
+    "clientWidth": 1351,
+    "scrollWidth": 1351,
+    "main": {
+      "left": 232,
+      "width": 1119
+    },
+    "tiny": [],
+    "overflow": [],
+    "company": 0,
+    "chart": 0,
+    "canvas": 0,
+    "overlaps": []
+  },
+  {
+    "view": "excel",
+    "width": 1366,
+    "clientWidth": 1351,
+    "scrollWidth": 1351,
+    "main": {
+      "left": 232,
+      "width": 1119
+    },
+    "tiny": [],
+    "overflow": [],
+    "company": 0,
+    "chart": 0,
+    "canvas": 0,
+    "overlaps": []
+  },
+  {
+    "view": "settings",
+    "width": 1366,
+    "clientWidth": 1351,
+    "scrollWidth": 1351,
+    "main": {
+      "left": 232,
+      "width": 1119
+    },
+    "tiny": [],
+    "overflow": [],
+    "company": 0,
+    "chart": 0,
+    "canvas": 0,
+    "overlaps": []
+  },
+  {
+    "view": "overview",
+    "width": 1440,
+    "clientWidth": 1425,
+    "scrollWidth": 1425,
+    "main": {
+      "left": 232,
+      "width": 1193
+    },
+    "tiny": [],
+    "overflow": [],
+    "company": 701,
+    "chart": 701,
+    "canvas": 687,
+    "overlaps": []
+  },
+  {
+    "view": "ranking",
+    "width": 1440,
+    "clientWidth": 1425,
+    "scrollWidth": 1425,
+    "main": {
+      "left": 232,
+      "width": 1193
+    },
+    "tiny": [],
+    "overflow": [],
+    "company": 701,
+    "chart": 701,
+    "canvas": 687,
+    "overlaps": []
+  },
+  {
+    "view": "filters",
+    "width": 1440,
+    "clientWidth": 1425,
+    "scrollWidth": 1425,
+    "main": {
+      "left": 232,
+      "width": 1193
+    },
+    "tiny": [],
+    "overflow": [],
+    "company": 0,
+    "chart": 0,
+    "canvas": 0,
+    "overlaps": []
+  },
+  {
+    "tab": "technical",
+    "scrollWidth": 1425,
+    "width": 1440,
+    "view": "filters"
+  },
+  {
+    "tab": "ownership",
+    "scrollWidth": 1425,
+    "width": 1440,
+    "view": "filters"
+  },
+  {
+    "tab": "universe",
+    "scrollWidth": 1425,
+    "width": 1440,
+    "view": "filters"
+  },
+  {
+    "view": "analytics",
+    "width": 1440,
+    "clientWidth": 1425,
+    "scrollWidth": 1425,
+    "main": {
+      "left": 232,
+      "width": 1193
+    },
+    "tiny": [],
+    "overflow": [],
+    "company": 0,
+    "chart": 0,
+    "canvas": 0,
+    "overlaps": []
+  },
+  {
+    "view": "excel",
+    "width": 1440,
+    "clientWidth": 1425,
+    "scrollWidth": 1425,
+    "main": {
+      "left": 232,
+      "width": 1193
+    },
+    "tiny": [],
+    "overflow": [],
+    "company": 0,
+    "chart": 0,
+    "canvas": 0,
+    "overlaps": []
+  },
+  {
+    "view": "settings",
+    "width": 1440,
+    "clientWidth": 1425,
+    "scrollWidth": 1425,
+    "main": {
+      "left": 232,
+      "width": 1193
+    },
+    "tiny": [],
+    "overflow": [],
+    "company": 0,
+    "chart": 0,
+    "canvas": 0,
+    "overlaps": []
+  },
+  {
+    "view": "overview",
+    "width": 1600,
+    "clientWidth": 1585,
+    "scrollWidth": 1585,
+    "main": {
+      "left": 232,
+      "width": 1353
+    },
+    "tiny": [],
+    "overflow": [],
+    "company": 675,
+    "chart": 675,
+    "canvas": 793,
+    "overlaps": []
+  },
+  {
+    "view": "ranking",
+    "width": 1600,
+    "clientWidth": 1585,
+    "scrollWidth": 1585,
+    "main": {
+      "left": 232,
+      "width": 1353
+    },
+    "tiny": [],
+    "overflow": [],
+    "company": 675,
+    "chart": 675,
+    "canvas": 793,
+    "overlaps": []
+  },
+  {
+    "view": "filters",
+    "width": 1600,
+    "clientWidth": 1585,
+    "scrollWidth": 1585,
+    "main": {
+      "left": 232,
+      "width": 1353
+    },
+    "tiny": [],
+    "overflow": [],
+    "company": 0,
+    "chart": 0,
+    "canvas": 0,
+    "overlaps": []
+  },
+  {
+    "tab": "technical",
+    "scrollWidth": 1585,
+    "width": 1600,
+    "view": "filters"
+  },
+  {
+    "tab": "ownership",
+    "scrollWidth": 1585,
+    "width": 1600,
+    "view": "filters"
+  },
+  {
+    "tab": "universe",
+    "scrollWidth": 1585,
+    "width": 1600,
+    "view": "filters"
+  },
+  {
+    "view": "analytics",
+    "width": 1600,
+    "clientWidth": 1585,
+    "scrollWidth": 1585,
+    "main": {
+      "left": 232,
+      "width": 1353
+    },
+    "tiny": [],
+    "overflow": [],
+    "company": 0,
+    "chart": 0,
+    "canvas": 0,
+    "overlaps": []
+  },
+  {
+    "view": "excel",
+    "width": 1600,
+    "clientWidth": 1585,
+    "scrollWidth": 1585,
+    "main": {
+      "left": 232,
+      "width": 1353
+    },
+    "tiny": [],
+    "overflow": [],
+    "company": 0,
+    "chart": 0,
+    "canvas": 0,
+    "overlaps": []
+  },
+  {
+    "view": "settings",
+    "width": 1600,
+    "clientWidth": 1585,
+    "scrollWidth": 1585,
+    "main": {
+      "left": 232,
+      "width": 1353
+    },
+    "tiny": [],
+    "overflow": [],
+    "company": 0,
+    "chart": 0,
+    "canvas": 0,
+    "overlaps": []
+  },
+  {
+    "view": "overview",
+    "width": 1920,
+    "clientWidth": 1905,
+    "scrollWidth": 1905,
+    "main": {
+      "left": 232,
+      "width": 1673
+    },
+    "tiny": [],
+    "overflow": [],
+    "company": 675,
+    "chart": 675,
+    "canvas": 1007,
+    "overlaps": []
+  },
+  {
+    "view": "ranking",
+    "width": 1920,
+    "clientWidth": 1905,
+    "scrollWidth": 1905,
+    "main": {
+      "left": 232,
+      "width": 1673
+    },
+    "tiny": [],
+    "overflow": [],
+    "company": 675,
+    "chart": 675,
+    "canvas": 1007,
+    "overlaps": []
+  },
+  {
+    "view": "filters",
+    "width": 1920,
+    "clientWidth": 1905,
+    "scrollWidth": 1905,
+    "main": {
+      "left": 232,
+      "width": 1673
+    },
+    "tiny": [],
+    "overflow": [],
+    "company": 0,
+    "chart": 0,
+    "canvas": 0,
+    "overlaps": []
+  },
+  {
+    "tab": "technical",
+    "scrollWidth": 1905,
+    "width": 1920,
+    "view": "filters"
+  },
+  {
+    "tab": "ownership",
+    "scrollWidth": 1905,
+    "width": 1920,
+    "view": "filters"
+  },
+  {
+    "tab": "universe",
+    "scrollWidth": 1905,
+    "width": 1920,
+    "view": "filters"
+  },
+  {
+    "view": "analytics",
+    "width": 1920,
+    "clientWidth": 1905,
+    "scrollWidth": 1905,
+    "main": {
+      "left": 232,
+      "width": 1673
+    },
+    "tiny": [],
+    "overflow": [],
+    "company": 0,
+    "chart": 0,
+    "canvas": 0,
+    "overlaps": []
+  },
+  {
+    "view": "excel",
+    "width": 1920,
+    "clientWidth": 1905,
+    "scrollWidth": 1905,
+    "main": {
+      "left": 232,
+      "width": 1673
+    },
+    "tiny": [],
+    "overflow": [],
+    "company": 0,
+    "chart": 0,
+    "canvas": 0,
+    "overlaps": []
+  },
+  {
+    "view": "settings",
+    "width": 1920,
+    "clientWidth": 1905,
+    "scrollWidth": 1905,
+    "main": {
+      "left": 232,
+      "width": 1673
+    },
+    "tiny": [],
+    "overflow": [],
+    "company": 0,
+    "chart": 0,
+    "canvas": 0,
+    "overlaps": []
+  },
+  {
+    "view": "overview",
+    "width": 768,
+    "clientWidth": 753,
+    "scrollWidth": 753,
+    "main": {
+      "left": 0,
+      "width": 753
+    },
+    "tiny": [],
+    "overflow": [],
+    "company": 511.03125,
+    "chart": 719,
+    "canvas": 663,
+    "overlaps": []
+  },
+  {
+    "view": "ranking",
+    "width": 768,
+    "clientWidth": 753,
+    "scrollWidth": 753,
+    "main": {
+      "left": 0,
+      "width": 753
+    },
+    "tiny": [],
+    "overflow": [],
+    "company": 511.03125,
+    "chart": 719,
+    "canvas": 663,
+    "overlaps": []
+  },
+  {
+    "view": "filters",
+    "width": 768,
+    "clientWidth": 753,
+    "scrollWidth": 753,
+    "main": {
+      "left": 0,
+      "width": 753
+    },
+    "tiny": [],
+    "overflow": [],
+    "company": 0,
+    "chart": 0,
+    "canvas": 0,
+    "overlaps": []
+  },
+  {
+    "tab": "technical",
+    "scrollWidth": 753,
+    "width": 768,
+    "view": "filters"
+  },
+  {
+    "tab": "ownership",
+    "scrollWidth": 753,
+    "width": 768,
+    "view": "filters"
+  },
+  {
+    "tab": "universe",
+    "scrollWidth": 753,
+    "width": 768,
+    "view": "filters"
+  },
+  {
+    "view": "analytics",
+    "width": 768,
+    "clientWidth": 753,
+    "scrollWidth": 753,
+    "main": {
+      "left": 0,
+      "width": 753
+    },
+    "tiny": [],
+    "overflow": [],
+    "company": 0,
+    "chart": 0,
+    "canvas": 0,
+    "overlaps": []
+  },
+  {
+    "view": "excel",
+    "width": 768,
+    "clientWidth": 753,
+    "scrollWidth": 753,
+    "main": {
+      "left": 0,
+      "width": 753
+    },
+    "tiny": [],
+    "overflow": [],
+    "company": 0,
+    "chart": 0,
+    "canvas": 0,
+    "overlaps": []
+  },
+  {
+    "view": "settings",
+    "width": 768,
+    "clientWidth": 753,
+    "scrollWidth": 753,
+    "main": {
+      "left": 0,
+      "width": 753
+    },
+    "tiny": [],
+    "overflow": [],
+    "company": 0,
+    "chart": 0,
+    "canvas": 0,
+    "overlaps": []
+  },
+  {
+    "view": "overview",
+    "width": 390,
+    "clientWidth": 375,
+    "scrollWidth": 375,
+    "main": {
+      "left": 0,
+      "width": 375
+    },
+    "tiny": [],
+    "overflow": [],
+    "company": 834.421875,
+    "chart": 956.5,
+    "canvas": 309,
+    "overlaps": []
+  },
+  {
+    "view": "ranking",
+    "width": 390,
+    "clientWidth": 375,
+    "scrollWidth": 375,
+    "main": {
+      "left": 0,
+      "width": 375
+    },
+    "tiny": [],
+    "overflow": [],
+    "company": 834.421875,
+    "chart": 956.5,
+    "canvas": 309,
+    "overlaps": []
+  },
+  {
+    "view": "filters",
+    "width": 390,
+    "clientWidth": 375,
+    "scrollWidth": 375,
+    "main": {
+      "left": 0,
+      "width": 375
+    },
+    "tiny": [],
+    "overflow": [],
+    "company": 0,
+    "chart": 0,
+    "canvas": 0,
+    "overlaps": []
+  },
+  {
+    "tab": "technical",
+    "scrollWidth": 375,
+    "width": 390,
+    "view": "filters"
+  },
+  {
+    "tab": "ownership",
+    "scrollWidth": 375,
+    "width": 390,
+    "view": "filters"
+  },
+  {
+    "tab": "universe",
+    "scrollWidth": 375,
+    "width": 390,
+    "view": "filters"
+  },
+  {
+    "view": "analytics",
+    "width": 390,
+    "clientWidth": 375,
+    "scrollWidth": 375,
+    "main": {
+      "left": 0,
+      "width": 375
+    },
+    "tiny": [],
+    "overflow": [],
+    "company": 0,
+    "chart": 0,
+    "canvas": 0,
+    "overlaps": []
+  },
+  {
+    "view": "excel",
+    "width": 390,
+    "clientWidth": 375,
+    "scrollWidth": 375,
+    "main": {
+      "left": 0,
+      "width": 375
+    },
+    "tiny": [],
+    "overflow": [],
+    "company": 0,
+    "chart": 0,
+    "canvas": 0,
+    "overlaps": []
+  },
+  {
+    "view": "settings",
+    "width": 390,
+    "clientWidth": 375,
+    "scrollWidth": 375,
+    "main": {
+      "left": 0,
+      "width": 375
+    },
+    "tiny": [],
+    "overflow": [],
+    "company": 0,
+    "chart": 0,
+    "canvas": 0,
+    "overlaps": []
+  },
+  {
+    "view": "overview",
+    "width": 320,
+    "clientWidth": 305,
+    "scrollWidth": 305,
+    "main": {
+      "left": 0,
+      "width": 305
+    },
+    "tiny": [],
+    "overflow": [],
+    "company": 885.765625,
+    "chart": 1128,
+    "canvas": 239,
+    "overlaps": []
+  },
+  {
+    "view": "ranking",
+    "width": 320,
+    "clientWidth": 305,
+    "scrollWidth": 305,
+    "main": {
+      "left": 0,
+      "width": 305
+    },
+    "tiny": [],
+    "overflow": [],
+    "company": 885.765625,
+    "chart": 1128,
+    "canvas": 239,
+    "overlaps": []
+  },
+  {
+    "view": "filters",
+    "width": 320,
+    "clientWidth": 305,
+    "scrollWidth": 305,
+    "main": {
+      "left": 0,
+      "width": 305
+    },
+    "tiny": [],
+    "overflow": [],
+    "company": 0,
+    "chart": 0,
+    "canvas": 0,
+    "overlaps": []
+  },
+  {
+    "tab": "technical",
+    "scrollWidth": 305,
+    "width": 320,
+    "view": "filters"
+  },
+  {
+    "tab": "ownership",
+    "scrollWidth": 305,
+    "width": 320,
+    "view": "filters"
+  },
+  {
+    "tab": "universe",
+    "scrollWidth": 305,
+    "width": 320,
+    "view": "filters"
+  },
+  {
+    "view": "analytics",
+    "width": 320,
+    "clientWidth": 305,
+    "scrollWidth": 305,
+    "main": {
+      "left": 0,
+      "width": 305
+    },
+    "tiny": [],
+    "overflow": [],
+    "company": 0,
+    "chart": 0,
+    "canvas": 0,
+    "overlaps": []
+  },
+  {
+    "view": "excel",
+    "width": 320,
+    "clientWidth": 305,
+    "scrollWidth": 305,
+    "main": {
+      "left": 0,
+      "width": 305
+    },
+    "tiny": [],
+    "overflow": [],
+    "company": 0,
+    "chart": 0,
+    "canvas": 0,
+    "overlaps": []
+  },
+  {
+    "view": "settings",
+    "width": 320,
+    "clientWidth": 305,
+    "scrollWidth": 305,
+    "main": {
+      "left": 0,
+      "width": 305
+    },
+    "tiny": [],
+    "overflow": [],
+    "company": 0,
+    "chart": 0,
+    "canvas": 0,
+    "overlaps": []
+  }
+]

@@ -1,0 +1,91 @@
+[
+  {
+    "name": "Indicator visibility toggle",
+    "pass": true
+  },
+  {
+    "name": "Editable indicator period",
+    "pass": true
+  },
+  {
+    "name": "Editable composite weight",
+    "pass": true
+  },
+  {
+    "name": "Weights editor remains applied",
+    "pass": true
+  },
+  {
+    "name": "Editable filter target affects rule score",
+    "pass": true
+  },
+  {
+    "name": "Use control disables rule",
+    "pass": true
+  },
+  {
+    "name": "Universe column selector",
+    "pass": true
+  },
+  {
+    "name": "Universe tab Fundamentals",
+    "pass": true
+  },
+  {
+    "name": "Universe tab Technicals",
+    "pass": true
+  },
+  {
+    "name": "Universe tab Ownership",
+    "pass": true
+  },
+  {
+    "name": "Universe tab Sector Analysis",
+    "pass": true
+  },
+  {
+    "name": "Universe tab Relative Comparison",
+    "pass": true
+  },
+  {
+    "name": "Universe tab Popular",
+    "pass": true
+  },
+  {
+    "name": "Backtest history selection",
+    "pass": true
+  },
+  {
+    "name": "All three Excel workflows generate download links",
+    "pass": true,
+    "files": [
+      "AAPL_US_screener.xlsx",
+      "AAPL_US_LIVE_CONNECTION.iqy",
+      "StockScreener_Master_Excel_Python.zip"
+    ]
+  },
+  {
+    "name": "Excel live query uses existing selected-stock endpoint",
+    "pass": true
+  },
+  {
+    "name": "Mobile navigation opens",
+    "pass": true
+  },
+  {
+    "name": "Escape closes mobile navigation",
+    "pass": true
+  },
+  {
+    "name": "Advanced ownership link opens filter family",
+    "pass": true
+  },
+  {
+    "name": "Universe ranking link opens visible factor section",
+    "pass": true
+  },
+  {
+    "name": "Universe stock opens ranking detail",
+    "pass": true
+  }
+]
