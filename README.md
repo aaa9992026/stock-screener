@@ -336,3 +336,7 @@ The Top 200 Ranking detail page was rebuilt to remove the severe vertical stretc
 ## 2026-10-07 UI V31 — shared Overview / Top 200 top area
 
 Overview and Top 200 Ranking now use the same top command bar and the same five score cards, including the same custom market selector, widths, spacing, typography, control heights and responsive behavior. Switching between the two workspaces no longer changes the top-area geometry. See `docs/UI_V31_SHARED_TOP_AREA_2026-10-07.md`.
+
+## 2026-10-08 UI V32 — Filters shared shell
+
+The Filters workspace now matches the Overview/Top-200 content width and command-bar geometry. Oversized unscoped toolbar SVGs are fixed, and filter content fills the same desktop rails without changing filter or ranking logic. See `docs/UI_V32_FILTERS_SHARED_SHELL_2026-10-08.md`.

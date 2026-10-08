@@ -1,8 +1,8 @@
-# One-pass deploy — UI V31 shared top area
+# One-pass deploy — UI V32 Filters shared shell
 
 ```bash
 git add .
-git commit -m "Unify Overview and Top 200 top area"
+git commit -m "Align Filters workspace with shared dashboard shell"
 git push origin main
 ```
 
