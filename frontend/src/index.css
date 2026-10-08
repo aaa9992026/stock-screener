@@ -1,25 +1,10 @@
 :root {
-  font-family: "Segoe UI Variable", "Segoe UI", Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, Arial, sans-serif;
-  color: #162033;
-  background: #f4f7fb;
+  font-family: "Segoe UI Variable", "Segoe UI", Inter, system-ui, -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+  color: #172033;
+  background: #f5f7fb;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 }
-
-html,
-body,
-#root {
-  margin: 0;
-  min-width: 320px;
-  min-height: 100vh;
-}
-
-body {
-  background: #f4f7fb;
-}
-
-button,
-input {
-  font-family: inherit;
-  color: inherit;
-}
+html, body, #root { margin: 0; min-width: 320px; min-height: 100vh; }
+body { background: #f5f7fb; }
+button, input, select, textarea { font-family: inherit; }

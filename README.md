@@ -1,5 +1,9 @@
 # Stock Screener
 
+## 2026-10-08 UI V36 — full interface rebuild
+
+The frontend styling has been rebuilt as one coherent design system instead of continuing the prior layered CSS patches. Overview, Top 200 Ranking, Filters, Backtesting, Export / Excel and Settings now share the same 1600px content rail, typography scale, spacing rhythm, controls, cards and restrained color system. Filters show one selected family at a time; large tables use consistent scroll containers and sticky headers; the selected-company/chart and ranking-detail layouts have been rebalanced for clearer viewing. Existing ranking, filter, provider, chart, Excel and backtesting logic is unchanged. See `docs/UI_V36_FULL_INTERFACE_REBUILD_2026-10-08.md`.
+
 ## 2026-10-06 UI V5 — reference-match clean product dashboard
 
 The actual React frontend has been rebuilt to follow the supplied clean dashboard reference: compact left navigation, single-row search/actions, five score cards, company card + stock chart, three compact filter panels, and a clean Top-200 table. Full ranking/filter/universe/backtesting/Excel functionality remains available in dedicated workspaces. See `docs/UI_V5_REFERENCE_MATCH_2026-10-06.md`.

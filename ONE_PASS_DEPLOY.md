@@ -1,8 +1,8 @@
-# One-pass deploy — UI V35 spacing / margin rhythm
+# One-pass deploy — UI V36 full interface rebuild
 
 ```bash
 git add .
-git commit -m "Normalize dashboard spacing and page margins"
+git commit -m "Rebuild full stock screener interface"
 git push origin main
 ```
 
