@@ -1,5 +1,7 @@
 import os
 import re
+import threading
+import time
 from datetime import datetime
 from functools import lru_cache
 
@@ -7,6 +9,9 @@ import requests
 import yfinance as yf
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
+
+_request_lock = threading.Lock()
+_last_request = 0.0
 
 
 class SECFundamentalsProvider:
@@ -170,6 +175,12 @@ class SECFundamentalsProvider:
         return "SEC EDGAR request failed temporarily."
 
     def _request_json(self, url: str, timeout: int = 30):
+        global _last_request
+        with _request_lock:
+            delay = max(0, .21 - (time.monotonic() - _last_request))
+            if delay:
+                time.sleep(delay)
+            _last_request = time.monotonic()
         response = self.session.get(url, headers=self._headers(), timeout=timeout)
         if not response.ok:
             raise RuntimeError(self._safe_http_error(response))

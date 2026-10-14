@@ -148,6 +148,10 @@ class YahooProvider(BaseMarketDataProvider):
         }
 
     def get_fundamental_history(self, symbol: str, exchange: str = "US"):
+        from app.services.financial_periods import align_financial_history
+        return align_financial_history(self._get_fundamental_history(symbol, exchange))
+
+    def _get_fundamental_history(self, symbol: str, exchange: str = "US"):
         provider_symbol = self.format_symbol(symbol, exchange)
         ticker = yf.Ticker(provider_symbol)
 

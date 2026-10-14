@@ -59,6 +59,11 @@ def ensure_schema_compatibility():
     """
     inspector = inspect(engine)
     tables = set(inspector.get_table_names())
+    if "rs_histories" in tables:
+        rs_columns = {col["name"] for col in inspector.get_columns("rs_histories")}
+        if "retry_count" not in rs_columns:
+            with engine.begin() as conn:
+                conn.execute(text("ALTER TABLE rs_histories ADD COLUMN retry_count INTEGER DEFAULT 0"))
     if "companies" not in tables:
         return
     columns = {col["name"] for col in inspector.get_columns("companies")}

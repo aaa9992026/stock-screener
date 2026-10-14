@@ -1,0 +1,843 @@
+{
+  "US": {
+    "batch": {
+      "market": "US",
+      "status": "completed",
+      "requested_batch_size": 25,
+      "attempted": 25,
+      "succeeded": 25,
+      "failed": 0,
+      "empty": 0,
+      "provider": "Yahoo Finance/yfinance bulk OHLCV",
+      "real_data_only": true,
+      "before_ready": 41,
+      "after_ready": 65,
+      "remaining_active": 5688,
+      "started_at": "2026-10-14T11:18:34.782510Z",
+      "finished_at": "2026-10-14T11:18:44.491654Z",
+      "details": [
+        {
+          "symbol": "ACCV",
+          "exchange": "US",
+          "status": "success",
+          "records_received": 6,
+          "compact_rows": 6
+        },
+        {
+          "symbol": "ACDC",
+          "exchange": "US",
+          "status": "success",
+          "records_received": 344,
+          "compact_rows": 344
+        },
+        {
+          "symbol": "ACEL",
+          "exchange": "US",
+          "status": "success",
+          "records_received": 344,
+          "compact_rows": 344
+        },
+        {
+          "symbol": "ACET",
+          "exchange": "US",
+          "status": "success",
+          "records_received": 344,
+          "compact_rows": 344
+        },
+        {
+          "symbol": "ACFN",
+          "exchange": "US",
+          "status": "success",
+          "records_received": 344,
+          "compact_rows": 344
+        },
+        {
+          "symbol": "ACGL",
+          "exchange": "US",
+          "status": "success",
+          "records_received": 344,
+          "compact_rows": 344
+        },
+        {
+          "symbol": "ACH",
+          "exchange": "US",
+          "status": "success",
+          "records_received": 344,
+          "compact_rows": 344
+        },
+        {
+          "symbol": "ACHC",
+          "exchange": "US",
+          "status": "success",
+          "records_received": 344,
+          "compact_rows": 344
+        },
+        {
+          "symbol": "ACHR",
+          "exchange": "US",
+          "status": "success",
+          "records_received": 344,
+          "compact_rows": 344
+        },
+        {
+          "symbol": "ACHV",
+          "exchange": "US",
+          "status": "success",
+          "records_received": 344,
+          "compact_rows": 344
+        },
+        {
+          "symbol": "ACI",
+          "exchange": "US",
+          "status": "success",
+          "records_received": 344,
+          "compact_rows": 344
+        },
+        {
+          "symbol": "ACIC",
+          "exchange": "US",
+          "status": "success",
+          "records_received": 344,
+          "compact_rows": 344
+        },
+        {
+          "symbol": "ACIU",
+          "exchange": "US",
+          "status": "success",
+          "records_received": 344,
+          "compact_rows": 344
+        },
+        {
+          "symbol": "ACIW",
+          "exchange": "US",
+          "status": "success",
+          "records_received": 344,
+          "compact_rows": 344
+        },
+        {
+          "symbol": "ACLS",
+          "exchange": "US",
+          "status": "success",
+          "records_received": 344,
+          "compact_rows": 344
+        },
+        {
+          "symbol": "ACM",
+          "exchange": "US",
+          "status": "success",
+          "records_received": 344,
+          "compact_rows": 344
+        },
+        {
+          "symbol": "ACMR",
+          "exchange": "US",
+          "status": "success",
+          "records_received": 344,
+          "compact_rows": 344
+        },
+        {
+          "symbol": "ACN",
+          "exchange": "US",
+          "status": "success",
+          "records_received": 344,
+          "compact_rows": 344
+        },
+        {
+          "symbol": "ACNB",
+          "exchange": "US",
+          "status": "success",
+          "records_received": 344,
+          "compact_rows": 344
+        },
+        {
+          "symbol": "ACNT",
+          "exchange": "US",
+          "status": "success",
+          "records_received": 344,
+          "compact_rows": 344
+        },
+        {
+          "symbol": "ACOG",
+          "exchange": "US",
+          "status": "success",
+          "records_received": 344,
+          "compact_rows": 344
+        },
+        {
+          "symbol": "ACON",
+          "exchange": "US",
+          "status": "success",
+          "records_received": 344,
+          "compact_rows": 344
+        },
+        {
+          "symbol": "ACP",
+          "exchange": "US",
+          "status": "success",
+          "records_received": 344,
+          "compact_rows": 344
+        },
+        {
+          "symbol": "ACR",
+          "exchange": "US",
+          "status": "success",
+          "records_received": 344,
+          "compact_rows": 344
+        },
+        {
+          "symbol": "ACRE",
+          "exchange": "US",
+          "status": "success",
+          "records_received": 344,
+          "compact_rows": 344
+        }
+      ]
+    },
+    "status": {
+      "market": "US",
+      "evaluation_date": "2026-10-06",
+      "target_rs_universe": 5000,
+      "active_symbols": 5753,
+      "history_ready_symbols": 65,
+      "pending_active_symbols": 5688,
+      "no_history_symbols": 5686,
+      "stale_or_short_history_symbols": 2,
+      "target_coverage_percent": 1.3,
+      "active_coverage_percent": 1.13,
+      "symbol_master_shortfall": 0,
+      "complete": false,
+      "history_requirements": {
+        "minimum_rows": 180,
+        "minimum_span_days": 350,
+        "maximum_stale_days": 14,
+        "requested_backfill_days": 500
+      },
+      "by_exchange": {
+        "US": {
+          "active": 5753,
+          "ready": 65,
+          "pending": 5688
+        }
+      },
+      "last_batch": {
+        "market": "US",
+        "status": "completed",
+        "requested_batch_size": 25,
+        "attempted": 25,
+        "succeeded": 25,
+        "failed": 0,
+        "empty": 0,
+        "provider": "Yahoo Finance/yfinance bulk OHLCV",
+        "real_data_only": true,
+        "before_ready": 41,
+        "after_ready": 65,
+        "remaining_active": 5688,
+        "started_at": "2026-10-14T11:18:34.782510Z",
+        "finished_at": "2026-10-14T11:18:44.491654Z",
+        "details": [
+          {
+            "symbol": "ACCV",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 6,
+            "compact_rows": 6
+          },
+          {
+            "symbol": "ACDC",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 344,
+            "compact_rows": 344
+          },
+          {
+            "symbol": "ACEL",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 344,
+            "compact_rows": 344
+          },
+          {
+            "symbol": "ACET",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 344,
+            "compact_rows": 344
+          },
+          {
+            "symbol": "ACFN",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 344,
+            "compact_rows": 344
+          },
+          {
+            "symbol": "ACGL",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 344,
+            "compact_rows": 344
+          },
+          {
+            "symbol": "ACH",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 344,
+            "compact_rows": 344
+          },
+          {
+            "symbol": "ACHC",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 344,
+            "compact_rows": 344
+          },
+          {
+            "symbol": "ACHR",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 344,
+            "compact_rows": 344
+          },
+          {
+            "symbol": "ACHV",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 344,
+            "compact_rows": 344
+          },
+          {
+            "symbol": "ACI",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 344,
+            "compact_rows": 344
+          },
+          {
+            "symbol": "ACIC",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 344,
+            "compact_rows": 344
+          },
+          {
+            "symbol": "ACIU",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 344,
+            "compact_rows": 344
+          },
+          {
+            "symbol": "ACIW",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 344,
+            "compact_rows": 344
+          },
+          {
+            "symbol": "ACLS",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 344,
+            "compact_rows": 344
+          },
+          {
+            "symbol": "ACM",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 344,
+            "compact_rows": 344
+          },
+          {
+            "symbol": "ACMR",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 344,
+            "compact_rows": 344
+          },
+          {
+            "symbol": "ACN",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 344,
+            "compact_rows": 344
+          },
+          {
+            "symbol": "ACNB",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 344,
+            "compact_rows": 344
+          },
+          {
+            "symbol": "ACNT",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 344,
+            "compact_rows": 344
+          },
+          {
+            "symbol": "ACOG",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 344,
+            "compact_rows": 344
+          },
+          {
+            "symbol": "ACON",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 344,
+            "compact_rows": 344
+          },
+          {
+            "symbol": "ACP",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 344,
+            "compact_rows": 344
+          },
+          {
+            "symbol": "ACR",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 344,
+            "compact_rows": 344
+          },
+          {
+            "symbol": "ACRE",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 344,
+            "compact_rows": 344
+          }
+        ]
+      },
+      "retry_cooldown_symbols": 1,
+      "scheduler_enabled": true,
+      "storage": "compressed provider date/open/close observations"
+    }
+  },
+  "INDIA": {
+    "batch": {
+      "market": "INDIA",
+      "status": "completed",
+      "requested_batch_size": 25,
+      "attempted": 25,
+      "succeeded": 21,
+      "failed": 4,
+      "empty": 0,
+      "provider": "Yahoo Finance/yfinance bulk OHLCV",
+      "real_data_only": true,
+      "before_ready": 31,
+      "after_ready": 49,
+      "remaining_active": 5240,
+      "started_at": "2026-10-14T11:18:44.719669Z",
+      "finished_at": "2026-10-14T11:19:03.436417Z",
+      "details": [
+        {
+          "symbol": "2997",
+          "exchange": "BSE",
+          "status": "error",
+          "error": "Yahoo history unavailable for BSE:2997: $2997.BO: possibly delisted; no timezone found",
+          "retry_after": "2026-10-14T13:18:52.074866Z"
+        },
+        {
+          "symbol": "603468",
+          "exchange": "BSE",
+          "status": "error",
+          "error": "Yahoo history unavailable for BSE:603468: $603468.BO: No data found, symbol may be delisted",
+          "retry_after": "2026-10-14T13:18:55.551503Z"
+        },
+        {
+          "symbol": "AAL",
+          "exchange": "BSE",
+          "status": "error",
+          "error": "Yahoo history unavailable for BSE:AAL: $AAL.BO: possibly delisted; no timezone found",
+          "retry_after": "2026-10-14T13:18:57.374737Z"
+        },
+        {
+          "symbol": "AARVEEDEN",
+          "exchange": "BSE",
+          "status": "error",
+          "error": "Yahoo history unavailable for BSE:AARVEEDEN: $AARVEEDEN.BO: possibly delisted; no timezone found",
+          "retry_after": "2026-10-14T13:18:59.159364Z"
+        },
+        {
+          "symbol": "ABRIL",
+          "exchange": "BSE",
+          "status": "success",
+          "records_received": 273,
+          "compact_rows": 273
+        },
+        {
+          "symbol": "ABVL",
+          "exchange": "BSE",
+          "status": "success",
+          "records_received": 340,
+          "compact_rows": 340
+        },
+        {
+          "symbol": "ACCEDERE",
+          "exchange": "BSE",
+          "status": "success",
+          "records_received": 341,
+          "compact_rows": 341
+        },
+        {
+          "symbol": "ACCEL",
+          "exchange": "BSE",
+          "status": "success",
+          "records_received": 340,
+          "compact_rows": 340
+        },
+        {
+          "symbol": "ACCELERATE",
+          "exchange": "BSE",
+          "status": "success",
+          "records_received": 339,
+          "compact_rows": 339
+        },
+        {
+          "symbol": "ACCORDTS",
+          "exchange": "BSE",
+          "status": "success",
+          "records_received": 153,
+          "compact_rows": 153
+        },
+        {
+          "symbol": "ACEALPHA",
+          "exchange": "BSE",
+          "status": "success",
+          "records_received": 317,
+          "compact_rows": 317
+        },
+        {
+          "symbol": "ACEEDU",
+          "exchange": "BSE",
+          "status": "success",
+          "records_received": 340,
+          "compact_rows": 340
+        },
+        {
+          "symbol": "ACEENGITEC",
+          "exchange": "BSE",
+          "status": "success",
+          "records_received": 340,
+          "compact_rows": 340
+        },
+        {
+          "symbol": "ACEMEN",
+          "exchange": "BSE",
+          "status": "success",
+          "records_received": 340,
+          "compact_rows": 340
+        },
+        {
+          "symbol": "ACESEPP",
+          "exchange": "BSE",
+          "status": "success",
+          "records_received": 197,
+          "compact_rows": 197
+        },
+        {
+          "symbol": "ACESOFT",
+          "exchange": "BSE",
+          "status": "success",
+          "records_received": 340,
+          "compact_rows": 340
+        },
+        {
+          "symbol": "ACFSL",
+          "exchange": "BSE",
+          "status": "success",
+          "records_received": 341,
+          "compact_rows": 341
+        },
+        {
+          "symbol": "ACHYUT",
+          "exchange": "BSE",
+          "status": "success",
+          "records_received": 340,
+          "compact_rows": 340
+        },
+        {
+          "symbol": "ACIIN",
+          "exchange": "BSE",
+          "status": "success",
+          "records_received": 340,
+          "compact_rows": 340
+        },
+        {
+          "symbol": "ACKNIT",
+          "exchange": "BSE",
+          "status": "success",
+          "records_received": 340,
+          "compact_rows": 340
+        },
+        {
+          "symbol": "ACLD",
+          "exchange": "BSE",
+          "status": "success",
+          "records_received": 340,
+          "compact_rows": 340
+        },
+        {
+          "symbol": "ACME",
+          "exchange": "BSE",
+          "status": "success",
+          "records_received": 340,
+          "compact_rows": 340
+        },
+        {
+          "symbol": "ACMEUNIV",
+          "exchange": "BSE",
+          "status": "success",
+          "records_received": 5,
+          "compact_rows": 5
+        },
+        {
+          "symbol": "ACML",
+          "exchange": "BSE",
+          "status": "success",
+          "records_received": 341,
+          "compact_rows": 341
+        },
+        {
+          "symbol": "ACROW",
+          "exchange": "BSE",
+          "status": "success",
+          "records_received": 340,
+          "compact_rows": 340
+        }
+      ]
+    },
+    "status": {
+      "market": "INDIA",
+      "evaluation_date": "2026-10-06",
+      "target_rs_universe": 5000,
+      "active_symbols": 5289,
+      "history_ready_symbols": 49,
+      "pending_active_symbols": 5240,
+      "no_history_symbols": 5236,
+      "stale_or_short_history_symbols": 4,
+      "target_coverage_percent": 0.98,
+      "active_coverage_percent": 0.93,
+      "symbol_master_shortfall": 0,
+      "complete": false,
+      "history_requirements": {
+        "minimum_rows": 180,
+        "minimum_span_days": 350,
+        "maximum_stale_days": 14,
+        "requested_backfill_days": 500
+      },
+      "by_exchange": {
+        "NSE": {
+          "active": 2601,
+          "ready": 5,
+          "pending": 2596
+        },
+        "BSE": {
+          "active": 2688,
+          "ready": 44,
+          "pending": 2644
+        }
+      },
+      "last_batch": {
+        "market": "INDIA",
+        "status": "completed",
+        "requested_batch_size": 25,
+        "attempted": 25,
+        "succeeded": 21,
+        "failed": 4,
+        "empty": 0,
+        "provider": "Yahoo Finance/yfinance bulk OHLCV",
+        "real_data_only": true,
+        "before_ready": 31,
+        "after_ready": 49,
+        "remaining_active": 5240,
+        "started_at": "2026-10-14T11:18:44.719669Z",
+        "finished_at": "2026-10-14T11:19:03.436417Z",
+        "details": [
+          {
+            "symbol": "2997",
+            "exchange": "BSE",
+            "status": "error",
+            "error": "Yahoo history unavailable for BSE:2997: $2997.BO: possibly delisted; no timezone found",
+            "retry_after": "2026-10-14T13:18:52.074866Z"
+          },
+          {
+            "symbol": "603468",
+            "exchange": "BSE",
+            "status": "error",
+            "error": "Yahoo history unavailable for BSE:603468: $603468.BO: No data found, symbol may be delisted",
+            "retry_after": "2026-10-14T13:18:55.551503Z"
+          },
+          {
+            "symbol": "AAL",
+            "exchange": "BSE",
+            "status": "error",
+            "error": "Yahoo history unavailable for BSE:AAL: $AAL.BO: possibly delisted; no timezone found",
+            "retry_after": "2026-10-14T13:18:57.374737Z"
+          },
+          {
+            "symbol": "AARVEEDEN",
+            "exchange": "BSE",
+            "status": "error",
+            "error": "Yahoo history unavailable for BSE:AARVEEDEN: $AARVEEDEN.BO: possibly delisted; no timezone found",
+            "retry_after": "2026-10-14T13:18:59.159364Z"
+          },
+          {
+            "symbol": "ABRIL",
+            "exchange": "BSE",
+            "status": "success",
+            "records_received": 273,
+            "compact_rows": 273
+          },
+          {
+            "symbol": "ABVL",
+            "exchange": "BSE",
+            "status": "success",
+            "records_received": 340,
+            "compact_rows": 340
+          },
+          {
+            "symbol": "ACCEDERE",
+            "exchange": "BSE",
+            "status": "success",
+            "records_received": 341,
+            "compact_rows": 341
+          },
+          {
+            "symbol": "ACCEL",
+            "exchange": "BSE",
+            "status": "success",
+            "records_received": 340,
+            "compact_rows": 340
+          },
+          {
+            "symbol": "ACCELERATE",
+            "exchange": "BSE",
+            "status": "success",
+            "records_received": 339,
+            "compact_rows": 339
+          },
+          {
+            "symbol": "ACCORDTS",
+            "exchange": "BSE",
+            "status": "success",
+            "records_received": 153,
+            "compact_rows": 153
+          },
+          {
+            "symbol": "ACEALPHA",
+            "exchange": "BSE",
+            "status": "success",
+            "records_received": 317,
+            "compact_rows": 317
+          },
+          {
+            "symbol": "ACEEDU",
+            "exchange": "BSE",
+            "status": "success",
+            "records_received": 340,
+            "compact_rows": 340
+          },
+          {
+            "symbol": "ACEENGITEC",
+            "exchange": "BSE",
+            "status": "success",
+            "records_received": 340,
+            "compact_rows": 340
+          },
+          {
+            "symbol": "ACEMEN",
+            "exchange": "BSE",
+            "status": "success",
+            "records_received": 340,
+            "compact_rows": 340
+          },
+          {
+            "symbol": "ACESEPP",
+            "exchange": "BSE",
+            "status": "success",
+            "records_received": 197,
+            "compact_rows": 197
+          },
+          {
+            "symbol": "ACESOFT",
+            "exchange": "BSE",
+            "status": "success",
+            "records_received": 340,
+            "compact_rows": 340
+          },
+          {
+            "symbol": "ACFSL",
+            "exchange": "BSE",
+            "status": "success",
+            "records_received": 341,
+            "compact_rows": 341
+          },
+          {
+            "symbol": "ACHYUT",
+            "exchange": "BSE",
+            "status": "success",
+            "records_received": 340,
+            "compact_rows": 340
+          },
+          {
+            "symbol": "ACIIN",
+            "exchange": "BSE",
+            "status": "success",
+            "records_received": 340,
+            "compact_rows": 340
+          },
+          {
+            "symbol": "ACKNIT",
+            "exchange": "BSE",
+            "status": "success",
+            "records_received": 340,
+            "compact_rows": 340
+          },
+          {
+            "symbol": "ACLD",
+            "exchange": "BSE",
+            "status": "success",
+            "records_received": 340,
+            "compact_rows": 340
+          },
+          {
+            "symbol": "ACME",
+            "exchange": "BSE",
+            "status": "success",
+            "records_received": 340,
+            "compact_rows": 340
+          },
+          {
+            "symbol": "ACMEUNIV",
+            "exchange": "BSE",
+            "status": "success",
+            "records_received": 5,
+            "compact_rows": 5
+          },
+          {
+            "symbol": "ACML",
+            "exchange": "BSE",
+            "status": "success",
+            "records_received": 341,
+            "compact_rows": 341
+          },
+          {
+            "symbol": "ACROW",
+            "exchange": "BSE",
+            "status": "success",
+            "records_received": 340,
+            "compact_rows": 340
+          }
+        ]
+      },
+      "retry_cooldown_symbols": 7,
+      "scheduler_enabled": true,
+      "storage": "compressed provider date/open/close observations"
+    }
+  }
+}

@@ -385,7 +385,8 @@ def _ranking_rule_values(history, metadata=None):
     fundamental score calculated with older/default settings. Missing provider
     history remains None and never qualifies a stock.
     """
-    history = history or {}
+    from app.services.financial_periods import align_financial_history, period_date
+    history = align_financial_history(history)
     metadata = metadata or {}
     quarterly = list(history.get("quarterly") or [])
     annual = list(history.get("annual") or [])
@@ -396,6 +397,10 @@ def _ranking_rule_values(history, metadata=None):
     def get(rows, index, key):
         if index >= len(rows):
             return None
+        if index and period_date(rows[0]) and period_date(rows[index]):
+            expected = (91 if rows is quarterly else 365) * index
+            if abs((period_date(rows[0]) - period_date(rows[index])).days - expected) > 30:
+                return None
         return finite((rows[index] or {}).get(key))
 
     def growth(current, previous):
@@ -845,12 +850,12 @@ def _sector_scores_from_enriched(rows, enrichment):
             return (sum(1 for value in values if value > 0) * 100.0 / len(values)) if values else None
         eps = med("eps_yoy"); pat = med("pat_yoy"); sales = med("sales_yoy")
         acc_values = [v for v in (med("eps_acc"), med("pat_acc"), med("sales_acc")) if v is not None]
-        acceleration = sum(acc_values) / len(acc_values) if acc_values else None
+        acceleration = sum(acc_values) / 3 if len(acc_values) == 3 else None
         breadth_values = [v for v in (breadth("eps_yoy"), breadth("pat_yoy"), breadth("sales_yoy")) if v is not None]
-        growth_breadth = sum(breadth_values) / len(breadth_values) if breadth_values else None
+        growth_breadth = sum(breadth_values) / 3 if len(breadth_values) == 3 else None
         accel_parts = [(breadth("eps_acc"), 35.0), (breadth("pat_acc"), 35.0), (breadth("sales_acc"), 30.0)]
         accel_parts = [(v, w) for v, w in accel_parts if v is not None]
-        acceleration_breadth = (sum(v * w for v, w in accel_parts) / sum(w for _v, w in accel_parts)) if accel_parts else None
+        acceleration_breadth = sum(v * w for v, w in accel_parts) / 100 if len(accel_parts) == 3 else None
         stats[sector] = {
             "eps_raw": eps, "pat_raw": pat, "sales_raw": sales,
             "acceleration_raw": acceleration, "growth_breadth": growth_breadth,
@@ -868,7 +873,11 @@ def _sector_scores_from_enriched(rows, enrichment):
             (item.get("growth_breadth"), 5.0), (item.get("acceleration_breadth"), 5.0),
         ]
         available = [(v, w) for v, w in components if v is not None]
-        item["score"] = round(sum(v * w for v, w in available) / sum(w for _v, w in available), 2) if available else None
+        item["score"] = round(sum(v * w for v, w in available) / 100, 2) if available else None
+        item.update(eps_growth_rs=eps_rs, pat_growth_rs=pat_rs, sales_growth_rs=sales_rs, growth_acceleration_rs=accel_rs, component_coverage_percent=sum(w for _v, w in available))
+        if len(stats) < 2:
+            item["score"] = None
+            item["eps_growth_rs"] = item["pat_growth_rs"] = item["sales_growth_rs"] = item["growth_acceleration_rs"] = None
     return stats
 
 
@@ -1015,33 +1024,6 @@ def _selected_sector_component(db, company):
         return None, peer_count, sector_name
     return round(float(score), 2), peer_count, sector_name
 
-
-def _alpha_beta_from_closes(stock_closes, benchmark_closes):
-    if not stock_closes or not benchmark_closes:
-        return None, None
-    n = min(len(stock_closes), len(benchmark_closes), 253)
-    if n < 61:
-        return None, None
-    stock = [float(v) for v in stock_closes[-n:] if _finite_number(v) is not None]
-    bench = [float(v) for v in benchmark_closes[-n:] if _finite_number(v) is not None]
-    n = min(len(stock), len(bench))
-    if n < 61:
-        return None, None
-    stock = stock[-n:]; bench = bench[-n:]
-    sr = [(stock[i] / stock[i - 1]) - 1.0 for i in range(1, n) if stock[i - 1] > 0]
-    br = [(bench[i] / bench[i - 1]) - 1.0 for i in range(1, n) if bench[i - 1] > 0]
-    nret = min(len(sr), len(br))
-    if nret < 60:
-        return None, None
-    sr = sr[-nret:]; br = br[-nret:]
-    mean_s = sum(sr) / nret; mean_b = sum(br) / nret
-    var_b = sum((x - mean_b) ** 2 for x in br) / max(1, nret - 1)
-    if var_b <= 0:
-        return None, None
-    cov = sum((sr[i] - mean_s) * (br[i] - mean_b) for i in range(nret)) / max(1, nret - 1)
-    beta = cov / var_b
-    alpha = (mean_s - (beta * mean_b)) * 252.0 * 100.0
-    return round(alpha, 2), round(beta, 2)
 
 def _standard_deviation_percent_from_closes(closes):
     """Annualized standard deviation of daily returns, expressed as percent."""
@@ -2334,7 +2316,7 @@ def _rs_universe_metrics(db: Session, exchange: str, benchmark_points):
     """Evaluate real persisted observations using one benchmark date and 5,000 slots."""
     if db is None or not benchmark_points:
         return {}, {}
-    from app.services.rs_universe_backfill import eligible_companies
+    from app.services.rs_universe_backfill import eligible_companies, _is_ready
     companies = eligible_companies(db, _rs_market_group(exchange))
     eligible = {(c.exchange, c.symbol): c for c in companies}
     grouped = {}
@@ -2361,6 +2343,8 @@ def _rs_universe_metrics(db: Session, exchange: str, benchmark_points):
     weights = {label: 1 for label in ("1w", "2w", "1m", "2m", "3m", "6m", "1y")}
     metrics, sectors = {}, {}
     for key, points in sorted(grouped.items()):
+        if not _is_ready({"rows": len(points), "first_date": points[0][0], "last_date": points[-1][0]}):
+            continue
         _, values = _weighted_relative_return_from_points(points, benchmark_points, weights)
         if not all(label in values for label in ("1w", "1m", "3m", "6m", "1y")):
             continue
@@ -3765,7 +3749,7 @@ def get_technical_summary(
     ema50_previous = _ema(closes[:-1], 50) if len(closes) > 50 else None
     ema200_previous = _ema(closes[:-1], 200) if len(closes) > 200 else None
     adx14, plus_di14, minus_di14, di_spread14 = _adx_di(highs, lows, closes, 14)
-    roc_1m = _roc(closes, 21)
+    roc_1m = _roc(closes, 20)  # ROC(20) means 20 active bars, not the legacy 21-session month.
     roc_3m = _roc(closes, 63)
     roc_6m = _roc(closes, 126)
     roc_12m = _roc(closes, 252)
@@ -5108,73 +5092,9 @@ def get_sector_analysis(
     acceleration scores are deliberately left unavailable unless peer history
     exists; no growth score is fabricated from a current snapshot.
     """
-    query, _ = _screener_query_parts(db, market)
-    if sector:
-        query = query.filter(Company.sector == sector)
-    rows = query.all()
+    from app.services.sector_analytics import sector_analytics
+    return sector_analytics(db, market, sector)
 
-    groups = {}
-    for row in rows:
-        name = (getattr(row, "sector", None) or "Unclassified").strip()
-        bucket = groups.setdefault(name, {
-            "sector": name, "stock_count": 0, "classified_count": 0,
-            "eps": [], "pat": [], "sales": [], "margin": [], "roe": [],
-            "institution": [], "insider": [], "coverage": [],
-        })
-        bucket["stock_count"] += 1
-        if name != "Unclassified":
-            bucket["classified_count"] += 1
-        for key, attr in [
-            ("eps", "trailing_eps"), ("pat", "net_income"), ("sales", "revenue"),
-            ("margin", "profit_margin"), ("roe", "return_on_equity"),
-            ("institution", "institution_percent"), ("insider", "insider_percent"),
-            ("coverage", "data_coverage"),
-        ]:
-            value = getattr(row, attr, None)
-            try:
-                value = float(value)
-                if math.isfinite(value):
-                    bucket[key].append(value)
-            except (TypeError, ValueError):
-                pass
-
-    def med(values):
-        return float(median(values)) if values else None
-
-    output = []
-    for name, bucket in groups.items():
-        output.append({
-            "sector": name,
-            "stock_count": bucket["stock_count"],
-            "median_eps": med(bucket["eps"]),
-            "median_pat": med(bucket["pat"]),
-            "median_sales": med(bucket["sales"]),
-            "median_profit_margin": med(bucket["margin"]),
-            "median_roe": med(bucket["roe"]),
-            "median_institution_percent": med(bucket["institution"]),
-            "median_insider_percent": med(bucket["insider"]),
-            "data_coverage_percent": med(bucket["coverage"]),
-            # The client's sector formula needs historical peer growth series.
-            # Do not substitute current EPS/PAT/Sales levels for growth ranks.
-            "eps_growth_rs": None,
-            "pat_growth_rs": None,
-            "sales_growth_rs": None,
-            "growth_acceleration_rs": None,
-            "growth_breadth": None,
-            "acceleration_breadth": None,
-            "sector_rs_score": None,
-            "history_status": "Peer historical fundamentals required" if name != "Unclassified" else "Classification unavailable",
-        })
-
-    output.sort(key=lambda item: (-(item.get("data_coverage_percent") or -1), -item["stock_count"], item["sector"]))
-    return _json_safe({
-        "market": market.upper(),
-        "sector": sector,
-        "rows": output,
-        "formula": "EPS Growth RS 30% + PAT Growth RS 25% + Sales Growth RS 20% + Growth Acceleration RS 15% + Growth Breadth 5% + Acceleration Breadth 5%",
-        "aggregation": "Median stock growth by sector, per client note.",
-        "data_rule": "Current snapshot medians are real stored provider values. Historical growth-ranking fields remain N/A until real peer history is available; they are never fabricated.",
-    })
 
 
 @router.get("/top-composite")
@@ -5494,25 +5414,15 @@ def get_top_composite_dashboard(
             if candidate_key not in enrichment:
                 enrichment_remaining.append(candidate_row)
         _warm_ranking_enrichment_background(enrichment_remaining)
-    sector_stats = _sector_scores_from_enriched(enrichment_rows, enrichment) if enrichment else {}
+    sector_stats = {}
+    for market_group in { _rs_market_group(r["exchange"]) for r in enrichment_rows }:
+        grouped_rows = [r for r in enrichment_rows if _rs_market_group(r["exchange"]) == market_group]
+        sector_stats.update({(market_group, name): value for name, value in _sector_scores_from_enriched(grouped_rows, enrichment).items()})
 
-    # Alpha/Beta use real daily return series versus the client's exact broad
-    # market benchmark.  No extra database storage is required.
-    benchmark_closes = {}
-    for ex in {str(row.get("exchange") or "").upper() for row in base_rows}:
-        group_key = "US" if ex == "US" else "INDIA"
-        if group_key in benchmark_closes:
-            continue
-        benchmark_closes[group_key] = _live_benchmark_closes(group_key)
-        if benchmark_closes[group_key]:
-            continue
-        try:
-            bench_exchange = "US" if group_key == "US" else "NSE"
-            points, _bsym, _bname, _bmethod = _load_benchmark_points(bench_exchange, db=db, minimum_points=60)
-            benchmark_closes[group_key] = [float(point[4]) for point in points if len(point) >= 5 and _finite_number(point[4]) is not None]
-        except Exception:
-            benchmark_closes[group_key] = []
-
+    # Beta uses adjusted, dated 2Y WEEKLY returns. Warm missing histories off
+    # the request thread; an undated daily tail is never substituted.
+    from app.services.risk_metrics import cached_beta_batch
+    weekly_risk = cached_beta_batch(base_rows)
     ranked = []
     for row in base_rows:
         ex, symbol = row.get("exchange"), row.get("symbol")
@@ -5532,11 +5442,13 @@ def get_top_composite_dashboard(
         sales_score = payload.get("sales_score")
 
         sector_name = str(row.get("sector") or "").strip()
-        sector_info = sector_stats.get(sector_name) or {}
+        group_key = "US" if ex == "US" else "INDIA"
+        sector_info = sector_stats.get((group_key, sector_name)) or {}
         sector = sector_info.get("score")
 
         group_key = "US" if ex == "US" else "INDIA"
-        alpha, beta = _alpha_beta_from_closes(closes, benchmark_closes.get(group_key) or [])
+        risk = weekly_risk.get(key) or {}
+        alpha, beta = risk.get("alpha"), risk.get("beta")
         standard_deviation_percent = _standard_deviation_percent_from_closes(closes)
 
         components = {
@@ -5625,6 +5537,8 @@ def get_top_composite_dashboard(
             },
             "alpha": alpha,
             "beta": beta,
+            "beta_basis": risk.get("basis", "2Y weekly adjusted history pending"),
+            "beta_observations": risk.get("observations", 0),
             "standard_deviation_percent": standard_deviation_percent,
         })
 

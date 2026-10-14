@@ -1,0 +1,9 @@
+{
+  "scope": "Read-only observation of existing deployed release; no production job was triggered",
+  "US": {
+    "error": "HTTP Error 502: Bad Gateway"
+  },
+  "INDIA": {
+    "error": "HTTP Error 502: Bad Gateway"
+  }
+}

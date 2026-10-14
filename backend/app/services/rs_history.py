@@ -50,6 +50,7 @@ def persist_history(db, symbol, exchange, rows, provider="Yahoo Finance"):
         item.status = "success"
         item.error = None
         item.retry_after = None
+        item.retry_count = 0
         item.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
     db.commit()
     return item

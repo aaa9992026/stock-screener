@@ -22,7 +22,7 @@ from datetime import date, datetime, timedelta, timezone
 import pandas as pd
 import yfinance as yf
 from sqlalchemy import and_, func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, defer
 
 from app.database import SessionLocal
 from app.models import Company, OHLCV, RSHistory, RSBackfillState
@@ -162,8 +162,12 @@ def universe_backfill_status(db: Session, market: str) -> dict:
 
     companies = eligible_companies(db, market)
     stats = _history_stats(db, market)
-    persisted = db.query(RSBackfillState).filter_by(market=market).first()
-    last_batch = json.loads(persisted.payload_json) if persisted and persisted.payload_json != "{}" else _last_results.get(market)
+    # Never load an unbounded legacy diagnostic tree into a status request.
+    persisted = db.query(func.substr(RSBackfillState.payload_json, 1, 65536)).filter(RSBackfillState.market == market).scalar()
+    try:
+        last_batch = json.loads(persisted) if persisted and persisted != "{}" else _last_results.get(market)
+    except (ValueError, RecursionError):
+        last_batch = {"status": "diagnostic_unavailable", "reason": "Legacy batch diagnostic exceeds the safe size/depth; cohort observations and progress remain intact"}
     retries = db.query(RSHistory).filter(RSHistory.exchange.in_(exchanges), RSHistory.retry_after > datetime.now(timezone.utc).replace(tzinfo=None)).count()
 
     cohort_date = evaluation_date(db, market)
@@ -319,7 +323,7 @@ def _frame_to_rows(frame: pd.DataFrame | None) -> list[dict]:
 def evaluation_date(db, market):
     """One persisted comparison date lets incremental batches form a real cohort."""
     market = normalize_market(market)
-    state = db.query(RSBackfillState).filter_by(market=market).first()
+    state = db.query(RSBackfillState).options(defer(RSBackfillState.payload_json)).filter_by(market=market).first()
     if state is None:
         cutoff = date.today() - timedelta(days=1)
         while cutoff.weekday() >= 5:
@@ -338,12 +342,25 @@ def _persist_retry(db, exchange, symbol, status, error, retry_after):
     if item is None:
         item = RSHistory(symbol=symbol, exchange=exchange)
         db.add(item)
+    item.retry_count = int(item.retry_count or 0) + 1
+    # Persisted exponential cooldown survives restarts. Unsupported listings
+    # remain eligible; the authoritative master decides delisting.
+    base_hours = EMPTY_RETRY_HOURS if status == "empty" else ERROR_RETRY_HOURS
+    retry_after = max(retry_after, datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(hours=min(72, base_hours * 2 ** min(item.retry_count - 1, 6))))
+    _symbol_retry_after[(exchange, symbol)] = retry_after
     item.status, item.error, item.retry_after = status, error[:250], retry_after
     db.commit()
 
 def _save_result(db, market, result):
+    # Idle/complete snapshots used to embed prior last_batch recursively in both
+    # before and after, doubling serialized size every scheduler cycle.
+    for key in ("before", "after"):
+        if isinstance(result.get(key), dict):
+            result[key] = {k: v for k, v in result[key].items() if k != "last_batch"}
+    if isinstance(result.get("details"), list):
+        result["details"] = result["details"][:100]
     _last_results[market] = result
-    state = db.query(RSBackfillState).filter_by(market=market).first()
+    state = db.query(RSBackfillState).options(defer(RSBackfillState.payload_json)).filter_by(market=market).first()
     if state is None:
         state = RSBackfillState(market=market)
         db.add(state)
@@ -373,7 +390,7 @@ def backfill_market_batch(market: str, batch_size: int | None = None) -> dict:
     try:
         before = universe_backfill_status(db, market)
         if before["complete"] and evaluation_date(db, market) < date.today() - timedelta(days=7):
-            state = db.query(RSBackfillState).filter_by(market=market).first()
+            state = db.query(RSBackfillState).options(defer(RSBackfillState.payload_json)).filter_by(market=market).first()
             cutoff = date.today() - timedelta(days=1)
             while cutoff.weekday() >= 5:
                 cutoff -= timedelta(days=1)

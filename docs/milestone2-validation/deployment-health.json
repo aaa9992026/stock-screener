@@ -1,0 +1,10 @@
+{
+  "scope": "Read-only check of existing production release; new code not deployed",
+  "date": "2026-10-14",
+  "url": "https://stock-screener-production-d90e.up.railway.app/health",
+  "http_status": 200,
+  "body": {
+    "status": "ok",
+    "database": "ready"
+  }
+}

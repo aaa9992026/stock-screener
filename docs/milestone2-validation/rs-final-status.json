@@ -1,0 +1,22 @@
+{
+  "US": {
+    "market": "US",
+    "evaluation_date": "2026-10-06",
+    "target_rs_universe": 5000,
+    "active_symbols": 5753,
+    "history_ready_symbols": 66,
+    "pending_active_symbols": 5687,
+    "complete": false,
+    "retry_cooldown_symbols": 1
+  },
+  "INDIA": {
+    "market": "INDIA",
+    "evaluation_date": "2026-10-06",
+    "target_rs_universe": 5000,
+    "active_symbols": 5289,
+    "history_ready_symbols": 49,
+    "pending_active_symbols": 5240,
+    "complete": false,
+    "retry_cooldown_symbols": 7
+  }
+}

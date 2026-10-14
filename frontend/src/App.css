@@ -85,6 +85,17 @@ main { width: 100%; max-width: var(--page-max); margin: 0 auto; padding: 24px 32
 .app[data-view="overview"] .overview-filter-preview-grid, .app[data-view="overview"] .overview-ranking-card { display: grid; }
 .app[data-view="analytics"] .backtesting-workspace, .app[data-view="excel"] .excel-workspace, .app[data-view="settings"] .settings-workspace,
 .app[data-view="ranking"] .advanced-workspace { display: grid; gap: 24px; }
+.app:is([data-view="sector"], [data-view="portfolio"]) .milestone-workspace { display: grid; gap: 24px; }
+.app:is([data-view="sector"], [data-view="portfolio"]) :is(.overview-top-toolbar, .score-overview-grid, main > .utility-feedback-banner) { display: none; }
+.milestone-form { display: flex; flex-wrap: wrap; align-items: end; gap: 16px; margin: 20px 0; }
+.milestone-form > label { display: grid; gap: 8px; flex: 1 1 180px; min-width: 0; }
+.milestone-form input:not([type="checkbox"]), .milestone-form select { width: 100%; min-width: 0; }
+.milestone-components { display: flex; flex-wrap: wrap; gap: 16px; flex: 1 1 100%; padding: 16px; border: 1px solid var(--line); border-radius: var(--radius-sm); }
+.milestone-components label { display: flex; gap: 8px; align-items: center; }
+.milestone-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; }
+.milestone-equity-chart { min-width: 0; width: 100%; }
+.milestone-workspace, .trade-backtest { min-width: 0; }
+.milestone-workspace > details { min-width: 0; }
 .app[data-view="filters"] .filter-workspace-grid > section { display: none; }
 .app[data-view="filters"][data-filter-tab="fundamental"] #fundamental-filters, .app[data-view="filters"][data-filter-tab="technical"] #technical-filters,
 .app[data-view="filters"][data-filter-tab="ownership"] #ownership-filters, .app[data-view="filters"][data-filter-tab="universe"] #universe-screener { display: block; }

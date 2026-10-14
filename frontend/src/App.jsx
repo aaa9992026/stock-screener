@@ -17,6 +17,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import "./App.css";
+import { SectorWorkspace, PortfolioWorkspace, TradeBacktest } from "./MilestoneWorkspaces";
 
 const DEFAULT_API_BASE = "https://stock-screener-production-d90e.up.railway.app";
 const API = String(import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE).replace(/\/$/, "");
@@ -3437,6 +3438,8 @@ function App() {
             ["ranking", "ranking", "Top 200 Ranking"],
             ["filters", "filters", "Filters"],
             ["analytics", "backtest", "Backtesting"],
+            ["sector", "ranking", "Sector Analysis"],
+            ["portfolio", "overview", "Portfolio Management"],
             ["excel", "excel", "Export / Excel"],
             ["settings", "settings", "Settings"],
           ].map(([view, icon, label]) => {
@@ -3490,8 +3493,8 @@ function App() {
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
           </button>
           <div><span className="workspace-breadcrumb">Stock Screener / Workspace</span>
-            <h1>{({ overview: "Market overview", ranking: "Top 200 ranking", filters: "Filters & qualification", analytics: "Strategy backtesting", excel: "Export & Excel", settings: "Settings" })[activeView]}</h1>
-            <p>{({ overview: "Research a company, review its scores and explore the market.", ranking: "Compare ranked stocks and inspect the factors behind every score.", filters: "Configure your criteria and review qualifying stocks.", analytics: "Evaluate strategy performance using verified market history.", excel: "Take your research into a snapshot, live connection or master workbook.", settings: "Manage your market, timeframe and data connection." })[activeView]}</p>
+            <h1>{({ overview: "Market overview", ranking: "Top 200 ranking", filters: "Filters & qualification", analytics: "Strategy backtesting", sector: "Sector analysis", portfolio: "Portfolio management", excel: "Export & Excel", settings: "Settings" })[activeView]}</h1>
+            <p>{({ overview: "Research a company, review its scores and explore the market.", ranking: "Compare ranked stocks and inspect the factors behind every score.", filters: "Configure your criteria and review qualifying stocks.", analytics: "Evaluate strategy performance using verified market history.", sector: "Compare constituent growth, momentum and coverage.", portfolio: "Track paper positions, cash and portfolio performance.", excel: "Take your research into a snapshot, live connection or master workbook.", settings: "Manage your market, timeframe and data connection." })[activeView]}</p>
           </div>
         </div>
 
@@ -3501,7 +3504,7 @@ function App() {
           <div>
             <strong>
               {dataStatus === "fresh"
-                ? "Data Fresh"
+                ? "Provider Data Received"
                 : dataStatus === "cached"
                 ? "Stored Data"
                 : dataStatus === "stale"
@@ -3513,7 +3516,7 @@ function App() {
 
             {lastUpdated && (
               <small>
-                Last updated: {lastUpdated.toLocaleTimeString()}
+                Fetched: {lastUpdated.toLocaleTimeString()} · Price as of {technicalSummary?.daily_price_date || data[data.length - 1]?.date || "unavailable"}
               </small>
             )}
           </div>
@@ -3713,15 +3716,17 @@ function App() {
             const numeric = value == null || value === "" ? NaN : Number(value);
             const score = Number.isFinite(numeric) ? Math.max(0, Math.min(100, numeric)) : null;
             const meta = SCORE_CARD_META[tone] || { hint: "Score" };
+            const coverage = factorEvaluationRows.groupCoverage?.[tone];
+            const partial = rankingSelection ? rankingSelection.score_status !== "Final" : coverage && !coverage.complete;
             return (
-              <article className={`score-overview-card ${tone}`} key={label}>
+              <article className={`score-overview-card ${tone}`} key={label} title={partial ? `Provisional: ${rankingSelection ? "ranking snapshot has incomplete coverage" : coverage ? `${coverage.available}/${coverage.required} enabled rule inputs available` : "ranking snapshot has incomplete coverage"}` : undefined}>
                 <div className="score-card-head">
                   <div className="score-icon">
                     <ScoreGlyph tone={tone} />
                   </div>
                   <div className="score-card-heading">
                     <span>{label}</span>
-                    <small>{(tone === "composite" && dashboardView?.score == null) || (tone === "rs" && !technicalSummary?.rs_universe?.complete) ? "Provisional · " : ""}{meta.hint}</small>
+                    <small>{(tone === "composite" && dashboardView?.score == null) || (tone === "rs" && !technicalSummary?.rs_universe?.complete) || partial ? "Provisional · " : ""}{meta.hint}</small>
                   </div>
                 </div>
                 <div className="score-card-value">
@@ -3813,7 +3818,7 @@ function App() {
                   <span className="overview-company-eyebrow">Selected company</span>
                   <div className="overview-company-name-row">
                     <strong>{selectedCompany?.name || symbol}</strong>
-                    <span className={`overview-live-badge ${dataStatus}`}><i />{dataStatus === "fresh" ? "Fresh" : dataStatus === "loading" ? "Loading" : dataStatus === "cached" ? "Cached" : dataStatus === "stale" ? "Stale" : "Connected"}</span>
+                    <span className={`overview-live-badge ${dataStatus}`}><i />{dataStatus === "fresh" ? "Observed" : dataStatus === "loading" ? "Loading" : dataStatus === "cached" ? "Cached" : dataStatus === "stale" ? "Stale" : "Connected"}</span>
                   </div>
                   <div className="dashboard-selected-meta">
                     <span className="overview-symbol-badge">{symbol}</span>
@@ -4150,15 +4155,15 @@ function App() {
 
                     {frameworkIndicatorVisibility.rsScore && (
                       <div className="dashboard-mini-chart dashboard-indicator-chart">
-                        <strong>RS Score (0-100)</strong>
+                        <strong>Relative-price percentile (own history)</strong>
                         {relativeStrengthChartData.length > 1 ? (
                           <ResponsiveContainer width="100%" height={200}>
                             <LineChart data={relativeStrengthChartData.slice(-160)}>
                               <CartesianGrid strokeDasharray="3 3" vertical={false} />
                               <XAxis dataKey="date" minTickGap={38} tick={{ fontSize: 12 }} tickFormatter={formatChartDate} /><YAxis domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} width={42} tick={{ fontSize: 12 }} />
-                              <Tooltip labelFormatter={formatChartDate} formatter={(value) => [`${Number(value).toFixed(2)}`, "RS Score"]} />
+                              <Tooltip labelFormatter={formatChartDate} formatter={(value) => [`${Number(value).toFixed(2)}`, "Relative-price percentile"]} />
                               <ReferenceLine y={100} stroke="#94a3b8" strokeDasharray="3 3" />
-                              <Line type="monotone" dataKey="rsScore" name="RS Score" stroke="#111827" dot={false} strokeWidth={1.9} connectNulls isAnimationActive={false} />
+                              <Line type="monotone" dataKey="rsScore" name="Relative-price percentile" stroke="#111827" dot={false} strokeWidth={1.9} connectNulls isAnimationActive={false} />
                             </LineChart>
                           </ResponsiveContainer>
                         ) : <div className="framework-placeholder">RS framework ready — benchmark series will populate when available.</div>}
@@ -4258,7 +4263,7 @@ function App() {
             <table className="composite-ranking-table">
               <thead>
                 <tr>
-                  <th>#</th><th>Stock</th><th>Composite</th><th>Technical</th><th>Fundamental</th><th>Ownership</th><th>Sector</th><th>RS</th><th>EPS Score</th><th>PAT Score</th><th>Sales Score</th><th>Alpha</th><th>Beta</th><th>Std Deviation</th><th>Coverage</th>
+                  <th>#</th><th>Stock</th><th>Composite</th><th>Technical</th><th>Fundamental</th><th>Ownership</th><th>Sector</th><th>RS</th><th>EPS Score</th><th>PAT Score</th><th>Sales Score</th><th>Alpha</th><th title="Two-year weekly adjusted returns on aligned dates">Beta (2Y weekly)</th><th>Std Deviation</th><th>Coverage</th>
                 </tr>
               </thead>
               <tbody>
@@ -4281,7 +4286,7 @@ function App() {
                     <td>{formatScoreValue(row.pat_score)}</td>
                     <td>{formatScoreValue(row.sales_score)}</td>
                     <td>{formatScoreValue(row.alpha)}</td>
-                    <td>{formatScoreValue(row.beta)}</td>
+                    <td title={`${row.beta_basis || "Adjusted weekly history pending"} · ${row.beta_observations || 0} aligned weekly returns`}>{formatScoreValue(row.beta)}</td>
                     <td>{row.standard_deviation_percent != null ? `${formatScoreValue(row.standard_deviation_percent)}%` : "N/A"}</td>
                     <td>{row.display_coverage_percent != null ? `${Number(row.display_coverage_percent).toFixed(0)}%` : "N/A"}</td>
                   </tr>
@@ -4605,6 +4610,9 @@ function App() {
         </section>
 
 
+        {activeView === "sector" && <SectorWorkspace api={API}/>}
+        {activeView === "portfolio" && <PortfolioWorkspace api={API} symbol={symbol} exchange={exchange}/>}
+
         {activeView === "excel" && (
           <section className="utility-workspace excel-workspace utility-workspace-premium">
             <div className="utility-premium-hero">
@@ -4691,7 +4699,7 @@ function App() {
               </div>
               <div className="settings-health-summary">
                 <span className={`settings-health-dot ${dataStatus}`}></span>
-                <div><small>Market data</small><strong>{dataStatus === "fresh" ? "Live & Fresh" : dataStatus === "loading" ? "Refreshing…" : dataStatus}</strong></div>
+                <div><small>Market data</small><strong>{dataStatus === "fresh" ? "Provider response received" : dataStatus === "loading" ? "Refreshing…" : dataStatus}</strong></div>
               </div>
             </div>
 
@@ -5079,6 +5087,7 @@ function App() {
 
         {activeView === "analytics" && (
         <section className="backtesting-workspace bt-pro-workspace">
+          <TradeBacktest key={`${exchange}:${symbol}`} api={API} symbol={symbol} exchange={exchange}/>
           <section className="bt-v16-command-card">
             <div className="bt-v16-heading-row">
               <div className="bt-v16-heading">
@@ -5857,7 +5866,7 @@ function App() {
           )}
 
           <div className="chart-note">
-            Price-chart RS overlay = stock price / broad-market benchmark and is visually rebased only to share the price scale. The indicator RS Score is separately bounded from 0 to 100 and never crosses 100. Relative Return = Stock Return % - Benchmark Return % and is independent of the editable RS weights. The weights change only the Final RS Score. Each stock percentile uses the client-required market universe: {"5,000 stocks"}. Formula: [(stocks with lower relative return) + (stocks with equal relative return − 1) / 2] × 100 / (total stocks − 1). Final RS Score uses the enabled weighted percentile components. Default period weights remain 1W×0.30 + 1M×0.25 + 3M×0.20 + 6M×0.15 + 12M×0.10. 2W, 2M, and Sector RS are optional with default weight 0.
+            Price-chart RS overlay = stock price / broad-market benchmark on its own scale. The historical chart ranks relative prices within this stock’s own observed history, not the 5,000-stock universe. The Final RS Score card uses the client universe formula and remains Provisional until coverage is complete. Relative Return = Stock Return % - Benchmark Return % and is independent of the editable RS weights. The weights change only the Final RS Score. Each stock percentile uses the client-required market universe: {"5,000 stocks"}. Formula: [(stocks with lower relative return) + (stocks with equal relative return − 1) / 2] × 100 / (total stocks − 1). Final RS Score uses the enabled weighted percentile components. Default period weights remain 1W×0.30 + 1M×0.25 + 3M×0.20 + 6M×0.15 + 12M×0.10. 2W, 2M, and Sector RS are optional with default weight 0.
           </div>
           {technicalSummary?.rs_available && relativeStrengthChartData.length > 1 ? (
             <ResponsiveContainer width="100%" height={230}>
@@ -5865,9 +5874,9 @@ function App() {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="date" minTickGap={35} tickFormatter={formatChartDate} />
                 <YAxis domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} />
-                <Tooltip labelFormatter={formatChartDate} formatter={(value) => [Number(value).toFixed(2), "RS Score"]} />
+                <Tooltip labelFormatter={formatChartDate} formatter={(value) => [Number(value).toFixed(2), "Relative-price percentile"]} />
                 <ReferenceLine y={100} stroke="#94a3b8" strokeDasharray="3 3" />
-                <Line type="monotone" dataKey="rsScore" name="RS Score" strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="rsScore" name="Relative-price percentile" strokeWidth={2} dot={false} />
               </LineChart>
             </ResponsiveContainer>
           ) : (

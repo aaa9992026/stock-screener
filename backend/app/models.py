@@ -153,6 +153,7 @@ class RSHistory(Base):
     provider = Column(String)
     error = Column(Text)
     retry_after = Column(DateTime)
+    retry_count = Column(Integer, default=0)
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
     __table_args__ = (UniqueConstraint("symbol", "exchange", name="uq_rs_history_symbol_exchange"),)
 
@@ -173,3 +174,46 @@ class ScoreSnapshot(Base):
     exchange = Column(String, nullable=False, index=True)
     payload_json = Column(Text, nullable=False)
     created_at = Column(DateTime, server_default=func.now(), index=True)
+
+
+class Portfolio(Base):
+    __tablename__ = "portfolios"
+    id = Column(String, primary_key=True)
+    name = Column(String, nullable=False)
+    currency = Column(String, nullable=False)
+    inception_date = Column(Date, nullable=False)
+    starting_capital = Column(Float, nullable=False)
+    cash = Column(Float, nullable=False)
+    max_position_percent = Column(Float, nullable=False)
+    max_exposure_percent = Column(Float, nullable=False)
+    risk_percent = Column(Float, nullable=False)
+    commission_bps = Column(Float, nullable=False)
+    created_at = Column(DateTime, server_default=func.now())
+
+
+class PortfolioTrade(Base):
+    __tablename__ = "portfolio_trades"
+    id = Column(String, primary_key=True)
+    portfolio_id = Column(String, nullable=False, index=True)
+    request_id = Column(String, nullable=False)
+    sequence = Column(Integer, nullable=False)
+    symbol = Column(String, nullable=False)
+    exchange = Column(String, nullable=False)
+    side = Column(String, nullable=False)
+    date = Column(Date, nullable=False)
+    quantity = Column(Integer, nullable=False)
+    price = Column(Float, nullable=False)
+    fee = Column(Float, nullable=False)
+    initial_stop = Column(Float)
+    realized_pnl = Column(Float, default=0)
+    __table_args__ = (UniqueConstraint("portfolio_id", "request_id", name="uq_portfolio_request"),)
+
+
+class PortfolioValuation(Base):
+    __tablename__ = "portfolio_valuations"
+    id = Column(Integer, primary_key=True)
+    portfolio_id = Column(String, nullable=False, index=True)
+    date = Column(Date, nullable=False)
+    equity = Column(Float, nullable=False)
+    cash = Column(Float, nullable=False)
+    __table_args__ = (UniqueConstraint("portfolio_id", "date", name="uq_portfolio_valuation"),)

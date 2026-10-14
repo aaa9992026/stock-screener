@@ -38,9 +38,12 @@ class CompletionTests(unittest.TestCase):
         self.db.add_all([Company(symbol="AAPL", exchange="US", name="Apple Inc.", is_active=1), Company(symbol="RELIANCE", exchange="NSE", name="Reliance Industries", isin="INE002A01018", is_active=1)])
         self.db.commit()
         market._LIVE_ROW_CACHE.clear()
+        self.risk_patch = patch("app.services.risk_metrics.cached_beta_batch", return_value={})
+        self.risk_patch.start()
         backfill._symbol_retry_after.clear()
 
     def tearDown(self):
+        self.risk_patch.stop()
         self.db.close()
         self.engine.dispose()
 

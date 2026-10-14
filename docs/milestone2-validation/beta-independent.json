@@ -1,0 +1,37 @@
+{
+  "US:AAPL": {
+    "observations": 104,
+    "independent_beta": 1.0645773943534018,
+    "api_beta": 1.064578,
+    "tolerance": 1e-06,
+    "pass": true
+  },
+  "US:NVDA": {
+    "observations": 104,
+    "independent_beta": 1.8402228800867109,
+    "api_beta": 1.840223,
+    "tolerance": 1e-06,
+    "pass": true
+  },
+  "US:LITE": {
+    "observations": 104,
+    "independent_beta": 2.121070040078691,
+    "api_beta": 2.12107,
+    "tolerance": 1e-06,
+    "pass": true
+  },
+  "NSE:RELIANCE": {
+    "observations": 104,
+    "independent_beta": 0.8854903292966948,
+    "api_beta": 0.88549,
+    "tolerance": 1e-06,
+    "pass": true
+  },
+  "BSE:TCS": {
+    "observations": 104,
+    "independent_beta": 0.7085970452617695,
+    "api_beta": 0.708597,
+    "tolerance": 1e-06,
+    "pass": true
+  }
+}

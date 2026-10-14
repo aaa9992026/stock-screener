@@ -1,0 +1,128 @@
+{
+  "as_of": "2026-10-14",
+  "stocks": {
+    "US:AAPL": {
+      "history": {
+        "status": "available",
+        "count": 5124,
+        "first_date": "2006-06-01",
+        "last_date": "2026-10-13"
+      },
+      "metadata": {
+        "status": "available",
+        "count": null
+      },
+      "statements": {
+        "status": "available",
+        "count": null
+      }
+    },
+    "US:NVDA": {
+      "history": {
+        "status": "available",
+        "count": 5124,
+        "first_date": "2006-06-01",
+        "last_date": "2026-10-13"
+      },
+      "metadata": {
+        "status": "available",
+        "count": null
+      },
+      "statements": {
+        "status": "available",
+        "count": null
+      }
+    },
+    "US:LITE": {
+      "history": {
+        "status": "available",
+        "count": 2823,
+        "first_date": "2015-07-23",
+        "last_date": "2026-10-13"
+      },
+      "metadata": {
+        "status": "available",
+        "count": null
+      },
+      "statements": {
+        "status": "available",
+        "count": null
+      }
+    },
+    "NSE:RELIANCE": {
+      "history": {
+        "status": "available",
+        "count": 5027,
+        "first_date": "2006-06-01",
+        "last_date": "2026-10-14"
+      },
+      "metadata": {
+        "status": "available",
+        "count": null
+      },
+      "statements": {
+        "status": "available",
+        "count": null
+      }
+    },
+    "BSE:TCS": {
+      "history": {
+        "status": "available",
+        "count": 5024,
+        "first_date": "2006-06-01",
+        "last_date": "2026-10-14"
+      },
+      "metadata": {
+        "status": "available",
+        "count": null
+      },
+      "statements": {
+        "status": "available",
+        "count": null
+      }
+    }
+  },
+  "sec_user_agent_configured": false,
+  "risk_metrics": {
+    "US:AAPL": {
+      "beta": 1.064578,
+      "alpha": 7.234465,
+      "observations": 104,
+      "basis": "2Y weekly adjusted closes; common daily observation dates; completed weeks",
+      "as_of": "2026-10-12",
+      "provider": "Yahoo auto_adjust=True"
+    },
+    "US:NVDA": {
+      "beta": 1.840223,
+      "alpha": 5.32024,
+      "observations": 104,
+      "basis": "2Y weekly adjusted closes; common daily observation dates; completed weeks",
+      "as_of": "2026-10-12",
+      "provider": "Yahoo auto_adjust=True"
+    },
+    "US:LITE": {
+      "beta": 2.12107,
+      "alpha": 130.437462,
+      "observations": 104,
+      "basis": "2Y weekly adjusted closes; common daily observation dates; completed weeks",
+      "as_of": "2026-10-12",
+      "provider": "Yahoo auto_adjust=True"
+    },
+    "NSE:RELIANCE": {
+      "beta": 0.88549,
+      "alpha": -2.942255,
+      "observations": 104,
+      "basis": "2Y weekly adjusted closes; common daily observation dates; completed weeks",
+      "as_of": "2026-10-12",
+      "provider": "Yahoo auto_adjust=True"
+    },
+    "BSE:TCS": {
+      "beta": 0.708597,
+      "alpha": -25.106314,
+      "observations": 104,
+      "basis": "2Y weekly adjusted closes; common daily observation dates; completed weeks",
+      "as_of": "2026-10-12",
+      "provider": "Yahoo auto_adjust=True"
+    }
+  }
+}
