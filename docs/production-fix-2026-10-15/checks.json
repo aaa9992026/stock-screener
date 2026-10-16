@@ -1,0 +1,36 @@
+{
+  "scope": "Current working-tree validation; not deployment acceptance",
+  "backend": {
+    "tests": 43,
+    "passed": true
+  },
+  "frontend_build": {
+    "passed": true,
+    "warnings": [
+      "existing bundle size warning"
+    ]
+  },
+  "frontend_lint": {
+    "errors": 0,
+    "existing_warnings": 8
+  },
+  "local_http_replay": {
+    "checks": 113,
+    "passed": true,
+    "source": "Oct14 recorded real provider inputs"
+  },
+  "browser_replay": {
+    "checks": 184,
+    "layout_cases": 110,
+    "console_errors": 0,
+    "layout_failures": 0,
+    "widths": [
+      390,
+      1440
+    ]
+  },
+  "git_diff_check": {
+    "passed": true
+  },
+  "production_deployed": false
+}

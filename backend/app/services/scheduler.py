@@ -149,7 +149,7 @@ def cleanup_legacy_universe():
 
 def refresh_universe_fundamentals():
     """Fill missing current fundamentals/ownership in bounded provider batches."""
-    batch_size = max(1, min(50, int(os.getenv("FUNDAMENTAL_BACKFILL_BATCH_SIZE", "8") or 8)))
+    batch_size = max(1, min(50, int(os.getenv("FUNDAMENTAL_BACKFILL_BATCH_SIZE", "2" if _env_flag("FREE_TIER_MODE", True) else "8") or 2)))
     try:
         result = backfill_all_fundamentals_once(batch_size=batch_size)
         logger.info("Universe fundamental enrichment completed: %s", result)
@@ -212,7 +212,7 @@ def start_scheduler():
             next_run_time=datetime.now() + timedelta(seconds=30),
         )
 
-    if (not free_tier_mode) and _env_flag("FUNDAMENTAL_BACKFILL_ENABLED", True):
+    if _env_flag("FUNDAMENTAL_BACKFILL_ENABLED", True):
         fundamental_interval = max(5, int(os.getenv("FUNDAMENTAL_BACKFILL_INTERVAL_MINUTES", "10") or 10))
         scheduler.add_job(
             refresh_universe_fundamentals,
@@ -226,3 +226,11 @@ def start_scheduler():
         )
 
     scheduler.start()
+
+
+def job_status(job_id):
+    """Report the actual scheduler, not merely its environment switch."""
+    job = scheduler.get_job(job_id)
+    next_run = getattr(job, "next_run_time", None) if job else None
+    return {"running": scheduler.running, "registered": job is not None,
+            "next_run_at": next_run.isoformat() if next_run else None}

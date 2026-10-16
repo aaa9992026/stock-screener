@@ -1,0 +1,15 @@
+{
+  "scope": "Synthetic 5000-stock local SQLite memory regression, not market observations",
+  "cases": {
+    "rs": {
+      "seconds": 14.09,
+      "peak_python_allocation_mb": 30.44,
+      "passed": true
+    },
+    "sectors": {
+      "seconds": 14.59,
+      "peak_python_allocation_mb": 7.91,
+      "passed": true
+    }
+  }
+}

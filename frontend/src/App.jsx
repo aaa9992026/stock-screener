@@ -944,6 +944,10 @@ function App() {
       const next = {
         rows: res.data.rows || [],
         candidate_count: res.data.candidate_count || 0,
+        ranked_candidate_count: res.data.ranked_candidate_count ?? (res.data.rows || []).length,
+        final_qualified_count: res.data.final_qualified_count ?? (res.data.rows || []).filter((row) => row.score_status === "Final").length,
+        snapshot_at: res.data.snapshot_at,
+        score_version: res.data.score_version,
         formula: res.data.formula || "",
         data_rule: res.data.data_rule || "",
         rs_note: res.data.rs_note || "",
@@ -4257,7 +4261,7 @@ function App() {
                 <option value="desc">Descending ↓</option><option value="asc">Ascending ↑</option>
               </select>
             </label>
-            <small>Snapshot {topComposite.snapshot_at || "unavailable"} · {topComposite.score_version || "unversioned"}. Daily scoring; displayed weights apply to these saved components.</small>
+            <small>{topComposite.rows.length} displayed / {topComposite.ranked_candidate_count ?? topComposite.rows.length} ranked candidates; {topComposite.final_qualified_count ?? 0} fully qualified in this evaluated set. Snapshot {topComposite.snapshot_at || "unavailable"} · {topComposite.score_version || "unversioned"}. Daily scoring; displayed weights apply to these saved components.</small>
           </div>
           <div id="ranking-results" className="composite-table-wrap">
             <table className="composite-ranking-table">

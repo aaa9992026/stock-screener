@@ -129,7 +129,7 @@ def _history_stats(db: Session, market: str) -> dict[tuple[str, str], dict]:
         for exchange, symbol, count, first_date, last_date in rows
     }
 
-    for item in db.query(RSHistory).filter(RSHistory.exchange.in_(exchanges), RSHistory.points_payload.isnot(None)).all():
+    for item in db.query(RSHistory.exchange, RSHistory.symbol, RSHistory.row_count, RSHistory.first_date, RSHistory.last_date).filter(RSHistory.exchange.in_(exchanges), RSHistory.points_payload.isnot(None)):
         key = (item.exchange.upper(), item.symbol.upper())
         cached = {"rows": item.row_count, "first_date": item.first_date, "last_date": item.last_date}
         if _is_ready(cached) or key not in stats:
@@ -190,6 +190,7 @@ def universe_backfill_status(db: Session, market: str) -> dict:
             else:
                 stale_or_short += 1
 
+    from app.services.scheduler import job_status
     active = len(companies)
     pending = max(0, active - ready)
     return {
@@ -215,6 +216,7 @@ def universe_backfill_status(db: Session, market: str) -> dict:
         "last_batch": last_batch,
         "retry_cooldown_symbols": retries,
         "scheduler_enabled": str(os.getenv("RS_BACKFILL_ENABLED", "1")).lower() in {"1", "true", "yes", "on"},
+        "scheduler": job_status("rs_universe_backfill"),
         "storage": "compressed provider date/open/close observations",
     }
 
@@ -225,7 +227,11 @@ def _candidate_companies(db: Session, market: str, limit: int) -> list[Company]:
     stats = _history_stats(db, market)
     companies = eligible_companies(db, market)
 
-    persisted = {(r.exchange, r.symbol): r for r in db.query(RSHistory).filter(RSHistory.exchange.in_(exchanges)).all()}
+    persisted = {(r.exchange, r.symbol): r for r in db.query(
+        RSHistory.exchange, RSHistory.symbol, RSHistory.row_count,
+        RSHistory.first_date, RSHistory.last_date, RSHistory.retry_after,
+        RSHistory.points_payload.isnot(None).label("has_points"),
+    ).filter(RSHistory.exchange.in_(exchanges))}
     cohort_date = evaluation_date(db, market)
     candidates = []
     now = datetime.now(timezone.utc).replace(tzinfo=None)
@@ -240,7 +246,7 @@ def _candidate_companies(db: Session, market: str, limit: int) -> list[Company]:
         # Refresh throughout a rolling evaluation; never stop once 5,000 have been seen.
         compact = persisted.get(key)
         compact_stat = {"rows": compact.row_count, "first_date": compact.first_date, "last_date": compact.last_date} if compact else None
-        if compact and compact.points_payload and _is_ready(compact_stat) and compact.last_date >= cohort_date:
+        if compact and compact.has_points and _is_ready(compact_stat) and compact.last_date >= cohort_date:
             continue
         # Symbols with no history first, then oldest/stalest history.
         last_date = stat.get("last_date") if stat else None
@@ -455,7 +461,7 @@ def backfill_market_batch(market: str, batch_size: int | None = None) -> dict:
                 end=end_date.isoformat(),
                 auto_adjust=False,
                 group_by="ticker",
-                threads=True,
+                threads=4,
                 progress=False,
                 timeout=10,
             )

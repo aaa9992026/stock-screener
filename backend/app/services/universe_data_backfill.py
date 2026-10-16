@@ -13,7 +13,7 @@ from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import Session
 
 from app.database import SessionLocal
-from app.models import Company, Fundamental, Ownership, OHLCV
+from app.models import Company, Fundamental, Ownership, OHLCV, RSHistory
 from app.services.equity_filters import apply_eligible_equity_filter
 from app.services.fundamental_sync import sync_fundamental_data
 from app.services.providers.yahoo_provider import YahooProvider
@@ -85,7 +85,11 @@ def universe_data_status(db: Session, market: str) -> dict:
         OHLCV.symbol == Company.symbol,
         OHLCV.exchange == Company.exchange,
     ).exists()
-    price_ready = int(base.filter(price_exists).count())
+    compact_exists = db.query(RSHistory.id).filter(
+        RSHistory.symbol == Company.symbol, RSHistory.exchange == Company.exchange,
+        RSHistory.points_payload.isnot(None), RSHistory.row_count > 0,
+    ).exists()
+    price_ready = int(base.filter(or_(price_exists, compact_exists)).count())
 
     fundamentals_ready = int(
         base.join(
@@ -119,6 +123,8 @@ def universe_data_status(db: Session, market: str) -> dict:
     def pct(value):
         return round((value / total) * 100, 1) if total else 0.0
 
+    from app.services.scheduler import job_status
+    enrichment_job = job_status("fundamental_universe_backfill")
     return {
         "market": market,
         "eligible_equities": total,
@@ -130,7 +136,10 @@ def universe_data_status(db: Session, market: str) -> dict:
         "ownership_percent": pct(ownership_ready),
         "classification_available": classified,
         "classification_percent": pct(classified),
-        "automatic_enrichment": True,
+        "automatic_enrichment": enrichment_job["running"] and enrichment_job["registered"],
+        "scheduler": enrichment_job,
+        "coverage_basis": "Any current field; not complete historical statement or ownership coverage. Counts include exchange listings, not deduplicated issuers.",
+        "price_history_basis": "Stored OHLCV or compressed date/open/close history; not full OHLCV availability",
         "data_rule": "Only real provider values are stored; unavailable fields remain N/A.",
     }
 

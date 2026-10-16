@@ -41,6 +41,11 @@ def persist_history(db, symbol, exchange, rows, provider="Yahoo Finance"):
     if item is None:
         item = RSHistory(symbol=symbol.upper(), exchange=exchange.upper())
         db.add(item)
+    elif points:
+        # Partial provider refreshes must not erase previously verified dates.
+        existing = [{"date": d, "open": o, "close": c} for d, o, c in decode_points(item.points_payload)]
+        incoming = [{"date": d, "open": o, "close": c} for d, o, c in points]
+        payload, points = encode_points(existing + incoming)
     if points:
         item.points_payload = payload
         item.first_date = date.fromisoformat(points[0][0])

@@ -48,14 +48,7 @@ def _env_flag(name: str, default: bool = False) -> bool:
 
 
 def _free_tier_compact_if_needed():
-    """Reclaim an oversized OHLCV cache on Railway's small free volume.
-
-    OHLCV is a rebuildable cache. Company, fundamental and ownership tables are
-    preserved. The compact is only attempted in FREE_TIER_MODE and only when
-    the OHLCV relation itself is already large enough to threaten the 500 MB
-    volume. Live chart/Top-200 fallbacks keep the app usable without repopulating
-    multi-million-row history.
-    """
+    """Report storage pressure without removing existing market observations."""
     if not _env_flag("FREE_TIER_MODE", True):
         return
     if getattr(engine.dialect, "name", "") != "postgresql":
@@ -70,10 +63,9 @@ def _free_tier_compact_if_needed():
             size = conn.execute(text("SELECT pg_total_relation_size('public.ohlcv')")).scalar() or 0
             if int(size) >= threshold_bytes:
                 logger.warning(
-                    "FREE_TIER_MODE: OHLCV cache is %.1f MB; truncating rebuildable cache to reclaim volume",
+                    "FREE_TIER_MODE: OHLCV cache is %.1f MB; existing records retained. Review storage capacity.",
                     int(size) / 1024 / 1024,
                 )
-                conn.execute(text("TRUNCATE TABLE ohlcv RESTART IDENTITY"))
     except Exception:
         # A failed compaction must not prevent the API process from starting.
         logger.exception("FREE_TIER_MODE cache compaction failed")

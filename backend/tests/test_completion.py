@@ -149,6 +149,7 @@ class CompletionTests(unittest.TestCase):
                 self.assertEqual(book["Fundamental_Ownership"]["B2"].value, "N/A")
                 self.assertEqual(book["Ranking_Config"]["C2"].value, 30)
                 self.assertEqual(book["Ranking_Config"]["B8"].data_type, "f")
+                self.assertIn("/SUM(C2:C7)*100", book["Sector_Ranking_Config"]["B9"].value)
                 csv = market.get_excel_live_csv(symbol, exchange, 5000, self.db)
                 self.assertIn(symbol.encode(), csv.body)
 

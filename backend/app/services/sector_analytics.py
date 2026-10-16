@@ -11,13 +11,12 @@ def sector_analytics(db, market, sector=None):
     exchanges = _screener_market_exchanges(market)
     market_groups = {_rs_market_group(ex) for ex in exchanges}
     groups, enrichment = {}, {}
-    for snapshot in db.query(RankingSnapshot).filter(RankingSnapshot.exchange.in_(exchanges)).all():
+    for snapshot in db.query(RankingSnapshot).filter(RankingSnapshot.exchange.in_(exchanges)).yield_per(50):
         try:
             enrichment[(snapshot.exchange, snapshot.symbol)] = json.loads(snapshot.payload_json)
         except (TypeError, ValueError):
             continue
     rows, sector_stats = [], {}
-    histories = {(r.exchange, r.symbol): decode_points(r.points_payload) for r in db.query(RSHistory).filter(RSHistory.exchange.in_(exchanges)).all() if r.points_payload}
     for group in market_groups:
         market_rows = []
         for company in eligible_companies(db, group):
@@ -38,6 +37,7 @@ def sector_analytics(db, market, sector=None):
             benchmarks[group] = [p for p in points if _point_date(p) <= evaluation_date(db, group)]
         except Exception:
             benchmarks[group] = []
+    row_lookup = {(row["exchange"], row["symbol"]): row for row in rows}
     for row in rows:
         group = _rs_market_group(row["exchange"])
         name = row["sector"]
@@ -45,7 +45,15 @@ def sector_analytics(db, market, sector=None):
         bucket["stock_count"] += 1
         if enrichment.get((row["exchange"], row["symbol"])):
             bucket["enriched"] += 1
-        points = histories.get((row["exchange"], row["symbol"]), [])
+    # Decode one constituent at a time; retaining 10,000 expanded histories
+    # would exceed the constrained production worker's memory budget.
+    for history in db.query(RSHistory.exchange, RSHistory.symbol, RSHistory.points_payload).filter(RSHistory.exchange.in_(exchanges), RSHistory.points_payload.isnot(None)).yield_per(25):
+        row = row_lookup.get((history.exchange, history.symbol))
+        if row is None:
+            continue
+        group = _rs_market_group(row["exchange"])
+        bucket = groups[(group, row["sector"])]
+        points = decode_points(history.points_payload)
         if points and benchmarks[group]:
             _, values = _weighted_relative_return_from_points(points, benchmarks[group], {"1m": 1})
             value = values.get("1m") or {}

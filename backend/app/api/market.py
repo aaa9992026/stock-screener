@@ -44,6 +44,7 @@ router = APIRouter(prefix="/market", tags=["market"])
 
 _LIVE_ROW_CACHE = {}
 _LIVE_ROW_CACHE_TTL = 900
+_LIVE_ROW_CACHE_LOCK = threading.Lock()
 _LIVE_SCREENER_SNAPSHOT_CACHE = {}
 _LIVE_BENCHMARK_CLOSE_CACHE = {}
 _RANKING_ENRICH_CACHE = {}
@@ -114,7 +115,16 @@ def _live_provider_rows(symbol: str, exchange: str, years: int = 2):
         except Exception:
             continue
     normalized.sort(key=lambda row: row.date)
-    _LIVE_ROW_CACHE[cache_key] = (now, normalized)
+    with _LIVE_ROW_CACHE_LOCK:
+        _LIVE_ROW_CACHE[cache_key] = (now, normalized)
+        for key, (saved_at, _) in list(_LIVE_ROW_CACHE.items()):
+            if now - saved_at >= _LIVE_ROW_CACHE_TTL:
+                _LIVE_ROW_CACHE.pop(key, None)
+        # Requests for many distinct 20-year histories must not accumulate
+        # indefinitely in a long-running constrained worker.
+        while len(_LIVE_ROW_CACHE) > 64 or sum(len(value[1]) for value in _LIVE_ROW_CACHE.values()) > 50000:
+            oldest = min(_LIVE_ROW_CACHE, key=lambda key: _LIVE_ROW_CACHE[key][0])
+            _LIVE_ROW_CACHE.pop(oldest, None)
     return normalized
 
 
@@ -222,7 +232,7 @@ def _live_close_history_for_candidates(rows):
                     interval="1d",
                     auto_adjust=False,
                     progress=False,
-                    threads=True,
+                    threads=4,
                     group_by="ticker",
                 )
             except Exception:
@@ -2319,41 +2329,48 @@ def _rs_universe_metrics(db: Session, exchange: str, benchmark_points):
     from app.services.rs_universe_backfill import eligible_companies, _is_ready
     companies = eligible_companies(db, _rs_market_group(exchange))
     eligible = {(c.exchange, c.symbol): c for c in companies}
-    grouped = {}
     end_date = _point_date(benchmark_points[-1])
-    for item in db.query(RSHistory).filter(RSHistory.exchange.in_(_rs_market_exchanges(exchange)), RSHistory.last_date >= end_date).all():
-        key = (item.exchange, item.symbol)
-        if key in eligible:
-            points = decode_points(item.points_payload)
-            if points:
-                grouped[key] = points
-    # Existing verified OHLCV remains a migration/fallback source. Free-tier
-    # batches write only compressed observations and never repopulate this table.
-    query = db.query(OHLCV).join(Company, (Company.symbol == OHLCV.symbol) & (Company.exchange == OHLCV.exchange)).filter(
-        OHLCV.exchange.in_(_rs_market_exchanges(exchange)), Company.is_active == 1, OHLCV.date >= date.today() - timedelta(days=500))
-    stored = {}
-    for row in query.order_by(OHLCV.exchange, OHLCV.symbol, OHLCV.date).all():
-        key = (row.exchange, row.symbol)
-        if key in grouped or key not in eligible or row.open is None or row.close is None:
-            continue
-        if row.date.weekday() >= 5 or not all(math.isfinite(float(v)) and float(v) > 0 for v in (row.open, row.close)):
-            continue
-        stored.setdefault(key, []).append((row.date, float(row.open), float(row.close)))
-    grouped.update({key: points for key, points in stored.items() if points[-1][0] >= end_date})
     weights = {label: 1 for label in ("1w", "2w", "1m", "2m", "3m", "6m", "1y")}
-    metrics, sectors = {}, {}
-    for key, points in sorted(grouped.items()):
+    metrics, sectors, covered = {}, {}, set()
+    def consume(key, points):
+        if key not in eligible or not points or points[-1][0] < end_date:
+            return
         if not _is_ready({"rows": len(points), "first_date": points[0][0], "last_date": points[-1][0]}):
-            continue
+            return
         _, values = _weighted_relative_return_from_points(points, benchmark_points, weights)
         if not all(label in values for label in ("1w", "1m", "3m", "6m", "1y")):
-            continue
+            return
         name = f"{key[0]}:{key[1]}"
         metrics[name] = values
         sectors[name] = eligible[key].sector
-        if len(metrics) >= _rs_percentile_total(exchange):
-            break
-    return metrics, sectors
+        covered.add(key)
+    query = db.query(RSHistory.exchange, RSHistory.symbol, RSHistory.points_payload).filter(
+        RSHistory.exchange.in_(_rs_market_exchanges(exchange)), RSHistory.last_date >= end_date)
+    for item in query.order_by(RSHistory.exchange, RSHistory.symbol).yield_per(25):
+        key = (item.exchange, item.symbol)
+        if key in eligible:
+            consume(key, decode_points(item.points_payload))
+    # Stream legacy OHLCV fallback one symbol at a time, retaining only the
+    # small return summary. Existing observations are never deleted.
+    query = db.query(OHLCV.exchange, OHLCV.symbol, OHLCV.date, OHLCV.open, OHLCV.close).join(
+        Company, (Company.symbol == OHLCV.symbol) & (Company.exchange == OHLCV.exchange)).filter(
+        OHLCV.exchange.in_(_rs_market_exchanges(exchange)), Company.is_active == 1,
+        OHLCV.date >= date.today() - timedelta(days=500))
+    current_key, points = None, []
+    for row in query.order_by(OHLCV.exchange, OHLCV.symbol, OHLCV.date).yield_per(500):
+        key = (row.exchange, row.symbol)
+        if key in covered or key not in eligible:
+            continue
+        if key != current_key:
+            if current_key is not None:
+                consume(current_key, points)
+            current_key, points = key, []
+        if row.open is not None and row.close is not None and row.date.weekday() < 5 and all(math.isfinite(float(v)) and float(v) > 0 for v in (row.open, row.close)):
+            points.append((row.date, float(row.open), float(row.close)))
+    if current_key is not None:
+        consume(current_key, points)
+    selected = sorted(metrics)[:_rs_percentile_total(exchange)]
+    return {k: metrics[k] for k in selected}, {k: sectors[k] for k in selected}
 
 
 def _weighted_rs_against_benchmark(daily_rows, exchange: str, period_weights=None, db: Session = None):
@@ -2556,7 +2573,7 @@ def _normalize_score_weights(weights=None):
     return {k: (v / total) * 100.0 for k, v in merged.items()}
 
 
-def _score_symbol(db: Session, symbol: str, exchange: str, weights=None, include_components=False, subweights=None, rs_period_weights=None):
+def _score_symbol(db: Session, symbol: str, exchange: str, weights=None, include_components=False, subweights=None, rs_period_weights=None, live_fallback=False):
     rows = (
         db.query(OHLCV)
         .filter(OHLCV.symbol == symbol, OHLCV.exchange == exchange)
@@ -2564,6 +2581,8 @@ def _score_symbol(db: Session, symbol: str, exchange: str, weights=None, include
         .all()
     )
     rows = _valid_trading_rows(rows, exchange)
+    if live_fallback:
+        rows = _market_rows_with_live_fallback(db, symbol, exchange, min_rows=200, years=2)
     fundamental = (
         db.query(Fundamental)
         .filter(Fundamental.symbol == symbol, Fundamental.exchange == exchange)
@@ -3026,7 +3045,7 @@ def get_dashboard_summary(
     rs_period_weights = {"1w": rs_1w_weight, "2w": rs_2w_weight, "1m": rs_1m_weight, "2m": rs_2m_weight, "3m": rs_3m_weight, "6m": rs_6m_weight, "1y": rs_1y_weight, "sector": rs_sector_weight}
     score, coverage, components, normalized_weights = _score_symbol(
         db, symbol, exchange, weights=requested_weights, include_components=True,
-        subweights=ranking_subweights, rs_period_weights=rs_period_weights
+        subweights=ranking_subweights, rs_period_weights=rs_period_weights, live_fallback=True
     )
     if score is None:
         raise HTTPException(status_code=404, detail="Not enough data to calculate dashboard score")
@@ -3519,7 +3538,7 @@ def export_excel_snapshot(symbol: str, exchange: str = "US", limit: int = Query(
         sector.cell(idx, 3, weight)
         sector.cell(idx, 4, f"=IF(ISNUMBER(B{idx}),B{idx}*C{idx}/100,0)")
     sector["A9"] = "Sector Score"
-    sector["B9"] = "=IF(COUNT(B2:B7)=0,\"\",SUM(D2:D7)/SUMPRODUCT(--ISNUMBER(B2:B7),C2:C7)*100)"
+    sector["B9"] = "=IFERROR(IF(COUNT(B2:B7)=0,\"\",SUM(D2:D7)/SUM(C2:C7)*100),\"\")"
     sector["A11"] = "Growth Breadth"
     sector["B11"] = "=(Sales breadth + PAT breadth + EPS breadth) / 3"
     sector["A12"] = "Acceleration Breadth"
@@ -5327,7 +5346,7 @@ def get_top_composite_dashboard(
         distributions = {p: [v[p]["relative_return_percent"] for v in metrics.values()] for p in periods}
         targets = dict(metrics)
         candidate_keys = {(r["exchange"], r["symbol"]) for r in base_rows if _rs_market_group(r["exchange"]) == group}
-        for cached in db.query(RSHistory).filter(RSHistory.exchange.in_(_rs_market_exchanges(ex)), RSHistory.last_date >= as_of).all():
+        for cached in db.query(RSHistory).filter(RSHistory.exchange.in_(_rs_market_exchanges(ex)), RSHistory.last_date >= as_of).yield_per(25):
             identity = f"{cached.exchange}:{cached.symbol}"
             if (cached.exchange, cached.symbol) not in candidate_keys or identity in targets:
                 continue
@@ -5479,22 +5498,9 @@ def get_top_composite_dashboard(
                 2,
             )
 
-        # The bounded live peer set materially improves real data coverage, but
-        # it is still not the client's complete 5,000-stock historical
-        # ranking universe.  Therefore free-tier rows remain explicitly
-        # Provisional even when every displayed component is populated.
-        all_required_available = all(
-            components.get(key_name) is not None
-            for key_name, weight in weights.items()
-            if float(weight or 0) > 0
-        )
-        exact_history_available = (
-            _finite_number(payload.get("fundamental_rule_coverage")) is not None
-            and float(payload.get("fundamental_rule_coverage") or 0) >= 99.9
-            and int(sector_info.get("peer_count") or 0) >= 5
-        )
-        final_allowed = all_required_available and exact_history_available and bool(rs_progress.get(group_key, {}).get("complete"))
-        final_composite = provisional if final_allowed else None
+        # Sector constituent coverage and the remaining NPM/CFO scoring
+        # definitions are unverified. Complete RS alone cannot finalize a row.
+        final_composite = None
         latest_close = _finite_number(closes[-1]) if closes else None
         previous_close = _finite_number(closes[-2]) if len(closes) >= 2 else None
         change_percent = None
@@ -5565,7 +5571,6 @@ def get_top_composite_dashboard(
         row["score_source"] = "Ranking snapshot; daily technical rules and persisted statement inputs"
         row["rs_universe"] = rs_progress.get(_rs_market_group(row["exchange"]), {})
         db.add(ScoreSnapshot(id=row["snapshot_id"], symbol=row["symbol"], exchange=row["exchange"], payload_json=json.dumps(_json_safe(row))))
-    db.query(ScoreSnapshot).filter(ScoreSnapshot.created_at < datetime.utcnow() - timedelta(days=1)).delete(synchronize_session=False)
     db.commit()
 
     return _json_safe({
@@ -5574,6 +5579,10 @@ def get_top_composite_dashboard(
         "market": market.upper(),
         "rows": rows,
         "candidate_count": len(base_rows),
+        "ranked_candidate_count": len(ranked),
+        "returned_count": len(rows),
+        "final_qualified_count": sum(row["score_status"] == "Final" for row in ranked),
+        "qualification_scope": "Bounded evaluated candidates; provisional scores are not fully qualified stocks",
         "formula": formula_text,
         "score_weights": {key: round(value, 2) for key, value in weights.items()},
         "entered_weight_total": round(entered_weight_total, 2),

@@ -1,0 +1,225 @@
+{
+  "scope": "Live production observations, Oct15 PDT / Oct16 UTC. Existing deployed code; local fixes are not deployed.",
+  "request_count": 65,
+  "http_status_counts": {
+    "200": 58,
+    "502": 5,
+    "404": 1,
+    "422": 1
+  },
+  "failures": [
+    {
+      "path": "/market/sector-analysis",
+      "status": 502,
+      "seconds": 4.5
+    },
+    {
+      "path": "/market/top-composite?limit=200",
+      "status": 502,
+      "seconds": 0.67
+    },
+    {
+      "path": "/portfolios",
+      "status": 502,
+      "seconds": 0.67
+    },
+    {
+      "path": "/market/dashboard/AAPL?exchange=US",
+      "status": 502,
+      "seconds": 0.68
+    },
+    {
+      "path": "/market/technical-summary/AAPL?exchange=US",
+      "status": 502,
+      "seconds": 0.66
+    },
+    {
+      "path": "/market/dashboard/TCS?exchange=BSE",
+      "status": 404,
+      "seconds": 0.7
+    }
+  ],
+  "production_us_top200": {
+    "returned_count": 200,
+    "candidate_count": 200,
+    "reported_statuses": {
+      "Final": 12,
+      "Provisional": 188
+    },
+    "accepted_final_qualified": 0,
+    "reason": "Deployed Final labels are not accepted while sector coverage and scoring definitions remain provisional",
+    "rs_progress": {
+      "US": {
+        "scored_stocks_available": 5000,
+        "target_size": 5000,
+        "evaluation_date": "2026-10-14",
+        "complete": true
+      }
+    }
+  },
+  "backtests": {
+    "US:AAPL": {
+      "history_rows": 447,
+      "trade_count": 16,
+      "net_profit": 5295.271862792972,
+      "starting_capital": 100000.0,
+      "ending_value": 105295.27186279297,
+      "max_drawdown_percent": -3.133587249755865,
+      "point_in_time_status": "Technical prices only; published fundamental/ownership strategy data unavailable",
+      "independent_ledger_reconciliation": "PASS"
+    },
+    "US:NVDA": {
+      "history_rows": 447,
+      "trade_count": 31,
+      "net_profit": -1754.1903228759766,
+      "starting_capital": 100000.0,
+      "ending_value": 98245.80967712402,
+      "max_drawdown_percent": -8.855971292111276,
+      "point_in_time_status": "Technical prices only; published fundamental/ownership strategy data unavailable",
+      "independent_ledger_reconciliation": "PASS"
+    },
+    "US:LITE": {
+      "history_rows": 447,
+      "trade_count": 65,
+      "net_profit": 47751.31258621224,
+      "starting_capital": 100000.0,
+      "ending_value": 147751.31258621224,
+      "max_drawdown_percent": -9.028236567576986,
+      "point_in_time_status": "Technical prices only; published fundamental/ownership strategy data unavailable",
+      "independent_ledger_reconciliation": "PASS"
+    },
+    "NSE:RELIANCE": {
+      "history_rows": 442,
+      "trade_count": 22,
+      "net_profit": 842.55078125,
+      "starting_capital": 100000.0,
+      "ending_value": 100842.55078125,
+      "max_drawdown_percent": -2.64213075374653,
+      "point_in_time_status": "Technical prices only; published fundamental/ownership strategy data unavailable",
+      "independent_ledger_reconciliation": "PASS"
+    },
+    "BSE:TCS": {
+      "history_rows": 441,
+      "trade_count": 17,
+      "net_profit": -4651.250244140625,
+      "starting_capital": 100000.0,
+      "ending_value": 95348.74975585938,
+      "max_drawdown_percent": -5.3149527057323676,
+      "point_in_time_status": "Technical prices only; published fundamental/ownership strategy data unavailable",
+      "independent_ledger_reconciliation": "PASS"
+    }
+  },
+  "rs": {
+    "US": {
+      "market": "US",
+      "evaluation_date": "2026-10-14",
+      "target_rs_universe": 5000,
+      "active_symbols": 5753,
+      "history_ready_symbols": 5426,
+      "pending_active_symbols": 327,
+      "no_history_symbols": 34,
+      "stale_or_short_history_symbols": 293,
+      "target_coverage_percent": 100.0,
+      "active_coverage_percent": 94.32,
+      "symbol_master_shortfall": 0,
+      "complete": true,
+      "history_requirements": {
+        "minimum_rows": 180,
+        "minimum_span_days": 350,
+        "maximum_stale_days": 14,
+        "requested_backfill_days": 500
+      },
+      "by_exchange": {
+        "US": {
+          "active": 5753,
+          "ready": 5426,
+          "pending": 327
+        }
+      },
+      "retry_cooldown_symbols": 327,
+      "scheduler_enabled": true,
+      "storage": "compressed provider date/open/close observations"
+    },
+    "INDIA": {
+      "market": "INDIA",
+      "evaluation_date": "2026-10-07",
+      "target_rs_universe": 5000,
+      "active_symbols": 5275,
+      "history_ready_symbols": 4420,
+      "pending_active_symbols": 855,
+      "no_history_symbols": 193,
+      "stale_or_short_history_symbols": 662,
+      "target_coverage_percent": 88.4,
+      "active_coverage_percent": 83.79,
+      "symbol_master_shortfall": 0,
+      "complete": false,
+      "history_requirements": {
+        "minimum_rows": 180,
+        "minimum_span_days": 350,
+        "maximum_stale_days": 14,
+        "requested_backfill_days": 500
+      },
+      "by_exchange": {
+        "NSE": {
+          "active": 2605,
+          "ready": 2192,
+          "pending": 413
+        },
+        "BSE": {
+          "active": 2670,
+          "ready": 2228,
+          "pending": 442
+        }
+      },
+      "retry_cooldown_symbols": 855,
+      "scheduler_enabled": true,
+      "storage": "compressed provider date/open/close observations"
+    }
+  },
+  "coverage": {
+    "US": {
+      "market": "US",
+      "eligible_equities": 5744,
+      "price_history_available": 1,
+      "price_history_percent": 0.0,
+      "fundamentals_available": 2184,
+      "fundamentals_percent": 38.0,
+      "ownership_available": 2184,
+      "ownership_percent": 38.0,
+      "classification_available": 2153,
+      "classification_percent": 37.5,
+      "automatic_enrichment": true,
+      "data_rule": "Only real provider values are stored; unavailable fields remain N/A."
+    },
+    "INDIA": {
+      "market": "INDIA",
+      "eligible_equities": 7741,
+      "price_history_available": 0,
+      "price_history_percent": 0.0,
+      "fundamentals_available": 2150,
+      "fundamentals_percent": 27.8,
+      "ownership_available": 2148,
+      "ownership_percent": 27.7,
+      "classification_available": 2501,
+      "classification_percent": 32.3,
+      "automatic_enrichment": true,
+      "data_rule": "Only real provider values are stored; unavailable fields remain N/A."
+    }
+  },
+  "live_excel": {
+    "readable": true,
+    "sheets": [
+      "Summary",
+      "OHLCV",
+      "Fundamental_Ownership",
+      "Ranking_Config",
+      "Technical_Filter_Config",
+      "Fundamental_Filter_Config",
+      "Sector_Ranking_Config",
+      "Notes"
+    ],
+    "ohlcv_rows": 20,
+    "composite_formula": "=IF(COUNT(B2:B6)=0,\"\",SUM(D2:D6)/SUM(C2:C6)*100)",
+    "native_recalculation": "BLOCKED: required Windows automation runtime unavailable"
+  }
+}

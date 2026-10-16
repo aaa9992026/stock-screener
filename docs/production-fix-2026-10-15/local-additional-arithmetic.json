@@ -1,0 +1,145 @@
+{
+  "scope": "Independent arithmetic on Oct14 recorded provider histories against current-code replay",
+  "results": {
+    "US:AAPL": {
+      "daily": {
+        "atr": 6.744135220439368,
+        "adx": 16.12489663727097,
+        "daily_52w_high": 348.1499938964844,
+        "daily_52w_low": 243.4199981689453,
+        "passed": true
+      },
+      "weekly": {
+        "atr": 16.31280049981812,
+        "adx": 22.70753919805702,
+        "daily_52w_high": 348.1499938964844,
+        "daily_52w_low": 243.4199981689453,
+        "passed": true
+      },
+      "monthly": {
+        "atr": 28.844672882916075,
+        "adx": 27.60791238467429,
+        "daily_52w_high": 348.1499938964844,
+        "daily_52w_low": 243.4199981689453,
+        "passed": true
+      },
+      "macd_legacy_return": {
+        "independent_percent": 3517.291017793953,
+        "application_percent": 3517.291017793953,
+        "passed": true
+      }
+    },
+    "US:NVDA": {
+      "daily": {
+        "atr": 5.593056788422784,
+        "adx": 16.12954199654973,
+        "daily_52w_high": 243.3699951171875,
+        "daily_52w_low": 164.27000427246094,
+        "passed": true
+      },
+      "weekly": {
+        "atr": 14.985053937217186,
+        "adx": 23.041714683288344,
+        "daily_52w_high": 243.3699951171875,
+        "daily_52w_low": 164.27000427246094,
+        "passed": true
+      },
+      "monthly": {
+        "atr": 27.33578653454024,
+        "adx": 46.337526042759166,
+        "daily_52w_high": 243.3699951171875,
+        "daily_52w_low": 164.27000427246094,
+        "passed": true
+      },
+      "macd_legacy_return": {
+        "independent_percent": 921.9299609504951,
+        "application_percent": 921.9299609504951,
+        "passed": true
+      }
+    },
+    "US:LITE": {
+      "daily": {
+        "atr": 69.05481720319588,
+        "adx": 18.68417843232541,
+        "daily_52w_high": 1143.0,
+        "daily_52w_low": 152.5399932861328,
+        "passed": true
+      },
+      "weekly": {
+        "atr": 149.8271721574113,
+        "adx": 34.09186099818991,
+        "daily_52w_high": 1143.0,
+        "daily_52w_low": 152.5399932861328,
+        "passed": true
+      },
+      "monthly": {
+        "atr": 154.35273876433257,
+        "adx": 52.920782310527024,
+        "daily_52w_high": 1143.0,
+        "daily_52w_low": 152.5399932861328,
+        "passed": true
+      },
+      "macd_legacy_return": {
+        "independent_percent": 108.35482862060961,
+        "application_percent": 108.35482862060961,
+        "passed": true
+      }
+    },
+    "NSE:RELIANCE": {
+      "daily": {
+        "atr": 21.531558154630204,
+        "adx": 37.27573735082957,
+        "daily_52w_high": 1611.800048828125,
+        "daily_52w_low": 1152.199951171875,
+        "passed": true
+      },
+      "weekly": {
+        "atr": 54.19314570798331,
+        "adx": 29.544988149600574,
+        "daily_52w_high": 1611.800048828125,
+        "daily_52w_low": 1152.199951171875,
+        "passed": true
+      },
+      "monthly": {
+        "atr": 121.93264316049111,
+        "adx": 15.608936279795897,
+        "daily_52w_high": 1611.800048828125,
+        "daily_52w_low": 1152.199951171875,
+        "passed": true
+      },
+      "macd_legacy_return": {
+        "independent_percent": 119.18127676190036,
+        "application_percent": 119.18127676190036,
+        "passed": true
+      }
+    },
+    "BSE:TCS": {
+      "daily": {
+        "atr": 68.40405394478061,
+        "adx": 23.517508861673868,
+        "daily_52w_high": 3336.699951171875,
+        "daily_52w_low": 1976.0,
+        "passed": true
+      },
+      "weekly": {
+        "atr": 141.22104317385867,
+        "adx": 25.62900470153719,
+        "daily_52w_high": 3336.699951171875,
+        "daily_52w_low": 1976.0,
+        "passed": true
+      },
+      "monthly": {
+        "atr": 342.03071365046134,
+        "adx": 39.01494437181376,
+        "daily_52w_high": 3336.699951171875,
+        "daily_52w_low": 1976.0,
+        "passed": true
+      },
+      "macd_legacy_return": {
+        "independent_percent": -9.586130541035908,
+        "application_percent": -9.586130541035908,
+        "passed": true
+      }
+    }
+  }
+}
