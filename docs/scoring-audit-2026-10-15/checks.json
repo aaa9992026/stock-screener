@@ -1,0 +1,15 @@
+{
+  "backend_tests": 53,
+  "frontend_scoring_tests": 4,
+  "api_replay_checks": 113,
+  "browser_checks": 184,
+  "browser_layout_cases": 110,
+  "browser_console_errors": 0,
+  "build": "PASS",
+  "lint_errors": 0,
+  "lint_existing_warnings": 8,
+  "production_requests": 16,
+  "production_http_200": 15,
+  "expected_pit_http_422": 1,
+  "deployed": false
+}

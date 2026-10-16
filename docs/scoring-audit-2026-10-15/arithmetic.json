@@ -1,0 +1,224 @@
+{
+  "scope": "Independent frontend arithmetic on fresh captured production inputs; default settings, no user-local edits inferred",
+  "user_reported_reconciliation": {
+    "provisional": 50.61,
+    "normalized": {
+      "fundamental": 30,
+      "technical": 25,
+      "relative_strength": 25,
+      "ownership": 15,
+      "sector": 5
+    },
+    "contributions": {
+      "fundamental": 8.46,
+      "technical": 21.275,
+      "relative_strength": 20.875
+    },
+    "coverage": 80,
+    "missing": [
+      "ownership",
+      "sector"
+    ]
+  },
+  "observed_live_rule_scores": {
+    "technical": 85.07462686567165,
+    "fundamental": 27.5,
+    "ownership": null,
+    "relative_strength": 83.46,
+    "sector": null
+  },
+  "observed_live_rule_composite": {
+    "provisional": 50.38,
+    "normalized": {
+      "fundamental": 30,
+      "technical": 25,
+      "relative_strength": 25,
+      "ownership": 15,
+      "sector": 5
+    },
+    "contributions": {
+      "technical": 21.26865671641791,
+      "fundamental": 8.25,
+      "relative_strength": 20.865
+    },
+    "coverage": 80,
+    "missing": [
+      "ownership",
+      "sector"
+    ]
+  },
+  "rule_coverage": {
+    "fundamental": {
+      "required": 41,
+      "available": 38,
+      "complete": false
+    },
+    "technical": {
+      "required": 9,
+      "available": 9,
+      "complete": true
+    },
+    "ownership": {
+      "required": 9,
+      "available": 0,
+      "complete": false
+    }
+  },
+  "fundamental_missing_rules": {
+    "required": 41,
+    "available": 38,
+    "complete": false,
+    "required_weight": 460,
+    "available_weight": 400,
+    "missing": [
+      "cfo_q_yoy_growth",
+      "cfo_q_qoq_growth",
+      "cfo_industry_compare"
+    ]
+  },
+  "current_module_fundamental_score": 27.5,
+  "current_ownership": {
+    "institutional_percent": 66.326,
+    "insider_percent": 1.648,
+    "retail_public_percent": 32.026,
+    "retail_public_method": "100% - institutional ownership - insider ownership"
+  },
+  "ranking": {
+    "components": {
+      "symbol": "AAPL",
+      "name": "Apple Inc. - Common Stock",
+      "isin": "US0378331005",
+      "exchange": "US",
+      "sector": "Technology",
+      "industry": "Consumer Electronics",
+      "close": 342,
+      "volume": null,
+      "market_cap": 4991209701376,
+      "trailing_eps": 8.74,
+      "forward_eps": 9.57785,
+      "revenue": 466822987776,
+      "net_income": 128929996800,
+      "profit_margin": 0.27618998,
+      "return_on_equity": 1.5191,
+      "return_on_assets": 0.3118,
+      "institution_percent": 0.66326,
+      "insider_percent": 0.01648,
+      "shares_outstanding": 14594180000,
+      "float_shares": 14569078010,
+      "distance_52w_high": null,
+      "distance_52w_low": null,
+      "volume_ratio": null,
+      "latest_date": null,
+      "data_coverage": 100,
+      "composite_score": 68.62,
+      "final_composite_score": null,
+      "provisional_composite_score": 68.62,
+      "score_status": "Provisional",
+      "change_percent": -0.28,
+      "score_coverage_percent": 100,
+      "technical_score": 100,
+      "fundamental_score": 40,
+      "fundamental_rule_coverage_percent": 100,
+      "fundamental_status": "Confirmed EPS/PAT/Sales handwritten growth rules; NPM/CFO points remain excluded until exact client weights are confirmed",
+      "ownership_score": 48.9,
+      "sector_score": 68.39,
+      "sector_peer_count": 15,
+      "sector_status": "Provisional bounded real-history peer ranking",
+      "rs_score": 83.46,
+      "eps_score": 55,
+      "pat_score": 45,
+      "sales_score": 20,
+      "eps_rule_coverage_percent": 100,
+      "pat_rule_coverage_percent": 100,
+      "sales_rule_coverage_percent": 100,
+      "fundamental_rule_values": {
+        "q_eps_yoy_latest": 28.6624,
+        "q_pat_yoy_latest": 27.1187,
+        "q_sales_yoy_latest": 16.3565,
+        "q_eps_yoy_delta_latest_prior": 6.8442,
+        "q_eps_yoy_delta_prior_second": 3.4848,
+        "q_eps_yoy_accel_vs_avg": 8.5867,
+        "q_eps_qoq_latest": 0.4975,
+        "q_eps_qoq_prior": -29.2254,
+        "q_eps_qoq_second": null,
+        "q_eps_qoq_accel_vs_avg": null,
+        "a_eps_yoy_latest": 22.6974,
+        "a_eps_yoy_delta_latest_prior": 23.513,
+        "a_eps_yoy_accel_vs_avg": 22.9415,
+        "q_pat_yoy_delta_latest_prior": 7.7563,
+        "q_pat_yoy_delta_prior_second": 3.4885,
+        "q_pat_yoy_accel_vs_avg": 9.5006,
+        "q_pat_qoq_latest": 0.7134,
+        "q_pat_qoq_prior": -29.7385,
+        "q_pat_qoq_second": null,
+        "q_pat_qoq_accel_vs_avg": null,
+        "a_pat_yoy_latest": 19.4952,
+        "a_pat_yoy_delta_latest_prior": 22.8551,
+        "a_pat_yoy_accel_vs_avg": 22.5819,
+        "q_sales_yoy_delta_latest_prior": -0.2387,
+        "q_sales_yoy_delta_prior_second": 0.9427,
+        "q_sales_yoy_accel_vs_avg": 0.2327,
+        "q_sales_qoq_latest": -1.5893,
+        "q_sales_qoq_prior": -22.6578,
+        "q_sales_qoq_second": null,
+        "q_sales_qoq_accel_vs_avg": null,
+        "a_sales_yoy_latest": 6.4255,
+        "a_sales_yoy_delta_latest_prior": 4.4035,
+        "a_sales_yoy_accel_vs_avg": 6.8147,
+        "npm_q_yoy_growth": null,
+        "npm_q_qoq_growth": 2.3684,
+        "npm_a_yoy_growth": 12.3071,
+        "npm_expansion_3y": 9.5187,
+        "npm_industry_compare": null,
+        "npm_q_yoy_delta": null,
+        "cfo_q_yoy_growth": null,
+        "cfo_q_qoq_growth": null,
+        "cfo_a_yoy_growth": -5.7267,
+        "cfo_expansion_3y": null,
+        "cfo_industry_compare": null,
+        "cfo_q_yoy_delta": null,
+        "cashflow_per_share": null,
+        "roe_above": 151.91,
+        "roce_above": 68.72,
+        "shares_outstanding": 14594180000,
+        "float_shares": 14569078010
+      },
+      "alpha": null,
+      "beta": null,
+      "beta_basis": "2Y weekly adjusted history pending",
+      "beta_observations": 0,
+      "standard_deviation_percent": 24.4,
+      "rank": 10,
+      "snapshot_id": "2e0c59ad1a75484795a4300c60ecb4c3",
+      "snapshot_at": "2026-10-16T02:52:03.653705Z",
+      "score_version": "client-rs5000-v2",
+      "score_source": "Ranking snapshot; daily technical rules and persisted statement inputs",
+      "rs_universe": {
+        "scored_stocks_available": 5000,
+        "target_size": 5000,
+        "evaluation_date": "2026-10-14",
+        "complete": true
+      }
+    },
+    "independent_composite": {
+      "provisional": 68.62,
+      "normalized": {
+        "technical": 25,
+        "fundamental": 30,
+        "ownership": 15,
+        "sector": 5,
+        "relative_strength": 25
+      },
+      "contributions": {
+        "fundamental": 12,
+        "technical": 25,
+        "relative_strength": 20.865,
+        "ownership": 7.335,
+        "sector": 3.4194999999999998
+      },
+      "coverage": 100,
+      "missing": []
+    },
+    "rs_matches_live_detail": true
+  }
+}

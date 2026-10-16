@@ -108,7 +108,7 @@ class CompletionTests(unittest.TestCase):
                 stock_rows = [SimpleNamespace(symbol=row["symbol"],exchange=row["exchange"],**r) for r in rows]
                 score,*_ = market._weighted_rs_against_benchmark(stock_rows,row["exchange"],db=self.db)
                 self.assertEqual(row["rs_score"],round(score,2))
-                self.assertEqual(row["score_version"],"client-rs5000-v2")
+                self.assertEqual(row["score_version"],"client-rs5000-fiscal-v3")
                 expected = sum((row.get(field) or 0)*weight/100 for field,weight in [("fundamental_score",30),("technical_score",25),("rs_score",25),("ownership_score",15),("sector_score",5)])
                 self.assertEqual(row["composite_score"],round(expected,2))
                 with patch.object(YahooProvider,"get_ohlcv",return_value=rows):

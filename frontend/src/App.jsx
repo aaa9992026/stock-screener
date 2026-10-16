@@ -17,6 +17,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import "./App.css";
+import { buildClientFundamentalRows, compareNumeric, ruleCoverage, reconcileComposite } from "./scoring";
 import { SectorWorkspace, PortfolioWorkspace, TradeBacktest } from "./MilestoneWorkspaces";
 
 const DEFAULT_API_BASE = "https://stock-screener-production-d90e.up.railway.app";
@@ -213,17 +214,6 @@ const formatUniverseCell = (key, value, row) => {
   if (key === "volume") return Number(value).toLocaleString();
   if (["close", "trailing_eps", "forward_eps", "volume_ratio"].includes(key)) return Number(value).toFixed(2);
   return String(value);
-};
-
-const compareNumeric = (left, comparator, right) => {
-  if (left == null || right == null || left === "" || right === "") return null;
-  const a = Number(left);
-  const b = Number(right);
-  if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
-  if (comparator === ">=") return a >= b;
-  if (comparator === "<=") return a <= b;
-  if (comparator === "<") return a < b;
-  return a > b;
 };
 
 const filterScoreText = (score) => {
@@ -458,176 +448,6 @@ const readLocalObject = (key, fallback) => {
   }
 };
 
-
-const buildClientFundamentalRows = ({ fundamentalHistory, fundamentals, dashboard, factors }) => {
-  const finite = (value) => {
-    if (value === null || value === undefined || value === "") return null;
-    const n = Number(value);
-    return Number.isFinite(n) ? n : null;
-  };
-  const growth = (current, previous) => {
-    const c = finite(current);
-    const p = finite(previous);
-    if (c == null || p == null || p === 0) return null;
-    return ((c - p) / Math.abs(p)) * 100;
-  };
-  const delta = (left, right) => {
-    const a = finite(left);
-    const b = finite(right);
-    return a == null || b == null ? null : a - b;
-  };
-  const avg2 = (a, b) => {
-    const x = finite(a);
-    const y = finite(b);
-    return x == null || y == null ? null : (x + y) / 2;
-  };
-  const avg = (values) => {
-    const valid = values.map(finite).filter((v) => v != null);
-    return valid.length === values.length && valid.length ? valid.reduce((sum, v) => sum + v, 0) / valid.length : null;
-  };
-  const row = (key, currentValue, targetText = null, forcedScore = undefined) => {
-    const cfg = factors?.[key] || {};
-    let score = forcedScore;
-    if (score === undefined) {
-      const result = compareNumeric(currentValue, cfg.comparator || ">", cfg.threshold);
-      score = result == null ? null : (result ? 100 : 0);
-    }
-    return { currentValue, score, targetText };
-  };
-
-  const q = Array.isArray(fundamentalHistory?.quarterly) ? fundamentalHistory.quarterly : [];
-  const a = Array.isArray(fundamentalHistory?.annual) ? fundamentalHistory.annual : [];
-  const rows = {};
-
-  const addMetric = (metric) => {
-    const yoy = [0, 1, 2].map((i) => finite(q[i]?.[`yoy_${metric}`]));
-    const qoq = [0, 1, 2].map((i) => finite(q[i]?.[`qoq_${metric}`]));
-    const annualYoy = [0, 1, 2].map((i) => finite(a[i]?.[`yoy_${metric}`]));
-
-    rows[`q_${metric}_yoy_latest`] = row(`q_${metric}_yoy_latest`, yoy[0]);
-    rows[`q_${metric}_yoy_delta_latest_prior`] = row(`q_${metric}_yoy_delta_latest_prior`, delta(yoy[0], yoy[1]), yoy[1] == null ? "Prior Q YoY unavailable" : `Prior Q YoY ${yoy[1].toFixed(2)}%`);
-    rows[`q_${metric}_yoy_delta_prior_second`] = row(`q_${metric}_yoy_delta_prior_second`, delta(yoy[1], yoy[2]), yoy[2] == null ? "Second-prior Q YoY unavailable" : `Second-prior Q YoY ${yoy[2].toFixed(2)}%`);
-    rows[`q_${metric}_yoy_accel_vs_avg`] = row(
-      `q_${metric}_yoy_accel_vs_avg`,
-      avg2(yoy[1], yoy[2]) == null || yoy[0] == null ? null : yoy[0] - avg2(yoy[1], yoy[2]),
-      avg2(yoy[1], yoy[2]) == null ? "Prior-two YoY average unavailable" : `Prior-two YoY avg ${avg2(yoy[1], yoy[2]).toFixed(2)}%`
-    );
-
-    rows[`q_${metric}_qoq_latest`] = row(`q_${metric}_qoq_latest`, qoq[0]);
-    rows[`q_${metric}_qoq_prior`] = row(`q_${metric}_qoq_prior`, qoq[1]);
-    rows[`q_${metric}_qoq_second`] = row(`q_${metric}_qoq_second`, qoq[2]);
-    rows[`q_${metric}_qoq_accel_vs_avg`] = row(
-      `q_${metric}_qoq_accel_vs_avg`,
-      avg2(qoq[1], qoq[2]) == null || qoq[0] == null ? null : qoq[0] - avg2(qoq[1], qoq[2]),
-      avg2(qoq[1], qoq[2]) == null ? "Prior-two QoQ average unavailable" : `Prior-two QoQ avg ${avg2(qoq[1], qoq[2]).toFixed(2)}%`
-    );
-
-    rows[`a_${metric}_yoy_latest`] = row(`a_${metric}_yoy_latest`, annualYoy[0]);
-    rows[`a_${metric}_yoy_delta_latest_prior`] = row(
-      `a_${metric}_yoy_delta_latest_prior`,
-      delta(annualYoy[0], annualYoy[1]),
-      annualYoy[1] == null ? "Prior annual YoY unavailable" : `Prior annual YoY ${annualYoy[1].toFixed(2)}%`
-    );
-    rows[`a_${metric}_yoy_accel_vs_avg`] = row(
-      `a_${metric}_yoy_accel_vs_avg`,
-      avg2(annualYoy[1], annualYoy[2]) == null || annualYoy[0] == null ? null : annualYoy[0] - avg2(annualYoy[1], annualYoy[2]),
-      avg2(annualYoy[1], annualYoy[2]) == null ? "Prior-two annual YoY average unavailable" : `Prior-two annual YoY avg ${avg2(annualYoy[1], annualYoy[2]).toFixed(2)}%`
-    );
-  };
-
-  addMetric("eps");
-  addMetric("pat");
-  addMetric("sales");
-
-  const latestQNpm = finite(q[0]?.npm);
-  const qNpmYoy0 = q.length >= 5 ? growth(q[0]?.npm, q[4]?.npm) : null;
-  const qNpmYoy1 = q.length >= 6 ? growth(q[1]?.npm, q[5]?.npm) : null;
-  const qNpmQoq = q.length >= 2 ? growth(q[0]?.npm, q[1]?.npm) : null;
-  const annualNpmYoy = a.length >= 2 ? growth(a[0]?.npm, a[1]?.npm) : null;
-  const npm3yAverage = a.length >= 3 ? avg([a[0]?.npm, a[1]?.npm, a[2]?.npm]) : null;
-  const currentNpm = latestQNpm ?? finite(a[0]?.npm);
-  const npmExpansion = currentNpm == null || npm3yAverage == null || npm3yAverage === 0
-    ? null
-    : ((currentNpm - npm3yAverage) / Math.abs(npm3yAverage)) * 100;
-  const industryMedianNpm = finite(dashboard?.industry_median_npm);
-  const industryScore = currentNpm == null || industryMedianNpm == null
-    ? null
-    : (currentNpm > industryMedianNpm ? 100 : 50);
-
-  rows.npm_q_yoy_growth = row("npm_q_yoy_growth", qNpmYoy0);
-  rows.npm_q_qoq_growth = row("npm_q_qoq_growth", qNpmQoq);
-  rows.npm_a_yoy_growth = row("npm_a_yoy_growth", annualNpmYoy);
-  rows.npm_expansion_3y = row(
-    "npm_expansion_3y",
-    npmExpansion,
-    npm3yAverage == null ? "3-year average NPM unavailable" : `3-year average NPM ${npm3yAverage.toFixed(2)}%`
-  );
-  rows.npm_industry_compare = row(
-    "npm_industry_compare",
-    currentNpm,
-    industryMedianNpm == null ? "Industry median NPM unavailable" : `Industry median NPM ${industryMedianNpm.toFixed(2)}%`,
-    industryScore
-  );
-  rows.npm_q_yoy_delta = row(
-    "npm_q_yoy_delta",
-    delta(qNpmYoy0, qNpmYoy1),
-    qNpmYoy1 == null ? "Prior Q NPM YoY unavailable" : `Prior Q NPM YoY ${qNpmYoy1.toFixed(2)}%`
-  );
-
-  const qCfoYoy0 = q.length >= 5 ? growth(q[0]?.operating_cash_flow, q[4]?.operating_cash_flow) : null;
-  const qCfoYoy1 = q.length >= 6 ? growth(q[1]?.operating_cash_flow, q[5]?.operating_cash_flow) : null;
-  const qCfoQoq = q.length >= 2 ? growth(q[0]?.operating_cash_flow, q[1]?.operating_cash_flow) : null;
-  const annualOcfGrowth = a.length >= 2 ? growth(a[0]?.operating_cash_flow, a[1]?.operating_cash_flow) : null;
-  const latestQuarterCfo = finite(q[0]?.operating_cash_flow);
-  const latestAnnualCfo = finite(a[0]?.operating_cash_flow);
-  const currentCfo = latestQuarterCfo ?? latestAnnualCfo;
-  const cfo3yAverage = a.length >= 3 ? avg([a[0]?.operating_cash_flow, a[1]?.operating_cash_flow, a[2]?.operating_cash_flow]) : null;
-  const cfoExpansion = currentCfo == null || cfo3yAverage == null || cfo3yAverage === 0
-    ? null
-    : ((currentCfo - cfo3yAverage) / Math.abs(cfo3yAverage)) * 100;
-  const industryMedianCfo = finite(dashboard?.industry_median_cfo) ?? finite(dashboard?.industry_median_operating_cash_flow);
-  const cfoIndustryScore = currentCfo == null || industryMedianCfo == null
-    ? null
-    : (currentCfo > industryMedianCfo ? 100 : 50);
-
-  const roeValue = finite(a[0]?.roe) ?? (finite(fundamentals?.fundamentals?.return_on_equity) != null ? Number(fundamentals.fundamentals.return_on_equity) * 100 : null);
-  const roceValue = finite(a[0]?.roce);
-  const sharesOutstanding = finite(fundamentals?.ownership?.shares_outstanding);
-  const floatShares = finite(fundamentals?.ownership?.float_shares);
-  const latestOcf = latestAnnualCfo;
-  const cashflowPerShare = latestOcf != null && sharesOutstanding != null && sharesOutstanding !== 0 ? latestOcf / sharesOutstanding : null;
-
-  rows.cfo_q_yoy_growth = row("cfo_q_yoy_growth", qCfoYoy0);
-  rows.cfo_q_qoq_growth = row("cfo_q_qoq_growth", qCfoQoq);
-  rows.cfo_a_yoy_growth = row("cfo_a_yoy_growth", annualOcfGrowth);
-  rows.cfo_expansion_3y = row(
-    "cfo_expansion_3y",
-    cfoExpansion,
-    cfo3yAverage == null ? "3-year average CFO unavailable" : `3-year average CFO ${cfo3yAverage.toFixed(2)}`
-  );
-  rows.cfo_industry_compare = row(
-    "cfo_industry_compare",
-    currentCfo,
-    industryMedianCfo == null ? "Industry median CFO unavailable" : `Industry median CFO ${industryMedianCfo.toFixed(2)}`,
-    cfoIndustryScore
-  );
-  rows.cfo_q_yoy_delta = row(
-    "cfo_q_yoy_delta",
-    delta(qCfoYoy0, qCfoYoy1),
-    qCfoYoy1 == null ? "Prior Q CFO YoY unavailable" : `Prior Q CFO YoY ${qCfoYoy1.toFixed(2)}%`
-  );
-  rows.cashflow_per_share = row("cashflow_per_share", cashflowPerShare);
-  rows.roe_above = row("roe_above", roeValue);
-  rows.roce_above = row("roce_above", roceValue);
-  rows.shares_outstanding = factors?.shares_outstanding?.enabled === false
-    ? { currentValue: sharesOutstanding, score: null, targetText: "Disabled until exact point rule is confirmed" }
-    : row("shares_outstanding", sharesOutstanding);
-  rows.float_shares = factors?.float_shares?.enabled === false
-    ? { currentValue: floatShares, score: null, targetText: "Disabled until exact point rule is confirmed" }
-    : row("float_shares", floatShares);
-
-  return rows;
-};
 
 function App() {
   const [symbol, setSymbol] = useState("AAPL");
@@ -928,7 +748,7 @@ function App() {
         timeout,
       });
 
-    const cacheKey = `logic2:top200:${marketOverride || "ALL"}:${JSON.stringify(safeWeights)}`;
+    const cacheKey = `fiscal-v3:top200:${marketOverride || "ALL"}:${JSON.stringify(safeWeights)}`;
     try {
       let res;
       try {
@@ -2559,7 +2379,7 @@ function App() {
     const ema150 = latestEmaFromChart(150) ?? finite(em["150"]);
     const distance52Low = finite(technicalSummary?.distance_from_52w_low_percent);
     const rsScoreCurrent = finite(technicalSummary?.rs_rating);
-    const roc20Current = finite(technicalSummary?.client_technical_filters?.momentum?.roc_1m_percent);
+    const roc20Current = finite(technicalSummary?.client_technical_filters?.momentum?.roc_20_period_percent);
     const adxCurrent = finite(technicalSummary?.client_technical_filters?.strength?.adx_14);
     const diSpreadCurrent = finite(technicalSummary?.client_technical_filters?.strength?.di_spread);
     const atrPercentCurrent = finite(technicalSummary?.atr_percent);
@@ -2674,9 +2494,7 @@ function App() {
         ownership: scoreGroup("ownership", ownership),
       },
       groupCoverage: Object.fromEntries(Object.entries({fundamental, technical, ownership}).map(([group, rows]) => {
-        const enabled = Object.entries(handwrittenFactors[group]).filter(([, cfg]) => cfg.enabled !== false && Number(cfg.weight) > 0);
-        const available = enabled.filter(([key]) => rows[key]?.score != null).length;
-        return [group, {required: enabled.length, available, complete: enabled.length > 0 && available === enabled.length}];
+        return [group, ruleCoverage(handwrittenFactors[group], rows)];
       })),
       fundamentalGroupScores: groupedFundamentalScores,
     };
@@ -2696,16 +2514,14 @@ function App() {
       relative_strength: technicalSummary?.rs_available === false ? null : technicalSummary?.rs_rating ?? null,
       sector: dashboard?.score_components?.sector ?? null,
     };
-    const total = Object.values(scoreWeights).reduce((s, w) => s + Math.max(0, Number(w) || 0), 0);
-    const normalizedWeights = Object.fromEntries(Object.entries(scoreWeights).map(([k, w]) => [k, total > 0 ? Math.max(0, Number(w) || 0) / total * 100 : 0]));
-    const available = Object.entries(components).filter(([k, v]) => normalizedWeights[k] > 0 && v != null && Number.isFinite(Number(v)));
-    const provisional = available.length && total > 0 ? Number(available.reduce((s, [k, v]) => s + Number(v) * normalizedWeights[k] / 100, 0).toFixed(2)) : null;
-    const missing = Object.keys(components).filter(k => normalizedWeights[k] > 0 && components[k] == null);
+    const calculation = reconcileComposite(components, scoreWeights);
+    const {provisional, normalized: normalizedWeights, missing} = calculation;
     const incompleteRules = !row && ["fundamental", "technical", "ownership"].some(k => normalizedWeights[k] > 0 && !factorEvaluationRows.groupCoverage[k].complete);
-    const final = row ? row.score_status === "Final" && !missing.length : !missing.length && !incompleteRules && (normalizedWeights.relative_strength <= 0 || technicalSummary?.rs_universe?.complete);
+    const final = row ? row.score_status === "Final" && !missing.length : !missing.length && !incompleteRules && (normalizedWeights.sector <= 0 || dashboard?.sector_score_status === "Final") && (normalizedWeights.relative_strength <= 0 || technicalSummary?.rs_universe?.complete);
     return {...dashboard, score: final ? provisional : null, provisional_score: provisional,
       score_components: components, score_weights: normalizedWeights,
-      score_coverage_percent: available.reduce((s, [k]) => s + normalizedWeights[k], 0),
+      score_coverage_percent: calculation.coverage,
+      score_contributions: calculation.contributions,
       missing_required_score_categories: missing, signal: final ? (provisional >= 70 ? "Buy" : provisional >= 45 ? "Watch" : "Sell") : "Provisional",
       snapshot_at: row?.snapshot_at, score_version: row?.score_version};
   })();
@@ -3722,8 +3538,13 @@ function App() {
             const meta = SCORE_CARD_META[tone] || { hint: "Score" };
             const coverage = factorEvaluationRows.groupCoverage?.[tone];
             const partial = rankingSelection ? rankingSelection.score_status !== "Final" : coverage && !coverage.complete;
+            const reason = tone === "ownership" && exchange === "US" && !rankingSelection
+              ? "Historical US ownership scores require dated aggregate quarterly/yearly observations. Current institutional/insider percentages and top-holder changes cannot replace them. See Ownership for verified current aggregates."
+              : tone === "composite"
+                ? `Weighted points: ${Object.entries(dashboardView?.score_contributions || {}).map(([key, points]) => `${key} ${points.toFixed(3)}`).join(" + ")}. Missing: ${(dashboardView?.missing_required_score_categories || []).join(", ") || "none"}. Full configured weights remain in the denominator. Sector uses a provisional stored-market cohort.`
+                : partial ? `Provisional: ${rankingSelection ? "ranking snapshot has incomplete coverage" : coverage ? `${coverage.available}/${coverage.required} enabled inputs; ${coverage.available_weight}/${coverage.required_weight} rule weight available. Missing: ${coverage.missing.join(", ")}` : "incomplete coverage"}` : undefined;
             return (
-              <article className={`score-overview-card ${tone}`} key={label} title={partial ? `Provisional: ${rankingSelection ? "ranking snapshot has incomplete coverage" : coverage ? `${coverage.available}/${coverage.required} enabled rule inputs available` : "ranking snapshot has incomplete coverage"}` : undefined}>
+              <article className={`score-overview-card ${tone}`} key={label} title={reason}>
                 <div className="score-card-head">
                   <div className="score-icon">
                     <ScoreGlyph tone={tone} />

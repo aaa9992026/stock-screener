@@ -520,6 +520,10 @@ class SECFundamentalsProvider:
         q_income = self._duration_series(facts, net_income_tags, ["USD"], "quarter")
         q_eps = self._duration_series(facts, eps_tags, ["USD/shares"], "quarter")
         q_op_income = self._duration_series(facts, operating_income_tags, ["USD"], "quarter")
+        # Only genuinely reported quarter-duration facts qualify here. YTD
+        # cash flow is never relabeled as an individual quarter.
+        q_cfo = self._duration_series(facts, cfo_tags, ["USD"], "quarter")
+        q_capex = self._duration_series(facts, capex_tags, ["USD"], "quarter")
 
         a_revenue = self._duration_series(facts, revenue_tags, ["USD"], "annual")
         a_income = self._duration_series(facts, net_income_tags, ["USD"], "annual")
@@ -544,6 +548,8 @@ class SECFundamentalsProvider:
             ebit = self._nearest(q_op_income, date, 20)
             opm = (ebit / sales * 100) if sales not in (None, 0) and ebit is not None else None
             npm = (pat / sales * 100) if sales not in (None, 0) and pat is not None else None
+            cfo = self._nearest(q_cfo, date, 20)
+            capex = self._nearest(q_capex, date, 20)
             quarterly.append({
                 "period": date,
                 "sales": sales,
@@ -553,23 +559,13 @@ class SECFundamentalsProvider:
                 "opm": round(opm, 2) if opm is not None else None,
                 "npm": round(npm, 2) if npm is not None else None,
                 "debt_to_equity": None,
-                "operating_cash_flow": None,
-                "free_cash_flow": None,
+                "operating_cash_flow": cfo,
+                "free_cash_flow": cfo - capex if cfo is not None and capex is not None else None,
                 "roe": None,
                 "roa": None,
                 "roce": None,
                 "cash_flow_per_share": None,
             })
-
-        for i, row in enumerate(quarterly):
-            previous = quarterly[i + 1] if i + 1 < len(quarterly) else None
-            year_ago = quarterly[i + 4] if i + 4 < len(quarterly) else None
-            row["qoq_sales"] = self._growth(row["sales"], previous["sales"]) if previous else None
-            row["qoq_pat"] = self._growth(row["pat"], previous["pat"]) if previous else None
-            row["qoq_eps"] = self._growth(row["eps"], previous["eps"]) if previous else None
-            row["yoy_sales"] = self._growth(row["sales"], year_ago["sales"]) if year_ago else None
-            row["yoy_pat"] = self._growth(row["pat"], year_ago["pat"]) if year_ago else None
-            row["yoy_eps"] = self._growth(row["eps"], year_ago["eps"]) if year_ago else None
 
         annual_dates = list(a_revenue.keys())
         annual = []
@@ -615,12 +611,6 @@ class SECFundamentalsProvider:
                 "cash_flow_per_share": round(cfps, 2) if cfps is not None else None,
             })
 
-        for i, row in enumerate(annual):
-            previous = annual[i + 1] if i + 1 < len(annual) else None
-            row["yoy_sales"] = self._growth(row["sales"], previous["sales"]) if previous else None
-            row["yoy_pat"] = self._growth(row["pat"], previous["pat"]) if previous else None
-            row["yoy_eps"] = self._growth(row["eps"], previous["eps"]) if previous else None
-
         cagr_3y = {"sales": None, "pat": None, "eps": None}
         cagr_5y = {"sales": None, "pat": None, "eps": None}
         if len(annual) >= 4:
@@ -636,7 +626,8 @@ class SECFundamentalsProvider:
                 "eps": self._cagr(annual[0]["eps"], annual[5]["eps"], 5),
             }
 
-        return {
+        from app.services.financial_periods import align_financial_history
+        return align_financial_history({
             "symbol": symbol.upper(),
             "quarterly": quarterly,
             "annual": annual,
@@ -648,4 +639,4 @@ class SECFundamentalsProvider:
                 "roa": "Net income / period-end total assets",
                 "roce": "Operating income / (period-end total assets - period-end current liabilities)",
             },
-        }
+        })

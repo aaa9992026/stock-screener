@@ -180,6 +180,7 @@ def backfill_market_fundamentals(market: str, batch_size: int = 8, retry_hours: 
                 Fundamental,
                 and_(Fundamental.symbol == Company.symbol, Fundamental.exchange == Company.exchange),
             )
+            .outerjoin(Ownership, and_(Ownership.symbol == Company.symbol, Ownership.exchange == Company.exchange))
             .filter(Company.is_active == 1, Company.exchange.in_(exchanges))
         )
         query = apply_eligible_equity_filter(query, exchanges)
@@ -192,6 +193,8 @@ def backfill_market_fundamentals(market: str, batch_size: int = 8, retry_hours: 
                         Fundamental.trailing_eps.is_(None),
                         Fundamental.revenue.is_(None),
                         Fundamental.net_income.is_(None),
+                        Ownership.institution_percent.is_(None),
+                        Ownership.insider_percent.is_(None),
                     ),
                     or_(Fundamental.updated_at.is_(None), Fundamental.updated_at < cutoff),
                 ),
@@ -216,6 +219,9 @@ def backfill_market_fundamentals(market: str, batch_size: int = 8, retry_hours: 
                     continue
 
                 sync_fundamental_data(db, company.symbol, company.exchange, data)
+                # A valid response can still omit ownership. Record the attempt
+                # even if no stored value changed, so that gap respects cooldown.
+                _mark_attempt(db, company)
                 completed += 1
                 results.append({"symbol": company.symbol, "exchange": company.exchange, "status": "updated"})
             except Exception as exc:

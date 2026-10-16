@@ -25,14 +25,22 @@ def sync_fundamental_data(
         )
         db.add(fundamental)
 
-    fundamental.market_cap = data.get("market_cap")
-    fundamental.trailing_eps = data.get("trailing_eps")
-    fundamental.forward_eps = data.get("forward_eps")
-    fundamental.revenue = data.get("revenue")
-    fundamental.net_income = data.get("net_income")
-    fundamental.profit_margin = data.get("profit_margin")
-    fundamental.return_on_equity = data.get("return_on_equity")
-    fundamental.return_on_assets = data.get("return_on_assets")
+    if data.get("market_cap") is not None:
+        fundamental.market_cap = data["market_cap"]
+    if data.get("trailing_eps") is not None:
+        fundamental.trailing_eps = data["trailing_eps"]
+    if data.get("forward_eps") is not None:
+        fundamental.forward_eps = data["forward_eps"]
+    if data.get("revenue") is not None:
+        fundamental.revenue = data["revenue"]
+    if data.get("net_income") is not None:
+        fundamental.net_income = data["net_income"]
+    if data.get("profit_margin") is not None:
+        fundamental.profit_margin = data["profit_margin"]
+    if data.get("return_on_equity") is not None:
+        fundamental.return_on_equity = data["return_on_equity"]
+    if data.get("return_on_assets") is not None:
+        fundamental.return_on_assets = data["return_on_assets"]
 
     ownership = (
         db.query(Ownership)
@@ -50,10 +58,14 @@ def sync_fundamental_data(
         )
         db.add(ownership)
 
-    ownership.insider_percent = data.get("insider_percent")
-    ownership.institution_percent = data.get("institution_percent")
-    ownership.shares_outstanding = data.get("shares_outstanding")
-    ownership.float_shares = data.get("float_shares")
+    if data.get("insider_percent") is not None:
+        ownership.insider_percent = data["insider_percent"]
+    if data.get("institution_percent") is not None:
+        ownership.institution_percent = data["institution_percent"]
+    if data.get("shares_outstanding") is not None:
+        ownership.shares_outstanding = data["shares_outstanding"]
+    if data.get("float_shares") is not None:
+        ownership.float_shares = data["float_shares"]
 
     company = (
         db.query(Company)

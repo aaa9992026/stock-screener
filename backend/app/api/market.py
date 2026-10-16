@@ -38,6 +38,9 @@ import pandas as pd
 from bisect import bisect_left, bisect_right
 from app.models import RSHistory
 from app.services.rs_history import decode_points, persist_history
+from app.services.financial_periods import align_financial_history
+
+FINANCIAL_CALCULATION_VERSION = "fiscal-date-v3"
 
 router = APIRouter(prefix="/market", tags=["market"])
 
@@ -336,17 +339,26 @@ def _ranking_history_metric_score(history, metric: str):
     """
     if not history:
         return {"score": None, "coverage": 0.0, "latest_yoy": None, "acceleration": None}
+    history = align_financial_history(history)
     quarterly = list(history.get("quarterly") or [])
     annual = list(history.get("annual") or [])
 
     def q(index, kind):
         if index >= len(quarterly):
             return None
+        if index:
+            from app.services.financial_periods import period_date
+            if period_date(quarterly[0]) and period_date(quarterly[index]) and abs((period_date(quarterly[0])-period_date(quarterly[index])).days - 91*index) > 25:
+                return None
         return _finite_number((quarterly[index] or {}).get(f"{kind}_{metric}"))
 
     def a(index):
         if index >= len(annual):
             return None
+        if index:
+            from app.services.financial_periods import period_date
+            if period_date(annual[0]) and period_date(annual[index]) and abs((period_date(annual[0])-period_date(annual[index])).days - 365*index) > 30:
+                return None
         return _finite_number((annual[index] or {}).get(f"yoy_{metric}"))
 
     qy0, qy1, qy2 = q(0, "yoy"), q(1, "yoy"), q(2, "yoy")
@@ -499,6 +511,7 @@ def _ranking_rule_values(history, metadata=None):
 
 
 def _ranking_fundamental_bundle(history, metadata=None):
+    history = align_financial_history(history)
     groups = {metric: _ranking_history_metric_score(history, metric) for metric in ("eps", "pat", "sales")}
     usable = [(item["score"], item["coverage"]) for item in groups.values() if item.get("score") is not None and item.get("coverage", 0) > 0]
     if not usable:
@@ -509,6 +522,9 @@ def _ranking_fundamental_bundle(history, metadata=None):
         overall = round(sum(score * weight for score, weight in usable) / total, 2) if total else None
         coverage = round(sum(weight for _score, weight in usable) / 3.0, 2)
     return {
+        "financial_calculation_version": FINANCIAL_CALCULATION_VERSION,
+        "financial_history_source": history.get("source"),
+        "financial_periods": {k: [r.get("period") for r in history.get(k, [])] for k in ("quarterly", "annual")},
         "fundamental_score": overall,
         "fundamental_rule_coverage": coverage,
         "eps_score": groups["eps"]["score"],
@@ -538,6 +554,24 @@ def _get_ranking_sec_provider():
     return _RANKING_SEC_PROVIDER if _RANKING_SEC_PROVIDER is not False else None
 
 
+def _verified_fundamental_history(symbol, exchange):
+    """One current-statement source policy for detail and ranking enrichment."""
+    try:
+        history = YahooProvider().get_fundamental_history(symbol, exchange)
+        if history and (history.get("quarterly") or history.get("annual")):
+            return align_financial_history(history)
+    except Exception:
+        if exchange != "US":
+            raise
+    if exchange == "US":
+        sec = _get_ranking_sec_provider()
+        if sec:
+            history = sec.get_history(symbol)
+            if history:
+                return align_financial_history(history)
+    return {"symbol": symbol, "quarterly": [], "annual": [], "source": "Unavailable"}
+
+
 def _fetch_ranking_enrichment(row):
     ex = str(row.get("exchange") or "").upper()
     symbol = str(row.get("symbol") or "").upper()
@@ -546,23 +580,14 @@ def _fetch_ranking_enrichment(row):
     key = (ex, symbol)
     now = time.time()
     cached = _RANKING_ENRICH_CACHE.get(key)
-    if cached and (now - cached[0]) < _RANKING_ENRICH_TTL:
+    if cached and (now - cached[0]) < _RANKING_ENRICH_TTL and cached[1].get("financial_calculation_version") == FINANCIAL_CALCULATION_VERSION:
         return cached[1]
 
     provider = YahooProvider()
-    history = None
-    if ex == "US":
-        sec = _get_ranking_sec_provider()
-        if sec is not None:
-            try:
-                history = sec.get_history(symbol)
-            except Exception:
-                history = None
-    if not history:
-        try:
-            history = provider.get_fundamental_history(symbol, ex)
-        except Exception:
-            history = None
+    try:
+        history = _verified_fundamental_history(symbol, ex)
+    except Exception:
+        history = None
 
     metadata = {}
     # Metadata is fetched only when the stored row has a real gap.  This keeps
@@ -643,6 +668,7 @@ def _ranking_snapshot_payload(payload):
     if not payload:
         return {}
     keep = {
+        "financial_calculation_version", "financial_history_source", "financial_periods",
         "metadata",
         "fundamental_score", "fundamental_rule_coverage",
         "eps_score", "pat_score", "sales_score",
@@ -746,7 +772,9 @@ def _load_persisted_ranking_enrichment(rows):
         if key not in wanted:
             continue
         try:
-            result[key] = json.loads(snap.payload_json or "{}") or {}
+            payload = json.loads(snap.payload_json or "{}") or {}
+            if payload.get("financial_calculation_version") == FINANCIAL_CALCULATION_VERSION:
+                result[key] = payload
         except Exception:
             continue
 
@@ -786,6 +814,8 @@ def _apply_cached_ranking_enrichment(rows):
         if not cached or (now - cached[0]) >= _RANKING_ENRICH_TTL:
             continue
         payload = cached[1] or {}
+        if payload.get("financial_calculation_version") != FINANCIAL_CALCULATION_VERSION:
+            continue
         result[key] = payload
         metadata = payload.get("metadata") or {}
         for target_field, source_field in mapping.items():
@@ -892,147 +922,15 @@ def _sector_scores_from_enriched(rows, enrichment):
 
 
 def _selected_sector_component(db, company):
-    """Return a real, bounded sector-growth score for the selected stock.
-
-    Uses the same compact ranking snapshots produced by the Top-200 enrichment
-    pipeline.  This avoids storing universe OHLCV while allowing the selected
-    stock card to reuse real EPS/PAT/Sales growth history already fetched for
-    the ranking dashboard.  Nothing is fabricated: if there is not enough
-    cross-sector history, the component stays N/A.
-    """
     if db is None or company is None:
-        return None, 0, None
-
-    exchange = str(company.exchange or "").upper()
-    symbol = str(company.symbol or "").upper()
-    if not exchange or not symbol:
-        return None, 0, None
-
-    # First recover classification from a fresh ranking snapshot when the
-    # company master predates enrichment.
-    cutoff = datetime.utcnow() - timedelta(seconds=_ranking_snapshot_ttl_seconds())
-    try:
-        selected_snap = (
-            db.query(RankingSnapshot)
-            .filter(
-                RankingSnapshot.exchange == exchange,
-                RankingSnapshot.symbol == symbol,
-                RankingSnapshot.updated_at >= cutoff,
-            )
-            .first()
-        )
-    except Exception:
-        selected_snap = None
-
-    if selected_snap is not None:
-        try:
-            selected_payload = json.loads(selected_snap.payload_json or "{}") or {}
-            metadata = selected_payload.get("metadata") or {}
-            changed = False
-            for attr in ("name", "isin", "sector", "industry"):
-                value = metadata.get(attr)
-                if value not in (None, "", "N/A", "nan", "NaN", "-") and not getattr(company, attr, None):
-                    setattr(company, attr, str(value).strip())
-                    changed = True
-            if changed:
-                db.commit()
-        except Exception:
-            try:
-                db.rollback()
-            except Exception:
-                pass
-
-    # If classification is still absent, make one bounded live metadata call
-    # for the selected stock.  This is tiny compared with a universe backfill.
-    if not getattr(company, "sector", None):
-        try:
-            metadata = YahooProvider().get_fundamentals(symbol, exchange) or {}
-            changed = False
-            for attr in ("name", "isin", "sector", "industry"):
-                value = metadata.get(attr)
-                if value not in (None, "", "N/A", "nan", "NaN", "-"):
-                    setattr(company, attr, str(value).strip())
-                    changed = True
-            if changed:
-                company.is_active = 1
-                db.commit()
-        except Exception:
-            try:
-                db.rollback()
-            except Exception:
-                pass
-
-    sector_name = str(getattr(company, "sector", None) or "").strip()
-    if not sector_name:
-        return None, 0, None
-
-    # Gather fresh compact snapshots across the same market.  Their metadata
-    # supplies sector labels and their derived fields supply real growth /
-    # acceleration metrics.  Cap the set to keep the free-tier request small.
-    try:
-        snaps = (
-            db.query(RankingSnapshot)
-            .filter(
-                RankingSnapshot.exchange == exchange,
-                RankingSnapshot.updated_at >= cutoff,
-            )
-            .order_by(RankingSnapshot.updated_at.desc())
-            .limit(300)
-            .all()
-        )
-    except Exception:
-        snaps = []
-
-    rows = []
-    enrichment = {}
-    seen = set()
-    for snap in snaps:
-        key = (str(snap.exchange or "").upper(), str(snap.symbol or "").upper())
-        if key in seen:
-            continue
-        try:
-            payload = json.loads(snap.payload_json or "{}") or {}
-        except Exception:
-            continue
-        metadata = payload.get("metadata") or {}
-        sector = str(metadata.get("sector") or "").strip()
-        if not sector:
-            continue
-        seen.add(key)
-        rows.append({"exchange": key[0], "symbol": key[1], "sector": sector})
-        enrichment[key] = payload
-
-    selected_key = (exchange, symbol)
-    if selected_key not in enrichment:
-        # Ensure the selected stock itself has a compact history payload. One
-        # synchronous symbol fetch is bounded and is persisted for later loads.
-        seed_row = {
-            "exchange": exchange,
-            "symbol": symbol,
-            "sector": sector_name,
-            "industry": getattr(company, "industry", None),
-        }
-        try:
-            fetched = _apply_ranking_enrichment([seed_row], limit=1)
-            enrichment.update(fetched)
-            if fetched.get(selected_key):
-                rows.append(seed_row)
-        except Exception:
-            pass
-
-    if not rows or selected_key not in enrichment:
-        return None, 0, sector_name
-
-    stats = _sector_scores_from_enriched(rows, enrichment)
-    info = stats.get(sector_name) or {}
-    peer_count = int(info.get("peer_count") or 0)
-    score = _finite_number(info.get("score"))
-
-    # Breadth/acceleration are peer metrics; require a minimum real peer sample
-    # before exposing a score on the selected-stock card.
-    if score is None or peer_count < 5:
-        return None, peer_count, sector_name
-    return round(float(score), 2), peer_count, sector_name
+        return None, 0, None, None
+    from app.services.sector_cohort import sector_scores
+    group = _rs_market_group(company.exchange)
+    stats, cohort_id, rows, _ = sector_scores(db, group)
+    selected = next((r for r in rows if r["symbol"] == company.symbol and r["exchange"] == company.exchange), {})
+    sector = selected.get("sector")
+    info = stats.get(sector) or {}
+    return info.get("score"), info.get("peer_count", 0), sector, cohort_id
 
 
 def _standard_deviation_percent_from_closes(closes):
@@ -3054,7 +2952,7 @@ def get_dashboard_summary(
     # sector-growth component.  This closes the old gap where AAPL could have
     # Technical/Fundamental/Ownership/RS but still show Sector N/A even after
     # Top-200 had already fetched real sector metadata/history.
-    sector_component, sector_peer_count, sector_name = _selected_sector_component(db, company)
+    sector_component, sector_peer_count, sector_name, sector_cohort_id = _selected_sector_component(db, company)
     if sector_component is not None:
         components["sector"] = sector_component
 
@@ -3145,7 +3043,7 @@ def get_dashboard_summary(
         "score": displayed_score,
         "provisional_score": score,
         "score_source": "Live baseline daily components; frontend rule editor is labeled separately",
-        "score_version": "client-rs5000-v2",
+        "score_version": "client-rs5000-fiscal-v3",
         "rs_universe": rs_progress,
         "signal": signal,
         "missing_required_score_categories": missing_required,
@@ -3161,7 +3059,8 @@ def get_dashboard_summary(
         "sector_rank": sector_rank,
         "industry_rank": industry_rank,
         "sector_score_peer_count": sector_peer_count,
-        "sector_score_status": "Real compact peer-history ranking" if components.get("sector") is not None else "Insufficient real peer history",
+        "sector_score_status": "Provisional shared stored-market cohort" if components.get("sector") is not None else "Insufficient compatible real peer history",
+        "sector_cohort_id": sector_cohort_id,
         "method_note": "Milestone-2 composite follows the client note: Fundamental 30% + Technical 25% + RS 25% + Ownership 15% + Sector 5%. The selected-stock Sector component reuses real compact Top-200 EPS/PAT/Sales peer history and requires at least 5 real peers; it is never substituted with price RS. For NSE/BSE, a score is withheld when a positively weighted fundamental or ownership category is unavailable, rather than producing a misleading partial ranking."
     })
 
@@ -4664,11 +4563,7 @@ def get_fundamentals_history(
         if exchange not in {"US", "NSE", "BSE"}:
             raise HTTPException(status_code=400, detail="Unsupported exchange")
 
-        provider = YahooProvider()
-
-        data = provider.get_fundamental_history(
-            symbol.upper(), exchange
-        )
+        data = _verified_fundamental_history(symbol.upper(), exchange)
 
         return data
 
@@ -5433,10 +5328,12 @@ def get_top_composite_dashboard(
             if candidate_key not in enrichment:
                 enrichment_remaining.append(candidate_row)
         _warm_ranking_enrichment_background(enrichment_remaining)
-    sector_stats = {}
-    for market_group in { _rs_market_group(r["exchange"]) for r in enrichment_rows }:
-        grouped_rows = [r for r in enrichment_rows if _rs_market_group(r["exchange"]) == market_group]
-        sector_stats.update({(market_group, name): value for name, value in _sector_scores_from_enriched(grouped_rows, enrichment).items()})
+    from app.services.sector_cohort import sector_scores
+    sector_stats, sector_cohorts = {}, {}
+    for market_group in {_rs_market_group(r["exchange"]) for r in enrichment_rows}:
+        scores, cohort_id, _, _ = sector_scores(db, market_group)
+        sector_stats.update({(market_group, name): value for name, value in scores.items()})
+        sector_cohorts[market_group] = cohort_id
 
     # Beta uses adjusted, dated 2Y WEEKLY returns. Warm missing histories off
     # the request thread; an undated daily tail is never substituted.
@@ -5518,6 +5415,8 @@ def get_top_composite_dashboard(
             "technical_score": technical,
             "fundamental_score": fundamental,
             "fundamental_rule_coverage_percent": payload.get("fundamental_rule_coverage"),
+            "financial_calculation_version": payload.get("financial_calculation_version"),
+            "financial_history_source": payload.get("financial_history_source"),
             "fundamental_status": (
                 "Confirmed EPS/PAT/Sales handwritten growth rules; NPM/CFO points remain excluded until exact client weights are confirmed"
                 if fundamental is not None else None
@@ -5525,7 +5424,8 @@ def get_top_composite_dashboard(
             "ownership_score": ownership,
             "sector_score": sector,
             "sector_peer_count": sector_info.get("peer_count"),
-            "sector_status": "Provisional bounded real-history peer ranking" if sector is not None else None,
+            "sector_cohort_id": sector_cohorts.get(group_key),
+            "sector_status": "Provisional shared stored-market cohort" if sector is not None else None,
             "rs_score": rs,
             "eps_score": eps_score,
             "pat_score": pat_score,
@@ -5567,14 +5467,14 @@ def get_top_composite_dashboard(
     for row in rows:
         row["snapshot_id"] = uuid.uuid4().hex
         row["snapshot_at"] = snapshot_at
-        row["score_version"] = "client-rs5000-v2"
+        row["score_version"] = "client-rs5000-fiscal-v3"
         row["score_source"] = "Ranking snapshot; daily technical rules and persisted statement inputs"
         row["rs_universe"] = rs_progress.get(_rs_market_group(row["exchange"]), {})
         db.add(ScoreSnapshot(id=row["snapshot_id"], symbol=row["symbol"], exchange=row["exchange"], payload_json=json.dumps(_json_safe(row))))
     db.commit()
 
     return _json_safe({
-        "snapshot_at": snapshot_at, "score_version": "client-rs5000-v2",
+        "snapshot_at": snapshot_at, "score_version": "client-rs5000-fiscal-v3",
         "rs_progress": rs_progress,
         "market": market.upper(),
         "rows": rows,

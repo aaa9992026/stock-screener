@@ -1,35 +1,23 @@
 """Real stored sector history, separate market cohorts, explicit coverage."""
-import json
 from statistics import median
-from app.models import RankingSnapshot, RSHistory
+from app.models import RSHistory
 from app.services.rs_history import decode_points
-from app.services.rs_universe_backfill import eligible_companies, evaluation_date
+from app.services.rs_universe_backfill import evaluation_date
 
 
 def sector_analytics(db, market, sector=None):
     from app.api.market import (_screener_market_exchanges, _rs_market_group, _sector_scores_from_enriched, _benchmark_close_points, _point_date, _weighted_relative_return_from_points, _json_safe)
     exchanges = _screener_market_exchanges(market)
     market_groups = {_rs_market_group(ex) for ex in exchanges}
-    groups, enrichment = {}, {}
-    for snapshot in db.query(RankingSnapshot).filter(RankingSnapshot.exchange.in_(exchanges)).yield_per(50):
-        try:
-            enrichment[(snapshot.exchange, snapshot.symbol)] = json.loads(snapshot.payload_json)
-        except (TypeError, ValueError):
-            continue
-    rows, sector_stats = [], {}
+    from app.services.sector_cohort import sector_scores
+    groups, enrichment, rows, sector_stats, cohort_ids = {}, {}, [], {}, {}
     for group in market_groups:
-        market_rows = []
-        for company in eligible_companies(db, group):
-            if company.exchange not in exchanges:
-                continue
-            payload = enrichment.get((company.exchange, company.symbol), {})
-            classification = company.sector or (payload.get("metadata") or {}).get("sector") or "Unclassified"
-            if sector and classification != sector:
-                continue
-            row = {"symbol": company.symbol, "exchange": company.exchange, "sector": classification}
-            market_rows.append(row)
-            rows.append(row)
-        sector_stats[group] = _sector_scores_from_enriched(market_rows, enrichment)
+        stats, cohort_id, market_rows, payloads = sector_scores(db, group)
+        sector_stats[group] = stats
+        cohort_ids[group] = cohort_id
+        enrichment.update(payloads)
+        # The requested display filter must not alter the scoring cohort.
+        rows.extend(r for r in market_rows if r["exchange"] in exchanges and (not sector or r["sector"] == sector))
     benchmarks = {}
     for group in market_groups:
         try:
@@ -63,7 +51,7 @@ def sector_analytics(db, market, sector=None):
     output = []
     for (group, name), bucket in groups.items():
         stats = sector_stats[group].get(name, {}) if name != "Unclassified" else {}
-        output.append({"market": group, "sector": name, "stock_count": bucket["stock_count"], "enriched_count": bucket["enriched"], "price_count": len(bucket["returns"]), "data_coverage_percent": bucket["enriched"] / bucket["stock_count"] * 100,
+        output.append({"market": group, "sector_cohort_id": cohort_ids[group], "sector": name, "stock_count": bucket["stock_count"], "enriched_count": bucket["enriched"], "price_count": len(bucket["returns"]), "data_coverage_percent": bucket["enriched"] / bucket["stock_count"] * 100,
             **{k: stats.get(k) for k in ("eps_growth_rs", "pat_growth_rs", "sales_growth_rs", "growth_acceleration_rs", "growth_breadth", "acceleration_breadth")},
             "eps_growth_percent": stats.get("eps_raw"), "pat_growth_percent": stats.get("pat_raw"), "sales_growth_percent": stats.get("sales_raw"), "acceleration": stats.get("acceleration_raw"), "sector_rs_score": stats.get("score"),
             "momentum_1m_percent": median(bucket["returns"]) if bucket["returns"] else None, "relative_return_1m_percent": median(bucket["relative"]) if bucket["relative"] else None,

@@ -556,36 +556,7 @@ class YahooProvider(BaseMarketDataProvider):
         try:
             sec_result = SECFundamentalsProvider().get_history(symbol.upper()) if exchange.upper() == "US" else None
             if sec_result:
-                from datetime import datetime as _dt
-
-                def _bucket(period, annual=False):
-                    try:
-                        d = _dt.strptime(str(period)[:10], "%Y-%m-%d")
-                        return (d.year,) if annual else (d.year, ((d.month - 1) // 3) + 1)
-                    except Exception:
-                        return (str(period),)
-
-                def _merge_rows(primary, fallback, limit, annual=False):
-                    merged = {}
-                    # Yahoo seeds the row; official SEC companyfacts then
-                    # overrides matching non-null financial-statement fields.
-                    for source_rows, prefer in ((primary or [], False), (fallback or [], True)):
-                        for row in source_rows:
-                            key = _bucket(row.get("period"), annual=annual)
-                            current = merged.get(key, {}).copy()
-                            if not current:
-                                current = dict(row)
-                            else:
-                                for field, value in row.items():
-                                    if field == "period":
-                                        if str(value or "") > str(current.get(field) or ""):
-                                            current[field] = value
-                                    elif value is not None and (prefer or current.get(field) is None):
-                                        current[field] = value
-                            merged[key] = current
-                    rows = list(merged.values())
-                    rows.sort(key=lambda r: str(r.get("period") or ""), reverse=True)
-                    return rows[:limit]
+                from app.services.financial_periods import merge_statement_rows as _merge_rows
 
                 merged_quarters = _merge_rows(quarterly_results, sec_result.get("quarterly") or [], 12, False)
                 merged_annual = _merge_rows(annual_results, sec_result.get("annual") or [], 7, True)
@@ -732,6 +703,9 @@ class YahooProvider(BaseMarketDataProvider):
             "insider_transactions": insider_transactions,
             "major_holders": major_holders,
             "current_summary": current_summary,
+            "historical_aggregate_series_available": False,
+            "historical_score_status": "BLOCKED",
+            "historical_score_reason": "Dated aggregate ownership history is unavailable; current aggregates and top-holder share changes cannot establish quarterly/yearly aggregate ownership changes.",
             "provider_note": note,
         }
 
