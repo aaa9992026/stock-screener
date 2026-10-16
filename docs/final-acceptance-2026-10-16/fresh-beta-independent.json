@@ -1,0 +1,80 @@
+{
+  "scope": "Fresh adjusted Yahoo inputs; independent covariance and calendar-week grouping versus current local service. Public risk endpoints captured separately.",
+  "checks": [
+    {
+      "symbol": "AAPL",
+      "exchange": "US",
+      "benchmark": "^GSPC",
+      "observations": 104,
+      "independent_beta": 1.0645774782220074,
+      "local_beta": {
+        "beta": 1.064577,
+        "alpha": 7.234462,
+        "observations": 104,
+        "basis": "2Y weekly adjusted closes; common daily observation dates; completed weeks",
+        "as_of": "2026-10-12"
+      },
+      "local_result": "PASS"
+    },
+    {
+      "symbol": "NVDA",
+      "exchange": "US",
+      "benchmark": "^GSPC",
+      "observations": 104,
+      "independent_beta": 1.8402227140808443,
+      "local_beta": {
+        "beta": 1.840223,
+        "alpha": 5.320236,
+        "observations": 104,
+        "basis": "2Y weekly adjusted closes; common daily observation dates; completed weeks",
+        "as_of": "2026-10-12"
+      },
+      "local_result": "PASS"
+    },
+    {
+      "symbol": "LITE",
+      "exchange": "US",
+      "benchmark": "^GSPC",
+      "observations": 104,
+      "independent_beta": 2.121070040078691,
+      "local_beta": {
+        "beta": 2.12107,
+        "alpha": 130.437462,
+        "observations": 104,
+        "basis": "2Y weekly adjusted closes; common daily observation dates; completed weeks",
+        "as_of": "2026-10-12"
+      },
+      "local_result": "PASS"
+    },
+    {
+      "symbol": "RELIANCE",
+      "exchange": "NSE",
+      "benchmark": "^CRSLDX",
+      "observations": 104,
+      "independent_beta": 0.8854903292966948,
+      "local_beta": {
+        "beta": 0.88549,
+        "alpha": -2.942255,
+        "observations": 104,
+        "basis": "2Y weekly adjusted closes; common daily observation dates; completed weeks",
+        "as_of": "2026-10-12"
+      },
+      "local_result": "PASS"
+    },
+    {
+      "symbol": "TCS",
+      "exchange": "BSE",
+      "benchmark": "^CRSLDX",
+      "observations": 104,
+      "independent_beta": 0.7085976978741307,
+      "local_beta": {
+        "beta": 0.708598,
+        "alpha": -25.106319,
+        "observations": 104,
+        "basis": "2Y weekly adjusted closes; common daily observation dates; completed weeks",
+        "as_of": "2026-10-12"
+      },
+      "local_result": "PASS"
+    }
+  ]
+}

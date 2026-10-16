@@ -1,0 +1,129 @@
+{
+  "scope": "Fresh Yahoo raw daily provider inputs aligned to production AAPL observation date; independent indicator arithmetic and live SEC fiscal dates",
+  "checks": {
+    "EMA20": {
+      "independent": 336.1178915418507,
+      "production": 336.12,
+      "pass": true
+    },
+    "EMA50": {
+      "independent": 328.1947333334864,
+      "production": 328.19,
+      "pass": true
+    },
+    "EMA100": {
+      "independent": 316.69653596033163,
+      "production": 316.7,
+      "pass": true
+    },
+    "EMA150": {
+      "independent": 306.801719049593,
+      "production": 306.8,
+      "pass": true
+    },
+    "EMA200": {
+      "independent": 298.3302080566294,
+      "production": 298.33,
+      "pass": true
+    },
+    "RSI14": {
+      "independent": 60.57988770507023,
+      "production": 60.58,
+      "pass": true
+    },
+    "BollingerWidth": {
+      "independent": 4.563505068916304,
+      "production": 4.56,
+      "pass": true
+    },
+    "daily_price": {
+      "independent": 342.0,
+      "production": 342.0,
+      "date": "2026-10-15",
+      "pass": true
+    },
+    "SEC_eps_YoY": {
+      "independent": 28.6624203821656,
+      "production": 28.6624203821656,
+      "current_fiscal_end": "2026-06-27",
+      "prior_fiscal_end": "2025-06-28",
+      "pass": true
+    },
+    "SEC_pat_YoY": {
+      "independent": 27.118716394981647,
+      "production": 27.11871639498165,
+      "current_fiscal_end": "2026-06-27",
+      "prior_fiscal_end": "2025-06-28",
+      "pass": true
+    },
+    "SEC_sales_YoY": {
+      "independent": 16.356501765281383,
+      "production": 16.35650176528138,
+      "current_fiscal_end": "2026-06-27",
+      "prior_fiscal_end": "2025-06-28",
+      "pass": true
+    }
+  },
+  "fresh_provider_prices": {
+    "US:AAPL": {
+      "row_count": 1531,
+      "last_observation": {
+        "date": "2026-10-15",
+        "open": 346.95001220703125,
+        "high": 347.8500061035156,
+        "low": 341.6000061035156,
+        "close": 342.0,
+        "volume": 39678300.0
+      },
+      "sha256": "7ae483978f02541276b4f327c0e45e78423f635190244c42611ad5a8f43dc246"
+    },
+    "US:NVDA": {
+      "row_count": 1531,
+      "last_observation": {
+        "date": "2026-10-15",
+        "open": 215.3000030517578,
+        "high": 218.47000122070312,
+        "low": 212.85000610351562,
+        "close": 217.22999572753906,
+        "volume": 126789100.0
+      },
+      "sha256": "a1da7ac1c6ca1597c548f9dc929a3755b041e168e98226cf44e853964c452f34"
+    },
+    "US:LITE": {
+      "row_count": 1531,
+      "last_observation": {
+        "date": "2026-10-15",
+        "open": 845.0,
+        "high": 874.72998046875,
+        "low": 800.0,
+        "close": 869.5399780273438,
+        "volume": 7584700.0
+      },
+      "sha256": "df9ad7923a58381091abc28e3e3166f0493110ecaed6a8fcd9acdfe0faac1d54"
+    },
+    "NSE:RELIANCE": {
+      "row_count": 1509,
+      "last_observation": {
+        "date": "2026-10-16",
+        "open": 1215.0,
+        "high": 1215.4000244140625,
+        "low": 1193.0,
+        "close": 1211.199951171875,
+        "volume": 17221171.0
+      },
+      "sha256": "bc9116f93a507db54470aaa731f49b56e0ab588d3f4a5aa256cce08fc6811a24"
+    },
+    "BSE:TCS": {
+      "row_count": 1506,
+      "last_observation": {
+        "date": "2026-10-16",
+        "open": 2380.0,
+        "high": 2482.0,
+        "low": 2377.35009765625,
+        "close": 2463.0,
+        "volume": 853716.0
+      },
+      "sha256": "95b3c13e7209dd863357d7eb77532465829661b1b02d6859b9bf81a0e09dfb32"
+    }
+  }
+}

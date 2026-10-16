@@ -1,0 +1,51 @@
+{
+  "scope": "Current clean application commit 0485cae; isolated DBs and recorded real provider input integration replay; no production trades",
+  "backend": {
+    "tests": 56,
+    "result": "PASS",
+    "failures": 0
+  },
+  "frontend_scoring": {
+    "tests": 5,
+    "result": "PASS",
+    "failures": 0
+  },
+  "integration_api": {
+    "checks": 113,
+    "result": "PASS"
+  },
+  "browser": {
+    "checks": 184,
+    "layout_cases": 110,
+    "errors": 0,
+    "layout_failures": 0,
+    "result": "PASS",
+    "scope": "Local production build with intercepted recorded-input API replay; not live Vercel browser"
+  },
+  "independent_recorded_indicators": {
+    "stocks": 5,
+    "timeframes": 3,
+    "result": "PASS"
+  },
+  "fresh_provider_beta": {
+    "stocks": 5,
+    "observations_each": 104,
+    "result": "PASS",
+    "scope": "Independent fresh adjusted provider covariance vs current local service, not live risk endpoint"
+  },
+  "fresh_AAPL_indicators_and_SEC": {
+    "checks": 11,
+    "result": "PASS"
+  },
+  "build": {
+    "result": "PASS",
+    "warning": "Existing bundle over 500 kB"
+  },
+  "lint": {
+    "result": "PASS",
+    "errors": 0,
+    "existing_warnings": 8
+  },
+  "git_diff_check": "PASS",
+  "source_changes": "None; acceptance documentation/evidence only"
+}

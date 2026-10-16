@@ -1,0 +1,22 @@
+{
+  "started_at": "2026-10-16T11:20:50.144333+00:00",
+  "scope": "Live production verification after GitHub push; no deployment or backfill commands",
+  "requests": [
+    {
+      "at": "2026-10-16T11:21:15.635906+00:00",
+      "path": "/health",
+      "method": "GET",
+      "status": null,
+      "seconds": 25.49,
+      "body": "The read operation timed out"
+    },
+    {
+      "at": "2026-10-16T11:21:41.281775+00:00",
+      "path": "/",
+      "method": "GET",
+      "status": null,
+      "seconds": 25.64,
+      "body": "The read operation timed out"
+    }
+  ]
+}
