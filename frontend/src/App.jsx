@@ -798,18 +798,6 @@ function App() {
   // every render. This makes weight changes reorder the list immediately instead
   // of depending on an older backend response/cache. Apply Weights still sends
   // the same weights to the backend to refresh/enrich the underlying data.
-  const enteredCompositeWeightTotal = Object.values(scoreWeights).reduce(
-    (sum, value) => sum + Math.max(0, Number(value) || 0),
-    0,
-  );
-  const normalizedDisplayWeights = enteredCompositeWeightTotal > 0 ? {
-    technical: (Math.max(0, Number(scoreWeights.technical) || 0) / enteredCompositeWeightTotal) * 100,
-    fundamental: (Math.max(0, Number(scoreWeights.fundamental) || 0) / enteredCompositeWeightTotal) * 100,
-    ownership: (Math.max(0, Number(scoreWeights.ownership) || 0) / enteredCompositeWeightTotal) * 100,
-    sector: (Math.max(0, Number(scoreWeights.sector) || 0) / enteredCompositeWeightTotal) * 100,
-    relative_strength: (Math.max(0, Number(scoreWeights.relative_strength) || 0) / enteredCompositeWeightTotal) * 100,
-  } : { technical: 0, fundamental: 0, ownership: 0, sector: 0, relative_strength: 0 };
-
   const topCompositeDisplayRows = (topComposite.rows || []).map((row) => {
     const components = {
       technical: row.technical_score,
@@ -818,21 +806,12 @@ function App() {
       sector: row.sector_score,
       relative_strength: row.rs_score,
     };
-    let score = 0;
-    let coverage = 0;
-    Object.entries(components).forEach(([key, rawValue]) => {
-      if (rawValue === null || rawValue === undefined || rawValue === "") return;
-      const value = Number(rawValue);
-      const weight = Number(normalizedDisplayWeights[key] || 0);
-      if (Number.isFinite(value) && weight > 0) {
-        score += value * weight / 100;
-        coverage += weight;
-      }
-    });
+    const calculation = reconcileComposite(components, scoreWeights);
+    const coverage = calculation.coverage;
     return {
       ...row,
       score_status: row.score_status === "Final" && coverage >= 99.99 ? "Final" : "Provisional",
-      display_composite_score: coverage > 0 ? Number(score.toFixed(2)) : null,
+      display_composite_score: calculation.provisional,
       display_coverage_percent: Number(coverage.toFixed(2)),
     };
   });

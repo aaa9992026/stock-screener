@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi import Query
 from fastapi.responses import Response
 from sqlalchemy.orm import Session, aliased
-from sqlalchemy import func, or_, case
+from sqlalchemy import func, or_, case, tuple_
 
 from app.database import SessionLocal
 from app.services.providers.yahoo_provider import YahooProvider
@@ -39,6 +39,7 @@ from bisect import bisect_left, bisect_right
 from app.models import RSHistory
 from app.services.rs_history import decode_points, persist_history
 from app.services.financial_periods import align_financial_history
+from app.services.score_math import composite_points
 
 FINANCIAL_CALCULATION_VERSION = "fiscal-date-v3"
 
@@ -2573,19 +2574,17 @@ def _score_symbol(db: Session, symbol: str, exchange: str, weights=None, include
             components["ownership"] = round(sum(ownership_metrics[k] * max(0.0, float(ownership_weights.get(k, 0))) for k in ownership_metrics) / ow_sum, 2)
 
     normalized_weights = _normalize_score_weights(weights)
-    weighted_points = 0.0
     available_weight = 0.0
     for key, weight in normalized_weights.items():
         value = components.get(key)
         if value is None:
             continue
-        weighted_points += value * weight
         available_weight += weight
 
     if available_weight <= 0:
         return (None, 0, components, normalized_weights) if include_components else (None, 0)
 
-    score = round(weighted_points / 100.0, 2)
+    score = composite_points(components, normalized_weights)
     coverage = round(available_weight)
     result = (max(0, min(100, score)), max(0, min(100, coverage)))
     if include_components:
@@ -2956,16 +2955,14 @@ def get_dashboard_summary(
     if sector_component is not None:
         components["sector"] = sector_component
 
-        weighted_points = 0.0
         available_weight = 0.0
         for key, weight in normalized_weights.items():
             value = components.get(key)
             if value is None:
                 continue
-            weighted_points += float(value) * float(weight)
             available_weight += float(weight)
         if available_weight > 0:
-            score = max(0, min(100, round(weighted_points / 100.0, 2)))
+            score = max(0, min(100, composite_points(components, normalized_weights)))
             coverage = max(0, min(100, round(available_weight)))
 
     # Refresh the ORM object after a snapshot/live classification repair.
@@ -5239,9 +5236,13 @@ def get_top_composite_dashboard(
         metrics, _ = _rs_universe_metrics(db, ex, points)
         periods = {"1w": 30, "1m": 25, "3m": 20, "6m": 15, "1y": 10}
         distributions = {p: [v[p]["relative_return_percent"] for v in metrics.values()] for p in periods}
-        targets = dict(metrics)
         candidate_keys = {(r["exchange"], r["symbol"]) for r in base_rows if _rs_market_group(r["exchange"]) == group}
-        for cached in db.query(RSHistory).filter(RSHistory.exchange.in_(_rs_market_exchanges(ex)), RSHistory.last_date >= as_of).yield_per(25):
+        # Every cohort member remains in the reference distributions. Only
+        # displayed candidates need a percentile; scoring all 5,000 targets
+        # repeated the same 5,000-value scans 25,000 times per market.
+        candidate_ids = {f"{exchange}:{symbol}" for exchange, symbol in candidate_keys}
+        targets = {identity: values for identity, values in metrics.items() if identity in candidate_ids}
+        for cached in db.query(RSHistory).filter(tuple_(RSHistory.exchange, RSHistory.symbol).in_(candidate_keys), RSHistory.last_date >= as_of).yield_per(25):
             identity = f"{cached.exchange}:{cached.symbol}"
             if (cached.exchange, cached.symbol) not in candidate_keys or identity in targets:
                 continue
@@ -5386,14 +5387,7 @@ def get_top_composite_dashboard(
             # simply do not earn their configured weight. Because `weights`
             # are already normalized to 100, this score is naturally bounded
             # by coverage (e.g. a 55%-coverage row cannot score above 55).
-            provisional = round(
-                sum(
-                    components[key_name] * weights[key_name]
-                    for key_name in components
-                    if components[key_name] is not None
-                ) / 100.0,
-                2,
-            )
+            provisional = composite_points(components, weights)
 
         # Sector constituent coverage and the remaining NPM/CFO scoring
         # definitions are unverified. Complete RS alone cannot finalize a row.

@@ -1,0 +1,331 @@
+{
+  "started_at": "2026-10-16T03:45:31.909708+00:00",
+  "initial_next_rs_run": "2026-10-16T03:47:26.650868+00:00",
+  "requests": [
+    {
+      "at": "2026-10-16T03:45:32.760018+00:00",
+      "path": "/health",
+      "status": 200,
+      "seconds": 0.85,
+      "body": {
+        "status": "ok",
+        "database": "ready"
+      }
+    },
+    {
+      "at": "2026-10-16T03:45:34.004430+00:00",
+      "path": "/companies/rs-backfill/status?market=US",
+      "status": 200,
+      "seconds": 1.24,
+      "body": {
+        "market": "US",
+        "evaluation_date": "2026-10-14",
+        "target_rs_universe": 5000,
+        "active_symbols": 5756,
+        "history_ready_symbols": 5426,
+        "pending_active_symbols": 330,
+        "no_history_symbols": 34,
+        "stale_or_short_history_symbols": 296,
+        "target_coverage_percent": 100.0,
+        "active_coverage_percent": 94.27,
+        "symbol_master_shortfall": 0,
+        "complete": true,
+        "history_requirements": {
+          "minimum_rows": 180,
+          "minimum_span_days": 350,
+          "maximum_stale_days": 14,
+          "requested_backfill_days": 500
+        },
+        "by_exchange": {
+          "US": {
+            "active": 5756,
+            "ready": 5426,
+            "pending": 330
+          }
+        },
+        "last_batch": {
+          "market": "US",
+          "status": "complete",
+          "requested_batch_size": 25,
+          "attempted": 0,
+          "succeeded": 0,
+          "failed": 0,
+          "empty": 0,
+          "before": {
+            "market": "US",
+            "evaluation_date": "2026-10-14",
+            "target_rs_universe": 5000,
+            "active_symbols": 5756,
+            "history_ready_symbols": 5426,
+            "pending_active_symbols": 330,
+            "no_history_symbols": 34,
+            "stale_or_short_history_symbols": 296,
+            "target_coverage_percent": 100.0,
+            "active_coverage_percent": 94.27,
+            "symbol_master_shortfall": 0,
+            "complete": true,
+            "history_requirements": {
+              "minimum_rows": 180,
+              "minimum_span_days": 350,
+              "maximum_stale_days": 14,
+              "requested_backfill_days": 500
+            },
+            "by_exchange": {
+              "US": {
+                "active": 5756,
+                "ready": 5426,
+                "pending": 330
+              }
+            },
+            "retry_cooldown_symbols": 330,
+            "scheduler_enabled": true,
+            "scheduler": {
+              "running": true,
+              "registered": true,
+              "next_run_at": "2026-10-16T03:50:32.261082+00:00"
+            },
+            "storage": "compressed provider date/open/close observations"
+          },
+          "after": {
+            "market": "US",
+            "evaluation_date": "2026-10-14",
+            "target_rs_universe": 5000,
+            "active_symbols": 5756,
+            "history_ready_symbols": 5426,
+            "pending_active_symbols": 330,
+            "no_history_symbols": 34,
+            "stale_or_short_history_symbols": 296,
+            "target_coverage_percent": 100.0,
+            "active_coverage_percent": 94.27,
+            "symbol_master_shortfall": 0,
+            "complete": true,
+            "history_requirements": {
+              "minimum_rows": 180,
+              "minimum_span_days": 350,
+              "maximum_stale_days": 14,
+              "requested_backfill_days": 500
+            },
+            "by_exchange": {
+              "US": {
+                "active": 5756,
+                "ready": 5426,
+                "pending": 330
+              }
+            },
+            "retry_cooldown_symbols": 330,
+            "scheduler_enabled": true,
+            "scheduler": {
+              "running": true,
+              "registered": true,
+              "next_run_at": "2026-10-16T03:50:32.261082+00:00"
+            },
+            "storage": "compressed provider date/open/close observations"
+          },
+          "started_at": "2026-10-16T03:45:32.264922Z",
+          "finished_at": "2026-10-16T03:45:32.988392Z",
+          "message": "The client target of 5,000 ready stocks is already met."
+        },
+        "retry_cooldown_symbols": 330,
+        "scheduler_enabled": true,
+        "scheduler": {
+          "running": true,
+          "registered": true,
+          "next_run_at": "2026-10-16T03:50:32.261082+00:00"
+        },
+        "storage": "compressed provider date/open/close observations"
+      }
+    },
+    {
+      "at": "2026-10-16T03:45:34.864038+00:00",
+      "path": "/companies/rs-backfill/status?market=INDIA",
+      "status": 200,
+      "seconds": 0.86,
+      "body": {
+        "market": "INDIA",
+        "evaluation_date": "2026-10-07",
+        "target_rs_universe": 5000,
+        "active_symbols": 5277,
+        "history_ready_symbols": 4421,
+        "pending_active_symbols": 856,
+        "no_history_symbols": 193,
+        "stale_or_short_history_symbols": 663,
+        "target_coverage_percent": 88.42,
+        "active_coverage_percent": 83.78,
+        "symbol_master_shortfall": 0,
+        "complete": false,
+        "history_requirements": {
+          "minimum_rows": 180,
+          "minimum_span_days": 350,
+          "maximum_stale_days": 14,
+          "requested_backfill_days": 500
+        },
+        "by_exchange": {
+          "NSE": {
+            "active": 2605,
+            "ready": 2192,
+            "pending": 413
+          },
+          "BSE": {
+            "active": 2672,
+            "ready": 2229,
+            "pending": 443
+          }
+        },
+        "last_batch": {
+          "market": "INDIA",
+          "status": "idle",
+          "requested_batch_size": 25,
+          "attempted": 0,
+          "succeeded": 0,
+          "failed": 0,
+          "empty": 0,
+          "before": {
+            "market": "INDIA",
+            "evaluation_date": "2026-10-07",
+            "target_rs_universe": 5000,
+            "active_symbols": 5277,
+            "history_ready_symbols": 4421,
+            "pending_active_symbols": 856,
+            "no_history_symbols": 193,
+            "stale_or_short_history_symbols": 663,
+            "target_coverage_percent": 88.42,
+            "active_coverage_percent": 83.78,
+            "symbol_master_shortfall": 0,
+            "complete": false,
+            "history_requirements": {
+              "minimum_rows": 180,
+              "minimum_span_days": 350,
+              "maximum_stale_days": 14,
+              "requested_backfill_days": 500
+            },
+            "by_exchange": {
+              "NSE": {
+                "active": 2605,
+                "ready": 2192,
+                "pending": 413
+              },
+              "BSE": {
+                "active": 2672,
+                "ready": 2229,
+                "pending": 443
+              }
+            },
+            "retry_cooldown_symbols": 856,
+            "scheduler_enabled": true,
+            "scheduler": {
+              "running": true,
+              "registered": true,
+              "next_run_at": "2026-10-16T03:50:32.261082+00:00"
+            },
+            "storage": "compressed provider date/open/close observations"
+          },
+          "after": {
+            "market": "INDIA",
+            "evaluation_date": "2026-10-07",
+            "target_rs_universe": 5000,
+            "active_symbols": 5277,
+            "history_ready_symbols": 4421,
+            "pending_active_symbols": 856,
+            "no_history_symbols": 193,
+            "stale_or_short_history_symbols": 663,
+            "target_coverage_percent": 88.42,
+            "active_coverage_percent": 83.78,
+            "symbol_master_shortfall": 0,
+            "complete": false,
+            "history_requirements": {
+              "minimum_rows": 180,
+              "minimum_span_days": 350,
+              "maximum_stale_days": 14,
+              "requested_backfill_days": 500
+            },
+            "by_exchange": {
+              "NSE": {
+                "active": 2605,
+                "ready": 2192,
+                "pending": 413
+              },
+              "BSE": {
+                "active": 2672,
+                "ready": 2229,
+                "pending": 443
+              }
+            },
+            "retry_cooldown_symbols": 856,
+            "scheduler_enabled": true,
+            "scheduler": {
+              "running": true,
+              "registered": true,
+              "next_run_at": "2026-10-16T03:50:32.261082+00:00"
+            },
+            "storage": "compressed provider date/open/close observations"
+          },
+          "started_at": "2026-10-16T03:45:33.002704Z",
+          "finished_at": "2026-10-16T03:45:33.604359Z"
+        },
+        "retry_cooldown_symbols": 856,
+        "scheduler_enabled": true,
+        "scheduler": {
+          "running": true,
+          "registered": true,
+          "next_run_at": "2026-10-16T03:50:32.261082+00:00"
+        },
+        "storage": "compressed provider date/open/close observations"
+      }
+    },
+    {
+      "at": "2026-10-16T03:45:36.303609+00:00",
+      "path": "/companies/data-backfill/status?market=ALL",
+      "status": 200,
+      "seconds": 1.44,
+      "body": {
+        "US": {
+          "market": "US",
+          "eligible_equities": 5747,
+          "price_history_available": 5713,
+          "price_history_percent": 99.4,
+          "fundamentals_available": 2194,
+          "fundamentals_percent": 38.2,
+          "ownership_available": 2194,
+          "ownership_percent": 38.2,
+          "classification_available": 2163,
+          "classification_percent": 37.6,
+          "automatic_enrichment": true,
+          "scheduler": {
+            "running": true,
+            "registered": true,
+            "next_run_at": "2026-10-16T03:57:02.261167+00:00"
+          },
+          "coverage_basis": "Any current field; not complete historical statement or ownership coverage. Counts include exchange listings, not deduplicated issuers.",
+          "price_history_basis": "Stored OHLCV or compressed date/open/close history; not full OHLCV availability",
+          "data_rule": "Only real provider values are stored; unavailable fields remain N/A."
+        },
+        "INDIA": {
+          "market": "INDIA",
+          "eligible_equities": 7745,
+          "price_history_available": 5090,
+          "price_history_percent": 65.7,
+          "fundamentals_available": 2160,
+          "fundamentals_percent": 27.9,
+          "ownership_available": 2158,
+          "ownership_percent": 27.9,
+          "classification_available": 2511,
+          "classification_percent": 32.4,
+          "automatic_enrichment": true,
+          "scheduler": {
+            "running": true,
+            "registered": true,
+            "next_run_at": "2026-10-16T03:57:02.261167+00:00"
+          },
+          "coverage_basis": "Any current field; not complete historical statement or ownership coverage. Counts include exchange listings, not deduplicated issuers.",
+          "price_history_basis": "Stored OHLCV or compressed date/open/close history; not full OHLCV availability",
+          "data_rule": "Only real provider values are stored; unavailable fields remain N/A."
+        }
+      }
+    }
+  ],
+  "rs_checkpoint_advanced": [
+    "INDIA",
+    "US"
+  ],
+  "finished_at": "2026-10-16T03:45:36.304154+00:00"
+}

@@ -1,4 +1,5 @@
 // Pure calculation helpers shared by the UI and independent Node regressions.
+import { compositePoints } from "./scoreRounding.js";
 export function alignFiscalSlots(input, kind) {
   if (!Array.isArray(input) || !input.length) return [];
   const rows = [...input].sort((a, b) => String(b.period || "").localeCompare(String(a.period || "")));
@@ -28,7 +29,7 @@ export function reconcileComposite(components, weights) {
   const normalized = Object.fromEntries(Object.entries(weights).map(([key,w]) => [key,total>0?Math.max(0,Number(w)||0)/total*100:0]));
   const available = Object.entries(components).filter(([key,v]) => normalized[key]>0 && v!=null && v!=="" && Number.isFinite(Number(v)));
   const contributions = Object.fromEntries(available.map(([key,v]) => [key, Number(v)*normalized[key]/100]));
-  const provisional = available.length ? Number(Object.values(contributions).reduce((sum,v)=>sum+v,0).toFixed(2)) : null;
+  const provisional = compositePoints(available, normalized);
   return {provisional, normalized, contributions, coverage: available.reduce((sum,[key])=>sum+normalized[key],0),
     missing: Object.keys(components).filter(key=>normalized[key]>0 && !available.some(([name])=>name===key))};
 }

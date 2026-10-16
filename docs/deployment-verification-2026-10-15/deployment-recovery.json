@@ -1,0 +1,617 @@
+{
+  "started_at": "2026-10-16T03:47:41.509671+00:00",
+  "scope": "Live production verification after GitHub push; no deployment or backfill commands",
+  "requests": [
+    {
+      "at": "2026-10-16T03:47:42.414223+00:00",
+      "path": "/health",
+      "method": "GET",
+      "status": 200,
+      "seconds": 0.9,
+      "body": {
+        "status": "ok",
+        "database": "ready"
+      }
+    },
+    {
+      "at": "2026-10-16T03:48:46.350482+00:00",
+      "path": "/market/top-composite?market=US&candidate_limit=200&limit=200",
+      "method": "GET",
+      "status": 200,
+      "seconds": 63.94,
+      "body": {
+        "snapshot_at": "2026-10-16T03:48:41.423109Z",
+        "score_version": "client-rs5000-fiscal-v3",
+        "rs_progress": {
+          "US": {
+            "scored_stocks_available": 5000,
+            "target_size": 5000,
+            "evaluation_date": "2026-10-14",
+            "complete": true
+          }
+        },
+        "market": "US",
+        "rows": {
+          "observed_length": 200,
+          "sha256": "5fb767d2ab23321333300900e881f43047ed747c9f5899ff251c59ec20f8c25c",
+          "first": {
+            "symbol": "FANG",
+            "name": "Diamondback Energy, Inc. - Common Stock",
+            "isin": "US25278X1090",
+            "exchange": "US",
+            "sector": "Energy",
+            "industry": "Oil & Gas E&P",
+            "close": 195.60000610351562,
+            "volume": null,
+            "market_cap": 51708198912.0,
+            "trailing_eps": 5.24,
+            "forward_eps": 18.76243,
+            "revenue": 16248000512.0,
+            "net_income": 1458000000.0,
+            "profit_margin": 0.09029,
+            "return_on_equity": 0.034930002,
+            "return_on_assets": 0.01308,
+            "institution_percent": 0.73379,
+            "insider_percent": 0.23877001,
+            "shares_outstanding": 281313297.0,
+            "float_shares": 213336553.0,
+            "distance_52w_high": null,
+            "distance_52w_low": null,
+            "volume_ratio": null,
+            "latest_date": null,
+            "data_coverage": 100.0,
+            "composite_score": 76.84,
+            "final_composite_score": null,
+            "provisional_composite_score": 76.84,
+            "score_status": "Provisional",
+            "change_percent": -0.97,
+            "score_coverage_percent": 95.0,
+            "technical_score": 100.0,
+            "fundamental_score": 59.52,
+            "fundamental_rule_coverage_percent": 70.0,
+            "financial_calculation_version": "fiscal-date-v3",
+            "financial_history_source": "SEC companyfacts + Yahoo Finance merged fallback",
+            "fundamental_status": "Confirmed EPS/PAT/Sales handwritten growth rules; NPM/CFO points remain excluded until exact client weights are confirmed",
+            "ownership_score": 81.37,
+            "sector_score": null,
+            "sector_peer_count": 1,
+            "sector_cohort_id": "71c44dd1b29085674c4f",
+            "sector_status": null,
+            "rs_score": 87.12,
+            "eps_score": 50.0,
+            "pat_score": 50.0,
+            "sales_score": 78.57,
+            "eps_rule_coverage_percent": 70.0,
+            "pat_rule_coverage_percent": 70.0,
+            "sales_rule_coverage_percent": 70.0,
+            "fundamental_rule_values": {
+              "q_eps_yoy_latest": 179.4118,
+              "q_pat_yoy_latest": 169.2418,
+              "q_sales_yoy_latest": 51.3284,
+              "q_eps_yoy_delta_latest_prior": null,
+              "q_eps_yoy_delta_prior_second": null,
+              "q_eps_yoy_accel_vs_avg": null,
+              "q_eps_qoq_latest": 8212.5,
+              "q_eps_qoq_prior": 101.5656,
+              "q_eps_qoq_second": -245.584,
+              "q_eps_qoq_accel_vs_avg": 8284.5092,
+              "a_eps_yoy_latest": -63.1037,
+              "a_eps_yoy_delta_latest_prior": -52.6654,
+              "a_eps_yoy_accel_vs_avg": -43.1141,
+              "q_pat_yoy_delta_latest_prior": null,
+              "q_pat_yoy_delta_prior_second": null,
+              "q_pat_yoy_accel_vs_avg": null,
+              "q_pat_qoq_latest": 7428.0,
+              "q_pat_qoq_prior": 101.7147,
+              "q_pat_qoq_second": -243.222,
+              "q_pat_qoq_accel_vs_avg": 7498.7537,
+              "a_pat_yoy_latest": -50.1498,
+              "a_pat_yoy_delta_latest_prior": -56.3541,
+              "a_pat_yoy_accel_vs_avg": -39.0818,
+              "q_sales_yoy_delta_latest_prior": null,
+              "q_sales_yoy_delta_prior_second": null,
+              "q_sales_yoy_accel_vs_avg": null,
+              "q_sales_qoq_latest": 31.2352,
+              "q_sales_qoq_prior": 26.0102,
+              "q_sales_qoq_second": -14.4649,
+              "q_sales_qoq_accel_vs_avg": 25.4625,
+              "a_sales_yoy_latest": 35.435,
+              "a_sales_yoy_delta_latest_prior": 3.2489,
+              "a_sales_yoy_accel_vs_avg": 25.7553,
+              "npm_q_yoy_growth": 77.859,
+              "npm_q_qoq_growth": 5672.8814,
+              "npm_a_yoy_growth": -63.177,
+              "npm_expansion_3y": -10.2267,
+              "npm_industry_compare": null,
+              "npm_q_yoy_delta": null,
+              "cfo_q_yoy_growth": null,
+              "cfo_q_qoq_growth": null,
+              "cfo_a_yoy_growth": 36.5663,
+              "cfo_expansion_3y": null,
+              "cfo_industry_compare": null,
+              "cfo_q_yoy_delta": null,
+              "cashflow_per_share": null,
+              "roe_above": 4.5,
+              "roce_above": 3.22,
+              "shares_outstanding": null,
+              "float_shares": null
+            },
+            "alpha": null,
+            "beta": null,
+            "beta_basis": "2Y weekly adjusted history pending",
+            "beta_observations": 0,
+            "standard_deviation_percent": 32.36,
+            "rank": 1,
+            "snapshot_id": "7c31ebc9f5d046b28140cd7c789c4417",
+            "snapshot_at": "2026-10-16T03:48:41.423109Z",
+            "score_version": "client-rs5000-fiscal-v3",
+            "score_source": "Ranking snapshot; daily technical rules and persisted statement inputs",
+            "rs_universe": {
+              "scored_stocks_available": 5000,
+              "target_size": 5000,
+              "evaluation_date": "2026-10-14",
+              "complete": true
+            }
+          },
+          "last": {
+            "symbol": "AKAM",
+            "name": "Akamai Technologies, Inc. - Common Stock",
+            "isin": null,
+            "exchange": "US",
+            "sector": "Technology",
+            "industry": "Software - Infrastructure",
+            "close": 92.31999969482422,
+            "volume": null,
+            "market_cap": 15586065408.0,
+            "trailing_eps": 2.74,
+            "forward_eps": 6.84915,
+            "revenue": 4322833920.0,
+            "net_income": 410964992.0,
+            "profit_margin": 0.09507,
+            "return_on_equity": 0.08918,
+            "return_on_assets": 0.025150001,
+            "institution_percent": 1.13656,
+            "insider_percent": 0.02128,
+            "shares_outstanding": 143716609.0,
+            "float_shares": 140441307.0,
+            "distance_52w_high": null,
+            "distance_52w_low": null,
+            "volume_ratio": null,
+            "latest_date": null,
+            "data_coverage": 100.0,
+            "composite_score": 6.01,
+            "final_composite_score": null,
+            "provisional_composite_score": 6.01,
+            "score_status": "Provisional",
+            "change_percent": 0.67,
+            "score_coverage_percent": 65.0,
+            "technical_score": 0.0,
+            "fundamental_score": null,
+            "fundamental_rule_coverage_percent": null,
+            "financial_calculation_version": null,
+            "financial_history_source": null,
+            "fundamental_status": null,
+            "ownership_score": 3.99,
+            "sector_score": null,
+            "sector_peer_count": 3,
+            "sector_cohort_id": "71c44dd1b29085674c4f",
+            "sector_status": null,
+            "rs_score": 21.66,
+            "eps_score": null,
+            "pat_score": null,
+            "sales_score": null,
+            "eps_rule_coverage_percent": null,
+            "pat_rule_coverage_percent": null,
+            "sales_rule_coverage_percent": null,
+            "fundamental_rule_values": {
+              "q_eps_yoy_latest": null,
+              "q_pat_yoy_latest": null,
+              "q_sales_yoy_latest": null
+            },
+            "alpha": null,
+            "beta": null,
+            "beta_basis": "2Y weekly adjusted history pending",
+            "beta_observations": 0,
+            "standard_deviation_percent": 61.66,
+            "rank": 200,
+            "snapshot_id": "ce9a97d74cc343d4af177aa8fb1e3371",
+            "snapshot_at": "2026-10-16T03:48:41.423109Z",
+            "score_version": "client-rs5000-fiscal-v3",
+            "score_source": "Ranking snapshot; daily technical rules and persisted statement inputs",
+            "rs_universe": {
+              "scored_stocks_available": 5000,
+              "target_size": 5000,
+              "evaluation_date": "2026-10-14",
+              "complete": true
+            }
+          }
+        },
+        "candidate_count": 200,
+        "ranked_candidate_count": 200,
+        "returned_count": 200,
+        "final_qualified_count": 0,
+        "qualification_scope": "Bounded evaluated candidates; provisional scores are not fully qualified stocks",
+        "formula": "Technical 25% + Fundamental 30% + Ownership 15% + Sector 5% + RS 25%",
+        "score_weights": {
+          "technical": 25.0,
+          "fundamental": 30.0,
+          "ownership": 15.0,
+          "sector": 5.0,
+          "relative_strength": 25.0
+        },
+        "entered_weight_total": 100.0,
+        "rs_note": "RS uses the same persisted market cohort and fixed 5,000-stock percentile formula as selected-stock detail. Missing cohort observations stay N/A; incomplete cohorts stay provisional.",
+        "data_rule": "The free-tier dashboard uses a compact persisted real-provider enrichment cache for statement history, sector metadata and EPS/PAT/Sales handwritten-rule scores, while price history remains live and is never stored as a huge universe cache. Missing provider values remain N/A. Fundamental excludes ambiguous NPM/CFO point allocations, and sector/RS peer ranks remain Provisional until the full client universe is available.",
+        "enrichment_cached_count": 20,
+        "enrichment_target_count": 200,
+        "enrichment_remaining_count": 180,
+        "enrichment_in_progress": true,
+        "sync_enrichment_limit": 20
+      }
+    },
+    {
+      "at": "2026-10-16T03:48:47.194593+00:00",
+      "path": "/market/excel-export/AAPL?exchange=US&limit=20&snapshot_id=06e6f505eb5c4a878947571d3e9ddcb9",
+      "method": "GET",
+      "status": 502,
+      "seconds": 0.84,
+      "body": "{\"status\":\"error\",\"code\":502,\"message\":\"Application failed to respond\",\"request_id\":\"dClcV9NoRiWBrzxbn6XIxQ\"}"
+    },
+    {
+      "at": "2026-10-16T03:48:47.848703+00:00",
+      "path": "/market/sector-analysis?market=US",
+      "method": "GET",
+      "status": 502,
+      "seconds": 0.65,
+      "body": "{\"status\":\"error\",\"code\":502,\"message\":\"Application failed to respond\",\"request_id\":\"3hTp7l86SLWKcgsx-_9nXA\"}"
+    },
+    {
+      "at": "2026-10-16T03:48:48.497882+00:00",
+      "path": "/market/dashboard/AAPL?exchange=US",
+      "method": "GET",
+      "status": 502,
+      "seconds": 0.64,
+      "body": "{\"status\":\"error\",\"code\":502,\"message\":\"Application failed to respond\",\"request_id\":\"ROmJRV34RNSDCB74npoFkQ\"}"
+    },
+    {
+      "at": "2026-10-16T03:48:49.172476+00:00",
+      "path": "/market/sector-analysis?market=US&sector=Technology",
+      "method": "GET",
+      "status": 502,
+      "seconds": 0.67,
+      "body": "{\"status\":\"error\",\"code\":502,\"message\":\"Application failed to respond\",\"request_id\":\"OGwgyWscStacWcCPnpoFkQ\"}"
+    },
+    {
+      "at": "2026-10-16T03:48:49.911692+00:00",
+      "path": "/market/technical-summary/AAPL?exchange=US",
+      "method": "GET",
+      "status": 503,
+      "seconds": 0.73,
+      "body": "{\"detail\":\"Database is initializing or reconnecting; retry shortly\"}"
+    },
+    {
+      "at": "2026-10-16T03:48:50.871561+00:00",
+      "path": "/companies/rs-backfill/status?market=US",
+      "method": "GET",
+      "status": 200,
+      "seconds": 0.94,
+      "body": {
+        "market": "US",
+        "evaluation_date": "2026-10-14",
+        "target_rs_universe": 5000,
+        "active_symbols": 5756,
+        "history_ready_symbols": 5426,
+        "pending_active_symbols": 330,
+        "no_history_symbols": 34,
+        "stale_or_short_history_symbols": 296,
+        "target_coverage_percent": 100.0,
+        "active_coverage_percent": 94.27,
+        "symbol_master_shortfall": 0,
+        "complete": true,
+        "history_requirements": {
+          "minimum_rows": 180,
+          "minimum_span_days": 350,
+          "maximum_stale_days": 14,
+          "requested_backfill_days": 500
+        },
+        "by_exchange": {
+          "US": {
+            "active": 5756,
+            "ready": 5426,
+            "pending": 330
+          }
+        },
+        "last_batch": {
+          "market": "US",
+          "status": "complete",
+          "requested_batch_size": 25,
+          "attempted": 0,
+          "succeeded": 0,
+          "failed": 0,
+          "empty": 0,
+          "before": {
+            "market": "US",
+            "evaluation_date": "2026-10-14",
+            "target_rs_universe": 5000,
+            "active_symbols": 5756,
+            "history_ready_symbols": 5426,
+            "pending_active_symbols": 330,
+            "no_history_symbols": 34,
+            "stale_or_short_history_symbols": 296,
+            "target_coverage_percent": 100.0,
+            "active_coverage_percent": 94.27,
+            "symbol_master_shortfall": 0,
+            "complete": true,
+            "history_requirements": {
+              "minimum_rows": 180,
+              "minimum_span_days": 350,
+              "maximum_stale_days": 14,
+              "requested_backfill_days": 500
+            },
+            "by_exchange": {
+              "US": {
+                "active": 5756,
+                "ready": 5426,
+                "pending": 330
+              }
+            },
+            "retry_cooldown_symbols": 330,
+            "scheduler_enabled": true,
+            "scheduler": {
+              "running": true,
+              "registered": true,
+              "next_run_at": "2026-10-16T03:50:32.261082+00:00"
+            },
+            "storage": "compressed provider date/open/close observations"
+          },
+          "after": {
+            "market": "US",
+            "evaluation_date": "2026-10-14",
+            "target_rs_universe": 5000,
+            "active_symbols": 5756,
+            "history_ready_symbols": 5426,
+            "pending_active_symbols": 330,
+            "no_history_symbols": 34,
+            "stale_or_short_history_symbols": 296,
+            "target_coverage_percent": 100.0,
+            "active_coverage_percent": 94.27,
+            "symbol_master_shortfall": 0,
+            "complete": true,
+            "history_requirements": {
+              "minimum_rows": 180,
+              "minimum_span_days": 350,
+              "maximum_stale_days": 14,
+              "requested_backfill_days": 500
+            },
+            "by_exchange": {
+              "US": {
+                "active": 5756,
+                "ready": 5426,
+                "pending": 330
+              }
+            },
+            "retry_cooldown_symbols": 330,
+            "scheduler_enabled": true,
+            "scheduler": {
+              "running": true,
+              "registered": true,
+              "next_run_at": "2026-10-16T03:50:32.261082+00:00"
+            },
+            "storage": "compressed provider date/open/close observations"
+          },
+          "started_at": "2026-10-16T03:45:32.264922Z",
+          "finished_at": "2026-10-16T03:45:32.988392Z",
+          "message": "The client target of 5,000 ready stocks is already met."
+        },
+        "retry_cooldown_symbols": 330,
+        "scheduler_enabled": true,
+        "scheduler": {
+          "running": true,
+          "registered": true,
+          "next_run_at": "2026-10-16T03:49:20.352951+00:00"
+        },
+        "storage": "compressed provider date/open/close observations"
+      }
+    },
+    {
+      "at": "2026-10-16T03:48:51.665705+00:00",
+      "path": "/companies/rs-backfill/status?market=INDIA",
+      "method": "GET",
+      "status": 200,
+      "seconds": 0.79,
+      "body": {
+        "market": "INDIA",
+        "evaluation_date": "2026-10-07",
+        "target_rs_universe": 5000,
+        "active_symbols": 5277,
+        "history_ready_symbols": 4417,
+        "pending_active_symbols": 860,
+        "no_history_symbols": 197,
+        "stale_or_short_history_symbols": 663,
+        "target_coverage_percent": 88.34,
+        "active_coverage_percent": 83.7,
+        "symbol_master_shortfall": 0,
+        "complete": false,
+        "history_requirements": {
+          "minimum_rows": 180,
+          "minimum_span_days": 350,
+          "maximum_stale_days": 14,
+          "requested_backfill_days": 500
+        },
+        "by_exchange": {
+          "NSE": {
+            "active": 2601,
+            "ready": 2188,
+            "pending": 413
+          },
+          "BSE": {
+            "active": 2676,
+            "ready": 2229,
+            "pending": 447
+          }
+        },
+        "last_batch": {
+          "market": "INDIA",
+          "status": "idle",
+          "requested_batch_size": 25,
+          "attempted": 0,
+          "succeeded": 0,
+          "failed": 0,
+          "empty": 0,
+          "before": {
+            "market": "INDIA",
+            "evaluation_date": "2026-10-07",
+            "target_rs_universe": 5000,
+            "active_symbols": 5277,
+            "history_ready_symbols": 4421,
+            "pending_active_symbols": 856,
+            "no_history_symbols": 193,
+            "stale_or_short_history_symbols": 663,
+            "target_coverage_percent": 88.42,
+            "active_coverage_percent": 83.78,
+            "symbol_master_shortfall": 0,
+            "complete": false,
+            "history_requirements": {
+              "minimum_rows": 180,
+              "minimum_span_days": 350,
+              "maximum_stale_days": 14,
+              "requested_backfill_days": 500
+            },
+            "by_exchange": {
+              "NSE": {
+                "active": 2605,
+                "ready": 2192,
+                "pending": 413
+              },
+              "BSE": {
+                "active": 2672,
+                "ready": 2229,
+                "pending": 443
+              }
+            },
+            "retry_cooldown_symbols": 856,
+            "scheduler_enabled": true,
+            "scheduler": {
+              "running": true,
+              "registered": true,
+              "next_run_at": "2026-10-16T03:50:32.261082+00:00"
+            },
+            "storage": "compressed provider date/open/close observations"
+          },
+          "after": {
+            "market": "INDIA",
+            "evaluation_date": "2026-10-07",
+            "target_rs_universe": 5000,
+            "active_symbols": 5277,
+            "history_ready_symbols": 4421,
+            "pending_active_symbols": 856,
+            "no_history_symbols": 193,
+            "stale_or_short_history_symbols": 663,
+            "target_coverage_percent": 88.42,
+            "active_coverage_percent": 83.78,
+            "symbol_master_shortfall": 0,
+            "complete": false,
+            "history_requirements": {
+              "minimum_rows": 180,
+              "minimum_span_days": 350,
+              "maximum_stale_days": 14,
+              "requested_backfill_days": 500
+            },
+            "by_exchange": {
+              "NSE": {
+                "active": 2605,
+                "ready": 2192,
+                "pending": 413
+              },
+              "BSE": {
+                "active": 2672,
+                "ready": 2229,
+                "pending": 443
+              }
+            },
+            "retry_cooldown_symbols": 856,
+            "scheduler_enabled": true,
+            "scheduler": {
+              "running": true,
+              "registered": true,
+              "next_run_at": "2026-10-16T03:50:32.261082+00:00"
+            },
+            "storage": "compressed provider date/open/close observations"
+          },
+          "started_at": "2026-10-16T03:45:33.002704Z",
+          "finished_at": "2026-10-16T03:45:33.604359Z"
+        },
+        "retry_cooldown_symbols": 856,
+        "scheduler_enabled": true,
+        "scheduler": {
+          "running": true,
+          "registered": true,
+          "next_run_at": "2026-10-16T03:49:20.352951+00:00"
+        },
+        "storage": "compressed provider date/open/close observations"
+      }
+    },
+    {
+      "at": "2026-10-16T03:48:53.137640+00:00",
+      "path": "/companies/data-backfill/status?market=ALL",
+      "method": "GET",
+      "status": 200,
+      "seconds": 1.47,
+      "body": {
+        "US": {
+          "market": "US",
+          "eligible_equities": 5747,
+          "price_history_available": 5713,
+          "price_history_percent": 99.4,
+          "fundamentals_available": 2194,
+          "fundamentals_percent": 38.2,
+          "ownership_available": 2194,
+          "ownership_percent": 38.2,
+          "classification_available": 2163,
+          "classification_percent": 37.6,
+          "automatic_enrichment": true,
+          "scheduler": {
+            "running": true,
+            "registered": true,
+            "next_run_at": "2026-10-16T04:00:50.352999+00:00"
+          },
+          "coverage_basis": "Any current field; not complete historical statement or ownership coverage. Counts include exchange listings, not deduplicated issuers.",
+          "price_history_basis": "Stored OHLCV or compressed date/open/close history; not full OHLCV availability",
+          "data_rule": "Only real provider values are stored; unavailable fields remain N/A."
+        },
+        "INDIA": {
+          "market": "INDIA",
+          "eligible_equities": 7745,
+          "price_history_available": 5090,
+          "price_history_percent": 65.7,
+          "fundamentals_available": 2160,
+          "fundamentals_percent": 27.9,
+          "ownership_available": 2158,
+          "ownership_percent": 27.9,
+          "classification_available": 2511,
+          "classification_percent": 32.4,
+          "automatic_enrichment": true,
+          "scheduler": {
+            "running": true,
+            "registered": true,
+            "next_run_at": "2026-10-16T04:00:50.352999+00:00"
+          },
+          "coverage_basis": "Any current field; not complete historical statement or ownership coverage. Counts include exchange listings, not deduplicated issuers.",
+          "price_history_basis": "Stored OHLCV or compressed date/open/close history; not full OHLCV availability",
+          "data_rule": "Only real provider values are stored; unavailable fields remain N/A."
+        }
+      }
+    },
+    {
+      "at": "2026-10-16T03:48:53.794784+00:00",
+      "path": "/health",
+      "method": "GET",
+      "status": 200,
+      "seconds": 0.65,
+      "body": {
+        "status": "ok",
+        "database": "ready"
+      }
+    }
+  ]
+}

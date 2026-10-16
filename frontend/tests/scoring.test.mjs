@@ -2,6 +2,19 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {reconcileComposite, ruleCoverage, alignFiscalSlots, buildClientFundamentalRows} from '../src/scoring.js';
 
+test('captured half-cent ranking cases agree with decimal API rounding',()=>{
+  const weights={technical:25,fundamental:30,ownership:15,sector:5,relative_strength:25};
+  for (const [symbol,technical,ownership,relative_strength,expected] of [
+    ['FSLR',10,75.55,58.93,28.57],['LI',30,3.5,53.8,21.48],
+    ['HUHTAMAKI',0,30.5,43.08,15.35],['GENCON',0,30,12.94,7.74],
+  ]) {
+    assert.equal(reconcileComposite({technical,ownership,relative_strength,fundamental:null,sector:null},weights).provisional,expected,symbol);
+  }
+  assert.equal(reconcileComposite({technical:1.125},{technical:100}).provisional,1.13);
+  assert.equal(reconcileComposite({technical:1e-7},{technical:100}).provisional,0);
+  assert.equal(reconcileComposite({technical:null},{technical:100}).provisional,null);
+});
+
 test('reported AAPL composite keeps missing ownership and sector unavailable',()=>{
   const inputs={fundamental:28.2,technical:85.1,relative_strength:83.5,ownership:null,sector:null};
   const result=reconcileComposite(inputs,{fundamental:30,technical:25,relative_strength:25,ownership:15,sector:5});

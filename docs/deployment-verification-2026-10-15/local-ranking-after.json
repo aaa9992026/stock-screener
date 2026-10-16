@@ -1,0 +1,16 @@
+{
+  "scope": "Synthetic isolated SQLite ranking benchmark; no provider calls or production mutations",
+  "cohort_size": 5000,
+  "candidate_count": 1,
+  "percentile_calls": 5,
+  "seconds": 0.0278,
+  "aapl_rs_score": 50.02,
+  "cohort_report": {
+    "US": {
+      "scored_stocks_available": 5000,
+      "target_size": 5000,
+      "evaluation_date": "2026-10-14",
+      "complete": true
+    }
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "scope": "Local regression; API/browser use recorded real provider inputs, not live deployment",
+  "backend": {
+    "tests": 56,
+    "failures": 0,
+    "errors": 0,
+    "command": "python -X utf8 .completion-qa/run_python.py .completion-qa/run_all_tests.py"
+  },
+  "frontend_scoring": {
+    "tests": 5,
+    "failures": 0,
+    "command": "node --test frontend/tests/scoring.test.mjs"
+  },
+  "build": {
+    "result": "PASS",
+    "warning": "Existing chunk size over 500 kB"
+  },
+  "lint": {
+    "result": "PASS",
+    "errors": 0,
+    "existing_warnings": 8
+  },
+  "api_replay": {
+    "checks": 113,
+    "result": "PASS"
+  },
+  "indicators": {
+    "stocks": 5,
+    "timeframes": 3,
+    "result": "PASS"
+  },
+  "rounding_parity": {
+    "captured_rows": 400,
+    "server_client_mismatches": 0
+  },
+  "git_diff_check": "PASS",
+  "browser": {
+    "checks": 184,
+    "layout_cases": 110,
+    "errors": 0,
+    "layout_failures": 0,
+    "scope": "Local built frontend using recorded-provider API replay; not production browser"
+  }
+}

@@ -1,0 +1,5126 @@
+{
+  "started_at": "2026-10-16T03:43:14.876685+00:00",
+  "scope": "Live production verification after GitHub push; no deployment or backfill commands",
+  "requests": [
+    {
+      "at": "2026-10-16T03:43:15.814201+00:00",
+      "path": "/health",
+      "method": "GET",
+      "status": 200,
+      "seconds": 0.94,
+      "body": {
+        "status": "ok",
+        "database": "ready"
+      }
+    },
+    {
+      "at": "2026-10-16T03:43:16.548030+00:00",
+      "path": "/",
+      "method": "GET",
+      "status": 200,
+      "seconds": 0.73,
+      "body": {
+        "status": "ok",
+        "message": "Stock Screener API is running",
+        "database": "ready"
+      }
+    },
+    {
+      "at": "2026-10-16T03:43:53.917122+00:00",
+      "path": "/market/dashboard/AAPL?exchange=US",
+      "method": "GET",
+      "status": 200,
+      "seconds": 37.37,
+      "body": {
+        "symbol": "AAPL",
+        "name": "Apple Inc.",
+        "isin": "US0378331005",
+        "exchange": "US",
+        "score": null,
+        "provisional_score": 83.2,
+        "score_source": "Live baseline daily components; frontend rule editor is labeled separately",
+        "score_version": "client-rs5000-fiscal-v3",
+        "rs_universe": {
+          "market": "US",
+          "evaluation_date": "2026-10-14",
+          "target_rs_universe": 5000,
+          "active_symbols": 5756,
+          "history_ready_symbols": 5426,
+          "pending_active_symbols": 330,
+          "no_history_symbols": 34,
+          "stale_or_short_history_symbols": 296,
+          "target_coverage_percent": 100.0,
+          "active_coverage_percent": 94.27,
+          "symbol_master_shortfall": 0,
+          "complete": true,
+          "history_requirements": {
+            "minimum_rows": 180,
+            "minimum_span_days": 350,
+            "maximum_stale_days": 14,
+            "requested_backfill_days": 500
+          },
+          "by_exchange": {
+            "US": {
+              "active": 5756,
+              "ready": 5426,
+              "pending": 330
+            }
+          },
+          "last_batch": {
+            "market": "US",
+            "status": "complete",
+            "requested_batch_size": 25,
+            "attempted": 0,
+            "succeeded": 0,
+            "failed": 0,
+            "empty": 0,
+            "before": {
+              "market": "US",
+              "evaluation_date": "2026-10-14",
+              "target_rs_universe": 5000,
+              "active_symbols": 5756,
+              "history_ready_symbols": 5426,
+              "pending_active_symbols": 330,
+              "no_history_symbols": 34,
+              "stale_or_short_history_symbols": 296,
+              "target_coverage_percent": 100.0,
+              "active_coverage_percent": 94.27,
+              "symbol_master_shortfall": 0,
+              "complete": true,
+              "history_requirements": {
+                "minimum_rows": 180,
+                "minimum_span_days": 350,
+                "maximum_stale_days": 14,
+                "requested_backfill_days": 500
+              },
+              "by_exchange": {
+                "US": {
+                  "active": 5756,
+                  "ready": 5426,
+                  "pending": 330
+                }
+              },
+              "retry_cooldown_symbols": 330,
+              "scheduler_enabled": true,
+              "scheduler": {
+                "running": true,
+                "registered": true,
+                "next_run_at": "2026-10-16T03:47:26.650868+00:00"
+              },
+              "storage": "compressed provider date/open/close observations"
+            },
+            "after": {
+              "market": "US",
+              "evaluation_date": "2026-10-14",
+              "target_rs_universe": 5000,
+              "active_symbols": 5756,
+              "history_ready_symbols": 5426,
+              "pending_active_symbols": 330,
+              "no_history_symbols": 34,
+              "stale_or_short_history_symbols": 296,
+              "target_coverage_percent": 100.0,
+              "active_coverage_percent": 94.27,
+              "symbol_master_shortfall": 0,
+              "complete": true,
+              "history_requirements": {
+                "minimum_rows": 180,
+                "minimum_span_days": 350,
+                "maximum_stale_days": 14,
+                "requested_backfill_days": 500
+              },
+              "by_exchange": {
+                "US": {
+                  "active": 5756,
+                  "ready": 5426,
+                  "pending": 330
+                }
+              },
+              "retry_cooldown_symbols": 330,
+              "scheduler_enabled": true,
+              "scheduler": {
+                "running": true,
+                "registered": true,
+                "next_run_at": "2026-10-16T03:47:26.650868+00:00"
+              },
+              "storage": "compressed provider date/open/close observations"
+            },
+            "started_at": "2026-10-16T03:42:26.654169Z",
+            "finished_at": "2026-10-16T03:42:27.664296Z",
+            "message": "The client target of 5,000 ready stocks is already met."
+          },
+          "retry_cooldown_symbols": 330,
+          "scheduler_enabled": true,
+          "scheduler": {
+            "running": true,
+            "registered": true,
+            "next_run_at": "2026-10-16T03:47:26.650868+00:00"
+          },
+          "storage": "compressed provider date/open/close observations"
+        },
+        "signal": "Insufficient Data",
+        "missing_required_score_categories": [
+          "sector"
+        ],
+        "score_coverage_percent": 95,
+        "score_components": {
+          "technical": 100.0,
+          "fundamental": 100.0,
+          "relative_strength": 83.46,
+          "ownership": 48.9,
+          "sector": null
+        },
+        "score_weights": {
+          "technical": 25.0,
+          "fundamental": 30.0,
+          "ownership": 15.0,
+          "sector": 5.0,
+          "relative_strength": 25.0
+        },
+        "ranking_subweights": {
+          "technical": {
+            "ema20": 20.0,
+            "ema50": 20.0,
+            "ema150": 20.0,
+            "ema200": 20.0,
+            "rsi": 20.0
+          },
+          "fundamental": {
+            "eps": 20.0,
+            "net_income": 20.0,
+            "profit_margin": 20.0,
+            "roe": 20.0,
+            "roa": 20.0
+          },
+          "ownership": {
+            "institution": 70.0,
+            "insider": 30.0
+          }
+        },
+        "rs_period_weights": {
+          "1w": 30.0,
+          "2w": 0.0,
+          "1m": 25.0,
+          "2m": 0.0,
+          "3m": 20.0,
+          "6m": 15.0,
+          "1y": 10.0,
+          "sector": 0.0
+        },
+        "sector": "Technology",
+        "industry": "Consumer Electronics",
+        "industry_median_npm": -7.7619995,
+        "industry_npm_peer_count": 8,
+        "sector_rank": null,
+        "industry_rank": null,
+        "sector_score_peer_count": 0,
+        "sector_score_status": "Insufficient compatible real peer history",
+        "sector_cohort_id": "4be7f95e786d52ea0f9e",
+        "method_note": "Milestone-2 composite follows the client note: Fundamental 30% + Technical 25% + RS 25% + Ownership 15% + Sector 5%. The selected-stock Sector component reuses real compact Top-200 EPS/PAT/Sales peer history and requires at least 5 real peers; it is never substituted with price RS. For NSE/BSE, a score is withheld when a positively weighted fundamental or ownership category is unavailable, rather than producing a misleading partial ranking."
+      }
+    },
+    {
+      "at": "2026-10-16T03:43:54.642301+00:00",
+      "path": "/market/provider-status",
+      "method": "GET",
+      "status": 200,
+      "seconds": 0.72,
+      "body": {
+        "providers": {
+          "yahoo_finance": {
+            "configured": true,
+            "uses_personal_api_key": false,
+            "purpose": "US/NSE OHLCV, quotes, provider fallback fundamentals/ownership"
+          },
+          "sec_edgar": {
+            "configured": true,
+            "uses_personal_api_key": false,
+            "purpose": "Official US XBRL fundamentals and filing metadata",
+            "required_env": "SEC_USER_AGENT"
+          },
+          "twelve_data_bse": {
+            "configured": true,
+            "uses_personal_api_key": true,
+            "purpose": "BSE/XBOM daily OHLCV",
+            "required_env": "TWELVE_DATA_API_KEY"
+          },
+          "kotak_neo_india": {
+            "configured": false,
+            "ready_for_live_quotes": false,
+            "uses_personal_api_key": true,
+            "purpose": "Indian-stock market data only; kept separate from US sources",
+            "required_env": "KOTAK_NEO_API_KEY / KOTAK_NEO_ACCESS_TOKEN / KOTAK_NEO_BASE_URL",
+            "note": "Credential/auth flow will be validated with the client's Kotak Neo account before enabling it as the live Indian provider."
+          }
+        },
+        "automatic_refresh": {
+          "configured_symbols": [],
+          "enabled": false,
+          "note": "Configure AUTO_REFRESH_SYMBOLS as EXCHANGE:SYMBOL entries; no CSV upload is required."
+        }
+      }
+    },
+    {
+      "at": "2026-10-16T03:43:56.428098+00:00",
+      "path": "/companies/rs-backfill/status?market=US",
+      "method": "GET",
+      "status": 200,
+      "seconds": 1.78,
+      "body": {
+        "market": "US",
+        "evaluation_date": "2026-10-14",
+        "target_rs_universe": 5000,
+        "active_symbols": 5756,
+        "history_ready_symbols": 5426,
+        "pending_active_symbols": 330,
+        "no_history_symbols": 34,
+        "stale_or_short_history_symbols": 296,
+        "target_coverage_percent": 100.0,
+        "active_coverage_percent": 94.27,
+        "symbol_master_shortfall": 0,
+        "complete": true,
+        "history_requirements": {
+          "minimum_rows": 180,
+          "minimum_span_days": 350,
+          "maximum_stale_days": 14,
+          "requested_backfill_days": 500
+        },
+        "by_exchange": {
+          "US": {
+            "active": 5756,
+            "ready": 5426,
+            "pending": 330
+          }
+        },
+        "last_batch": {
+          "market": "US",
+          "status": "complete",
+          "requested_batch_size": 25,
+          "attempted": 0,
+          "succeeded": 0,
+          "failed": 0,
+          "empty": 0,
+          "before": {
+            "market": "US",
+            "evaluation_date": "2026-10-14",
+            "target_rs_universe": 5000,
+            "active_symbols": 5756,
+            "history_ready_symbols": 5426,
+            "pending_active_symbols": 330,
+            "no_history_symbols": 34,
+            "stale_or_short_history_symbols": 296,
+            "target_coverage_percent": 100.0,
+            "active_coverage_percent": 94.27,
+            "symbol_master_shortfall": 0,
+            "complete": true,
+            "history_requirements": {
+              "minimum_rows": 180,
+              "minimum_span_days": 350,
+              "maximum_stale_days": 14,
+              "requested_backfill_days": 500
+            },
+            "by_exchange": {
+              "US": {
+                "active": 5756,
+                "ready": 5426,
+                "pending": 330
+              }
+            },
+            "retry_cooldown_symbols": 330,
+            "scheduler_enabled": true,
+            "scheduler": {
+              "running": true,
+              "registered": true,
+              "next_run_at": "2026-10-16T03:47:26.650868+00:00"
+            },
+            "storage": "compressed provider date/open/close observations"
+          },
+          "after": {
+            "market": "US",
+            "evaluation_date": "2026-10-14",
+            "target_rs_universe": 5000,
+            "active_symbols": 5756,
+            "history_ready_symbols": 5426,
+            "pending_active_symbols": 330,
+            "no_history_symbols": 34,
+            "stale_or_short_history_symbols": 296,
+            "target_coverage_percent": 100.0,
+            "active_coverage_percent": 94.27,
+            "symbol_master_shortfall": 0,
+            "complete": true,
+            "history_requirements": {
+              "minimum_rows": 180,
+              "minimum_span_days": 350,
+              "maximum_stale_days": 14,
+              "requested_backfill_days": 500
+            },
+            "by_exchange": {
+              "US": {
+                "active": 5756,
+                "ready": 5426,
+                "pending": 330
+              }
+            },
+            "retry_cooldown_symbols": 330,
+            "scheduler_enabled": true,
+            "scheduler": {
+              "running": true,
+              "registered": true,
+              "next_run_at": "2026-10-16T03:47:26.650868+00:00"
+            },
+            "storage": "compressed provider date/open/close observations"
+          },
+          "started_at": "2026-10-16T03:42:26.654169Z",
+          "finished_at": "2026-10-16T03:42:27.664296Z",
+          "message": "The client target of 5,000 ready stocks is already met."
+        },
+        "retry_cooldown_symbols": 330,
+        "scheduler_enabled": true,
+        "scheduler": {
+          "running": true,
+          "registered": true,
+          "next_run_at": "2026-10-16T03:47:26.650868+00:00"
+        },
+        "storage": "compressed provider date/open/close observations"
+      }
+    },
+    {
+      "at": "2026-10-16T03:43:58.217631+00:00",
+      "path": "/companies/rs-backfill/status?market=INDIA",
+      "method": "GET",
+      "status": 200,
+      "seconds": 1.79,
+      "body": {
+        "market": "INDIA",
+        "evaluation_date": "2026-10-07",
+        "target_rs_universe": 5000,
+        "active_symbols": 5277,
+        "history_ready_symbols": 4421,
+        "pending_active_symbols": 856,
+        "no_history_symbols": 193,
+        "stale_or_short_history_symbols": 663,
+        "target_coverage_percent": 88.42,
+        "active_coverage_percent": 83.78,
+        "symbol_master_shortfall": 0,
+        "complete": false,
+        "history_requirements": {
+          "minimum_rows": 180,
+          "minimum_span_days": 350,
+          "maximum_stale_days": 14,
+          "requested_backfill_days": 500
+        },
+        "by_exchange": {
+          "NSE": {
+            "active": 2605,
+            "ready": 2192,
+            "pending": 413
+          },
+          "BSE": {
+            "active": 2672,
+            "ready": 2229,
+            "pending": 443
+          }
+        },
+        "last_batch": {
+          "market": "INDIA",
+          "status": "idle",
+          "requested_batch_size": 25,
+          "attempted": 0,
+          "succeeded": 0,
+          "failed": 0,
+          "empty": 0,
+          "before": {
+            "market": "INDIA",
+            "evaluation_date": "2026-10-07",
+            "target_rs_universe": 5000,
+            "active_symbols": 5277,
+            "history_ready_symbols": 4421,
+            "pending_active_symbols": 856,
+            "no_history_symbols": 193,
+            "stale_or_short_history_symbols": 663,
+            "target_coverage_percent": 88.42,
+            "active_coverage_percent": 83.78,
+            "symbol_master_shortfall": 0,
+            "complete": false,
+            "history_requirements": {
+              "minimum_rows": 180,
+              "minimum_span_days": 350,
+              "maximum_stale_days": 14,
+              "requested_backfill_days": 500
+            },
+            "by_exchange": {
+              "NSE": {
+                "active": 2605,
+                "ready": 2192,
+                "pending": 413
+              },
+              "BSE": {
+                "active": 2672,
+                "ready": 2229,
+                "pending": 443
+              }
+            },
+            "retry_cooldown_symbols": 856,
+            "scheduler_enabled": true,
+            "scheduler": {
+              "running": true,
+              "registered": true,
+              "next_run_at": "2026-10-16T03:47:26.650868+00:00"
+            },
+            "storage": "compressed provider date/open/close observations"
+          },
+          "after": {
+            "market": "INDIA",
+            "evaluation_date": "2026-10-07",
+            "target_rs_universe": 5000,
+            "active_symbols": 5277,
+            "history_ready_symbols": 4421,
+            "pending_active_symbols": 856,
+            "no_history_symbols": 193,
+            "stale_or_short_history_symbols": 663,
+            "target_coverage_percent": 88.42,
+            "active_coverage_percent": 83.78,
+            "symbol_master_shortfall": 0,
+            "complete": false,
+            "history_requirements": {
+              "minimum_rows": 180,
+              "minimum_span_days": 350,
+              "maximum_stale_days": 14,
+              "requested_backfill_days": 500
+            },
+            "by_exchange": {
+              "NSE": {
+                "active": 2605,
+                "ready": 2192,
+                "pending": 413
+              },
+              "BSE": {
+                "active": 2672,
+                "ready": 2229,
+                "pending": 443
+              }
+            },
+            "retry_cooldown_symbols": 856,
+            "scheduler_enabled": true,
+            "scheduler": {
+              "running": true,
+              "registered": true,
+              "next_run_at": "2026-10-16T03:47:26.650868+00:00"
+            },
+            "storage": "compressed provider date/open/close observations"
+          },
+          "started_at": "2026-10-16T03:42:27.687000Z",
+          "finished_at": "2026-10-16T03:42:28.628701Z"
+        },
+        "retry_cooldown_symbols": 856,
+        "scheduler_enabled": true,
+        "scheduler": {
+          "running": true,
+          "registered": true,
+          "next_run_at": "2026-10-16T03:47:26.650868+00:00"
+        },
+        "storage": "compressed provider date/open/close observations"
+      }
+    },
+    {
+      "at": "2026-10-16T03:44:00.096541+00:00",
+      "path": "/companies/data-backfill/status?market=ALL",
+      "method": "GET",
+      "status": 200,
+      "seconds": 1.88,
+      "body": {
+        "US": {
+          "market": "US",
+          "eligible_equities": 5747,
+          "price_history_available": 5713,
+          "price_history_percent": 99.4,
+          "fundamentals_available": 2194,
+          "fundamentals_percent": 38.2,
+          "ownership_available": 2194,
+          "ownership_percent": 38.2,
+          "classification_available": 2163,
+          "classification_percent": 37.6,
+          "automatic_enrichment": true,
+          "scheduler": {
+            "running": true,
+            "registered": true,
+            "next_run_at": "2026-10-16T03:53:56.650923+00:00"
+          },
+          "coverage_basis": "Any current field; not complete historical statement or ownership coverage. Counts include exchange listings, not deduplicated issuers.",
+          "price_history_basis": "Stored OHLCV or compressed date/open/close history; not full OHLCV availability",
+          "data_rule": "Only real provider values are stored; unavailable fields remain N/A."
+        },
+        "INDIA": {
+          "market": "INDIA",
+          "eligible_equities": 7745,
+          "price_history_available": 5090,
+          "price_history_percent": 65.7,
+          "fundamentals_available": 2160,
+          "fundamentals_percent": 27.9,
+          "ownership_available": 2158,
+          "ownership_percent": 27.9,
+          "classification_available": 2511,
+          "classification_percent": 32.4,
+          "automatic_enrichment": true,
+          "scheduler": {
+            "running": true,
+            "registered": true,
+            "next_run_at": "2026-10-16T03:53:56.650923+00:00"
+          },
+          "coverage_basis": "Any current field; not complete historical statement or ownership coverage. Counts include exchange listings, not deduplicated issuers.",
+          "price_history_basis": "Stored OHLCV or compressed date/open/close history; not full OHLCV availability",
+          "data_rule": "Only real provider values are stored; unavailable fields remain N/A."
+        }
+      }
+    },
+    {
+      "at": "2026-10-16T03:44:07.480395+00:00",
+      "path": "/market/sec-edgar/AAPL?exchange=US",
+      "method": "GET",
+      "status": 200,
+      "seconds": 7.38,
+      "body": {
+        "symbol": "AAPL",
+        "cik": "0000320193",
+        "company_name": "Apple Inc.",
+        "filings": [
+          {
+            "form": "4",
+            "filing_date": "2026-10-15",
+            "report_date": "2026-10-13",
+            "accession_number": "0001140361-26-039785",
+            "primary_document": "xslF345X06/form4.xml",
+            "description": "FORM 4",
+            "url": "https://www.sec.gov/Archives/edgar/data/320193/000114036126039785/xslF345X06/form4.xml"
+          },
+          {
+            "form": "4",
+            "filing_date": "2026-10-08",
+            "report_date": "2026-10-06",
+            "accession_number": "0001140361-26-039158",
+            "primary_document": "xslF345X06/form4.xml",
+            "description": "FORM 4",
+            "url": "https://www.sec.gov/Archives/edgar/data/320193/000114036126039158/xslF345X06/form4.xml"
+          },
+          {
+            "form": "4",
+            "filing_date": "2026-10-05",
+            "report_date": "2026-10-01",
+            "accession_number": "0001140361-26-038674",
+            "primary_document": "xslF345X06/form4.xml",
+            "description": "FORM 4",
+            "url": "https://www.sec.gov/Archives/edgar/data/320193/000114036126038674/xslF345X06/form4.xml"
+          },
+          {
+            "form": "4",
+            "filing_date": "2026-10-05",
+            "report_date": "2026-10-01",
+            "accession_number": "0001140361-26-038672",
+            "primary_document": "xslF345X06/form4.xml",
+            "description": "FORM 4",
+            "url": "https://www.sec.gov/Archives/edgar/data/320193/000114036126038672/xslF345X06/form4.xml"
+          },
+          {
+            "form": "4",
+            "filing_date": "2026-10-05",
+            "report_date": "2026-10-01",
+            "accession_number": "0001140361-26-038669",
+            "primary_document": "xslF345X06/form4.xml",
+            "description": "FORM 4",
+            "url": "https://www.sec.gov/Archives/edgar/data/320193/000114036126038669/xslF345X06/form4.xml"
+          },
+          {
+            "form": "4",
+            "filing_date": "2026-10-05",
+            "report_date": "2026-10-01",
+            "accession_number": "0001140361-26-038667",
+            "primary_document": "xslF345X06/form4.xml",
+            "description": "FORM 4",
+            "url": "https://www.sec.gov/Archives/edgar/data/320193/000114036126038667/xslF345X06/form4.xml"
+          },
+          {
+            "form": "4",
+            "filing_date": "2026-10-01",
+            "report_date": "2026-09-29",
+            "accession_number": "0001140361-26-038307",
+            "primary_document": "xslF345X06/form4.xml",
+            "description": "FORM 4",
+            "url": "https://www.sec.gov/Archives/edgar/data/320193/000114036126038307/xslF345X06/form4.xml"
+          },
+          {
+            "form": "4",
+            "filing_date": "2026-09-29",
+            "report_date": "2026-09-27",
+            "accession_number": "0001140361-26-038028",
+            "primary_document": "xslF345X06/form4.xml",
+            "description": "FORM 4",
+            "url": "https://www.sec.gov/Archives/edgar/data/320193/000114036126038028/xslF345X06/form4.xml"
+          },
+          {
+            "form": "4",
+            "filing_date": "2026-09-29",
+            "report_date": "2026-09-27",
+            "accession_number": "0001140361-26-038027",
+            "primary_document": "xslF345X06/form4.xml",
+            "description": "FORM 4",
+            "url": "https://www.sec.gov/Archives/edgar/data/320193/000114036126038027/xslF345X06/form4.xml"
+          },
+          {
+            "form": "4",
+            "filing_date": "2026-09-29",
+            "report_date": "2026-09-27",
+            "accession_number": "0001140361-26-038026",
+            "primary_document": "xslF345X06/form4.xml",
+            "description": "FORM 4",
+            "url": "https://www.sec.gov/Archives/edgar/data/320193/000114036126038026/xslF345X06/form4.xml"
+          },
+          {
+            "form": "4",
+            "filing_date": "2026-09-29",
+            "report_date": "2026-09-27",
+            "accession_number": "0001140361-26-038024",
+            "primary_document": "xslF345X06/form4.xml",
+            "description": "FORM 4",
+            "url": "https://www.sec.gov/Archives/edgar/data/320193/000114036126038024/xslF345X06/form4.xml"
+          },
+          {
+            "form": "4",
+            "filing_date": "2026-09-29",
+            "report_date": "2026-09-27",
+            "accession_number": "0001140361-26-038022",
+            "primary_document": "xslF345X06/form4.xml",
+            "description": "FORM 4",
+            "url": "https://www.sec.gov/Archives/edgar/data/320193/000114036126038022/xslF345X06/form4.xml"
+          }
+        ],
+        "source": "SEC EDGAR submissions",
+        "fundamental_history": {
+          "symbol": "AAPL",
+          "quarterly": [
+            {
+              "period": "2026-06-27",
+              "sales": 109417000000.0,
+              "pat": 29789000000.0,
+              "eps": 2.02,
+              "ebit": 35695000000.0,
+              "opm": 32.62,
+              "npm": 27.23,
+              "debt_to_equity": null,
+              "operating_cash_flow": null,
+              "free_cash_flow": null,
+              "roe": null,
+              "roa": null,
+              "roce": null,
+              "cash_flow_per_share": null,
+              "yoy_eps": 28.6624203821656,
+              "qoq_eps": 0.4975124378109568,
+              "yoy_pat": 27.11871639498165,
+              "qoq_pat": 0.71336804381635,
+              "yoy_sales": 16.35650176528138,
+              "qoq_sales": -1.5892574471146927
+            },
+            {
+              "period": "2026-03-28",
+              "sales": 111184000000.0,
+              "pat": 29578000000.0,
+              "eps": 2.01,
+              "ebit": 35885000000.0,
+              "opm": 32.28,
+              "npm": 26.6,
+              "debt_to_equity": null,
+              "operating_cash_flow": null,
+              "free_cash_flow": null,
+              "roe": null,
+              "roa": null,
+              "roce": null,
+              "cash_flow_per_share": null,
+              "yoy_eps": 21.818181818181813,
+              "qoq_eps": -29.225352112676063,
+              "yoy_pat": 19.362389023405974,
+              "qoq_pat": -29.738461173005206,
+              "yoy_sales": 16.595182415922984,
+              "qoq_sales": -22.65783689028632
+            },
+            {
+              "period": "2025-12-27",
+              "sales": 143756000000.0,
+              "pat": 42097000000.0,
+              "eps": 2.84,
+              "ebit": 50852000000.0,
+              "opm": 35.37,
+              "npm": 29.28,
+              "debt_to_equity": null,
+              "operating_cash_flow": 53925000000.0,
+              "free_cash_flow": 51552000000.0,
+              "roe": null,
+              "roa": null,
+              "roce": null,
+              "cash_flow_per_share": null,
+              "yoy_eps": 18.333333333333332,
+              "qoq_eps": null,
+              "yoy_pat": 15.873933388384257,
+              "qoq_pat": null,
+              "yoy_sales": 15.652453740949316,
+              "qoq_sales": null
+            },
+            {
+              "period": "2025-06-28",
+              "sales": 94036000000.0,
+              "pat": 23434000000.0,
+              "eps": 1.57,
+              "ebit": 28202000000.0,
+              "opm": 29.99,
+              "npm": 24.92,
+              "debt_to_equity": null,
+              "operating_cash_flow": null,
+              "free_cash_flow": null,
+              "roe": null,
+              "roa": null,
+              "roce": null,
+              "cash_flow_per_share": null,
+              "yoy_eps": 12.142857142857153,
+              "qoq_eps": -4.84848484848484,
+              "yoy_pat": 9.259604625139874,
+              "qoq_pat": -5.4317998385795,
+              "yoy_sales": 9.628455180293086,
+              "qoq_sales": -1.3873887100326137
+            },
+            {
+              "period": "2025-03-29",
+              "sales": 95359000000.0,
+              "pat": 24780000000.0,
+              "eps": 1.65,
+              "ebit": 29589000000.0,
+              "opm": 31.03,
+              "npm": 25.99,
+              "debt_to_equity": null,
+              "operating_cash_flow": null,
+              "free_cash_flow": null,
+              "roe": null,
+              "roa": null,
+              "roce": null,
+              "cash_flow_per_share": null,
+              "yoy_eps": 7.843137254901953,
+              "qoq_eps": -31.25,
+              "yoy_pat": 4.840074462684042,
+              "qoq_pat": -31.79190751445087,
+              "yoy_sales": 5.075314314678303,
+              "qoq_sales": -23.283185840707965
+            },
+            {
+              "period": "2024-12-28",
+              "sales": 124300000000.0,
+              "pat": 36330000000.0,
+              "eps": 2.4,
+              "ebit": 42832000000.0,
+              "opm": 34.46,
+              "npm": 29.23,
+              "debt_to_equity": null,
+              "operating_cash_flow": 29935000000.0,
+              "free_cash_flow": 26995000000.0,
+              "roe": null,
+              "roa": null,
+              "roce": null,
+              "cash_flow_per_share": null,
+              "yoy_eps": 10.091743119266043,
+              "qoq_eps": null,
+              "yoy_pat": 7.1175846208279285,
+              "qoq_pat": null,
+              "yoy_sales": 3.9514948776918253,
+              "qoq_sales": null
+            },
+            {
+              "period": "2024-06-29",
+              "sales": 85777000000.0,
+              "pat": 21448000000.0,
+              "eps": 1.4,
+              "ebit": 25352000000.0,
+              "opm": 29.56,
+              "npm": 25.0,
+              "debt_to_equity": null,
+              "operating_cash_flow": null,
+              "free_cash_flow": null,
+              "roe": null,
+              "roa": null,
+              "roce": null,
+              "cash_flow_per_share": null,
+              "yoy_eps": 11.111111111111104,
+              "qoq_eps": -8.496732026143798,
+              "yoy_pat": 7.881897288868769,
+              "qoq_pat": -9.257065493315283,
+              "yoy_sales": 4.865704121178038,
+              "qoq_sales": -5.483014335614249
+            },
+            {
+              "period": "2024-03-30",
+              "sales": 90753000000.0,
+              "pat": 23636000000.0,
+              "eps": 1.53,
+              "ebit": 27900000000.0,
+              "opm": 30.74,
+              "npm": 26.04,
+              "debt_to_equity": null,
+              "operating_cash_flow": null,
+              "free_cash_flow": null,
+              "roe": null,
+              "roa": null,
+              "roce": null,
+              "cash_flow_per_share": null,
+              "yoy_eps": 0.6578947368421059,
+              "qoq_eps": -29.816513761467895,
+              "yoy_pat": -2.16887417218543,
+              "qoq_pat": -30.310178087038565,
+              "yoy_sales": -4.30532709097811,
+              "qoq_sales": -24.103700606314028
+            },
+            {
+              "period": "2023-12-30",
+              "sales": 119575000000.0,
+              "pat": 33916000000.0,
+              "eps": 2.18,
+              "ebit": 40373000000.0,
+              "opm": 33.76,
+              "npm": 28.36,
+              "debt_to_equity": null,
+              "operating_cash_flow": 39895000000.0,
+              "free_cash_flow": 37503000000.0,
+              "roe": null,
+              "roa": null,
+              "roce": null,
+              "cash_flow_per_share": null,
+              "yoy_eps": 15.957446808510653,
+              "qoq_eps": null,
+              "yoy_pat": 13.060870724714983,
+              "qoq_pat": null,
+              "yoy_sales": 2.066510746538744,
+              "qoq_sales": null
+            },
+            {
+              "period": "2023-07-01",
+              "sales": 81797000000.0,
+              "pat": 19881000000.0,
+              "eps": 1.26,
+              "ebit": 22998000000.0,
+              "opm": 28.12,
+              "npm": 24.31,
+              "debt_to_equity": null,
+              "operating_cash_flow": null,
+              "free_cash_flow": null,
+              "roe": null,
+              "roa": null,
+              "roce": null,
+              "cash_flow_per_share": null,
+              "yoy_eps": null,
+              "qoq_eps": -17.105263157894736,
+              "yoy_pat": null,
+              "qoq_pat": -17.71109271523179,
+              "yoy_sales": null,
+              "qoq_sales": -13.74899827069889
+            },
+            {
+              "period": "2023-04-01",
+              "sales": 94836000000.0,
+              "pat": 24160000000.0,
+              "eps": 1.52,
+              "ebit": 28318000000.0,
+              "opm": 29.86,
+              "npm": 25.48,
+              "debt_to_equity": null,
+              "operating_cash_flow": null,
+              "free_cash_flow": null,
+              "roe": null,
+              "roa": null,
+              "roce": null,
+              "cash_flow_per_share": null,
+              "yoy_eps": null,
+              "qoq_eps": -19.14893617021276,
+              "yoy_pat": null,
+              "qoq_pat": -19.46129741982799,
+              "yoy_sales": null,
+              "qoq_sales": -19.05013913310685
+            },
+            {
+              "period": "2022-12-31",
+              "sales": 117154000000.0,
+              "pat": 29998000000.0,
+              "eps": 1.88,
+              "ebit": 36016000000.0,
+              "opm": 30.74,
+              "npm": 25.61,
+              "debt_to_equity": null,
+              "operating_cash_flow": 34005000000.0,
+              "free_cash_flow": 30218000000.0,
+              "roe": null,
+              "roa": null,
+              "roce": null,
+              "cash_flow_per_share": null,
+              "yoy_eps": null,
+              "qoq_eps": null,
+              "yoy_pat": null,
+              "qoq_pat": null,
+              "yoy_sales": null,
+              "qoq_sales": null
+            }
+          ],
+          "annual": [
+            {
+              "period": "2025-09-27",
+              "sales": 416161000000.0,
+              "pat": 112010000000.0,
+              "eps": 7.46,
+              "ebit": 133050000000.0,
+              "opm": 31.97,
+              "npm": 26.92,
+              "debt_to_equity": 1.23,
+              "operating_cash_flow": 111482000000.0,
+              "free_cash_flow": 98767000000.0,
+              "roe": 151.91,
+              "roa": 31.18,
+              "roce": 68.72,
+              "cash_flow_per_share": 7.43,
+              "yoy_eps": 22.69736842105263,
+              "yoy_pat": 19.495177946573357,
+              "yoy_sales": 6.425511782832739
+            },
+            {
+              "period": "2024-09-28",
+              "sales": 391035000000.0,
+              "pat": 93736000000.0,
+              "eps": 6.08,
+              "ebit": 123216000000.0,
+              "opm": 31.51,
+              "npm": 23.97,
+              "debt_to_equity": 1.7,
+              "operating_cash_flow": 118254000000.0,
+              "free_cash_flow": 108807000000.0,
+              "roe": 164.59,
+              "roa": 25.68,
+              "roce": 65.34,
+              "cash_flow_per_share": 7.67,
+              "yoy_eps": -0.8156606851549727,
+              "yoy_pat": -3.3599670086086912,
+              "yoy_sales": 2.021994077514121
+            },
+            {
+              "period": "2023-09-30",
+              "sales": 383285000000.0,
+              "pat": 96995000000.0,
+              "eps": 6.13,
+              "ebit": 114301000000.0,
+              "opm": 29.82,
+              "npm": 25.31,
+              "debt_to_equity": 1.69,
+              "operating_cash_flow": 110543000000.0,
+              "free_cash_flow": 99584000000.0,
+              "roe": 156.08,
+              "roa": 27.51,
+              "roce": 55.14,
+              "cash_flow_per_share": 6.99,
+              "yoy_eps": 0.3273322422258522,
+              "yoy_pat": -2.8135426790777833,
+              "yoy_sales": -2.8004605303199366
+            },
+            {
+              "period": "2022-09-24",
+              "sales": 394328000000.0,
+              "pat": 99803000000.0,
+              "eps": 6.11,
+              "ebit": 119437000000.0,
+              "opm": 30.29,
+              "npm": 25.31,
+              "debt_to_equity": 2.17,
+              "operating_cash_flow": 122151000000.0,
+              "free_cash_flow": 111443000000.0,
+              "roe": 196.96,
+              "roa": 28.29,
+              "roce": 60.09,
+              "cash_flow_per_share": 7.48,
+              "yoy_eps": 8.9126559714795,
+              "yoy_pat": 5.410857625686523,
+              "yoy_sales": 7.7937876041846055
+            },
+            {
+              "period": "2021-09-25",
+              "sales": 365817000000.0,
+              "pat": 94680000000.0,
+              "eps": 5.61,
+              "ebit": 108949000000.0,
+              "opm": 29.78,
+              "npm": 25.88,
+              "debt_to_equity": 1.88,
+              "operating_cash_flow": 104038000000.0,
+              "free_cash_flow": 92953000000.0,
+              "roe": 150.07,
+              "roa": 26.97,
+              "roce": 48.31,
+              "cash_flow_per_share": 6.17,
+              "yoy_eps": 71.03658536585368,
+              "yoy_pat": 64.9161310550243,
+              "yoy_sales": 33.25938473307469
+            },
+            {
+              "period": "2020-09-26",
+              "sales": 274515000000.0,
+              "pat": 57411000000.0,
+              "eps": 3.28,
+              "ebit": 66288000000.0,
+              "opm": 24.15,
+              "npm": 20.91,
+              "debt_to_equity": null,
+              "operating_cash_flow": 80674000000.0,
+              "free_cash_flow": 73365000000.0,
+              "roe": 87.87,
+              "roa": 17.73,
+              "roce": 30.34,
+              "cash_flow_per_share": 4.6,
+              "yoy_eps": 10.437710437710424,
+              "yoy_pat": 3.9000289561314605,
+              "yoy_sales": 5.512080376978483
+            },
+            {
+              "period": "2019-09-28",
+              "sales": 260174000000.0,
+              "pat": 55256000000.0,
+              "eps": 2.97,
+              "ebit": 63930000000.0,
+              "opm": 24.57,
+              "npm": 21.24,
+              "debt_to_equity": null,
+              "operating_cash_flow": 69391000000.0,
+              "free_cash_flow": 58896000000.0,
+              "roe": 61.06,
+              "roa": 16.32,
+              "roce": 27.46,
+              "cash_flow_per_share": 3.73,
+              "yoy_eps": null,
+              "yoy_pat": null,
+              "yoy_sales": null
+            }
+          ],
+          "cagr_3y": {
+            "sales": 1.81,
+            "pat": 3.92,
+            "eps": 6.88
+          },
+          "cagr_5y": {
+            "sales": 8.68,
+            "pat": 14.3,
+            "eps": 17.86
+          },
+          "source": "SEC companyfacts",
+          "ratio_methodology": {
+            "roe": "Net income / period-end stockholders equity",
+            "roa": "Net income / period-end total assets",
+            "roce": "Operating income / (period-end total assets - period-end current liabilities)"
+          },
+          "period_alignment": "Actual fiscal end dates; no index-shift substitution for missing quarters. Announcement availability is not inferred."
+        },
+        "companyfacts_source": "SEC EDGAR companyfacts",
+        "available": true,
+        "status": "available",
+        "warnings": [],
+        "note": "Official SEC EDGAR data is used for US filing history and XBRL fundamentals. Price/OHLCV data remains sourced from the configured market-data provider. Unavailable SEC fields remain empty and are never substituted."
+      }
+    },
+    {
+      "at": "2026-10-16T03:44:15.596509+00:00",
+      "path": "/market/fundamentals-history/AAPL?exchange=US",
+      "method": "GET",
+      "status": 200,
+      "seconds": 8.11,
+      "body": {
+        "symbol": "AAPL",
+        "exchange": "US",
+        "quarterly": [
+          {
+            "period": "2026-06-27",
+            "sales": 109417000000.0,
+            "pat": 29789000000.0,
+            "eps": 2.02,
+            "ebit": 35695000000.0,
+            "opm": 32.62,
+            "npm": 27.23,
+            "debt_to_equity": null,
+            "operating_cash_flow": null,
+            "free_cash_flow": null,
+            "roe": null,
+            "roa": null,
+            "roce": null,
+            "cash_flow_per_share": null,
+            "qoq_sales": -1.5892574471146927,
+            "qoq_pat": 0.71336804381635,
+            "qoq_eps": 0.4975124378109568,
+            "yoy_sales": 16.35650176528138,
+            "yoy_pat": 27.11871639498165,
+            "yoy_eps": 28.6624203821656
+          },
+          {
+            "period": "2026-03-28",
+            "sales": 111184000000.0,
+            "pat": 29578000000.0,
+            "eps": 2.01,
+            "ebit": 35885000000.0,
+            "opm": 32.28,
+            "npm": 26.6,
+            "debt_to_equity": null,
+            "operating_cash_flow": null,
+            "free_cash_flow": null,
+            "roe": null,
+            "roa": null,
+            "roce": null,
+            "cash_flow_per_share": null,
+            "qoq_sales": -22.65783689028632,
+            "qoq_pat": -29.738461173005206,
+            "qoq_eps": -29.225352112676063,
+            "yoy_sales": 16.595182415922984,
+            "yoy_pat": 19.362389023405974,
+            "yoy_eps": 21.818181818181813
+          },
+          {
+            "period": "2025-12-27",
+            "sales": 143756000000.0,
+            "pat": 42097000000.0,
+            "eps": 2.84,
+            "ebit": 50852000000.0,
+            "opm": 35.37,
+            "npm": 29.28,
+            "debt_to_equity": null,
+            "operating_cash_flow": 53925000000.0,
+            "free_cash_flow": 51552000000.0,
+            "roe": null,
+            "roa": null,
+            "roce": null,
+            "cash_flow_per_share": null,
+            "qoq_sales": 40.296293404641546,
+            "qoq_pat": 53.269496832447395,
+            "qoq_eps": 53.5135135135135,
+            "yoy_sales": 15.652453740949316,
+            "yoy_pat": 15.873933388384257,
+            "yoy_eps": 18.333333333333332
+          },
+          {
+            "period": "2025-09-30",
+            "sales": 102466000000.0,
+            "pat": 27466000000.0,
+            "eps": 1.85,
+            "ebit": 32427000000.0,
+            "opm": 31.65,
+            "npm": 26.8,
+            "debt_to_equity": 1.34,
+            "operating_cash_flow": 111482000000.0,
+            "free_cash_flow": 98767000000.0,
+            "roe": 37.25,
+            "roa": 7.65,
+            "roce": 16.75,
+            "cash_flow_per_share": 7.5,
+            "qoq_sales": 8.964651835467267,
+            "qoq_pat": 17.205769394896304,
+            "qoq_eps": 17.834394904458602,
+            "yoy_sales": null,
+            "yoy_pat": null,
+            "yoy_eps": null
+          },
+          {
+            "period": "2025-06-28",
+            "sales": 94036000000.0,
+            "pat": 23434000000.0,
+            "eps": 1.57,
+            "ebit": 28202000000.0,
+            "opm": 29.99,
+            "npm": 24.92,
+            "debt_to_equity": null,
+            "operating_cash_flow": null,
+            "free_cash_flow": null,
+            "roe": null,
+            "roa": null,
+            "roce": null,
+            "cash_flow_per_share": null,
+            "qoq_sales": -1.3873887100326137,
+            "qoq_pat": -5.4317998385795,
+            "qoq_eps": -4.84848484848484,
+            "yoy_sales": 9.628455180293086,
+            "yoy_pat": 9.259604625139874,
+            "yoy_eps": 12.142857142857153
+          },
+          {
+            "period": "2025-03-29",
+            "sales": 95359000000.0,
+            "pat": 24780000000.0,
+            "eps": 1.65,
+            "ebit": 29589000000.0,
+            "opm": 31.03,
+            "npm": 25.99,
+            "debt_to_equity": null,
+            "operating_cash_flow": null,
+            "free_cash_flow": null,
+            "roe": null,
+            "roa": null,
+            "roce": null,
+            "cash_flow_per_share": null,
+            "yoy_eps": 7.843137254901953,
+            "qoq_eps": -31.25,
+            "yoy_pat": 4.840074462684042,
+            "qoq_pat": -31.79190751445087,
+            "yoy_sales": 5.075314314678303,
+            "qoq_sales": -23.283185840707965
+          },
+          {
+            "period": "2024-12-28",
+            "sales": 124300000000.0,
+            "pat": 36330000000.0,
+            "eps": 2.4,
+            "ebit": 42832000000.0,
+            "opm": 34.46,
+            "npm": 29.23,
+            "debt_to_equity": null,
+            "operating_cash_flow": 29935000000.0,
+            "free_cash_flow": 26995000000.0,
+            "roe": null,
+            "roa": null,
+            "roce": null,
+            "cash_flow_per_share": null,
+            "yoy_eps": 10.091743119266043,
+            "qoq_eps": null,
+            "yoy_pat": 7.1175846208279285,
+            "qoq_pat": null,
+            "yoy_sales": 3.9514948776918253,
+            "qoq_sales": null
+          },
+          {
+            "period": "2024-06-29",
+            "sales": 85777000000.0,
+            "pat": 21448000000.0,
+            "eps": 1.4,
+            "ebit": 25352000000.0,
+            "opm": 29.56,
+            "npm": 25.0,
+            "debt_to_equity": null,
+            "operating_cash_flow": null,
+            "free_cash_flow": null,
+            "roe": null,
+            "roa": null,
+            "roce": null,
+            "cash_flow_per_share": null,
+            "yoy_eps": 11.111111111111104,
+            "qoq_eps": -8.496732026143798,
+            "yoy_pat": 7.881897288868769,
+            "qoq_pat": -9.257065493315283,
+            "yoy_sales": 4.865704121178038,
+            "qoq_sales": -5.483014335614249
+          },
+          {
+            "period": "2024-03-30",
+            "sales": 90753000000.0,
+            "pat": 23636000000.0,
+            "eps": 1.53,
+            "ebit": 27900000000.0,
+            "opm": 30.74,
+            "npm": 26.04,
+            "debt_to_equity": null,
+            "operating_cash_flow": null,
+            "free_cash_flow": null,
+            "roe": null,
+            "roa": null,
+            "roce": null,
+            "cash_flow_per_share": null,
+            "yoy_eps": 0.6578947368421059,
+            "qoq_eps": -29.816513761467895,
+            "yoy_pat": -2.16887417218543,
+            "qoq_pat": -30.310178087038565,
+            "yoy_sales": -4.30532709097811,
+            "qoq_sales": -24.103700606314028
+          },
+          {
+            "period": "2023-12-30",
+            "sales": 119575000000.0,
+            "pat": 33916000000.0,
+            "eps": 2.18,
+            "ebit": 40373000000.0,
+            "opm": 33.76,
+            "npm": 28.36,
+            "debt_to_equity": null,
+            "operating_cash_flow": 39895000000.0,
+            "free_cash_flow": 37503000000.0,
+            "roe": null,
+            "roa": null,
+            "roce": null,
+            "cash_flow_per_share": null,
+            "yoy_eps": null,
+            "qoq_eps": null,
+            "yoy_pat": null,
+            "qoq_pat": null,
+            "yoy_sales": null,
+            "qoq_sales": null
+          },
+          {
+            "period": "2023-07-01",
+            "sales": 81797000000.0,
+            "pat": 19881000000.0,
+            "eps": 1.26,
+            "ebit": 22998000000.0,
+            "opm": 28.12,
+            "npm": 24.31,
+            "debt_to_equity": null,
+            "operating_cash_flow": null,
+            "free_cash_flow": null,
+            "roe": null,
+            "roa": null,
+            "roce": null,
+            "cash_flow_per_share": null,
+            "yoy_eps": null,
+            "qoq_eps": -17.105263157894736,
+            "yoy_pat": null,
+            "qoq_pat": -17.71109271523179,
+            "yoy_sales": null,
+            "qoq_sales": -13.74899827069889
+          },
+          {
+            "period": "2023-04-01",
+            "sales": 94836000000.0,
+            "pat": 24160000000.0,
+            "eps": 1.52,
+            "ebit": 28318000000.0,
+            "opm": 29.86,
+            "npm": 25.48,
+            "debt_to_equity": null,
+            "operating_cash_flow": null,
+            "free_cash_flow": null,
+            "roe": null,
+            "roa": null,
+            "roce": null,
+            "cash_flow_per_share": null,
+            "yoy_eps": null,
+            "qoq_eps": null,
+            "yoy_pat": null,
+            "qoq_pat": null,
+            "yoy_sales": null,
+            "qoq_sales": null
+          }
+        ],
+        "annual": [
+          {
+            "period": "2025-09-27",
+            "sales": 416161000000.0,
+            "pat": 112010000000.0,
+            "eps": 7.46,
+            "ebit": 133050000000.0,
+            "opm": 31.97,
+            "npm": 26.92,
+            "debt_to_equity": 1.23,
+            "operating_cash_flow": 111482000000.0,
+            "free_cash_flow": 98767000000.0,
+            "roe": 151.91,
+            "roa": 31.18,
+            "roce": 68.72,
+            "cash_flow_per_share": 7.43,
+            "qoq_sales": 6.43,
+            "qoq_pat": 19.5,
+            "qoq_eps": 22.7,
+            "yoy_sales": 6.425511782832739,
+            "yoy_pat": 19.495177946573357,
+            "yoy_eps": 22.69736842105263
+          },
+          {
+            "period": "2024-09-28",
+            "sales": 391035000000.0,
+            "pat": 93736000000.0,
+            "eps": 6.08,
+            "ebit": 123216000000.0,
+            "opm": 31.51,
+            "npm": 23.97,
+            "debt_to_equity": 1.7,
+            "operating_cash_flow": 118254000000.0,
+            "free_cash_flow": 108807000000.0,
+            "roe": 164.59,
+            "roa": 25.68,
+            "roce": 65.34,
+            "cash_flow_per_share": 7.67,
+            "qoq_sales": 2.02,
+            "qoq_pat": -3.36,
+            "qoq_eps": -0.82,
+            "yoy_sales": 2.021994077514121,
+            "yoy_pat": -3.3599670086086912,
+            "yoy_eps": -0.8156606851549727
+          },
+          {
+            "period": "2023-09-30",
+            "sales": 383285000000.0,
+            "pat": 96995000000.0,
+            "eps": 6.13,
+            "ebit": 114301000000.0,
+            "opm": 29.82,
+            "npm": 25.31,
+            "debt_to_equity": 1.69,
+            "operating_cash_flow": 110543000000.0,
+            "free_cash_flow": 99584000000.0,
+            "roe": 156.08,
+            "roa": 27.51,
+            "roce": 55.14,
+            "cash_flow_per_share": 6.99,
+            "qoq_sales": -2.8,
+            "qoq_pat": -2.81,
+            "qoq_eps": 0.33,
+            "yoy_sales": -2.8004605303199366,
+            "yoy_pat": -2.8135426790777833,
+            "yoy_eps": 0.3273322422258522
+          },
+          {
+            "period": "2022-09-24",
+            "sales": 394328000000.0,
+            "pat": 99803000000.0,
+            "eps": 6.11,
+            "ebit": 119437000000.0,
+            "opm": 30.29,
+            "npm": 25.31,
+            "debt_to_equity": 2.17,
+            "operating_cash_flow": 122151000000.0,
+            "free_cash_flow": 111443000000.0,
+            "roe": 196.96,
+            "roa": 28.29,
+            "roce": 60.09,
+            "cash_flow_per_share": 7.48,
+            "qoq_sales": null,
+            "qoq_pat": null,
+            "qoq_eps": null,
+            "yoy_sales": 7.7937876041846055,
+            "yoy_pat": 5.410857625686523,
+            "yoy_eps": 8.9126559714795
+          },
+          {
+            "period": "2021-09-25",
+            "sales": 365817000000.0,
+            "pat": 94680000000.0,
+            "eps": 5.61,
+            "ebit": 108949000000.0,
+            "opm": 29.78,
+            "npm": 25.88,
+            "debt_to_equity": 1.88,
+            "operating_cash_flow": 104038000000.0,
+            "free_cash_flow": 92953000000.0,
+            "roe": 150.07,
+            "roa": 26.97,
+            "roce": 48.31,
+            "cash_flow_per_share": 6.17,
+            "yoy_eps": 71.03658536585368,
+            "yoy_pat": 64.9161310550243,
+            "yoy_sales": 33.25938473307469
+          },
+          {
+            "period": "2020-09-26",
+            "sales": 274515000000.0,
+            "pat": 57411000000.0,
+            "eps": 3.28,
+            "ebit": 66288000000.0,
+            "opm": 24.15,
+            "npm": 20.91,
+            "debt_to_equity": null,
+            "operating_cash_flow": 80674000000.0,
+            "free_cash_flow": 73365000000.0,
+            "roe": 87.87,
+            "roa": 17.73,
+            "roce": 30.34,
+            "cash_flow_per_share": 4.6,
+            "yoy_eps": 10.437710437710424,
+            "yoy_pat": 3.9000289561314605,
+            "yoy_sales": 5.512080376978483
+          },
+          {
+            "period": "2019-09-28",
+            "sales": 260174000000.0,
+            "pat": 55256000000.0,
+            "eps": 2.97,
+            "ebit": 63930000000.0,
+            "opm": 24.57,
+            "npm": 21.24,
+            "debt_to_equity": null,
+            "operating_cash_flow": 69391000000.0,
+            "free_cash_flow": 58896000000.0,
+            "roe": 61.06,
+            "roa": 16.32,
+            "roce": 27.46,
+            "cash_flow_per_share": 3.73,
+            "yoy_eps": null,
+            "yoy_pat": null,
+            "yoy_sales": null
+          }
+        ],
+        "cagr_3y": {
+          "sales": 1.81,
+          "pat": 3.92,
+          "eps": 6.88
+        },
+        "cagr_5y": {
+          "sales": 8.68,
+          "pat": 14.3,
+          "eps": 17.86
+        },
+        "source": "SEC companyfacts + Yahoo Finance merged fallback",
+        "ratio_methodology": {
+          "roe": "Net income / period-end stockholders equity",
+          "roa": "Net income / period-end total assets",
+          "roce": "EBIT / (period-end total assets - period-end current liabilities)"
+        },
+        "period_alignment": "Actual fiscal end dates; no index-shift substitution for missing quarters. Announcement availability is not inferred."
+      }
+    },
+    {
+      "at": "2026-10-16T03:44:19.322803+00:00",
+      "path": "/market/fundamentals/AAPL?exchange=US",
+      "method": "GET",
+      "status": 200,
+      "seconds": 3.72,
+      "body": {
+        "symbol": "AAPL",
+        "name": "Apple Inc.",
+        "isin": "US0378331005",
+        "exchange": "US",
+        "fundamentals": {
+          "market_cap": 4991209701376.0,
+          "trailing_eps": 8.74,
+          "forward_eps": 9.57785,
+          "revenue": 466822987776.0,
+          "net_income": 128929996800.0,
+          "profit_margin": 0.27618998,
+          "return_on_equity": 1.5191,
+          "return_on_assets": 0.3118
+        },
+        "ownership": {
+          "insider_percent": 0.01648,
+          "institution_percent": 0.66326,
+          "shares_outstanding": 14594180000.0,
+          "float_shares": 14569078010.0
+        }
+      }
+    },
+    {
+      "at": "2026-10-16T03:44:21.281391+00:00",
+      "path": "/market/ownership-details/AAPL?exchange=US",
+      "method": "GET",
+      "status": 200,
+      "seconds": 1.95,
+      "body": {
+        "symbol": "AAPL",
+        "exchange": "US",
+        "change_semantics": "For Yahoo holder tables, pctChange is the provider-reported proportional change in the holder position (shares), not a quarter-over-quarter change in ownership percentage points.",
+        "institutional_holders": [
+          {
+            "index": 0,
+            "Date Reported": "2026-06-30T00:00:00",
+            "Holder": "Blackrock Inc.",
+            "pctHeld": 0.0797,
+            "Shares": 1162996939,
+            "Value": 397744953138,
+            "pctChange": 0.016
+          },
+          {
+            "index": 1,
+            "Date Reported": "2026-06-30T00:00:00",
+            "Holder": "Vanguard Capital Management LLC",
+            "pctHeld": 0.0657,
+            "Shares": 959107911,
+            "Value": 328014905562,
+            "pctChange": 0.0055
+          },
+          {
+            "index": 2,
+            "Date Reported": "2026-06-30T00:00:00",
+            "Holder": "State Street Corporation",
+            "pctHeld": 0.0421,
+            "Shares": 615129929,
+            "Value": 210374435718,
+            "pctChange": 0.0212
+          },
+          {
+            "index": 3,
+            "Date Reported": "2026-06-30T00:00:00",
+            "Holder": "Geode Capital Management, LLC",
+            "pctHeld": 0.0254,
+            "Shares": 371336543,
+            "Value": 126997097706,
+            "pctChange": 0.0074
+          },
+          {
+            "index": 4,
+            "Date Reported": "2026-06-30T00:00:00",
+            "Holder": "Vanguard Portfolio Management LLC",
+            "pctHeld": 0.0229,
+            "Shares": 334119156,
+            "Value": 114268751352,
+            "pctChange": 0.0081
+          },
+          {
+            "index": 5,
+            "Date Reported": "2026-06-30T00:00:00",
+            "Holder": "FMR, LLC",
+            "pctHeld": 0.0223,
+            "Shares": 325348754,
+            "Value": 111269273868,
+            "pctChange": 0.0582
+          },
+          {
+            "index": 6,
+            "Date Reported": "2026-06-30T00:00:00",
+            "Holder": "Morgan Stanley",
+            "pctHeld": 0.0166,
+            "Shares": 242614238,
+            "Value": 82974069396,
+            "pctChange": -0.0076
+          },
+          {
+            "index": 7,
+            "Date Reported": "2026-06-30T00:00:00",
+            "Holder": "JPMORGAN CHASE & CO",
+            "pctHeld": 0.015700001,
+            "Shares": 228762008,
+            "Value": 78236606736,
+            "pctChange": -0.0123000005
+          },
+          {
+            "index": 8,
+            "Date Reported": "2026-06-30T00:00:00",
+            "Holder": "Berkshire Hathaway, Inc",
+            "pctHeld": 0.0156,
+            "Shares": 227917808,
+            "Value": 77947890336,
+            "pctChange": 0.0
+          },
+          {
+            "index": 9,
+            "Date Reported": "2026-06-30T00:00:00",
+            "Holder": "NORGES BANK",
+            "pctHeld": 0.013099999,
+            "Shares": 190726866,
+            "Value": 65228588172,
+            "pctChange": -0.007900001
+          }
+        ],
+        "mutual_fund_holders": [
+          {
+            "index": 0,
+            "Date Reported": "2026-06-30T00:00:00",
+            "Holder": "VANGUARD INDEX FUNDS-Vanguard Total Stock Market Index Fund",
+            "pctHeld": 0.0319,
+            "Shares": 466272244,
+            "Value": 159465107448,
+            "pctChange": 0.0001
+          },
+          {
+            "index": 1,
+            "Date Reported": "2026-06-30T00:00:00",
+            "Holder": "VANGUARD INDEX FUNDS-Vanguard 500 Index Fund",
+            "pctHeld": 0.026099999,
+            "Shares": 380610709,
+            "Value": 130168862478,
+            "pctChange": 0.0202
+          },
+          {
+            "index": 2,
+            "Date Reported": "2026-08-31T00:00:00",
+            "Holder": "iShares Trust-iShares Core S&P 500 ETF",
+            "pctHeld": 0.0134000005,
+            "Shares": 195583632,
+            "Value": 66889602144,
+            "pctChange": -0.013099999
+          },
+          {
+            "index": 3,
+            "Date Reported": "2026-08-31T00:00:00",
+            "Holder": "Fidelity Concord Street Trust-Fidelity 500 Index Fund",
+            "pctHeld": 0.013099999,
+            "Shares": 190655125,
+            "Value": 65204052750,
+            "pctChange": 0.0039
+          },
+          {
+            "index": 4,
+            "Date Reported": "2026-09-30T00:00:00",
+            "Holder": "SPDR S&P 500 ETF TRUST-State Street SPDR S&P 500 ETF Trust",
+            "pctHeld": 0.0124,
+            "Shares": 180560995,
+            "Value": 61751860290,
+            "pctChange": 0.0047
+          },
+          {
+            "index": 5,
+            "Date Reported": "2026-06-30T00:00:00",
+            "Holder": "VANGUARD INDEX FUNDS-Vanguard Growth Index Fund",
+            "pctHeld": 0.0105,
+            "Shares": 152961842,
+            "Value": 52312949964,
+            "pctChange": -0.0092
+          },
+          {
+            "index": 6,
+            "Date Reported": "2026-08-31T00:00:00",
+            "Holder": "Invesco QQQ Trust, Series 1",
+            "pctHeld": 0.0078,
+            "Shares": 114447943,
+            "Value": 39141196506,
+            "pctChange": 0.0388
+          },
+          {
+            "index": 7,
+            "Date Reported": "2026-05-31T00:00:00",
+            "Holder": "VANGUARD WORLD FUND-Vanguard Information Technology Index Fund",
+            "pctHeld": 0.0055,
+            "Shares": 80206224,
+            "Value": 27430528608,
+            "pctChange": 0.0925
+          },
+          {
+            "index": 8,
+            "Date Reported": "2026-06-30T00:00:00",
+            "Holder": "VANGUARD INSTITUTIONAL INDEX FUNDS-Vanguard Institutional Index Fund",
+            "pctHeld": 0.0055,
+            "Shares": 79732730,
+            "Value": 27268593660,
+            "pctChange": -0.0368
+          },
+          {
+            "index": 9,
+            "Date Reported": "2026-09-30T00:00:00",
+            "Holder": "SELECT SECTOR SPDR TRT-State Street Technology Select Sector SPDR ETF",
+            "pctHeld": 0.0036000002,
+            "Shares": 52127235,
+            "Value": 17827514370,
+            "pctChange": 0.0871
+          }
+        ],
+        "insider_transactions": [
+          {
+            "index": 0,
+            "Shares": 2399,
+            "Value": 796492.0,
+            "URL": "",
+            "Text": "Sale at price 332.01 per share.",
+            "Insider": "NEWSTEAD JENNIFER",
+            "Position": "General Counsel",
+            "Transaction": "",
+            "Start Date": "2026-10-06T00:00:00",
+            "Ownership": "D"
+          },
+          {
+            "index": 1,
+            "Shares": 26325,
+            "Value": 0.0,
+            "URL": "",
+            "Text": "Stock Gift at price 0.00 per share.",
+            "Insider": "COOK TIMOTHY D",
+            "Position": "Officer and Director",
+            "Transaction": "",
+            "Start Date": "2026-10-02T00:00:00",
+            "Ownership": "D"
+          },
+          {
+            "index": 2,
+            "Shares": 46389,
+            "Value": 15466923.0,
+            "URL": "",
+            "Text": "Sale at price 333.35 - 333.91 per share.",
+            "Insider": "O'BRIEN DEIRDRE",
+            "Position": "Officer",
+            "Transaction": "",
+            "Start Date": "2026-10-02T00:00:00",
+            "Ownership": "D"
+          },
+          {
+            "index": 3,
+            "Shares": 25412,
+            "Value": 8460740.0,
+            "URL": "",
+            "Text": "Sale at price 331.38 - 334.05 per share.",
+            "Insider": "TERNUS JOHN",
+            "Position": "Chief Executive Officer",
+            "Transaction": "",
+            "Start Date": "2026-10-02T00:00:00",
+            "Ownership": "D"
+          },
+          {
+            "index": 4,
+            "Shares": 191753,
+            "Value": 63845841.0,
+            "URL": "",
+            "Text": "Sale at price 331.44 - 333.94 per share.",
+            "Insider": "COOK TIMOTHY D",
+            "Position": "Officer and Director",
+            "Transaction": "",
+            "Start Date": "2026-10-02T00:00:00",
+            "Ownership": "D"
+          },
+          {
+            "index": 5,
+            "Shares": 99878,
+            "Value": null,
+            "URL": "",
+            "Text": "",
+            "Insider": "O'BRIEN DEIRDRE",
+            "Position": "Officer",
+            "Transaction": "",
+            "Start Date": "2026-10-01T00:00:00",
+            "Ownership": "D"
+          },
+          {
+            "index": 6,
+            "Shares": 99878,
+            "Value": null,
+            "URL": "",
+            "Text": "",
+            "Insider": "KHAN SABIH",
+            "Position": "Chief Operating Officer",
+            "Transaction": "",
+            "Start Date": "2026-10-01T00:00:00",
+            "Ownership": "D"
+          },
+          {
+            "index": 7,
+            "Shares": 99878,
+            "Value": null,
+            "URL": "",
+            "Text": "",
+            "Insider": "TERNUS JOHN",
+            "Position": "Chief Executive Officer",
+            "Transaction": "",
+            "Start Date": "2026-10-01T00:00:00",
+            "Ownership": "D"
+          },
+          {
+            "index": 8,
+            "Shares": 374541,
+            "Value": null,
+            "URL": "",
+            "Text": "",
+            "Insider": "COOK TIMOTHY D",
+            "Position": "Officer and Director",
+            "Transaction": "",
+            "Start Date": "2026-10-01T00:00:00",
+            "Ownership": "D"
+          },
+          {
+            "index": 9,
+            "Shares": 2399,
+            "Value": 806496.0,
+            "URL": "",
+            "Text": "Sale at price 336.18 per share.",
+            "Insider": "NEWSTEAD JENNIFER",
+            "Position": "General Counsel",
+            "Transaction": "",
+            "Start Date": "2026-09-29T00:00:00",
+            "Ownership": "D"
+          }
+        ],
+        "major_holders": [
+          {
+            "index": "insidersPercentHeld",
+            "Value": 0.01648
+          },
+          {
+            "index": "institutionsPercentHeld",
+            "Value": 0.66326
+          },
+          {
+            "index": "institutionsFloatPercentHeld",
+            "Value": 0.67437
+          },
+          {
+            "index": "institutionsCount",
+            "Value": 7697.0
+          }
+        ],
+        "current_summary": {
+          "institutional_percent": 66.326,
+          "insider_percent": 1.648,
+          "retail_public_percent": 32.026,
+          "retail_public_method": "100% - institutional ownership - insider ownership"
+        },
+        "historical_aggregate_series_available": false,
+        "historical_score_status": "BLOCKED",
+        "historical_score_reason": "Dated aggregate ownership history is unavailable; current aggregates and top-holder share changes cannot establish quarterly/yearly aggregate ownership changes.",
+        "provider_note": "US ownership uses the market-appropriate headings Institutional Ownership, Insider Ownership and Retail/Public Investors. Yahoo provides current aggregate institutional/insider percentages; Retail/Public is the transparent remainder 100% - institutional - insider when both aggregates are available. Historical top-holder tables are kept as source detail and are not presented as total-market history."
+      }
+    },
+    {
+      "at": "2026-10-16T03:44:57.582137+00:00",
+      "path": "/market/technical-summary/AAPL?exchange=US",
+      "method": "GET",
+      "status": 502,
+      "seconds": 36.3,
+      "body": "{\"status\":\"error\",\"code\":502,\"message\":\"Application failed to respond\",\"request_id\":\"0wbaLo5PQQS8-GJ52h0iww\"}"
+    },
+    {
+      "at": "2026-10-16T03:44:59.248276+00:00",
+      "path": "/market/top-composite?market=US&candidate_limit=220&limit=200",
+      "method": "GET",
+      "status": 502,
+      "seconds": 1.67,
+      "body": "{\"status\":\"error\",\"code\":502,\"message\":\"Application failed to respond\",\"request_id\":\"XvSI_4KuSMG5TL7Q9o6EoQ\"}"
+    },
+    {
+      "at": "2026-10-16T03:44:59.918939+00:00",
+      "path": "/market/sector-analysis?market=US",
+      "method": "GET",
+      "status": 502,
+      "seconds": 0.67,
+      "body": "{\"status\":\"error\",\"code\":502,\"message\":\"Application failed to respond\",\"request_id\":\"S4R8jAESTIiPliGOjq4OvQ\"}"
+    },
+    {
+      "at": "2026-10-16T03:45:00.573671+00:00",
+      "path": "/market/dashboard/AAPL?exchange=US",
+      "method": "GET",
+      "status": 502,
+      "seconds": 0.65,
+      "body": "{\"status\":\"error\",\"code\":502,\"message\":\"Application failed to respond\",\"request_id\":\"Hj84Ke7ERrKY0XWK-_9nXA\"}"
+    },
+    {
+      "at": "2026-10-16T03:45:01.228856+00:00",
+      "path": "/market/sector-analysis?market=US&sector=Technology",
+      "method": "GET",
+      "status": 502,
+      "seconds": 0.65,
+      "body": "{\"status\":\"error\",\"code\":502,\"message\":\"Application failed to respond\",\"request_id\":\"eGgCz6TBQmCs6YbT9I3ezw\"}"
+    },
+    {
+      "at": "2026-10-16T03:45:11.361483+00:00",
+      "path": "/market/dashboard/NVDA?exchange=US",
+      "method": "GET",
+      "status": 200,
+      "seconds": 10.13,
+      "body": {
+        "symbol": "NVDA",
+        "name": "NVIDIA Corporation - Common Stock",
+        "isin": null,
+        "exchange": "US",
+        "score": null,
+        "provisional_score": 63.66,
+        "score_source": "Live baseline daily components; frontend rule editor is labeled separately",
+        "score_version": "client-rs5000-fiscal-v3",
+        "rs_universe": {
+          "market": "US",
+          "evaluation_date": "2026-10-14",
+          "target_rs_universe": 5000,
+          "active_symbols": 5756,
+          "history_ready_symbols": 5426,
+          "pending_active_symbols": 330,
+          "no_history_symbols": 34,
+          "stale_or_short_history_symbols": 296,
+          "target_coverage_percent": 100.0,
+          "active_coverage_percent": 94.27,
+          "symbol_master_shortfall": 0,
+          "complete": true,
+          "history_requirements": {
+            "minimum_rows": 180,
+            "minimum_span_days": 350,
+            "maximum_stale_days": 14,
+            "requested_backfill_days": 500
+          },
+          "by_exchange": {
+            "US": {
+              "active": 5756,
+              "ready": 5426,
+              "pending": 330
+            }
+          },
+          "last_batch": {
+            "market": "US",
+            "status": "complete",
+            "requested_batch_size": 25,
+            "attempted": 0,
+            "succeeded": 0,
+            "failed": 0,
+            "empty": 0,
+            "before": {
+              "market": "US",
+              "evaluation_date": "2026-10-14",
+              "target_rs_universe": 5000,
+              "active_symbols": 5756,
+              "history_ready_symbols": 5426,
+              "pending_active_symbols": 330,
+              "no_history_symbols": 34,
+              "stale_or_short_history_symbols": 296,
+              "target_coverage_percent": 100.0,
+              "active_coverage_percent": 94.27,
+              "symbol_master_shortfall": 0,
+              "complete": true,
+              "history_requirements": {
+                "minimum_rows": 180,
+                "minimum_span_days": 350,
+                "maximum_stale_days": 14,
+                "requested_backfill_days": 500
+              },
+              "by_exchange": {
+                "US": {
+                  "active": 5756,
+                  "ready": 5426,
+                  "pending": 330
+                }
+              },
+              "retry_cooldown_symbols": 330,
+              "scheduler_enabled": true,
+              "scheduler": {
+                "running": true,
+                "registered": true,
+                "next_run_at": "2026-10-16T03:47:26.650868+00:00"
+              },
+              "storage": "compressed provider date/open/close observations"
+            },
+            "after": {
+              "market": "US",
+              "evaluation_date": "2026-10-14",
+              "target_rs_universe": 5000,
+              "active_symbols": 5756,
+              "history_ready_symbols": 5426,
+              "pending_active_symbols": 330,
+              "no_history_symbols": 34,
+              "stale_or_short_history_symbols": 296,
+              "target_coverage_percent": 100.0,
+              "active_coverage_percent": 94.27,
+              "symbol_master_shortfall": 0,
+              "complete": true,
+              "history_requirements": {
+                "minimum_rows": 180,
+                "minimum_span_days": 350,
+                "maximum_stale_days": 14,
+                "requested_backfill_days": 500
+              },
+              "by_exchange": {
+                "US": {
+                  "active": 5756,
+                  "ready": 5426,
+                  "pending": 330
+                }
+              },
+              "retry_cooldown_symbols": 330,
+              "scheduler_enabled": true,
+              "scheduler": {
+                "running": true,
+                "registered": true,
+                "next_run_at": "2026-10-16T03:47:26.650868+00:00"
+              },
+              "storage": "compressed provider date/open/close observations"
+            },
+            "started_at": "2026-10-16T03:42:26.654169Z",
+            "finished_at": "2026-10-16T03:42:27.664296Z",
+            "message": "The client target of 5,000 ready stocks is already met."
+          },
+          "retry_cooldown_symbols": 330,
+          "scheduler_enabled": true,
+          "scheduler": {
+            "running": true,
+            "registered": true,
+            "next_run_at": "2026-10-16T03:45:32.261082+00:00"
+          },
+          "storage": "compressed provider date/open/close observations"
+        },
+        "signal": "Insufficient Data",
+        "missing_required_score_categories": [
+          "sector"
+        ],
+        "score_coverage_percent": 95,
+        "score_components": {
+          "technical": 50.0,
+          "fundamental": 100.0,
+          "relative_strength": 51.05,
+          "ownership": 56.0,
+          "sector": null
+        },
+        "score_weights": {
+          "technical": 25.0,
+          "fundamental": 30.0,
+          "ownership": 15.0,
+          "sector": 5.0,
+          "relative_strength": 25.0
+        },
+        "ranking_subweights": {
+          "technical": {
+            "ema20": 20.0,
+            "ema50": 20.0,
+            "ema150": 20.0,
+            "ema200": 20.0,
+            "rsi": 20.0
+          },
+          "fundamental": {
+            "eps": 20.0,
+            "net_income": 20.0,
+            "profit_margin": 20.0,
+            "roe": 20.0,
+            "roa": 20.0
+          },
+          "ownership": {
+            "institution": 70.0,
+            "insider": 30.0
+          }
+        },
+        "rs_period_weights": {
+          "1w": 30.0,
+          "2w": 0.0,
+          "1m": 25.0,
+          "2m": 0.0,
+          "3m": 20.0,
+          "6m": 15.0,
+          "1y": 10.0,
+          "sector": 0.0
+        },
+        "sector": "Technology",
+        "industry": "Semiconductors",
+        "industry_median_npm": 4.257,
+        "industry_npm_peer_count": 39,
+        "sector_rank": null,
+        "industry_rank": null,
+        "sector_score_peer_count": 0,
+        "sector_score_status": "Insufficient compatible real peer history",
+        "sector_cohort_id": "4be7f95e786d52ea0f9e",
+        "method_note": "Milestone-2 composite follows the client note: Fundamental 30% + Technical 25% + RS 25% + Ownership 15% + Sector 5%. The selected-stock Sector component reuses real compact Top-200 EPS/PAT/Sales peer history and requires at least 5 real peers; it is never substituted with price RS. For NSE/BSE, a score is withheld when a positively weighted fundamental or ownership category is unavailable, rather than producing a misleading partial ranking."
+      }
+    },
+    {
+      "at": "2026-10-16T03:45:21.428250+00:00",
+      "path": "/market/technical-summary/NVDA?exchange=US",
+      "method": "GET",
+      "status": 200,
+      "seconds": 10.07,
+      "body": {
+        "symbol": "NVDA",
+        "exchange": "US",
+        "timeframe": "daily",
+        "ema": {
+          "10": 226.59,
+          "20": 226.78,
+          "34": 224.83,
+          "50": 222.39,
+          "100": 215.78,
+          "150": 210.04,
+          "200": 204.56
+        },
+        "ema_alignment": "Mixed",
+        "average_volume_10": 104940300.0,
+        "average_volume_20": 108318545.0,
+        "average_volume_40": 119063707.5,
+        "average_volume_50": 115524278.0,
+        "volume_ratio": 1.17,
+        "volume_ratio_50": 1.1,
+        "adr_20": 4.85,
+        "adr_percent": 2.15,
+        "atr_14": 6.02,
+        "atr_percent": 2.77,
+        "average_atr_percent_5": 2.88,
+        "average_atr_percent_10": 2.63,
+        "average_atr_percent_20": 2.45,
+        "rsi_14": 40.17,
+        "bollinger_upper": 239.59,
+        "bollinger_lower": 217.58,
+        "bollinger_width_percent": 9.63,
+        "range_20d_percent": 14.34,
+        "technical_metric_series": {
+          "observed_length": 260,
+          "sha256": "9e68772413df5bd3560098fadf6a8e06695077572377442cdc1d1f2434a72a4a",
+          "first": {
+            "date": "2025-10-03",
+            "adr_percent": 2.59,
+            "atr_percent": 2.78,
+            "bollinger_width_percent": 12.55,
+            "range_20d_percent": 14.58
+          },
+          "last": {
+            "date": "2026-10-15",
+            "adr_percent": 2.15,
+            "atr_percent": 2.77,
+            "bollinger_width_percent": 9.63,
+            "range_20d_percent": 14.34
+          }
+        },
+        "technical_metric_timeframe": "daily",
+        "technical_metric_window_periods": 20,
+        "distance_from_52w_high_percent": 10.74,
+        "distance_from_52w_low_percent": 32.24,
+        "high_52w": 243.3699951171875,
+        "low_52w": 164.27000427246094,
+        "daily_price": 217.22999572753906,
+        "daily_price_date": "2026-10-15",
+        "daily_52w_rows": 252,
+        "indicator_bars_available": 1531,
+        "indicator_semantics": {
+          "period_metrics": "daily bars",
+          "52w": "Trailing 365 calendar days of daily OHLCV",
+          "adr_20": "20 daily bars",
+          "bollinger_width": "(Upper Band - Lower Band) / Middle Band * 100"
+        },
+        "pivot": 243.37,
+        "breakout_status": "No Breakout",
+        "breakout_strength": 10,
+        "gap_percent": -2.71,
+        "gap_classification": "Normal / No Material Gap",
+        "vcp_stage": "Not Detected",
+        "vcp_contractions": [
+          {
+            "depth_percent": 16.63,
+            "atr_percent": 3.07,
+            "standard_deviation_percent": 5.25,
+            "average_volume": 118282070.0,
+            "high": 227.92,
+            "low": 190.01
+          },
+          {
+            "depth_percent": 11.72,
+            "atr_percent": 3.11,
+            "standard_deviation_percent": 2.88,
+            "average_volume": 129808870.0,
+            "high": 234.76,
+            "low": 207.25
+          },
+          {
+            "depth_percent": 12.54,
+            "atr_percent": 2.63,
+            "standard_deviation_percent": 2.41,
+            "average_volume": 108318545.0,
+            "high": 243.37,
+            "low": 212.85
+          }
+        ],
+        "vcp_standard_deviation_contraction": true,
+        "vcp_volume_contraction": false,
+        "pattern": "None",
+        "client_technical_filters": {
+          "trend": {
+            "price": 217.22999572753906,
+            "price_gt_ema20": false,
+            "ema20_slope_positive": false,
+            "price_gt_ema50": false,
+            "ema50_slope_positive": false,
+            "price_gt_ema200": true,
+            "ema200_slope_positive": true
+          },
+          "strength": {
+            "rs_score": 51.05,
+            "distance_from_52w_high_percent": 10.740847234295051,
+            "periods_since_52w_high": 7,
+            "new_52w_high_within_30_periods": true,
+            "adx_14": 16.53452321643913,
+            "plus_di_14": 20.906184237884187,
+            "minus_di_14": 34.95453202419905,
+            "di_spread": -14.04834778631486,
+            "di_spread_gt_10": false
+          },
+          "momentum": {
+            "roc_20_period_percent": -0.9619771339382743,
+            "roc_timeframe": "daily",
+            "roc_1m_percent": -0.9619771339382743,
+            "roc_3m_percent": 7.110102234866034,
+            "roc_6m_percent": 9.518522330758227,
+            "roc_12m_percent": 20.663221241170238,
+            "roc_1m_two_weeks_ago_percent": 6.171816601483715,
+            "roc_1m_acceleration_points": -7.133793735421989
+          },
+          "participation": {
+            "average_volume_10": 104940300.0,
+            "average_volume_20": 108318545.0,
+            "average_volume_40": 119063707.5,
+            "average_volume_50": 115524278.0,
+            "delivery_percent": {
+              "available": false,
+              "source": "US",
+              "note": "True delivery percentage requires exchange deliverable-quantity data; ordinary OHLCV volume is not substituted."
+            }
+          },
+          "volatility": {
+            "atr_percent": 2.7690171359407887,
+            "average_atr_percent_5": 2.875505051480478,
+            "average_atr_percent_10": 2.633139272335776,
+            "average_atr_percent_20": 2.450954831393749,
+            "bollinger_width_percent": 9.626996043974255,
+            "bollinger_width_20_periods_ago_percent": 11.53306069160017,
+            "bb_width_contracting": true
+          },
+          "base_formation": {
+            "range_20_period_percent": 14.338730626499983,
+            "range_90_period_percent": 28.224442151785073,
+            "range_90_le_20_percent": false,
+            "vcp_stage": "Not Detected",
+            "standard_deviation_contracting": true,
+            "volume_contracting": false
+          },
+          "note": "These are real-data filter inputs from the client handwritten technical sheet. Ambiguous handwritten point allocations remain configurable rather than guessed."
+        },
+        "rs_comparison": {
+          "periods": [
+            "1d",
+            "1w",
+            "2w",
+            "3w",
+            "1m",
+            "2m",
+            "3m",
+            "6m",
+            "1y"
+          ],
+          "rows": [
+            {
+              "key": "stock",
+              "label": "Stock Return",
+              "returns": {
+                "1d": 0.9,
+                "1w": -5.03,
+                "2w": -7.99,
+                "3w": -5.45,
+                "1m": -5.54,
+                "2m": 0.22,
+                "3m": -5.54,
+                "6m": 10.72,
+                "1y": 14.43
+              }
+            },
+            {
+              "key": "dow_jones",
+              "label": "Dow Jones",
+              "returns": {
+                "1d": 0.62,
+                "1w": 0.8,
+                "2w": 1.91,
+                "3w": 1.02,
+                "1m": 2.29,
+                "2m": -1.71,
+                "3m": 2.29,
+                "6m": -0.1,
+                "1y": 8.46
+              }
+            },
+            {
+              "key": "sp500",
+              "label": "S&P 500",
+              "returns": {
+                "1d": 0.74,
+                "1w": -0.88,
+                "2w": 0.17,
+                "3w": 0.29,
+                "1m": 1.01,
+                "2m": 1.42,
+                "3m": 1.01,
+                "6m": 3.55,
+                "1y": 12.59
+              }
+            },
+            {
+              "key": "industry",
+              "label": "Industry",
+              "name": "Semiconductors",
+              "returns": {},
+              "note": "Insufficient stored peer history; N/A shown."
+            },
+            {
+              "key": "sector",
+              "label": "Sector",
+              "name": "Technology",
+              "returns": {},
+              "note": "Insufficient stored peer history; N/A shown."
+            }
+          ],
+          "method": "Current-period open to latest close; industry/sector are equal-weight averages of at least 5 stored peers, excluding the selected stock. If fewer peers are available, N/A is shown. These raw returns do not use RS scoring weights."
+        },
+        "volume_delivery": {
+          "available": false,
+          "source": "US",
+          "note": "True delivery percentage requires exchange deliverable-quantity data; ordinary OHLCV volume is not substituted."
+        },
+        "rs_rating": 51.05,
+        "rs_available": true,
+        "rs_universe": {
+          "market": "US",
+          "market_exchanges": [
+            "US"
+          ],
+          "target_size": 5000,
+          "scored_stocks_available": 5000,
+          "coverage_percent": 100.0,
+          "complete": true,
+          "evaluation_date": "2026-10-14",
+          "note": "The stored RS comparison universe meets the client-required 5,000-stock denominator for US."
+        },
+        "rs_weighted_relative_return_percent": -0.75,
+        "rs_benchmark": "S&P 500",
+        "rs_periods": {
+          "1w": {
+            "weight_percent": 1.0,
+            "stock_return_percent": -3.25,
+            "benchmark_return_percent": -1.2,
+            "relative_return_percent": -2.04,
+            "start_date": "2026-10-12",
+            "benchmark_start_date": "2026-10-12",
+            "period_start_date": "2026-10-12",
+            "end_date": "2026-10-14",
+            "return_method": "period_open_to_current_close",
+            "percentile": 41.2,
+            "universe_size": 5000,
+            "scored_stocks_available": 5000,
+            "score_weight_percent": 30.0
+          },
+          "2w": {
+            "weight_percent": 1.0,
+            "stock_return_percent": -6.26,
+            "benchmark_return_percent": -0.15,
+            "relative_return_percent": -6.11,
+            "start_date": "2026-10-05",
+            "benchmark_start_date": "2026-10-05",
+            "period_start_date": "2026-10-05",
+            "end_date": "2026-10-14",
+            "return_method": "period_open_to_current_close",
+            "percentile": 34.07,
+            "universe_size": 5000,
+            "scored_stocks_available": 5000,
+            "score_weight_percent": 0.0
+          },
+          "1m": {
+            "weight_percent": 1.0,
+            "stock_return_percent": -3.77,
+            "benchmark_return_percent": 0.68,
+            "relative_return_percent": -4.46,
+            "start_date": "2026-10-01",
+            "benchmark_start_date": "2026-10-01",
+            "period_start_date": "2026-10-01",
+            "end_date": "2026-10-14",
+            "return_method": "period_open_to_current_close",
+            "percentile": 41.54,
+            "universe_size": 5000,
+            "scored_stocks_available": 5000,
+            "score_weight_percent": 25.0
+          },
+          "2m": {
+            "weight_percent": 1.0,
+            "stock_return_percent": 2.1,
+            "benchmark_return_percent": 1.09,
+            "relative_return_percent": 1.01,
+            "start_date": "2026-09-01",
+            "benchmark_start_date": "2026-09-01",
+            "period_start_date": "2026-09-01",
+            "end_date": "2026-10-14",
+            "return_method": "period_open_to_current_close",
+            "percentile": 82.37,
+            "universe_size": 5000,
+            "scored_stocks_available": 5000,
+            "score_weight_percent": 0.0
+          },
+          "3m": {
+            "weight_percent": 1.0,
+            "stock_return_percent": -3.77,
+            "benchmark_return_percent": 0.68,
+            "relative_return_percent": -4.46,
+            "start_date": "2026-10-01",
+            "benchmark_start_date": "2026-10-01",
+            "period_start_date": "2026-10-01",
+            "end_date": "2026-10-14",
+            "return_method": "period_open_to_current_close",
+            "percentile": 41.54,
+            "universe_size": 5000,
+            "scored_stocks_available": 5000,
+            "score_weight_percent": 20.0
+          },
+          "6m": {
+            "weight_percent": 1.0,
+            "stock_return_percent": 12.79,
+            "benchmark_return_percent": 3.21,
+            "relative_return_percent": 9.58,
+            "start_date": "2026-07-01",
+            "benchmark_start_date": "2026-07-01",
+            "period_start_date": "2026-07-01",
+            "end_date": "2026-10-14",
+            "return_method": "period_open_to_current_close",
+            "percentile": 83.88,
+            "universe_size": 5000,
+            "scored_stocks_available": 5000,
+            "score_weight_percent": 15.0
+          },
+          "1y": {
+            "weight_percent": 1.0,
+            "stock_return_percent": 16.57,
+            "benchmark_return_percent": 12.22,
+            "relative_return_percent": 4.35,
+            "start_date": "2026-01-02",
+            "benchmark_start_date": "2026-01-02",
+            "period_start_date": "2026-01-01",
+            "end_date": "2026-10-14",
+            "return_method": "period_open_to_current_close",
+            "percentile": 74.15,
+            "universe_size": 5000,
+            "scored_stocks_available": 5000,
+            "score_weight_percent": 10.0
+          },
+          "sector": {
+            "sector": "Technology",
+            "score": 41.37,
+            "percentile": 30.0,
+            "universe_size": 11,
+            "score_weight_percent": 0.0
+          },
+          "_universe_size": 5000,
+          "_scored_stocks_available": 5000,
+          "_score_complete": true,
+          "_score_weight_total": 100.0,
+          "_relative_return_weight_independent": true,
+          "_fixed_relative_return_reference_weights": {
+            "1w": 30.0,
+            "2w": 0.0,
+            "1m": 25.0,
+            "2m": 0.0,
+            "3m": 20.0,
+            "6m": 15.0,
+            "1y": 10.0
+          }
+        },
+        "rs_chart": {
+          "observed_length": 1253,
+          "sha256": "ccdcd696d694d4c2c02e6dcabf7af1647569f53ea46ba671b79a8989731681e1",
+          "first": {
+            "date": "2021-10-18",
+            "rs": 100.0
+          },
+          "last": {
+            "date": "2026-10-14",
+            "rs": 578.8212
+          }
+        },
+        "rs_period_weights": {
+          "1w": 30.0,
+          "2w": 0.0,
+          "1m": 25.0,
+          "2m": 0.0,
+          "3m": 20.0,
+          "6m": 15.0,
+          "1y": 10.0,
+          "sector": 0.0
+        },
+        "rs_formula": {
+          "period_return": "((current close / current period candle open) - 1) * 100",
+          "relative_return": "stock return % - benchmark return %",
+          "relative_return_uses_editable_weights": false,
+          "stock_percentile": "((lower stocks + (same-return stocks - 1) / 2) / (5000 - 1)) * 100",
+          "stock_percentile_denominator": 5000,
+          "final_rs_score": "sum(period percentile * enabled weight) / sum(enabled weights)",
+          "default_weights": {
+            "1w": 30,
+            "1m": 25,
+            "3m": 20,
+            "6m": 15,
+            "1y": 10,
+            "2w": 0,
+            "2m": 0,
+            "sector": 0
+          }
+        },
+        "rs_note": "Relative Strength: period relative returns are raw market calculations and never change when RS score weights change. Each period uses TradingView-style current period candle return (period open to current close); relative return = stock return % - benchmark return %. Stock percentiles use the client formula [lower + (same-1)/2] / (total-1) \u00d7 100 with the client-required 5,000-stock universe for US: [(lower stocks + 0.5 x equal stocks) x 100 / 5000]. Final RS Score uses weighted percentile components. Default weights are 1W x 30% + 1M x 25% + 3M x 20% + 6M x 15% + 12M x 10%. 2W/2M and Sector RS are optional components with zero default weight; Sector RS is included only when its weight is greater than 0.",
+        "criteria_note": "Metrics use the selected daily timeframe. For a detected VCP, Pivot = highest high of the final contraction; otherwise it is the recent consolidation high. Near Pivot = 95%-102% of pivot. Confirmed breakout requires close > pivot by 0.3%, volume >= 1.4x 50-period average, close > open, and close in the upper half of the period's range. VCP requires successive price-depth, ATR%, standard-deviation, and average-volume contractions."
+      }
+    },
+    {
+      "at": "2026-10-16T03:45:30.665289+00:00",
+      "path": "/market/dashboard/LITE?exchange=US",
+      "method": "GET",
+      "status": 200,
+      "seconds": 9.23,
+      "body": {
+        "symbol": "LITE",
+        "name": "Lumentum Holdings Inc. - Common Stock",
+        "isin": "US55024U1097",
+        "exchange": "US",
+        "score": null,
+        "provisional_score": 31.54,
+        "score_source": "Live baseline daily components; frontend rule editor is labeled separately",
+        "score_version": "client-rs5000-fiscal-v3",
+        "rs_universe": {
+          "market": "US",
+          "evaluation_date": "2026-10-14",
+          "target_rs_universe": 5000,
+          "active_symbols": 5756,
+          "history_ready_symbols": 5426,
+          "pending_active_symbols": 330,
+          "no_history_symbols": 34,
+          "stale_or_short_history_symbols": 296,
+          "target_coverage_percent": 100.0,
+          "active_coverage_percent": 94.27,
+          "symbol_master_shortfall": 0,
+          "complete": true,
+          "history_requirements": {
+            "minimum_rows": 180,
+            "minimum_span_days": 350,
+            "maximum_stale_days": 14,
+            "requested_backfill_days": 500
+          },
+          "by_exchange": {
+            "US": {
+              "active": 5756,
+              "ready": 5426,
+              "pending": 330
+            }
+          },
+          "last_batch": {
+            "market": "US",
+            "status": "complete",
+            "requested_batch_size": 25,
+            "attempted": 0,
+            "succeeded": 0,
+            "failed": 0,
+            "empty": 0,
+            "before": {
+              "market": "US",
+              "evaluation_date": "2026-10-14",
+              "target_rs_universe": 5000,
+              "active_symbols": 5756,
+              "history_ready_symbols": 5426,
+              "pending_active_symbols": 330,
+              "no_history_symbols": 34,
+              "stale_or_short_history_symbols": 296,
+              "target_coverage_percent": 100.0,
+              "active_coverage_percent": 94.27,
+              "symbol_master_shortfall": 0,
+              "complete": true,
+              "history_requirements": {
+                "minimum_rows": 180,
+                "minimum_span_days": 350,
+                "maximum_stale_days": 14,
+                "requested_backfill_days": 500
+              },
+              "by_exchange": {
+                "US": {
+                  "active": 5756,
+                  "ready": 5426,
+                  "pending": 330
+                }
+              },
+              "retry_cooldown_symbols": 330,
+              "scheduler_enabled": true,
+              "scheduler": {
+                "running": true,
+                "registered": true,
+                "next_run_at": "2026-10-16T03:47:26.650868+00:00"
+              },
+              "storage": "compressed provider date/open/close observations"
+            },
+            "after": {
+              "market": "US",
+              "evaluation_date": "2026-10-14",
+              "target_rs_universe": 5000,
+              "active_symbols": 5756,
+              "history_ready_symbols": 5426,
+              "pending_active_symbols": 330,
+              "no_history_symbols": 34,
+              "stale_or_short_history_symbols": 296,
+              "target_coverage_percent": 100.0,
+              "active_coverage_percent": 94.27,
+              "symbol_master_shortfall": 0,
+              "complete": true,
+              "history_requirements": {
+                "minimum_rows": 180,
+                "minimum_span_days": 350,
+                "maximum_stale_days": 14,
+                "requested_backfill_days": 500
+              },
+              "by_exchange": {
+                "US": {
+                  "active": 5756,
+                  "ready": 5426,
+                  "pending": 330
+                }
+              },
+              "retry_cooldown_symbols": 330,
+              "scheduler_enabled": true,
+              "scheduler": {
+                "running": true,
+                "registered": true,
+                "next_run_at": "2026-10-16T03:47:26.650868+00:00"
+              },
+              "storage": "compressed provider date/open/close observations"
+            },
+            "started_at": "2026-10-16T03:42:26.654169Z",
+            "finished_at": "2026-10-16T03:42:27.664296Z",
+            "message": "The client target of 5,000 ready stocks is already met."
+          },
+          "retry_cooldown_symbols": 330,
+          "scheduler_enabled": true,
+          "scheduler": {
+            "running": true,
+            "registered": true,
+            "next_run_at": "2026-10-16T03:45:32.261082+00:00"
+          },
+          "storage": "compressed provider date/open/close observations"
+        },
+        "signal": "Insufficient Data",
+        "missing_required_score_categories": [
+          "sector"
+        ],
+        "score_coverage_percent": 95,
+        "score_components": {
+          "technical": 50.0,
+          "fundamental": 0.0,
+          "relative_strength": 35.88,
+          "ownership": 67.16,
+          "sector": null
+        },
+        "score_weights": {
+          "technical": 25.0,
+          "fundamental": 30.0,
+          "ownership": 15.0,
+          "sector": 5.0,
+          "relative_strength": 25.0
+        },
+        "ranking_subweights": {
+          "technical": {
+            "ema20": 20.0,
+            "ema50": 20.0,
+            "ema150": 20.0,
+            "ema200": 20.0,
+            "rsi": 20.0
+          },
+          "fundamental": {
+            "eps": 20.0,
+            "net_income": 20.0,
+            "profit_margin": 20.0,
+            "roe": 20.0,
+            "roa": 20.0
+          },
+          "ownership": {
+            "institution": 70.0,
+            "insider": 30.0
+          }
+        },
+        "rs_period_weights": {
+          "1w": 30.0,
+          "2w": 0.0,
+          "1m": 25.0,
+          "2m": 0.0,
+          "3m": 20.0,
+          "6m": 15.0,
+          "1y": 10.0,
+          "sector": 0.0
+        },
+        "sector": "Technology",
+        "industry": "Communication Equipment",
+        "industry_median_npm": 0.0,
+        "industry_npm_peer_count": 27,
+        "sector_rank": null,
+        "industry_rank": null,
+        "sector_score_peer_count": 0,
+        "sector_score_status": "Insufficient compatible real peer history",
+        "sector_cohort_id": "4be7f95e786d52ea0f9e",
+        "method_note": "Milestone-2 composite follows the client note: Fundamental 30% + Technical 25% + RS 25% + Ownership 15% + Sector 5%. The selected-stock Sector component reuses real compact Top-200 EPS/PAT/Sales peer history and requires at least 5 real peers; it is never substituted with price RS. For NSE/BSE, a score is withheld when a positively weighted fundamental or ownership category is unavailable, rather than producing a misleading partial ranking."
+      }
+    },
+    {
+      "at": "2026-10-16T03:45:41.814823+00:00",
+      "path": "/market/technical-summary/LITE?exchange=US",
+      "method": "GET",
+      "status": 200,
+      "seconds": 11.14,
+      "body": {
+        "symbol": "LITE",
+        "exchange": "US",
+        "timeframe": "daily",
+        "ema": {
+          "10": 983.14,
+          "20": 982.54,
+          "34": 960.34,
+          "50": 937.61,
+          "100": 880.73,
+          "150": 819.4,
+          "200": 757.12
+        },
+        "ema_alignment": "Bullish",
+        "average_volume_10": 4929720.0,
+        "average_volume_20": 5022095.0,
+        "average_volume_40": 4569392.5,
+        "average_volume_50": 4827166.0,
+        "volume_ratio": 1.51,
+        "volume_ratio_50": 1.57,
+        "adr_20": 62.79,
+        "adr_percent": 6.58,
+        "atr_14": 72.67,
+        "atr_percent": 8.36,
+        "average_atr_percent_5": 9.38,
+        "average_atr_percent_10": 7.4,
+        "average_atr_percent_20": 6.99,
+        "rsi_14": 40.52,
+        "bollinger_upper": 1147.31,
+        "bollinger_lower": 840.03,
+        "bollinger_width_percent": 30.92,
+        "range_20d_percent": 42.88,
+        "technical_metric_series": {
+          "observed_length": 260,
+          "sha256": "dba028947ac1b88974990a7372b4d9d30e0b3dfecc949a47ab0dfcae1cb8bab7",
+          "first": {
+            "date": "2025-10-03",
+            "adr_percent": 5.0,
+            "atr_percent": 5.18,
+            "bollinger_width_percent": 15.11,
+            "range_20d_percent": 23.51
+          },
+          "last": {
+            "date": "2026-10-15",
+            "adr_percent": 6.58,
+            "atr_percent": 8.36,
+            "bollinger_width_percent": 30.92,
+            "range_20d_percent": 42.88
+          }
+        },
+        "technical_metric_timeframe": "daily",
+        "technical_metric_window_periods": 20,
+        "distance_from_52w_high_percent": 23.92,
+        "distance_from_52w_low_percent": 470.04,
+        "high_52w": 1143.0,
+        "low_52w": 152.5399932861328,
+        "daily_price": 869.5399780273438,
+        "daily_price_date": "2026-10-15",
+        "daily_52w_rows": 252,
+        "indicator_bars_available": 1531,
+        "indicator_semantics": {
+          "period_metrics": "daily bars",
+          "52w": "Trailing 365 calendar days of daily OHLCV",
+          "adr_20": "20 daily bars",
+          "bollinger_width": "(Upper Band - Lower Band) / Middle Band * 100"
+        },
+        "pivot": 1143.0,
+        "breakout_status": "No Breakout",
+        "breakout_strength": 20,
+        "gap_percent": -5.73,
+        "gap_classification": "Normal / No Material Gap",
+        "vcp_stage": "Not Detected",
+        "vcp_contractions": [
+          {
+            "depth_percent": 40.5,
+            "atr_percent": 10.39,
+            "standard_deviation_percent": 11.6,
+            "average_volume": 5349555.0,
+            "high": 999.67,
+            "low": 594.84
+          },
+          {
+            "depth_percent": 23.6,
+            "atr_percent": 7.06,
+            "standard_deviation_percent": 5.03,
+            "average_volume": 4116690.0,
+            "high": 1026.76,
+            "low": 784.47
+          },
+          {
+            "depth_percent": 30.01,
+            "atr_percent": 8.12,
+            "standard_deviation_percent": 7.73,
+            "average_volume": 5022095.0,
+            "high": 1143.0,
+            "low": 800.0
+          }
+        ],
+        "vcp_standard_deviation_contraction": false,
+        "vcp_volume_contraction": false,
+        "pattern": "None",
+        "client_technical_filters": {
+          "trend": {
+            "price": 869.5399780273438,
+            "price_gt_ema20": false,
+            "ema20_slope_positive": false,
+            "price_gt_ema50": false,
+            "ema50_slope_positive": false,
+            "price_gt_ema200": true,
+            "ema200_slope_positive": true
+          },
+          "strength": {
+            "rs_score": 35.88,
+            "distance_from_52w_high_percent": 23.92476132744149,
+            "periods_since_52w_high": 4,
+            "new_52w_high_within_30_periods": true,
+            "adx_14": 18.902075946508507,
+            "plus_di_14": 20.487633330921444,
+            "minus_di_14": 35.758377357386,
+            "di_spread": -15.270744026464559,
+            "di_spread_gt_10": false
+          },
+          "momentum": {
+            "roc_20_period_percent": -2.693569646577887,
+            "roc_timeframe": "daily",
+            "roc_1m_percent": -2.693569646577887,
+            "roc_3m_percent": 18.65669186657952,
+            "roc_6m_percent": -2.4326197110099423,
+            "roc_12m_percent": 454.6243046292001,
+            "roc_1m_two_weeks_ago_percent": 20.349849197966652,
+            "roc_1m_acceleration_points": -23.04341884454454
+          },
+          "participation": {
+            "average_volume_10": 4929720.0,
+            "average_volume_20": 5022095.0,
+            "average_volume_40": 4569392.5,
+            "average_volume_50": 4827166.0,
+            "delivery_percent": {
+              "available": false,
+              "source": "US",
+              "note": "True delivery percentage requires exchange deliverable-quantity data; ordinary OHLCV volume is not substituted."
+            }
+          },
+          "volatility": {
+            "atr_percent": 8.356740568165517,
+            "average_atr_percent_5": 9.38383392267565,
+            "average_atr_percent_10": 7.40183687941345,
+            "average_atr_percent_20": 6.994733032950341,
+            "bollinger_width_percent": 30.92397779457808,
+            "bollinger_width_20_periods_ago_percent": 20.13507048808846,
+            "bb_width_contracting": false
+          },
+          "base_formation": {
+            "range_20_period_percent": 42.875,
+            "range_90_period_percent": 92.15250292457546,
+            "range_90_le_20_percent": false,
+            "vcp_stage": "Not Detected",
+            "standard_deviation_contracting": false,
+            "volume_contracting": false
+          },
+          "note": "These are real-data filter inputs from the client handwritten technical sheet. Ambiguous handwritten point allocations remain configurable rather than guessed."
+        },
+        "rs_comparison": {
+          "periods": [
+            "1d",
+            "1w",
+            "2w",
+            "3w",
+            "1m",
+            "2m",
+            "3m",
+            "6m",
+            "1y"
+          ],
+          "rows": [
+            {
+              "key": "stock",
+              "label": "Stock Return",
+              "returns": {
+                "1d": 2.9,
+                "1w": -21.08,
+                "2w": -20.39,
+                "3w": -8.26,
+                "1m": -11.27,
+                "2m": -3.5,
+                "3m": -11.27,
+                "6m": 6.25,
+                "1y": 129.2
+              }
+            },
+            {
+              "key": "dow_jones",
+              "label": "Dow Jones",
+              "returns": {
+                "1d": 0.62,
+                "1w": 0.8,
+                "2w": 1.91,
+                "3w": 1.02,
+                "1m": 2.29,
+                "2m": -1.71,
+                "3m": 2.29,
+                "6m": -0.1,
+                "1y": 8.46
+              }
+            },
+            {
+              "key": "sp500",
+              "label": "S&P 500",
+              "returns": {
+                "1d": 0.74,
+                "1w": -0.88,
+                "2w": 0.17,
+                "3w": 0.29,
+                "1m": 1.01,
+                "2m": 1.42,
+                "3m": 1.01,
+                "6m": 3.55,
+                "1y": 12.59
+              }
+            },
+            {
+              "key": "industry",
+              "label": "Industry",
+              "name": "Communication Equipment",
+              "returns": {},
+              "note": "Insufficient stored peer history; N/A shown."
+            },
+            {
+              "key": "sector",
+              "label": "Sector",
+              "name": "Technology",
+              "returns": {},
+              "note": "Insufficient stored peer history; N/A shown."
+            }
+          ],
+          "method": "Current-period open to latest close; industry/sector are equal-weight averages of at least 5 stored peers, excluding the selected stock. If fewer peers are available, N/A is shown. These raw returns do not use RS scoring weights."
+        },
+        "volume_delivery": {
+          "available": false,
+          "source": "US",
+          "note": "True delivery percentage requires exchange deliverable-quantity data; ordinary OHLCV volume is not substituted."
+        },
+        "rs_rating": 35.88,
+        "rs_available": true,
+        "rs_universe": {
+          "market": "US",
+          "market_exchanges": [
+            "US"
+          ],
+          "target_size": 5000,
+          "scored_stocks_available": 5000,
+          "coverage_percent": 100.0,
+          "complete": true,
+          "evaluation_date": "2026-10-14",
+          "note": "The stored RS comparison universe meets the client-required 5,000-stock denominator for US."
+        },
+        "rs_weighted_relative_return_percent": 3.97,
+        "rs_benchmark": "S&P 500",
+        "rs_periods": {
+          "1w": {
+            "weight_percent": 1.0,
+            "stock_return_percent": -18.65,
+            "benchmark_return_percent": -1.2,
+            "relative_return_percent": -17.44,
+            "start_date": "2026-10-12",
+            "benchmark_start_date": "2026-10-12",
+            "period_start_date": "2026-10-12",
+            "end_date": "2026-10-14",
+            "return_method": "period_open_to_current_close",
+            "percentile": 3.8,
+            "universe_size": 5000,
+            "scored_stocks_available": 5000,
+            "score_weight_percent": 30.0
+          },
+          "2w": {
+            "weight_percent": 1.0,
+            "stock_return_percent": -17.94,
+            "benchmark_return_percent": -0.15,
+            "relative_return_percent": -17.79,
+            "start_date": "2026-10-05",
+            "benchmark_start_date": "2026-10-05",
+            "period_start_date": "2026-10-05",
+            "end_date": "2026-10-14",
+            "return_method": "period_open_to_current_close",
+            "percentile": 12.39,
+            "universe_size": 5000,
+            "scored_stocks_available": 5000,
+            "score_weight_percent": 0.0
+          },
+          "1m": {
+            "weight_percent": 1.0,
+            "stock_return_percent": -8.54,
+            "benchmark_return_percent": 0.68,
+            "relative_return_percent": -9.22,
+            "start_date": "2026-10-01",
+            "benchmark_start_date": "2026-10-01",
+            "period_start_date": "2026-10-01",
+            "end_date": "2026-10-14",
+            "return_method": "period_open_to_current_close",
+            "percentile": 28.37,
+            "universe_size": 5000,
+            "scored_stocks_available": 5000,
+            "score_weight_percent": 25.0
+          },
+          "2m": {
+            "weight_percent": 1.0,
+            "stock_return_percent": -0.52,
+            "benchmark_return_percent": 1.09,
+            "relative_return_percent": -1.62,
+            "start_date": "2026-09-01",
+            "benchmark_start_date": "2026-09-01",
+            "period_start_date": "2026-09-01",
+            "end_date": "2026-10-14",
+            "return_method": "period_open_to_current_close",
+            "percentile": 75.65,
+            "universe_size": 5000,
+            "scored_stocks_available": 5000,
+            "score_weight_percent": 0.0
+          },
+          "3m": {
+            "weight_percent": 1.0,
+            "stock_return_percent": -8.54,
+            "benchmark_return_percent": 0.68,
+            "relative_return_percent": -9.22,
+            "start_date": "2026-10-01",
+            "benchmark_start_date": "2026-10-01",
+            "period_start_date": "2026-10-01",
+            "end_date": "2026-10-14",
+            "return_method": "period_open_to_current_close",
+            "percentile": 28.37,
+            "universe_size": 5000,
+            "scored_stocks_available": 5000,
+            "score_weight_percent": 20.0
+          },
+          "6m": {
+            "weight_percent": 1.0,
+            "stock_return_percent": 9.52,
+            "benchmark_return_percent": 3.21,
+            "relative_return_percent": 6.31,
+            "start_date": "2026-07-01",
+            "benchmark_start_date": "2026-07-01",
+            "period_start_date": "2026-07-01",
+            "end_date": "2026-10-14",
+            "return_method": "period_open_to_current_close",
+            "percentile": 81.48,
+            "universe_size": 5000,
+            "scored_stocks_available": 5000,
+            "score_weight_percent": 15.0
+          },
+          "1y": {
+            "weight_percent": 1.0,
+            "stock_return_percent": 136.26,
+            "benchmark_return_percent": 12.22,
+            "relative_return_percent": 124.04,
+            "start_date": "2026-01-02",
+            "benchmark_start_date": "2026-01-02",
+            "period_start_date": "2026-01-01",
+            "end_date": "2026-10-14",
+            "return_method": "period_open_to_current_close",
+            "percentile": 97.56,
+            "universe_size": 5000,
+            "scored_stocks_available": 5000,
+            "score_weight_percent": 10.0
+          },
+          "sector": {
+            "sector": "Technology",
+            "score": 41.37,
+            "percentile": 30.0,
+            "universe_size": 11,
+            "score_weight_percent": 0.0
+          },
+          "_universe_size": 5000,
+          "_scored_stocks_available": 5000,
+          "_score_complete": true,
+          "_score_weight_total": 100.0,
+          "_relative_return_weight_independent": true,
+          "_fixed_relative_return_reference_weights": {
+            "1w": 30.0,
+            "2w": 0.0,
+            "1m": 25.0,
+            "2m": 0.0,
+            "3m": 20.0,
+            "6m": 15.0,
+            "1y": 10.0
+          }
+        },
+        "rs_chart": {
+          "observed_length": 1253,
+          "sha256": "5408c2b25b06bf06ea0c4192d689dd245d79edb95b38ea639f605035c163f6de",
+          "first": {
+            "date": "2021-10-18",
+            "rs": 100.0
+          },
+          "last": {
+            "date": "2026-10-14",
+            "rs": 615.442
+          }
+        },
+        "rs_period_weights": {
+          "1w": 30.0,
+          "2w": 0.0,
+          "1m": 25.0,
+          "2m": 0.0,
+          "3m": 20.0,
+          "6m": 15.0,
+          "1y": 10.0,
+          "sector": 0.0
+        },
+        "rs_formula": {
+          "period_return": "((current close / current period candle open) - 1) * 100",
+          "relative_return": "stock return % - benchmark return %",
+          "relative_return_uses_editable_weights": false,
+          "stock_percentile": "((lower stocks + (same-return stocks - 1) / 2) / (5000 - 1)) * 100",
+          "stock_percentile_denominator": 5000,
+          "final_rs_score": "sum(period percentile * enabled weight) / sum(enabled weights)",
+          "default_weights": {
+            "1w": 30,
+            "1m": 25,
+            "3m": 20,
+            "6m": 15,
+            "1y": 10,
+            "2w": 0,
+            "2m": 0,
+            "sector": 0
+          }
+        },
+        "rs_note": "Relative Strength: period relative returns are raw market calculations and never change when RS score weights change. Each period uses TradingView-style current period candle return (period open to current close); relative return = stock return % - benchmark return %. Stock percentiles use the client formula [lower + (same-1)/2] / (total-1) \u00d7 100 with the client-required 5,000-stock universe for US: [(lower stocks + 0.5 x equal stocks) x 100 / 5000]. Final RS Score uses weighted percentile components. Default weights are 1W x 30% + 1M x 25% + 3M x 20% + 6M x 15% + 12M x 10%. 2W/2M and Sector RS are optional components with zero default weight; Sector RS is included only when its weight is greater than 0.",
+        "criteria_note": "Metrics use the selected daily timeframe. For a detected VCP, Pivot = highest high of the final contraction; otherwise it is the recent consolidation high. Near Pivot = 95%-102% of pivot. Confirmed breakout requires close > pivot by 0.3%, volume >= 1.4x 50-period average, close > open, and close in the upper half of the period's range. VCP requires successive price-depth, ATR%, standard-deviation, and average-volume contractions."
+      }
+    },
+    {
+      "at": "2026-10-16T03:45:50.171068+00:00",
+      "path": "/market/dashboard/RELIANCE?exchange=NSE",
+      "method": "GET",
+      "status": 200,
+      "seconds": 8.35,
+      "body": {
+        "symbol": "RELIANCE",
+        "name": "Reliance Industries Limited",
+        "isin": "INE002A01018",
+        "exchange": "NSE",
+        "score": null,
+        "provisional_score": 53.97,
+        "score_source": "Live baseline daily components; frontend rule editor is labeled separately",
+        "score_version": "client-rs5000-fiscal-v3",
+        "rs_universe": {
+          "market": "INDIA",
+          "evaluation_date": "2026-10-07",
+          "target_rs_universe": 5000,
+          "active_symbols": 5277,
+          "history_ready_symbols": 4421,
+          "pending_active_symbols": 856,
+          "no_history_symbols": 193,
+          "stale_or_short_history_symbols": 663,
+          "target_coverage_percent": 88.42,
+          "active_coverage_percent": 83.78,
+          "symbol_master_shortfall": 0,
+          "complete": false,
+          "history_requirements": {
+            "minimum_rows": 180,
+            "minimum_span_days": 350,
+            "maximum_stale_days": 14,
+            "requested_backfill_days": 500
+          },
+          "by_exchange": {
+            "NSE": {
+              "active": 2605,
+              "ready": 2192,
+              "pending": 413
+            },
+            "BSE": {
+              "active": 2672,
+              "ready": 2229,
+              "pending": 443
+            }
+          },
+          "last_batch": {
+            "market": "INDIA",
+            "status": "idle",
+            "requested_batch_size": 25,
+            "attempted": 0,
+            "succeeded": 0,
+            "failed": 0,
+            "empty": 0,
+            "before": {
+              "market": "INDIA",
+              "evaluation_date": "2026-10-07",
+              "target_rs_universe": 5000,
+              "active_symbols": 5277,
+              "history_ready_symbols": 4421,
+              "pending_active_symbols": 856,
+              "no_history_symbols": 193,
+              "stale_or_short_history_symbols": 663,
+              "target_coverage_percent": 88.42,
+              "active_coverage_percent": 83.78,
+              "symbol_master_shortfall": 0,
+              "complete": false,
+              "history_requirements": {
+                "minimum_rows": 180,
+                "minimum_span_days": 350,
+                "maximum_stale_days": 14,
+                "requested_backfill_days": 500
+              },
+              "by_exchange": {
+                "NSE": {
+                  "active": 2605,
+                  "ready": 2192,
+                  "pending": 413
+                },
+                "BSE": {
+                  "active": 2672,
+                  "ready": 2229,
+                  "pending": 443
+                }
+              },
+              "retry_cooldown_symbols": 856,
+              "scheduler_enabled": true,
+              "scheduler": {
+                "running": true,
+                "registered": true,
+                "next_run_at": "2026-10-16T03:50:32.261082+00:00"
+              },
+              "storage": "compressed provider date/open/close observations"
+            },
+            "after": {
+              "market": "INDIA",
+              "evaluation_date": "2026-10-07",
+              "target_rs_universe": 5000,
+              "active_symbols": 5277,
+              "history_ready_symbols": 4421,
+              "pending_active_symbols": 856,
+              "no_history_symbols": 193,
+              "stale_or_short_history_symbols": 663,
+              "target_coverage_percent": 88.42,
+              "active_coverage_percent": 83.78,
+              "symbol_master_shortfall": 0,
+              "complete": false,
+              "history_requirements": {
+                "minimum_rows": 180,
+                "minimum_span_days": 350,
+                "maximum_stale_days": 14,
+                "requested_backfill_days": 500
+              },
+              "by_exchange": {
+                "NSE": {
+                  "active": 2605,
+                  "ready": 2192,
+                  "pending": 413
+                },
+                "BSE": {
+                  "active": 2672,
+                  "ready": 2229,
+                  "pending": 443
+                }
+              },
+              "retry_cooldown_symbols": 856,
+              "scheduler_enabled": true,
+              "scheduler": {
+                "running": true,
+                "registered": true,
+                "next_run_at": "2026-10-16T03:50:32.261082+00:00"
+              },
+              "storage": "compressed provider date/open/close observations"
+            },
+            "started_at": "2026-10-16T03:45:33.002704Z",
+            "finished_at": "2026-10-16T03:45:33.604359Z"
+          },
+          "retry_cooldown_symbols": 856,
+          "scheduler_enabled": true,
+          "scheduler": {
+            "running": true,
+            "registered": true,
+            "next_run_at": "2026-10-16T03:50:32.261082+00:00"
+          },
+          "storage": "compressed provider date/open/close observations"
+        },
+        "signal": "Insufficient Data",
+        "missing_required_score_categories": [
+          "sector",
+          "relative_strength_universe"
+        ],
+        "score_coverage_percent": 95,
+        "score_components": {
+          "technical": 30.0,
+          "fundamental": 80.0,
+          "relative_strength": 60.11,
+          "ownership": 49.63,
+          "sector": null
+        },
+        "score_weights": {
+          "technical": 25.0,
+          "fundamental": 30.0,
+          "ownership": 15.0,
+          "sector": 5.0,
+          "relative_strength": 25.0
+        },
+        "ranking_subweights": {
+          "technical": {
+            "ema20": 20.0,
+            "ema50": 20.0,
+            "ema150": 20.0,
+            "ema200": 20.0,
+            "rsi": 20.0
+          },
+          "fundamental": {
+            "eps": 20.0,
+            "net_income": 20.0,
+            "profit_margin": 20.0,
+            "roe": 20.0,
+            "roa": 20.0
+          },
+          "ownership": {
+            "institution": 70.0,
+            "insider": 30.0
+          }
+        },
+        "rs_period_weights": {
+          "1w": 30.0,
+          "2w": 0.0,
+          "1m": 25.0,
+          "2m": 0.0,
+          "3m": 20.0,
+          "6m": 15.0,
+          "1y": 10.0,
+          "sector": 0.0
+        },
+        "sector": "Energy",
+        "industry": "Oil & Gas Refining & Marketing",
+        "industry_median_npm": 5.683,
+        "industry_npm_peer_count": 13,
+        "sector_rank": null,
+        "industry_rank": null,
+        "sector_score_peer_count": 0,
+        "sector_score_status": "Insufficient compatible real peer history",
+        "sector_cohort_id": "590888a84186558fddc3",
+        "method_note": "Milestone-2 composite follows the client note: Fundamental 30% + Technical 25% + RS 25% + Ownership 15% + Sector 5%. The selected-stock Sector component reuses real compact Top-200 EPS/PAT/Sales peer history and requires at least 5 real peers; it is never substituted with price RS. For NSE/BSE, a score is withheld when a positively weighted fundamental or ownership category is unavailable, rather than producing a misleading partial ranking."
+      }
+    },
+    {
+      "at": "2026-10-16T03:45:59.425962+00:00",
+      "path": "/market/technical-summary/RELIANCE?exchange=NSE",
+      "method": "GET",
+      "status": 200,
+      "seconds": 9.24,
+      "body": {
+        "symbol": "RELIANCE",
+        "exchange": "NSE",
+        "timeframe": "daily",
+        "ema": {
+          "10": 1192.29,
+          "20": 1205.35,
+          "34": 1225.12,
+          "50": 1242.29,
+          "100": 1279.25,
+          "150": 1305.02,
+          "200": 1322.75
+        },
+        "ema_alignment": "Bearish",
+        "average_volume_10": 12722430.3,
+        "average_volume_20": 13469748.25,
+        "average_volume_40": 12103055.75,
+        "average_volume_50": 11827197.22,
+        "volume_ratio": 0.02,
+        "volume_ratio_50": 0.03,
+        "adr_20": 21.55,
+        "adr_percent": 1.82,
+        "atr_14": 23.14,
+        "atr_percent": 1.92,
+        "average_atr_percent_5": 2.15,
+        "average_atr_percent_10": 2.16,
+        "average_atr_percent_20": 1.92,
+        "rsi_14": 47.69,
+        "bollinger_upper": 1256.11,
+        "bollinger_lower": 1146.27,
+        "bollinger_width_percent": 9.14,
+        "range_20d_percent": 8.73,
+        "technical_metric_series": {
+          "observed_length": 260,
+          "sha256": "8e1e624dec44bed4c8d9abfeaf23da5a8368c4a0c435cdbc9aa2bbd0cf340908",
+          "first": {
+            "date": "2025-09-29",
+            "adr_percent": 1.15,
+            "atr_percent": 1.31,
+            "bollinger_width_percent": 4.48,
+            "range_20d_percent": 4.98
+          },
+          "last": {
+            "date": "2026-10-16",
+            "adr_percent": 1.82,
+            "atr_percent": 1.92,
+            "bollinger_width_percent": 9.14,
+            "range_20d_percent": 8.73
+          }
+        },
+        "technical_metric_timeframe": "daily",
+        "technical_metric_window_periods": 20,
+        "distance_from_52w_high_percent": 25.15,
+        "distance_from_52w_low_percent": 4.71,
+        "high_52w": 1611.800048828125,
+        "low_52w": 1152.199951171875,
+        "daily_price": 1206.5,
+        "daily_price_date": "2026-10-16",
+        "daily_52w_rows": 248,
+        "indicator_bars_available": 1507,
+        "indicator_semantics": {
+          "period_metrics": "daily bars",
+          "52w": "Trailing 365 calendar days of daily OHLCV",
+          "adr_20": "20 daily bars",
+          "bollinger_width": "(Upper Band - Lower Band) / Middle Band * 100"
+        },
+        "pivot": 1253.4,
+        "breakout_status": "Near Pivot",
+        "breakout_strength": 10,
+        "gap_percent": 0.0,
+        "gap_classification": "Normal / No Material Gap",
+        "vcp_stage": "Not Detected",
+        "vcp_contractions": [
+          {
+            "depth_percent": 6.52,
+            "atr_percent": 1.57,
+            "standard_deviation_percent": 1.64,
+            "average_volume": 10971539.65,
+            "high": 1337.0,
+            "low": 1249.8
+          },
+          {
+            "depth_percent": 7.33,
+            "atr_percent": 1.62,
+            "standard_deviation_percent": 2.06,
+            "average_volume": 10736363.25,
+            "high": 1333.0,
+            "low": 1235.3
+          },
+          {
+            "depth_percent": 8.03,
+            "atr_percent": 1.92,
+            "standard_deviation_percent": 2.29,
+            "average_volume": 13469748.25,
+            "high": 1252.8,
+            "low": 1152.2
+          }
+        ],
+        "vcp_standard_deviation_contraction": false,
+        "vcp_volume_contraction": false,
+        "pattern": "Tight Consolidation",
+        "client_technical_filters": {
+          "trend": {
+            "price": 1206.5,
+            "price_gt_ema20": true,
+            "ema20_slope_positive": true,
+            "price_gt_ema50": false,
+            "ema50_slope_positive": false,
+            "price_gt_ema200": false,
+            "ema200_slope_positive": false
+          },
+          "strength": {
+            "rs_score": 60.11,
+            "distance_from_52w_high_percent": 25.14580199465823,
+            "periods_since_52w_high": 193,
+            "new_52w_high_within_30_periods": false,
+            "adx_14": 35.928085853782605,
+            "plus_di_14": 23.099821406490964,
+            "minus_di_14": 26.87798783902642,
+            "di_spread": -3.778166432535457,
+            "di_spread_gt_10": false
+          },
+          "momentum": {
+            "roc_20_period_percent": -3.006674465793968,
+            "roc_timeframe": "daily",
+            "roc_1m_percent": -3.006674465793968,
+            "roc_3m_percent": -9.094330591656574,
+            "roc_6m_percent": -10.183878795170697,
+            "roc_12m_percent": -12.432867089373579,
+            "roc_1m_two_weeks_ago_percent": -10.79450334821429,
+            "roc_1m_acceleration_points": 7.787828882420322
+          },
+          "participation": {
+            "average_volume_10": 12722430.3,
+            "average_volume_20": 13469748.25,
+            "average_volume_40": 12103055.75,
+            "average_volume_50": 11827197.22,
+            "delivery_percent": {
+              "available": false,
+              "source": "NSE",
+              "note": "Delivery percentage is currently unavailable from the live NSE delivery-data endpoint."
+            }
+          },
+          "volatility": {
+            "atr_percent": 1.9180427502312383,
+            "average_atr_percent_5": 2.1492591010505397,
+            "average_atr_percent_10": 2.1573572700613686,
+            "average_atr_percent_20": 1.9214493197622038,
+            "bollinger_width_percent": 9.14489323966513,
+            "bollinger_width_20_periods_ago_percent": 8.253688950728264,
+            "bb_width_contracting": false
+          },
+          "base_formation": {
+            "range_20_period_percent": 8.731131914554592,
+            "range_90_period_percent": 16.811324548762546,
+            "range_90_le_20_percent": true,
+            "vcp_stage": "Not Detected",
+            "standard_deviation_contracting": false,
+            "volume_contracting": false
+          },
+          "note": "These are real-data filter inputs from the client handwritten technical sheet. Ambiguous handwritten point allocations remain configurable rather than guessed."
+        },
+        "rs_comparison": {
+          "periods": [
+            "1d",
+            "1w",
+            "2w",
+            "3w",
+            "1m",
+            "2m",
+            "3m",
+            "6m",
+            "1y"
+          ],
+          "rows": [
+            {
+              "key": "stock",
+              "label": "Stock Return",
+              "returns": {
+                "1d": -0.7,
+                "1w": 2.22,
+                "2w": 3.01,
+                "3w": -0.94,
+                "1m": 2.24,
+                "2m": -6.11,
+                "3m": 2.24,
+                "6m": -7.11,
+                "1y": -23.33
+              }
+            },
+            {
+              "key": "nifty50",
+              "label": "NIFTY 50",
+              "returns": {
+                "1d": -0.08,
+                "1w": 2.0,
+                "2w": 2.28,
+                "3w": -0.08,
+                "1m": 2.23,
+                "2m": -4.29,
+                "3m": 2.23,
+                "6m": -3.57,
+                "1y": -11.95
+              }
+            },
+            {
+              "key": "nifty500",
+              "label": "NIFTY 500",
+              "returns": {
+                "1d": -0.15,
+                "1w": 1.19,
+                "2w": 1.09,
+                "3w": -1.53,
+                "1m": 0.87,
+                "2m": -5.26,
+                "3m": 0.87,
+                "6m": -3.65,
+                "1y": -7.27
+              }
+            },
+            {
+              "key": "industry",
+              "label": "Industry",
+              "name": "Oil & Gas Refining & Marketing",
+              "returns": {},
+              "note": "Insufficient stored peer history; N/A shown."
+            },
+            {
+              "key": "sector",
+              "label": "Sector",
+              "name": "Energy",
+              "returns": {},
+              "note": "Insufficient stored peer history; N/A shown."
+            }
+          ],
+          "method": "Current-period open to latest close; industry/sector are equal-weight averages of at least 5 stored peers, excluding the selected stock. If fewer peers are available, N/A is shown. These raw returns do not use RS scoring weights."
+        },
+        "volume_delivery": {
+          "available": false,
+          "source": "NSE",
+          "note": "Delivery percentage is currently unavailable from the live NSE delivery-data endpoint."
+        },
+        "rs_rating": 60.11,
+        "rs_available": true,
+        "rs_universe": {
+          "market": "INDIA",
+          "market_exchanges": [
+            "NSE",
+            "BSE"
+          ],
+          "target_size": 5000,
+          "scored_stocks_available": 4421,
+          "coverage_percent": 88.42,
+          "complete": false,
+          "evaluation_date": "2026-10-07",
+          "note": "Client percentile denominator is fixed at 5,000 for INDIA. The RS score is provisional until 5,000 verified stocks have usable comparison history on one persisted evaluation date."
+        },
+        "rs_weighted_relative_return_percent": -0.22,
+        "rs_benchmark": "NIFTY 500",
+        "rs_periods": {
+          "1w": {
+            "weight_percent": 1.0,
+            "stock_return_percent": 3.12,
+            "benchmark_return_percent": 0.47,
+            "relative_return_percent": 2.65,
+            "start_date": "2026-10-05",
+            "benchmark_start_date": "2026-10-05",
+            "period_start_date": "2026-10-05",
+            "end_date": "2026-10-07",
+            "return_method": "period_open_to_current_close",
+            "percentile": 70.12,
+            "universe_size": 5000,
+            "scored_stocks_available": 4421,
+            "score_weight_percent": 30.0
+          },
+          "2w": {
+            "weight_percent": 1.0,
+            "stock_return_percent": -0.85,
+            "benchmark_return_percent": -2.14,
+            "relative_return_percent": 1.29,
+            "start_date": "2026-09-28",
+            "benchmark_start_date": "2026-09-28",
+            "period_start_date": "2026-09-28",
+            "end_date": "2026-10-07",
+            "return_method": "period_open_to_current_close",
+            "percentile": 50.89,
+            "universe_size": 5000,
+            "scored_stocks_available": 4421,
+            "score_weight_percent": 0.0
+          },
+          "1m": {
+            "weight_percent": 1.0,
+            "stock_return_percent": 2.34,
+            "benchmark_return_percent": 0.25,
+            "relative_return_percent": 2.09,
+            "start_date": "2026-10-01",
+            "benchmark_start_date": "2026-10-01",
+            "period_start_date": "2026-10-01",
+            "end_date": "2026-10-07",
+            "return_method": "period_open_to_current_close",
+            "percentile": 68.42,
+            "universe_size": 5000,
+            "scored_stocks_available": 4421,
+            "score_weight_percent": 25.0
+          },
+          "2m": {
+            "weight_percent": 1.0,
+            "stock_return_percent": -6.02,
+            "benchmark_return_percent": -5.85,
+            "relative_return_percent": -0.17,
+            "start_date": "2026-09-01",
+            "benchmark_start_date": "2026-09-01",
+            "period_start_date": "2026-09-01",
+            "end_date": "2026-10-07",
+            "return_method": "period_open_to_current_close",
+            "percentile": 35.55,
+            "universe_size": 5000,
+            "scored_stocks_available": 4421,
+            "score_weight_percent": 0.0
+          },
+          "3m": {
+            "weight_percent": 1.0,
+            "stock_return_percent": 2.34,
+            "benchmark_return_percent": 0.25,
+            "relative_return_percent": 2.09,
+            "start_date": "2026-10-01",
+            "benchmark_start_date": "2026-10-01",
+            "period_start_date": "2026-10-01",
+            "end_date": "2026-10-07",
+            "return_method": "period_open_to_current_close",
+            "percentile": 68.42,
+            "universe_size": 5000,
+            "scored_stocks_available": 4421,
+            "score_weight_percent": 20.0
+          },
+          "6m": {
+            "weight_percent": 1.0,
+            "stock_return_percent": -7.02,
+            "benchmark_return_percent": -4.25,
+            "relative_return_percent": -2.77,
+            "start_date": "2026-07-01",
+            "benchmark_start_date": "2026-07-01",
+            "period_start_date": "2026-07-01",
+            "end_date": "2026-10-07",
+            "return_method": "period_open_to_current_close",
+            "percentile": 38.53,
+            "universe_size": 5000,
+            "scored_stocks_available": 4421,
+            "score_weight_percent": 15.0
+          },
+          "1y": {
+            "weight_percent": 1.0,
+            "stock_return_percent": -23.26,
+            "benchmark_return_percent": -7.84,
+            "relative_return_percent": -15.42,
+            "start_date": "2026-01-01",
+            "benchmark_start_date": "2026-01-02",
+            "period_start_date": "2026-01-01",
+            "end_date": "2026-10-07",
+            "return_method": "period_open_to_current_close",
+            "percentile": 25.01,
+            "universe_size": 5000,
+            "scored_stocks_available": 4421,
+            "score_weight_percent": 10.0
+          },
+          "sector": {
+            "sector": "Energy",
+            "score": 56.7,
+            "percentile": 100.0,
+            "universe_size": 11,
+            "score_weight_percent": 0.0
+          },
+          "_universe_size": 5000,
+          "_scored_stocks_available": 4421,
+          "_score_complete": true,
+          "_score_weight_total": 100.0,
+          "_relative_return_weight_independent": true,
+          "_fixed_relative_return_reference_weights": {
+            "1w": 30.0,
+            "2w": 0.0,
+            "1m": 25.0,
+            "2m": 0.0,
+            "3m": 20.0,
+            "6m": 15.0,
+            "1y": 10.0
+          }
+        },
+        "rs_chart": {
+          "observed_length": 1223,
+          "sha256": "f4582dea26e109dc47e4b35af566878e0450769c487ad5a0178cb799d3e0dcd7",
+          "first": {
+            "date": "2021-10-18",
+            "rs": 100.0
+          },
+          "last": {
+            "date": "2026-10-07",
+            "rs": 69.6014
+          }
+        },
+        "rs_period_weights": {
+          "1w": 30.0,
+          "2w": 0.0,
+          "1m": 25.0,
+          "2m": 0.0,
+          "3m": 20.0,
+          "6m": 15.0,
+          "1y": 10.0,
+          "sector": 0.0
+        },
+        "rs_formula": {
+          "period_return": "((current close / current period candle open) - 1) * 100",
+          "relative_return": "stock return % - benchmark return %",
+          "relative_return_uses_editable_weights": false,
+          "stock_percentile": "((lower stocks + (same-return stocks - 1) / 2) / (5000 - 1)) * 100",
+          "stock_percentile_denominator": 5000,
+          "final_rs_score": "sum(period percentile * enabled weight) / sum(enabled weights)",
+          "default_weights": {
+            "1w": 30,
+            "1m": 25,
+            "3m": 20,
+            "6m": 15,
+            "1y": 10,
+            "2w": 0,
+            "2m": 0,
+            "sector": 0
+          }
+        },
+        "rs_note": "Relative Strength: period relative returns are raw market calculations and never change when RS score weights change. Each period uses TradingView-style current period candle return (period open to current close); relative return = stock return % - benchmark return %. Stock percentiles use the client formula [lower + (same-1)/2] / (total-1) \u00d7 100 with the client-required 5,000-stock universe for INDIA: [(lower stocks + 0.5 x equal stocks) x 100 / 5000]. Final RS Score uses weighted percentile components. Default weights are 1W x 30% + 1M x 25% + 3M x 20% + 6M x 15% + 12M x 10%. 2W/2M and Sector RS are optional components with zero default weight; Sector RS is included only when its weight is greater than 0.",
+        "criteria_note": "Metrics use the selected daily timeframe. For a detected VCP, Pivot = highest high of the final contraction; otherwise it is the recent consolidation high. Near Pivot = 95%-102% of pivot. Confirmed breakout requires close > pivot by 0.3%, volume >= 1.4x 50-period average, close > open, and close in the upper half of the period's range. VCP requires successive price-depth, ATR%, standard-deviation, and average-volume contractions."
+      }
+    },
+    {
+      "at": "2026-10-16T03:46:07.676904+00:00",
+      "path": "/market/dashboard/TCS?exchange=BSE",
+      "method": "GET",
+      "status": 200,
+      "seconds": 8.24,
+      "body": {
+        "symbol": "TCS",
+        "name": "Tata Consultancy Services Ltd.",
+        "isin": "INE467B01029",
+        "exchange": "BSE",
+        "score": null,
+        "provisional_score": 26.97,
+        "score_source": "Live baseline daily components; frontend rule editor is labeled separately",
+        "score_version": "client-rs5000-fiscal-v3",
+        "rs_universe": {
+          "market": "INDIA",
+          "evaluation_date": "2026-10-07",
+          "target_rs_universe": 5000,
+          "active_symbols": 5277,
+          "history_ready_symbols": 4421,
+          "pending_active_symbols": 856,
+          "no_history_symbols": 193,
+          "stale_or_short_history_symbols": 663,
+          "target_coverage_percent": 88.42,
+          "active_coverage_percent": 83.78,
+          "symbol_master_shortfall": 0,
+          "complete": false,
+          "history_requirements": {
+            "minimum_rows": 180,
+            "minimum_span_days": 350,
+            "maximum_stale_days": 14,
+            "requested_backfill_days": 500
+          },
+          "by_exchange": {
+            "NSE": {
+              "active": 2605,
+              "ready": 2192,
+              "pending": 413
+            },
+            "BSE": {
+              "active": 2672,
+              "ready": 2229,
+              "pending": 443
+            }
+          },
+          "last_batch": {
+            "market": "INDIA",
+            "status": "idle",
+            "requested_batch_size": 25,
+            "attempted": 0,
+            "succeeded": 0,
+            "failed": 0,
+            "empty": 0,
+            "before": {
+              "market": "INDIA",
+              "evaluation_date": "2026-10-07",
+              "target_rs_universe": 5000,
+              "active_symbols": 5277,
+              "history_ready_symbols": 4421,
+              "pending_active_symbols": 856,
+              "no_history_symbols": 193,
+              "stale_or_short_history_symbols": 663,
+              "target_coverage_percent": 88.42,
+              "active_coverage_percent": 83.78,
+              "symbol_master_shortfall": 0,
+              "complete": false,
+              "history_requirements": {
+                "minimum_rows": 180,
+                "minimum_span_days": 350,
+                "maximum_stale_days": 14,
+                "requested_backfill_days": 500
+              },
+              "by_exchange": {
+                "NSE": {
+                  "active": 2605,
+                  "ready": 2192,
+                  "pending": 413
+                },
+                "BSE": {
+                  "active": 2672,
+                  "ready": 2229,
+                  "pending": 443
+                }
+              },
+              "retry_cooldown_symbols": 856,
+              "scheduler_enabled": true,
+              "scheduler": {
+                "running": true,
+                "registered": true,
+                "next_run_at": "2026-10-16T03:50:32.261082+00:00"
+              },
+              "storage": "compressed provider date/open/close observations"
+            },
+            "after": {
+              "market": "INDIA",
+              "evaluation_date": "2026-10-07",
+              "target_rs_universe": 5000,
+              "active_symbols": 5277,
+              "history_ready_symbols": 4421,
+              "pending_active_symbols": 856,
+              "no_history_symbols": 193,
+              "stale_or_short_history_symbols": 663,
+              "target_coverage_percent": 88.42,
+              "active_coverage_percent": 83.78,
+              "symbol_master_shortfall": 0,
+              "complete": false,
+              "history_requirements": {
+                "minimum_rows": 180,
+                "minimum_span_days": 350,
+                "maximum_stale_days": 14,
+                "requested_backfill_days": 500
+              },
+              "by_exchange": {
+                "NSE": {
+                  "active": 2605,
+                  "ready": 2192,
+                  "pending": 413
+                },
+                "BSE": {
+                  "active": 2672,
+                  "ready": 2229,
+                  "pending": 443
+                }
+              },
+              "retry_cooldown_symbols": 856,
+              "scheduler_enabled": true,
+              "scheduler": {
+                "running": true,
+                "registered": true,
+                "next_run_at": "2026-10-16T03:50:32.261082+00:00"
+              },
+              "storage": "compressed provider date/open/close observations"
+            },
+            "started_at": "2026-10-16T03:45:33.002704Z",
+            "finished_at": "2026-10-16T03:45:33.604359Z"
+          },
+          "retry_cooldown_symbols": 856,
+          "scheduler_enabled": true,
+          "scheduler": {
+            "running": true,
+            "registered": true,
+            "next_run_at": "2026-10-16T03:50:32.261082+00:00"
+          },
+          "storage": "compressed provider date/open/close observations"
+        },
+        "signal": "Insufficient Data",
+        "missing_required_score_categories": [
+          "fundamental",
+          "ownership",
+          "sector",
+          "relative_strength_universe"
+        ],
+        "score_coverage_percent": 50,
+        "score_components": {
+          "technical": 60.0,
+          "fundamental": null,
+          "relative_strength": 47.89,
+          "ownership": null,
+          "sector": null
+        },
+        "score_weights": {
+          "technical": 25.0,
+          "fundamental": 30.0,
+          "ownership": 15.0,
+          "sector": 5.0,
+          "relative_strength": 25.0
+        },
+        "ranking_subweights": {
+          "technical": {
+            "ema20": 20.0,
+            "ema50": 20.0,
+            "ema150": 20.0,
+            "ema200": 20.0,
+            "rsi": 20.0
+          },
+          "fundamental": {
+            "eps": 20.0,
+            "net_income": 20.0,
+            "profit_margin": 20.0,
+            "roe": 20.0,
+            "roa": 20.0
+          },
+          "ownership": {
+            "institution": 70.0,
+            "insider": 30.0
+          }
+        },
+        "rs_period_weights": {
+          "1w": 30.0,
+          "2w": 0.0,
+          "1m": 25.0,
+          "2m": 0.0,
+          "3m": 20.0,
+          "6m": 15.0,
+          "1y": 10.0,
+          "sector": 0.0
+        },
+        "sector": null,
+        "industry": null,
+        "industry_median_npm": null,
+        "industry_npm_peer_count": 0,
+        "sector_rank": null,
+        "industry_rank": null,
+        "sector_score_peer_count": 0,
+        "sector_score_status": "Insufficient compatible real peer history",
+        "sector_cohort_id": "590888a84186558fddc3",
+        "method_note": "Milestone-2 composite follows the client note: Fundamental 30% + Technical 25% + RS 25% + Ownership 15% + Sector 5%. The selected-stock Sector component reuses real compact Top-200 EPS/PAT/Sales peer history and requires at least 5 real peers; it is never substituted with price RS. For NSE/BSE, a score is withheld when a positively weighted fundamental or ownership category is unavailable, rather than producing a misleading partial ranking."
+      }
+    },
+    {
+      "at": "2026-10-16T03:46:15.740701+00:00",
+      "path": "/market/technical-summary/TCS?exchange=BSE",
+      "method": "GET",
+      "status": 200,
+      "seconds": 8.05,
+      "body": {
+        "symbol": "TCS",
+        "exchange": "BSE",
+        "timeframe": "daily",
+        "ema": {
+          "10": 2167.17,
+          "20": 2158.67,
+          "34": 2179.18,
+          "50": 2200.48,
+          "100": 2271.91,
+          "150": 2364.68,
+          "200": 2463.55
+        },
+        "ema_alignment": "Mixed",
+        "average_volume_10": 417860.2,
+        "average_volume_20": 304934.15,
+        "average_volume_40": 239292.17,
+        "average_volume_50": 232196.26,
+        "volume_ratio": 1.3,
+        "volume_ratio_50": 1.7,
+        "adr_20": 63.99,
+        "adr_percent": 3.04,
+        "atr_14": 68.4,
+        "atr_percent": 2.97,
+        "average_atr_percent_5": 4.51,
+        "average_atr_percent_10": 3.46,
+        "average_atr_percent_20": 3.16,
+        "rsi_14": 64.01,
+        "bollinger_upper": 2257.51,
+        "bollinger_lower": 1985.78,
+        "bollinger_width_percent": 12.81,
+        "range_20d_percent": 14.71,
+        "technical_metric_series": {
+          "observed_length": 260,
+          "sha256": "93a3aeba6d1e327ceb6b8c506abb9a196369a99acee309bea7b3894a86d70d1e",
+          "first": {
+            "date": "2025-09-24",
+            "adr_percent": 1.37,
+            "atr_percent": 1.54,
+            "bollinger_width_percent": 5.65,
+            "range_20d_percent": 6.18
+          },
+          "last": {
+            "date": "2026-10-14",
+            "adr_percent": 3.04,
+            "atr_percent": 2.97,
+            "bollinger_width_percent": 12.81,
+            "range_20d_percent": 14.71
+          }
+        },
+        "technical_metric_timeframe": "daily",
+        "technical_metric_window_periods": 20,
+        "distance_from_52w_high_percent": 31.01,
+        "distance_from_52w_low_percent": 16.5,
+        "high_52w": 3336.699951171875,
+        "low_52w": 1976.0,
+        "daily_price": 2302.0,
+        "daily_price_date": "2026-10-14",
+        "daily_52w_rows": 247,
+        "indicator_bars_available": 1503,
+        "indicator_semantics": {
+          "period_metrics": "daily bars",
+          "52w": "Trailing 365 calendar days of daily OHLCV",
+          "adr_20": "20 daily bars",
+          "bollinger_width": "(Upper Band - Lower Band) / Middle Band * 100"
+        },
+        "pivot": 2322.5,
+        "breakout_status": "Near Pivot",
+        "breakout_strength": 20,
+        "gap_percent": 0.44,
+        "gap_classification": "Normal / No Material Gap",
+        "vcp_stage": "Not Detected",
+        "vcp_contractions": [
+          {
+            "depth_percent": 12.04,
+            "atr_percent": 2.87,
+            "standard_deviation_percent": 3.39,
+            "average_volume": 211374.8,
+            "high": 2494.2,
+            "low": 2194.0
+          },
+          {
+            "depth_percent": 8.06,
+            "atr_percent": 2.4,
+            "standard_deviation_percent": 2.0,
+            "average_volume": 173650.2,
+            "high": 2371.0,
+            "low": 2180.0
+          },
+          {
+            "depth_percent": 12.82,
+            "atr_percent": 3.04,
+            "standard_deviation_percent": 3.2,
+            "average_volume": 304934.15,
+            "high": 2335.45,
+            "low": 2036.0
+          }
+        ],
+        "vcp_standard_deviation_contraction": false,
+        "vcp_volume_contraction": false,
+        "pattern": "Near Pivot",
+        "client_technical_filters": {
+          "trend": {
+            "price": 2302.0,
+            "price_gt_ema20": true,
+            "ema20_slope_positive": true,
+            "price_gt_ema50": true,
+            "ema50_slope_positive": true,
+            "price_gt_ema200": false,
+            "ema200_slope_positive": false
+          },
+          "strength": {
+            "rs_score": 47.89,
+            "distance_from_52w_high_percent": 31.00967921339407,
+            "periods_since_52w_high": 171,
+            "new_52w_high_within_30_periods": false,
+            "adx_14": 23.51750886167387,
+            "plus_di_14": 31.100181302533862,
+            "minus_di_14": 13.553892635008276,
+            "di_spread": 17.546288667525587,
+            "di_spread_gt_10": true
+          },
+          "momentum": {
+            "roc_20_period_percent": 2.3111111111111082,
+            "roc_timeframe": "daily",
+            "roc_1m_percent": 2.3111111111111082,
+            "roc_3m_percent": 5.166983539774872,
+            "roc_6m_percent": -6.901498759771696,
+            "roc_12m_percent": -22.95979108841183,
+            "roc_1m_two_weeks_ago_percent": -13.13993174061433,
+            "roc_1m_acceleration_points": 15.451042851725438
+          },
+          "participation": {
+            "average_volume_10": 417860.2,
+            "average_volume_20": 304934.15,
+            "average_volume_40": 239292.175,
+            "average_volume_50": 232196.26,
+            "delivery_percent": {
+              "available": false,
+              "source": "BSE",
+              "note": "True delivery percentage requires exchange deliverable-quantity data; ordinary OHLCV volume is not substituted."
+            }
+          },
+          "volatility": {
+            "atr_percent": 2.971505384221574,
+            "average_atr_percent_5": 4.513069654924186,
+            "average_atr_percent_10": 3.455839087186745,
+            "average_atr_percent_20": 3.1641555177595406,
+            "bollinger_width_percent": 12.807581765183981,
+            "bollinger_width_20_periods_ago_percent": 8.006149360780803,
+            "bb_width_contracting": false
+          },
+          "base_formation": {
+            "range_20_period_percent": 14.70775791610388,
+            "range_90_period_percent": 26.224693885216343,
+            "range_90_le_20_percent": false,
+            "vcp_stage": "Not Detected",
+            "standard_deviation_contracting": false,
+            "volume_contracting": false
+          },
+          "note": "These are real-data filter inputs from the client handwritten technical sheet. Ambiguous handwritten point allocations remain configurable rather than guessed."
+        },
+        "rs_comparison": {
+          "periods": [
+            "1d",
+            "1w",
+            "2w",
+            "3w",
+            "1m",
+            "2m",
+            "3m",
+            "6m",
+            "1y"
+          ],
+          "rows": [
+            {
+              "key": "stock",
+              "label": "Stock Return",
+              "returns": {
+                "1d": 1.1,
+                "1w": 5.6,
+                "2w": 9.0,
+                "3w": 10.24,
+                "1m": 12.29,
+                "2m": -2.25,
+                "3m": 12.29,
+                "6m": 12.54,
+                "1y": -28.2
+              }
+            },
+            {
+              "key": "nifty50",
+              "label": "NIFTY 50",
+              "returns": {
+                "1d": -0.12,
+                "1w": 1.97,
+                "2w": 2.24,
+                "3w": -0.12,
+                "1m": 2.19,
+                "2m": -4.32,
+                "3m": 2.19,
+                "6m": -3.6,
+                "1y": -11.98
+              }
+            },
+            {
+              "key": "nifty500",
+              "label": "NIFTY 500",
+              "returns": {
+                "1d": -0.18,
+                "1w": 1.16,
+                "2w": 1.07,
+                "3w": -1.56,
+                "1m": 0.85,
+                "2m": -5.29,
+                "3m": 0.85,
+                "6m": -3.68,
+                "1y": -7.29
+              }
+            },
+            {
+              "key": "industry",
+              "label": "Industry",
+              "name": null,
+              "returns": {},
+              "note": "Insufficient stored peer history; N/A shown."
+            },
+            {
+              "key": "sector",
+              "label": "Sector",
+              "name": null,
+              "returns": {},
+              "note": "Insufficient stored peer history; N/A shown."
+            }
+          ],
+          "method": "Current-period open to latest close; industry/sector are equal-weight averages of at least 5 stored peers, excluding the selected stock. If fewer peers are available, N/A is shown. These raw returns do not use RS scoring weights."
+        },
+        "volume_delivery": {
+          "available": false,
+          "source": "BSE",
+          "note": "True delivery percentage requires exchange deliverable-quantity data; ordinary OHLCV volume is not substituted."
+        },
+        "rs_rating": 47.89,
+        "rs_available": true,
+        "rs_universe": {
+          "market": "INDIA",
+          "market_exchanges": [
+            "NSE",
+            "BSE"
+          ],
+          "target_size": 5000,
+          "scored_stocks_available": 4421,
+          "coverage_percent": 88.42,
+          "complete": false,
+          "evaluation_date": "2026-10-07",
+          "note": "Client percentile denominator is fixed at 5,000 for INDIA. The RS score is provisional until 5,000 verified stocks have usable comparison history on one persisted evaluation date."
+        },
+        "rs_weighted_relative_return_percent": -1.7,
+        "rs_benchmark": "NIFTY 500",
+        "rs_periods": {
+          "1w": {
+            "weight_percent": 1.0,
+            "stock_return_percent": -1.33,
+            "benchmark_return_percent": 0.47,
+            "relative_return_percent": -1.8,
+            "start_date": "2026-10-05",
+            "benchmark_start_date": "2026-10-05",
+            "period_start_date": "2026-10-05",
+            "end_date": "2026-10-07",
+            "return_method": "period_open_to_current_close",
+            "percentile": 30.2,
+            "universe_size": 5000,
+            "scored_stocks_available": 4421,
+            "score_weight_percent": 30.0
+          },
+          "2w": {
+            "weight_percent": 1.0,
+            "stock_return_percent": -0.2,
+            "benchmark_return_percent": -2.14,
+            "relative_return_percent": 1.94,
+            "start_date": "2026-09-28",
+            "benchmark_start_date": "2026-09-28",
+            "period_start_date": "2026-09-28",
+            "end_date": "2026-10-07",
+            "return_method": "period_open_to_current_close",
+            "percentile": 54.89,
+            "universe_size": 5000,
+            "scored_stocks_available": 4421,
+            "score_weight_percent": 0.0
+          },
+          "1m": {
+            "weight_percent": 1.0,
+            "stock_return_percent": 1.66,
+            "benchmark_return_percent": 0.25,
+            "relative_return_percent": 1.41,
+            "start_date": "2026-10-01",
+            "benchmark_start_date": "2026-10-01",
+            "period_start_date": "2026-10-01",
+            "end_date": "2026-10-07",
+            "return_method": "period_open_to_current_close",
+            "percentile": 64.79,
+            "universe_size": 5000,
+            "scored_stocks_available": 4421,
+            "score_weight_percent": 25.0
+          },
+          "2m": {
+            "weight_percent": 1.0,
+            "stock_return_percent": -11.5,
+            "benchmark_return_percent": -5.85,
+            "relative_return_percent": -5.66,
+            "start_date": "2026-09-01",
+            "benchmark_start_date": "2026-09-01",
+            "period_start_date": "2026-09-01",
+            "end_date": "2026-10-07",
+            "return_method": "period_open_to_current_close",
+            "percentile": 16.52,
+            "universe_size": 5000,
+            "scored_stocks_available": 4421,
+            "score_weight_percent": 0.0
+          },
+          "3m": {
+            "weight_percent": 1.0,
+            "stock_return_percent": 1.66,
+            "benchmark_return_percent": 0.25,
+            "relative_return_percent": 1.41,
+            "start_date": "2026-10-01",
+            "benchmark_start_date": "2026-10-01",
+            "period_start_date": "2026-10-01",
+            "end_date": "2026-10-07",
+            "return_method": "period_open_to_current_close",
+            "percentile": 64.79,
+            "universe_size": 5000,
+            "scored_stocks_available": 4421,
+            "score_weight_percent": 20.0
+          },
+          "6m": {
+            "weight_percent": 1.0,
+            "stock_return_percent": 1.88,
+            "benchmark_return_percent": -4.25,
+            "relative_return_percent": 6.13,
+            "start_date": "2026-07-01",
+            "benchmark_start_date": "2026-07-01",
+            "period_start_date": "2026-07-01",
+            "end_date": "2026-10-07",
+            "return_method": "period_open_to_current_close",
+            "percentile": 55.95,
+            "universe_size": 5000,
+            "scored_stocks_available": 4421,
+            "score_weight_percent": 15.0
+          },
+          "1y": {
+            "weight_percent": 1.0,
+            "stock_return_percent": -35.0,
+            "benchmark_return_percent": -7.84,
+            "relative_return_percent": -27.16,
+            "start_date": "2026-01-01",
+            "benchmark_start_date": "2026-01-02",
+            "period_start_date": "2026-01-01",
+            "end_date": "2026-10-07",
+            "return_method": "period_open_to_current_close",
+            "percentile": 12.8,
+            "universe_size": 5000,
+            "scored_stocks_available": 4421,
+            "score_weight_percent": 10.0
+          },
+          "sector": {
+            "sector": null,
+            "score": null,
+            "percentile": null,
+            "universe_size": 11,
+            "score_weight_percent": 0.0
+          },
+          "_universe_size": 5000,
+          "_scored_stocks_available": 4421,
+          "_score_complete": true,
+          "_score_weight_total": 100.0,
+          "_relative_return_weight_independent": true,
+          "_fixed_relative_return_reference_weights": {
+            "1w": 30.0,
+            "2w": 0.0,
+            "1m": 25.0,
+            "2m": 0.0,
+            "3m": 20.0,
+            "6m": 15.0,
+            "1y": 10.0
+          }
+        },
+        "rs_chart": {
+          "observed_length": 1222,
+          "sha256": "a7894070bde1d8d443bd368b2bb68659fa8195d497736f9abe9e0d23b97443d6",
+          "first": {
+            "date": "2021-10-18",
+            "rs": 100.0
+          },
+          "last": {
+            "date": "2026-10-07",
+            "rs": 41.1462
+          }
+        },
+        "rs_period_weights": {
+          "1w": 30.0,
+          "2w": 0.0,
+          "1m": 25.0,
+          "2m": 0.0,
+          "3m": 20.0,
+          "6m": 15.0,
+          "1y": 10.0,
+          "sector": 0.0
+        },
+        "rs_formula": {
+          "period_return": "((current close / current period candle open) - 1) * 100",
+          "relative_return": "stock return % - benchmark return %",
+          "relative_return_uses_editable_weights": false,
+          "stock_percentile": "((lower stocks + (same-return stocks - 1) / 2) / (5000 - 1)) * 100",
+          "stock_percentile_denominator": 5000,
+          "final_rs_score": "sum(period percentile * enabled weight) / sum(enabled weights)",
+          "default_weights": {
+            "1w": 30,
+            "1m": 25,
+            "3m": 20,
+            "6m": 15,
+            "1y": 10,
+            "2w": 0,
+            "2m": 0,
+            "sector": 0
+          }
+        },
+        "rs_note": "Relative Strength: period relative returns are raw market calculations and never change when RS score weights change. Each period uses TradingView-style current period candle return (period open to current close); relative return = stock return % - benchmark return %. Stock percentiles use the client formula [lower + (same-1)/2] / (total-1) \u00d7 100 with the client-required 5,000-stock universe for INDIA: [(lower stocks + 0.5 x equal stocks) x 100 / 5000]. Final RS Score uses weighted percentile components. Default weights are 1W x 30% + 1M x 25% + 3M x 20% + 6M x 15% + 12M x 10%. 2W/2M and Sector RS are optional components with zero default weight; Sector RS is included only when its weight is greater than 0.",
+        "criteria_note": "Metrics use the selected daily timeframe. For a detected VCP, Pivot = highest high of the final contraction; otherwise it is the recent consolidation high. Near Pivot = 95%-102% of pivot. Confirmed breakout requires close > pivot by 0.3%, volume >= 1.4x 50-period average, close > open, and close in the upper half of the period's range. VCP requires successive price-depth, ATR%, standard-deviation, and average-volume contractions."
+      }
+    },
+    {
+      "at": "2026-10-16T03:46:24.914716+00:00",
+      "path": "/market/sector-analysis?market=INDIA",
+      "method": "GET",
+      "status": 200,
+      "seconds": 9.16,
+      "body": {
+        "market": "INDIA",
+        "rows": [
+          {
+            "market": "INDIA",
+            "sector_cohort_id": "590888a84186558fddc3",
+            "sector": "Basic Materials",
+            "stock_count": 397,
+            "enriched_count": 0,
+            "price_count": 396,
+            "data_coverage_percent": 0.0,
+            "eps_growth_rs": null,
+            "pat_growth_rs": null,
+            "sales_growth_rs": null,
+            "growth_acceleration_rs": null,
+            "growth_breadth": null,
+            "acceleration_breadth": null,
+            "eps_growth_percent": null,
+            "pat_growth_percent": null,
+            "sales_growth_percent": null,
+            "acceleration": null,
+            "sector_rs_score": null,
+            "momentum_1m_percent": -0.81,
+            "relative_return_1m_percent": -1.06,
+            "price_breadth_percent": 38.131313131313135,
+            "status": "Provisional",
+            "history_status": "Partial stored constituent coverage; no final universe rank",
+            "evaluation_date": "2026-10-07",
+            "component_coverage_percent": 0
+          },
+          {
+            "market": "INDIA",
+            "sector_cohort_id": "590888a84186558fddc3",
+            "sector": "Communication Services",
+            "stock_count": 66,
+            "enriched_count": 0,
+            "price_count": 66,
+            "data_coverage_percent": 0.0,
+            "eps_growth_rs": null,
+            "pat_growth_rs": null,
+            "sales_growth_rs": null,
+            "growth_acceleration_rs": null,
+            "growth_breadth": null,
+            "acceleration_breadth": null,
+            "eps_growth_percent": null,
+            "pat_growth_percent": null,
+            "sales_growth_percent": null,
+            "acceleration": null,
+            "sector_rs_score": null,
+            "momentum_1m_percent": -0.385,
+            "relative_return_1m_percent": -0.635,
+            "price_breadth_percent": 48.484848484848484,
+            "status": "Provisional",
+            "history_status": "Partial stored constituent coverage; no final universe rank",
+            "evaluation_date": "2026-10-07",
+            "component_coverage_percent": 0
+          },
+          {
+            "market": "INDIA",
+            "sector_cohort_id": "590888a84186558fddc3",
+            "sector": "Consumer Cyclical",
+            "stock_count": 437,
+            "enriched_count": 0,
+            "price_count": 436,
+            "data_coverage_percent": 0.0,
+            "eps_growth_rs": null,
+            "pat_growth_rs": null,
+            "sales_growth_rs": null,
+            "growth_acceleration_rs": null,
+            "growth_breadth": null,
+            "acceleration_breadth": null,
+            "eps_growth_percent": null,
+            "pat_growth_percent": null,
+            "sales_growth_percent": null,
+            "acceleration": null,
+            "sector_rs_score": null,
+            "momentum_1m_percent": -0.905,
+            "relative_return_1m_percent": -1.1549999999999998,
+            "price_breadth_percent": 37.38532110091743,
+            "status": "Provisional",
+            "history_status": "Partial stored constituent coverage; no final universe rank",
+            "evaluation_date": "2026-10-07",
+            "component_coverage_percent": 0
+          },
+          {
+            "market": "INDIA",
+            "sector_cohort_id": "590888a84186558fddc3",
+            "sector": "Consumer Defensive",
+            "stock_count": 171,
+            "enriched_count": 0,
+            "price_count": 171,
+            "data_coverage_percent": 0.0,
+            "eps_growth_rs": null,
+            "pat_growth_rs": null,
+            "sales_growth_rs": null,
+            "growth_acceleration_rs": null,
+            "growth_breadth": null,
+            "acceleration_breadth": null,
+            "eps_growth_percent": null,
+            "pat_growth_percent": null,
+            "sales_growth_percent": null,
+            "acceleration": null,
+            "sector_rs_score": null,
+            "momentum_1m_percent": 0.0,
+            "relative_return_1m_percent": -0.25,
+            "price_breadth_percent": 47.368421052631575,
+            "status": "Provisional",
+            "history_status": "Partial stored constituent coverage; no final universe rank",
+            "evaluation_date": "2026-10-07",
+            "component_coverage_percent": 0
+          },
+          {
+            "market": "INDIA",
+            "sector_cohort_id": "590888a84186558fddc3",
+            "sector": "Energy",
+            "stock_count": 37,
+            "enriched_count": 0,
+            "price_count": 37,
+            "data_coverage_percent": 0.0,
+            "eps_growth_rs": null,
+            "pat_growth_rs": null,
+            "sales_growth_rs": null,
+            "growth_acceleration_rs": null,
+            "growth_breadth": null,
+            "acceleration_breadth": null,
+            "eps_growth_percent": null,
+            "pat_growth_percent": null,
+            "sales_growth_percent": null,
+            "acceleration": null,
+            "sector_rs_score": null,
+            "momentum_1m_percent": 0.49,
+            "relative_return_1m_percent": 0.24,
+            "price_breadth_percent": 62.16216216216216,
+            "status": "Provisional",
+            "history_status": "Partial stored constituent coverage; no final universe rank",
+            "evaluation_date": "2026-10-07",
+            "component_coverage_percent": 0
+          },
+          {
+            "market": "INDIA",
+            "sector_cohort_id": "590888a84186558fddc3",
+            "sector": "Financial Services",
+            "stock_count": 263,
+            "enriched_count": 0,
+            "price_count": 263,
+            "data_coverage_percent": 0.0,
+            "eps_growth_rs": null,
+            "pat_growth_rs": null,
+            "sales_growth_rs": null,
+            "growth_acceleration_rs": null,
+            "growth_breadth": null,
+            "acceleration_breadth": null,
+            "eps_growth_percent": null,
+            "pat_growth_percent": null,
+            "sales_growth_percent": null,
+            "acceleration": null,
+            "sector_rs_score": null,
+            "momentum_1m_percent": -0.29,
+            "relative_return_1m_percent": -0.54,
+            "price_breadth_percent": 45.247148288973385,
+            "status": "Provisional",
+            "history_status": "Partial stored constituent coverage; no final universe rank",
+            "evaluation_date": "2026-10-07",
+            "component_coverage_percent": 0
+          },
+          {
+            "market": "INDIA",
+            "sector_cohort_id": "590888a84186558fddc3",
+            "sector": "Healthcare",
+            "stock_count": 165,
+            "enriched_count": 0,
+            "price_count": 165,
+            "data_coverage_percent": 0.0,
+            "eps_growth_rs": null,
+            "pat_growth_rs": null,
+            "sales_growth_rs": null,
+            "growth_acceleration_rs": null,
+            "growth_breadth": null,
+            "acceleration_breadth": null,
+            "eps_growth_percent": null,
+            "pat_growth_percent": null,
+            "sales_growth_percent": null,
+            "acceleration": null,
+            "sector_rs_score": null,
+            "momentum_1m_percent": -0.58,
+            "relative_return_1m_percent": -0.83,
+            "price_breadth_percent": 40.60606060606061,
+            "status": "Provisional",
+            "history_status": "Partial stored constituent coverage; no final universe rank",
+            "evaluation_date": "2026-10-07",
+            "component_coverage_percent": 0
+          },
+          {
+            "market": "INDIA",
+            "sector_cohort_id": "590888a84186558fddc3",
+            "sector": "Industrials",
+            "stock_count": 476,
+            "enriched_count": 0,
+            "price_count": 476,
+            "data_coverage_percent": 0.0,
+            "eps_growth_rs": null,
+            "pat_growth_rs": null,
+            "sales_growth_rs": null,
+            "growth_acceleration_rs": null,
+            "growth_breadth": null,
+            "acceleration_breadth": null,
+            "eps_growth_percent": null,
+            "pat_growth_percent": null,
+            "sales_growth_percent": null,
+            "acceleration": null,
+            "sector_rs_score": null,
+            "momentum_1m_percent": -0.6,
+            "relative_return_1m_percent": -0.85,
+            "price_breadth_percent": 43.27731092436975,
+            "status": "Provisional",
+            "history_status": "Partial stored constituent coverage; no final universe rank",
+            "evaluation_date": "2026-10-07",
+            "component_coverage_percent": 0
+          },
+          {
+            "market": "INDIA",
+            "sector_cohort_id": "590888a84186558fddc3",
+            "sector": "Real Estate",
+            "stock_count": 103,
+            "enriched_count": 0,
+            "price_count": 103,
+            "data_coverage_percent": 0.0,
+            "eps_growth_rs": null,
+            "pat_growth_rs": null,
+            "sales_growth_rs": null,
+            "growth_acceleration_rs": null,
+            "growth_breadth": null,
+            "acceleration_breadth": null,
+            "eps_growth_percent": null,
+            "pat_growth_percent": null,
+            "sales_growth_percent": null,
+            "acceleration": null,
+            "sector_rs_score": null,
+            "momentum_1m_percent": -1.33,
+            "relative_return_1m_percent": -1.58,
+            "price_breadth_percent": 36.89320388349515,
+            "status": "Provisional",
+            "history_status": "Partial stored constituent coverage; no final universe rank",
+            "evaluation_date": "2026-10-07",
+            "component_coverage_percent": 0
+          },
+          {
+            "market": "INDIA",
+            "sector_cohort_id": "590888a84186558fddc3",
+            "sector": "Technology",
+            "stock_count": 175,
+            "enriched_count": 0,
+            "price_count": 175,
+            "data_coverage_percent": 0.0,
+            "eps_growth_rs": null,
+            "pat_growth_rs": null,
+            "sales_growth_rs": null,
+            "growth_acceleration_rs": null,
+            "growth_breadth": null,
+            "acceleration_breadth": null,
+            "eps_growth_percent": null,
+            "pat_growth_percent": null,
+            "sales_growth_percent": null,
+            "acceleration": null,
+            "sector_rs_score": null,
+            "momentum_1m_percent": -0.08,
+            "relative_return_1m_percent": -0.33,
+            "price_breadth_percent": 46.285714285714285,
+            "status": "Provisional",
+            "history_status": "Partial stored constituent coverage; no final universe rank",
+            "evaluation_date": "2026-10-07",
+            "component_coverage_percent": 0
+          },
+          {
+            "market": "INDIA",
+            "sector_cohort_id": "590888a84186558fddc3",
+            "sector": "Unclassified",
+            "stock_count": 2948,
+            "enriched_count": 0,
+            "price_count": 2675,
+            "data_coverage_percent": 0.0,
+            "eps_growth_rs": null,
+            "pat_growth_rs": null,
+            "sales_growth_rs": null,
+            "growth_acceleration_rs": null,
+            "growth_breadth": null,
+            "acceleration_breadth": null,
+            "eps_growth_percent": null,
+            "pat_growth_percent": null,
+            "sales_growth_percent": null,
+            "acceleration": null,
+            "sector_rs_score": null,
+            "momentum_1m_percent": -0.27,
+            "relative_return_1m_percent": -0.52,
+            "price_breadth_percent": 35.92523364485981,
+            "status": "Provisional",
+            "history_status": "Partial stored constituent coverage; no final universe rank",
+            "evaluation_date": "2026-10-07",
+            "component_coverage_percent": 0
+          },
+          {
+            "market": "INDIA",
+            "sector_cohort_id": "590888a84186558fddc3",
+            "sector": "Utilities",
+            "stock_count": 39,
+            "enriched_count": 0,
+            "price_count": 39,
+            "data_coverage_percent": 0.0,
+            "eps_growth_rs": null,
+            "pat_growth_rs": null,
+            "sales_growth_rs": null,
+            "growth_acceleration_rs": null,
+            "growth_breadth": null,
+            "acceleration_breadth": null,
+            "eps_growth_percent": null,
+            "pat_growth_percent": null,
+            "sales_growth_percent": null,
+            "acceleration": null,
+            "sector_rs_score": null,
+            "momentum_1m_percent": -1.53,
+            "relative_return_1m_percent": -1.78,
+            "price_breadth_percent": 28.205128205128204,
+            "status": "Provisional",
+            "history_status": "Partial stored constituent coverage; no final universe rank",
+            "evaluation_date": "2026-10-07",
+            "component_coverage_percent": 0
+          }
+        ],
+        "formula": "EPS Growth RS 30% + PAT Growth RS 25% + Sales Growth RS 20% + Growth Acceleration RS 15% + Growth Breadth 5% + Acceleration Breadth 5%",
+        "aggregation": "Median stock growth; US and India ranked separately; deduplicated constituents.",
+        "data_rule": "Persisted real statement enrichment and dated prices only. Missing components stay N/A; all sector ranks are provisional until constituent coverage is verified."
+      }
+    },
+    {
+      "at": "2026-10-16T03:46:59.182852+00:00",
+      "path": "/market/top-composite?market=INDIA&candidate_limit=200&limit=200",
+      "method": "GET",
+      "status": 200,
+      "seconds": 34.26,
+      "body": {
+        "snapshot_at": "2026-10-16T03:46:58.083048Z",
+        "score_version": "client-rs5000-fiscal-v3",
+        "rs_progress": {
+          "INDIA": {
+            "scored_stocks_available": 4421,
+            "target_size": 5000,
+            "evaluation_date": "2026-10-07",
+            "complete": false
+          }
+        },
+        "market": "INDIA",
+        "rows": {
+          "observed_length": 200,
+          "sha256": "295ec5390abef1e4d0cca4f8a3228ca05599cdab9409f5b90d93152e6caf2f0e",
+          "first": {
+            "symbol": "LAURUSLABS",
+            "name": "Laurus Labs Limited",
+            "isin": "INE947Q01028",
+            "exchange": "NSE",
+            "sector": "Healthcare",
+            "industry": "Drug Manufacturers - Specialty & Generic",
+            "close": 2038.699951171875,
+            "volume": null,
+            "market_cap": 1071385083904.0,
+            "trailing_eps": 20.2,
+            "forward_eps": 29.4093,
+            "revenue": 72696397824.0,
+            "net_income": 10933699584.0,
+            "profit_margin": 0.1504,
+            "return_on_equity": null,
+            "return_on_assets": null,
+            "institution_percent": 0.32506,
+            "insider_percent": 0.32031,
+            "shares_outstanding": 540312218.0,
+            "float_shares": 363426052.0,
+            "distance_52w_high": null,
+            "distance_52w_low": null,
+            "volume_ratio": null,
+            "latest_date": null,
+            "data_coverage": 88.88888888888889,
+            "composite_score": 74.71,
+            "final_composite_score": null,
+            "provisional_composite_score": 74.71,
+            "score_status": "Provisional",
+            "change_percent": 1.0,
+            "score_coverage_percent": 95.0,
+            "technical_score": 100.0,
+            "fundamental_score": 76.93,
+            "fundamental_rule_coverage_percent": 65.0,
+            "financial_calculation_version": "fiscal-date-v3",
+            "financial_history_source": "Yahoo Finance statements",
+            "fundamental_status": "Confirmed EPS/PAT/Sales handwritten growth rules; NPM/CFO points remain excluded until exact client weights are confirmed",
+            "ownership_score": 52.75,
+            "sector_score": null,
+            "sector_peer_count": 1,
+            "sector_cohort_id": "82741d81ddabddb217bc",
+            "sector_status": null,
+            "rs_score": 74.86,
+            "eps_score": 84.62,
+            "pat_score": 84.62,
+            "sales_score": 61.54,
+            "eps_rule_coverage_percent": 65.0,
+            "pat_rule_coverage_percent": 65.0,
+            "sales_rule_coverage_percent": 65.0,
+            "fundamental_rule_values": {
+              "q_eps_yoy_latest": 125.1656,
+              "q_pat_yoy_latest": 125.4938,
+              "q_sales_yoy_latest": 29.0997,
+              "q_eps_yoy_delta_latest_prior": 105.766,
+              "q_eps_yoy_delta_prior_second": null,
+              "q_eps_yoy_accel_vs_avg": null,
+              "q_eps_qoq_latest": 31.528,
+              "q_eps_qoq_prior": 11.1828,
+              "q_eps_qoq_second": null,
+              "q_eps_qoq_accel_vs_avg": null,
+              "a_eps_yoy_latest": 147.741,
+              "a_eps_yoy_delta_latest_prior": 24.1719,
+              "a_eps_yoy_accel_vs_avg": 125.813,
+              "q_pat_yoy_delta_latest_prior": 106.0347,
+              "q_pat_yoy_delta_prior_second": null,
+              "q_pat_yoy_accel_vs_avg": null,
+              "q_pat_qoq_latest": 31.6902,
+              "q_pat_qoq_prior": 10.9195,
+              "q_pat_qoq_second": null,
+              "q_pat_qoq_accel_vs_avg": null,
+              "a_pat_yoy_latest": 148.0436,
+              "a_pat_yoy_delta_latest_prior": 24.8608,
+              "a_pat_yoy_accel_vs_avg": 126.2923,
+              "q_sales_yoy_delta_latest_prior": 23.7942,
+              "q_sales_yoy_delta_prior_second": null,
+              "q_sales_yoy_accel_vs_avg": null,
+              "q_sales_qoq_latest": 11.8538,
+              "q_sales_qoq_prior": 1.8715,
+              "q_sales_qoq_second": null,
+              "q_sales_qoq_accel_vs_avg": null,
+              "a_sales_yoy_latest": 22.0298,
+              "a_sales_yoy_delta_latest_prior": 11.9122,
+              "a_sales_yoy_accel_vs_avg": 25.3879,
+              "npm_q_yoy_growth": null,
+              "npm_q_qoq_growth": 17.7158,
+              "npm_a_yoy_growth": 103.0722,
+              "npm_expansion_3y": 138.0577,
+              "npm_industry_compare": null,
+              "npm_q_yoy_delta": null,
+              "cfo_q_yoy_growth": null,
+              "cfo_q_qoq_growth": null,
+              "cfo_a_yoy_growth": 169.8413,
+              "cfo_expansion_3y": null,
+              "cfo_industry_compare": null,
+              "cfo_q_yoy_delta": null,
+              "cashflow_per_share": null,
+              "roe_above": 16.77,
+              "roce_above": 19.53,
+              "shares_outstanding": 540312218.0,
+              "float_shares": 363426052.0
+            },
+            "alpha": null,
+            "beta": null,
+            "beta_basis": "2Y weekly adjusted history pending",
+            "beta_observations": 0,
+            "standard_deviation_percent": 28.74,
+            "rank": 1,
+            "snapshot_id": "2b9faedd803c4f4185a0b8c3f2f58e1e",
+            "snapshot_at": "2026-10-16T03:46:58.083048Z",
+            "score_version": "client-rs5000-fiscal-v3",
+            "score_source": "Ranking snapshot; daily technical rules and persisted statement inputs",
+            "rs_universe": {
+              "scored_stocks_available": 4421,
+              "target_size": 5000,
+              "evaluation_date": "2026-10-07",
+              "complete": false
+            }
+          },
+          "last": {
+            "symbol": "DPSCLTD",
+            "name": "DPSC Limited",
+            "isin": "INE360C01024",
+            "exchange": "NSE",
+            "sector": "Utilities",
+            "industry": "Utilities - Regulated Electric",
+            "close": 6.0,
+            "volume": null,
+            "market_cap": 6621769728.0,
+            "trailing_eps": 0.08,
+            "forward_eps": null,
+            "revenue": 6830128128.0,
+            "net_income": 128136000.0,
+            "profit_margin": 0.018760001,
+            "return_on_equity": 0.014479999,
+            "return_on_assets": -0.01102,
+            "institution_percent": 0.0011999999,
+            "insider_percent": 0.0,
+            "shares_outstanding": 973789640.0,
+            "float_shares": 102578047.0,
+            "distance_52w_high": null,
+            "distance_52w_low": null,
+            "volume_ratio": null,
+            "latest_date": null,
+            "data_coverage": 100.0,
+            "composite_score": 3.78,
+            "final_composite_score": null,
+            "provisional_composite_score": 3.78,
+            "score_status": "Provisional",
+            "change_percent": -0.66,
+            "score_coverage_percent": 65.0,
+            "technical_score": 0.0,
+            "fundamental_score": null,
+            "fundamental_rule_coverage_percent": null,
+            "financial_calculation_version": null,
+            "financial_history_source": null,
+            "fundamental_status": null,
+            "ownership_score": 0.08,
+            "sector_score": null,
+            "sector_peer_count": null,
+            "sector_cohort_id": "82741d81ddabddb217bc",
+            "sector_status": null,
+            "rs_score": 15.07,
+            "eps_score": null,
+            "pat_score": null,
+            "sales_score": null,
+            "eps_rule_coverage_percent": null,
+            "pat_rule_coverage_percent": null,
+            "sales_rule_coverage_percent": null,
+            "fundamental_rule_values": {
+              "q_eps_yoy_latest": null,
+              "q_pat_yoy_latest": null,
+              "q_sales_yoy_latest": null
+            },
+            "alpha": null,
+            "beta": null,
+            "beta_basis": "2Y weekly adjusted history pending",
+            "beta_observations": 0,
+            "standard_deviation_percent": 35.04,
+            "rank": 200,
+            "snapshot_id": "0def1a76c0a1485995a021cea34f012b",
+            "snapshot_at": "2026-10-16T03:46:58.083048Z",
+            "score_version": "client-rs5000-fiscal-v3",
+            "score_source": "Ranking snapshot; daily technical rules and persisted statement inputs",
+            "rs_universe": {
+              "scored_stocks_available": 4421,
+              "target_size": 5000,
+              "evaluation_date": "2026-10-07",
+              "complete": false
+            }
+          }
+        },
+        "candidate_count": 200,
+        "ranked_candidate_count": 200,
+        "returned_count": 200,
+        "final_qualified_count": 0,
+        "qualification_scope": "Bounded evaluated candidates; provisional scores are not fully qualified stocks",
+        "formula": "Technical 25% + Fundamental 30% + Ownership 15% + Sector 5% + RS 25%",
+        "score_weights": {
+          "technical": 25.0,
+          "fundamental": 30.0,
+          "ownership": 15.0,
+          "sector": 5.0,
+          "relative_strength": 25.0
+        },
+        "entered_weight_total": 100.0,
+        "rs_note": "RS uses the same persisted market cohort and fixed 5,000-stock percentile formula as selected-stock detail. Missing cohort observations stay N/A; incomplete cohorts stay provisional.",
+        "data_rule": "The free-tier dashboard uses a compact persisted real-provider enrichment cache for statement history, sector metadata and EPS/PAT/Sales handwritten-rule scores, while price history remains live and is never stored as a huge universe cache. Missing provider values remain N/A. Fundamental excludes ambiguous NPM/CFO point allocations, and sector/RS peer ranks remain Provisional until the full client universe is available.",
+        "enrichment_cached_count": 20,
+        "enrichment_target_count": 200,
+        "enrichment_remaining_count": 180,
+        "enrichment_in_progress": true,
+        "sync_enrichment_limit": 20
+      }
+    },
+    {
+      "at": "2026-10-16T03:47:00.127510+00:00",
+      "path": "/market/trade-backtest/AAPL",
+      "method": "POST",
+      "status": 422,
+      "seconds": 0.93,
+      "body": "{\"detail\":\"BLOCKED: verified historical announcement-time financial statements / published ownership are not configured. Current snapshots cannot be used for historical qualification.\"}"
+    },
+    {
+      "at": "2026-10-16T03:47:00.929240+00:00",
+      "path": "/health",
+      "method": "GET",
+      "status": 200,
+      "seconds": 0.77,
+      "body": {
+        "status": "ok",
+        "database": "ready"
+      }
+    }
+  ],
+  "finished_initial_at": "2026-10-16T03:47:00.948768+00:00"
+}

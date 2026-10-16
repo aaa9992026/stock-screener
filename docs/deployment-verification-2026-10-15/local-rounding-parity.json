@@ -1,0 +1,67 @@
+{
+  "scope": "Current local server/client composite helpers evaluated on 400 captured production rows; not a deployed fix",
+  "rows": 400,
+  "mismatches": [],
+  "production_rounding_changes": [
+    {
+      "market": "US",
+      "symbol": "LNT",
+      "captured_api": 40.63,
+      "decimal_half_up": 40.64
+    },
+    {
+      "market": "US",
+      "symbol": "NVMI",
+      "captured_api": 14.55,
+      "decimal_half_up": 14.56
+    },
+    {
+      "market": "INDIA",
+      "symbol": "ICICIBANK",
+      "captured_api": 49.63,
+      "decimal_half_up": 49.64
+    },
+    {
+      "market": "INDIA",
+      "symbol": "INDOBORAX",
+      "captured_api": 46.2,
+      "decimal_half_up": 46.21
+    },
+    {
+      "market": "INDIA",
+      "symbol": "DHARAN",
+      "captured_api": 29.71,
+      "decimal_half_up": 29.72
+    },
+    {
+      "market": "INDIA",
+      "symbol": "DIAMONDYD",
+      "captured_api": 23.2,
+      "decimal_half_up": 23.21
+    },
+    {
+      "market": "INDIA",
+      "symbol": "MAGNUM",
+      "captured_api": 21.05,
+      "decimal_half_up": 21.06
+    },
+    {
+      "market": "INDIA",
+      "symbol": "BPCL",
+      "captured_api": 18.14,
+      "decimal_half_up": 18.15
+    },
+    {
+      "market": "INDIA",
+      "symbol": "BPL",
+      "captured_api": 10.71,
+      "decimal_half_up": 10.72
+    },
+    {
+      "market": "INDIA",
+      "symbol": "BONLON",
+      "captured_api": 7.62,
+      "decimal_half_up": 7.63
+    }
+  ]
+}

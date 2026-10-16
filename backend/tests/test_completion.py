@@ -117,6 +117,24 @@ class CompletionTests(unittest.TestCase):
                 self.assertEqual(book["Ranking_Config"]["B4"].value,row["rs_score"])
                 self.assertIn(row["snapshot_id"],[r[1] for r in book["Summary"].values])
 
+    def test_top200_percentile_work_is_bounded_by_candidates(self):
+        # Synthetic return summaries isolate ranking work from provider/DB I/O.
+        # The full 5,000-stock distribution must remain the reference cohort.
+        periods = ("1w", "1m", "3m", "6m", "1y")
+        metrics = {f"US:ZZ{i:04d}": {p: {"relative_return_percent": float(i)} for p in periods} for i in range(4999)}
+        metrics["US:AAPL"] = {p: {"relative_return_percent": 2500.0} for p in periods}
+        rows = observations()
+        benchmark = [(r["date"], r["open"], r["close"]) for r in rows]
+        with patch.object(market, "_rs_universe_metrics", return_value=(metrics, {})), patch.object(market, "_percentile_rank", wraps=market._percentile_rank) as percentile, patch.object(market, "_benchmark_close_points", return_value=(benchmark, "INDEX", "Benchmark", "test")), patch.object(market, "_live_close_history_for_candidates", return_value={("US", "AAPL"): [r["close"] for r in rows]}), patch.object(market, "_load_persisted_ranking_enrichment", return_value={}), patch.object(market, "_apply_cached_ranking_enrichment", return_value={}), patch.object(market, "_apply_ranking_enrichment", return_value={}), patch.object(market, "_warm_ranking_enrichment_background"):
+            result = market.get_top_composite_dashboard("US", 200, 200, 25, 30, 15, 5, 25, self.db)
+        self.assertEqual(result["candidate_count"], 1)
+        self.assertEqual(percentile.call_count, 5)
+        self.assertEqual(result["rs_progress"]["US"]["scored_stocks_available"], 5000)
+        self.assertTrue(result["rs_progress"]["US"]["complete"])
+        # 2,500 lower observations and two equal observations, fixed N=5,000.
+        expected = round((2500 + .5) / 4999 * 100, 2)
+        self.assertEqual(result["rows"][0]["rs_score"], expected)
+
     def test_legacy_history_is_migrated_before_compaction(self):
         rows = observations()
         self.db.add_all([OHLCV(symbol="AAPL", exchange="US", **r) for r in rows])

@@ -1,0 +1,1335 @@
+{
+  "scope": "Current code replay using Oct 14 recorded real provider inputs; not live production",
+  "results": {
+    "scope": "Revised backend HTTP routes using real recorded provider OHLCV, metadata, statements and benchmarks; unavailable auxiliary upstreams remain missing",
+    "stocks": {
+      "US:AAPL": {
+        "timeframes": {
+          "daily": {
+            "high_52w": 348.1499938964844,
+            "low_52w": 243.4199981689453,
+            "distance_from_52w_high_percent": 1.98,
+            "distance_from_52w_low_percent": 40.2,
+            "daily_price": 341.2699890136719,
+            "daily_price_date": "2026-10-13",
+            "ema": {
+              "10": 337.38,
+              "20": 334.71,
+              "34": 330.96,
+              "50": 327.01,
+              "100": 315.64,
+              "150": 305.84,
+              "200": 297.44
+            },
+            "rsi_14": 60.48,
+            "atr_percent": 1.98,
+            "bollinger_width_percent": 4.17,
+            "indicator_bars_available": 1530,
+            "rs_rating": 0.85,
+            "rs_universe": {
+              "market": "US",
+              "market_exchanges": [
+                "US"
+              ],
+              "target_size": 5000,
+              "scored_stocks_available": 66,
+              "coverage_percent": 1.32,
+              "complete": false,
+              "evaluation_date": "2026-10-06",
+              "note": "Client percentile denominator is fixed at 5,000 for US. The RS score is provisional until 5,000 verified stocks have usable comparison history on one persisted evaluation date."
+            }
+          },
+          "weekly": {
+            "high_52w": 348.1499938964844,
+            "low_52w": 243.4199981689453,
+            "distance_from_52w_high_percent": 1.98,
+            "distance_from_52w_low_percent": 40.2,
+            "daily_price": 341.2699890136719,
+            "daily_price_date": "2026-10-13",
+            "ema": {
+              "10": 330.09,
+              "20": 318.86,
+              "34": 305.51,
+              "50": 293.24,
+              "100": 266.25,
+              "150": 247.23,
+              "200": 231.59
+            },
+            "rsi_14": 65.07,
+            "atr_percent": 4.78,
+            "bollinger_width_percent": 20.83,
+            "indicator_bars_available": 319,
+            "rs_rating": 0.85,
+            "rs_universe": {
+              "market": "US",
+              "market_exchanges": [
+                "US"
+              ],
+              "target_size": 5000,
+              "scored_stocks_available": 66,
+              "coverage_percent": 1.32,
+              "complete": false,
+              "evaluation_date": "2026-10-06",
+              "note": "Client percentile denominator is fixed at 5,000 for US. The RS score is provisional until 5,000 verified stocks have usable comparison history on one persisted evaluation date."
+            }
+          },
+          "monthly": {
+            "high_52w": 348.1499938964844,
+            "low_52w": 243.4199981689453,
+            "distance_from_52w_high_percent": 1.98,
+            "distance_from_52w_low_percent": 40.2,
+            "daily_price": 341.2699890136719,
+            "daily_price_date": "2026-10-13",
+            "ema": {
+              "10": 302.02,
+              "20": 276.44,
+              "34": 251.42,
+              "50": 228.79,
+              "100": 177.47,
+              "150": 143.23,
+              "200": 111.61
+            },
+            "rsi_14": 71.89,
+            "atr_percent": 8.45,
+            "bollinger_width_percent": 63.16,
+            "indicator_bars_available": 246,
+            "rs_rating": 0.85,
+            "rs_universe": {
+              "market": "US",
+              "market_exchanges": [
+                "US"
+              ],
+              "target_size": 5000,
+              "scored_stocks_available": 66,
+              "coverage_percent": 1.32,
+              "complete": false,
+              "evaluation_date": "2026-10-06",
+              "note": "Client percentile denominator is fixed at 5,000 for US. The RS score is provisional until 5,000 verified stocks have usable comparison history on one persisted evaluation date."
+            }
+          }
+        },
+        "metadata": {
+          "name": "Apple Inc.",
+          "isin": "US0378331005",
+          "sector": "Technology",
+          "industry": "Consumer Electronics"
+        },
+        "backtest": {
+          "row_count": 5044,
+          "actual_years": 20.04928131416838,
+          "history_status": "Complete",
+          "buy_hold_return_percent": 12514.600571600233
+        },
+        "xlsx": {
+          "valid": true,
+          "rows": 1530,
+          "price_matches": true,
+          "eps_matches": true
+        },
+        "statement_rows": {
+          "quarterly": 5,
+          "annual": 4
+        },
+        "ranking": {
+          "snapshot_at": "2026-10-16T04:08:28.205721Z",
+          "score_version": "client-rs5000-fiscal-v3",
+          "rs_score": 0.85,
+          "technical_score": 100.0,
+          "fundamental_score": 42.86,
+          "ownership_score": 48.9,
+          "sector_score": null,
+          "composite_score": 45.41,
+          "score_status": "Provisional"
+        },
+        "trade_backtest": {
+          "history_rows": 5025,
+          "actual_years": 19.980835044490075,
+          "trade_count": 190,
+          "total_return_percent": 138.37931262339714,
+          "cagr_percent": 4.443525088137745,
+          "max_drawdown_percent": -6.807535548953325,
+          "point_in_time_status": "Technical prices only; published fundamental/ownership strategy data unavailable"
+        }
+      },
+      "US:NVDA": {
+        "timeframes": {
+          "daily": {
+            "high_52w": 243.3699951171875,
+            "low_52w": 164.27000427246094,
+            "distance_from_52w_high_percent": 6.1,
+            "distance_from_52w_low_percent": 39.11,
+            "daily_price": 228.52000427246094,
+            "daily_price_date": "2026-10-13",
+            "ema": {
+              "10": 230.31,
+              "20": 228.46,
+              "34": 225.54,
+              "50": 222.65,
+              "100": 215.64,
+              "150": 209.79,
+              "200": 204.27
+            },
+            "rsi_14": 51.97,
+            "atr_percent": 2.45,
+            "bollinger_width_percent": 10.53,
+            "indicator_bars_available": 1530,
+            "rs_rating": 1.02,
+            "rs_universe": {
+              "market": "US",
+              "market_exchanges": [
+                "US"
+              ],
+              "target_size": 5000,
+              "scored_stocks_available": 66,
+              "coverage_percent": 1.32,
+              "complete": false,
+              "evaluation_date": "2026-10-06",
+              "note": "Client percentile denominator is fixed at 5,000 for US. The RS score is provisional until 5,000 verified stocks have usable comparison history on one persisted evaluation date."
+            }
+          },
+          "weekly": {
+            "high_52w": 243.3699951171875,
+            "low_52w": 164.27000427246094,
+            "distance_from_52w_high_percent": 6.1,
+            "distance_from_52w_low_percent": 39.11,
+            "daily_price": 228.52000427246094,
+            "daily_price_date": "2026-10-13",
+            "ema": {
+              "10": 223.89,
+              "20": 217.11,
+              "34": 209.04,
+              "50": 200.48,
+              "100": 175.09,
+              "150": 153.08,
+              "200": 132.98
+            },
+            "rsi_14": 58.36,
+            "atr_percent": 6.56,
+            "bollinger_width_percent": 22.39,
+            "indicator_bars_available": 319,
+            "rs_rating": 1.02,
+            "rs_universe": {
+              "market": "US",
+              "market_exchanges": [
+                "US"
+              ],
+              "target_size": 5000,
+              "scored_stocks_available": 66,
+              "coverage_percent": 1.32,
+              "complete": false,
+              "evaluation_date": "2026-10-06",
+              "note": "Client percentile denominator is fixed at 5,000 for US. The RS score is provisional until 5,000 verified stocks have usable comparison history on one persisted evaluation date."
+            }
+          },
+          "monthly": {
+            "high_52w": 243.3699951171875,
+            "low_52w": 164.27000427246094,
+            "distance_from_52w_high_percent": 6.1,
+            "distance_from_52w_low_percent": 39.11,
+            "daily_price": 228.52000427246094,
+            "daily_price_date": "2026-10-13",
+            "ema": {
+              "10": 206.09,
+              "20": 183.84,
+              "34": 156.37,
+              "50": 132.08,
+              "100": 87.82,
+              "150": 65.45,
+              "200": 50.85
+            },
+            "rsi_14": 72.01,
+            "atr_percent": 11.96,
+            "bollinger_width_percent": 72.61,
+            "indicator_bars_available": 243,
+            "rs_rating": 1.02,
+            "rs_universe": {
+              "market": "US",
+              "market_exchanges": [
+                "US"
+              ],
+              "target_size": 5000,
+              "scored_stocks_available": 66,
+              "coverage_percent": 1.32,
+              "complete": false,
+              "evaluation_date": "2026-10-06",
+              "note": "Client percentile denominator is fixed at 5,000 for US. The RS score is provisional until 5,000 verified stocks have usable comparison history on one persisted evaluation date."
+            }
+          }
+        },
+        "metadata": {
+          "name": "NVIDIA Corporation",
+          "isin": null,
+          "sector": "Technology",
+          "industry": "Semiconductors"
+        },
+        "backtest": {
+          "row_count": 5044,
+          "actual_years": 20.04928131416838,
+          "history_status": "Complete",
+          "buy_hold_return_percent": 44301.52867292453
+        },
+        "xlsx": {
+          "valid": true,
+          "rows": 1530,
+          "price_matches": true,
+          "eps_matches": true
+        },
+        "statement_rows": {
+          "quarterly": 5,
+          "annual": 5
+        },
+        "ranking": {
+          "snapshot_at": "2026-10-16T04:08:28.205721Z",
+          "score_version": "client-rs5000-fiscal-v3",
+          "rs_score": 1.02,
+          "technical_score": 100.0,
+          "fundamental_score": 47.62,
+          "ownership_score": 56.0,
+          "sector_score": null,
+          "composite_score": 47.94,
+          "score_status": "Provisional"
+        },
+        "trade_backtest": {
+          "history_rows": 5025,
+          "actual_years": 19.980835044490075,
+          "trade_count": 270,
+          "total_return_percent": 170.12331906675803,
+          "cagr_percent": 5.099052529515102,
+          "max_drawdown_percent": -19.90537803429856,
+          "point_in_time_status": "Technical prices only; published fundamental/ownership strategy data unavailable"
+        }
+      },
+      "US:LITE": {
+        "timeframes": {
+          "daily": {
+            "high_52w": 1143.0,
+            "low_52w": 152.5399932861328,
+            "distance_from_52w_high_percent": 13.56,
+            "distance_from_52w_low_percent": 547.69,
+            "daily_price": 987.989990234375,
+            "daily_price_date": "2026-10-13",
+            "ema": {
+              "10": 1033.29,
+              "20": 1004.76,
+              "34": 970.05,
+              "50": 942.18,
+              "100": 880.65,
+              "150": 817.69,
+              "200": 754.58
+            },
+            "rsi_14": 50.2,
+            "atr_percent": 6.99,
+            "bollinger_width_percent": 29.59,
+            "indicator_bars_available": 1530,
+            "rs_rating": 1.21,
+            "rs_universe": {
+              "market": "US",
+              "market_exchanges": [
+                "US"
+              ],
+              "target_size": 5000,
+              "scored_stocks_available": 66,
+              "coverage_percent": 1.32,
+              "complete": false,
+              "evaluation_date": "2026-10-06",
+              "note": "Client percentile denominator is fixed at 5,000 for US. The RS score is provisional until 5,000 verified stocks have usable comparison history on one persisted evaluation date."
+            }
+          },
+          "weekly": {
+            "high_52w": 1143.0,
+            "low_52w": 152.5399932861328,
+            "distance_from_52w_high_percent": 13.56,
+            "distance_from_52w_low_percent": 547.69,
+            "daily_price": 987.989990234375,
+            "daily_price_date": "2026-10-13",
+            "ema": {
+              "10": 962.82,
+              "20": 899.8,
+              "34": 812.54,
+              "50": 717.93,
+              "100": 514.61,
+              "150": 404.23,
+              "200": 338.43
+            },
+            "rsi_14": 59.06,
+            "atr_percent": 15.16,
+            "bollinger_width_percent": 46.93,
+            "indicator_bars_available": 319,
+            "rs_rating": 1.21,
+            "rs_universe": {
+              "market": "US",
+              "market_exchanges": [
+                "US"
+              ],
+              "target_size": 5000,
+              "scored_stocks_available": 66,
+              "coverage_percent": 1.32,
+              "complete": false,
+              "evaluation_date": "2026-10-06",
+              "note": "Client percentile denominator is fixed at 5,000 for US. The RS score is provisional until 5,000 verified stocks have usable comparison history on one persisted evaluation date."
+            }
+          },
+          "monthly": {
+            "high_52w": 1143.0,
+            "low_52w": 152.5399932861328,
+            "distance_from_52w_high_percent": 13.56,
+            "distance_from_52w_low_percent": 547.69,
+            "daily_price": 987.989990234375,
+            "daily_price_date": "2026-10-13",
+            "ema": {
+              "10": 777.68,
+              "20": 581.27,
+              "34": 428.64,
+              "50": 335.15,
+              "100": 211.0,
+              "150": null,
+              "200": null
+            },
+            "rsi_14": 81.26,
+            "atr_percent": 15.62,
+            "bollinger_width_percent": 291.97,
+            "indicator_bars_available": 136,
+            "rs_rating": 1.21,
+            "rs_universe": {
+              "market": "US",
+              "market_exchanges": [
+                "US"
+              ],
+              "target_size": 5000,
+              "scored_stocks_available": 66,
+              "coverage_percent": 1.32,
+              "complete": false,
+              "evaluation_date": "2026-10-06",
+              "note": "Client percentile denominator is fixed at 5,000 for US. The RS score is provisional until 5,000 verified stocks have usable comparison history on one persisted evaluation date."
+            }
+          }
+        },
+        "metadata": {
+          "name": "Lumentum Holdings Inc.",
+          "isin": "US55024U1097",
+          "sector": "Technology",
+          "industry": "Communication Equipment"
+        },
+        "backtest": {
+          "row_count": 2823,
+          "actual_years": 11.225188227241615,
+          "history_status": "Partial",
+          "buy_hold_return_percent": 5711.705824908134
+        },
+        "xlsx": {
+          "valid": true,
+          "rows": 1530,
+          "price_matches": true,
+          "eps_matches": true
+        },
+        "statement_rows": {
+          "quarterly": 6,
+          "annual": 5
+        },
+        "ranking": {
+          "snapshot_at": "2026-10-16T04:08:28.205721Z",
+          "score_version": "client-rs5000-fiscal-v3",
+          "rs_score": 1.21,
+          "technical_score": 80.0,
+          "fundamental_score": 50.0,
+          "ownership_score": 66.65,
+          "sector_score": null,
+          "composite_score": 45.3,
+          "score_status": "Provisional"
+        },
+        "trade_backtest": {
+          "history_rows": 2823,
+          "actual_years": 11.225188227241615,
+          "trade_count": 204,
+          "total_return_percent": 44.19358687923418,
+          "cagr_percent": 3.314138277075096,
+          "max_drawdown_percent": -24.255111580236253,
+          "point_in_time_status": "Technical prices only; published fundamental/ownership strategy data unavailable"
+        }
+      },
+      "NSE:RELIANCE": {
+        "timeframes": {
+          "daily": {
+            "high_52w": 1611.800048828125,
+            "low_52w": 1152.199951171875,
+            "distance_from_52w_high_percent": 27.12,
+            "distance_from_52w_low_percent": 1.94,
+            "daily_price": 1174.5999755859375,
+            "daily_price_date": "2026-10-14",
+            "ema": {
+              "10": 1181.8,
+              "20": 1200.94,
+              "34": 1223.15,
+              "50": 1241.23,
+              "100": 1278.68,
+              "150": 1304.43,
+              "200": 1322.18
+            },
+            "rsi_14": 39.03,
+            "atr_percent": 1.83,
+            "bollinger_width_percent": 9.94,
+            "indicator_bars_available": 1524,
+            "rs_rating": 0.7,
+            "rs_universe": {
+              "market": "INDIA",
+              "market_exchanges": [
+                "NSE",
+                "BSE"
+              ],
+              "target_size": 5000,
+              "scored_stocks_available": 49,
+              "coverage_percent": 0.98,
+              "complete": false,
+              "evaluation_date": "2026-10-06",
+              "note": "Client percentile denominator is fixed at 5,000 for INDIA. The RS score is provisional until 5,000 verified stocks have usable comparison history on one persisted evaluation date."
+            }
+          },
+          "weekly": {
+            "high_52w": 1611.800048828125,
+            "low_52w": 1152.199951171875,
+            "distance_from_52w_high_percent": 27.12,
+            "distance_from_52w_low_percent": 1.94,
+            "daily_price": 1174.5999755859375,
+            "daily_price_date": "2026-10-14",
+            "ema": {
+              "10": 1229.59,
+              "20": 1270.08,
+              "34": 1305.75,
+              "50": 1329.12,
+              "100": 1347.3,
+              "150": 1332.69,
+              "200": 1299.64
+            },
+            "rsi_14": 32.94,
+            "atr_percent": 4.61,
+            "bollinger_width_percent": 16.55,
+            "indicator_bars_available": 321,
+            "rs_rating": 0.7,
+            "rs_universe": {
+              "market": "INDIA",
+              "market_exchanges": [
+                "NSE",
+                "BSE"
+              ],
+              "target_size": 5000,
+              "scored_stocks_available": 49,
+              "coverage_percent": 0.98,
+              "complete": false,
+              "evaluation_date": "2026-10-06",
+              "note": "Client percentile denominator is fixed at 5,000 for INDIA. The RS score is provisional until 5,000 verified stocks have usable comparison history on one persisted evaluation date."
+            }
+          },
+          "monthly": {
+            "high_52w": 1611.800048828125,
+            "low_52w": 1152.199951171875,
+            "distance_from_52w_high_percent": 27.12,
+            "distance_from_52w_low_percent": 1.94,
+            "daily_price": 1174.5999755859375,
+            "daily_price_date": "2026-10-14",
+            "ema": {
+              "10": 1294.92,
+              "20": 1331.99,
+              "34": 1322.41,
+              "50": 1276.38,
+              "100": 1086.51,
+              "150": 923.37,
+              "200": 743.91
+            },
+            "rsi_14": 39.56,
+            "atr_percent": 10.38,
+            "bollinger_width_percent": 30.62,
+            "indicator_bars_available": 246,
+            "rs_rating": 0.7,
+            "rs_universe": {
+              "market": "INDIA",
+              "market_exchanges": [
+                "NSE",
+                "BSE"
+              ],
+              "target_size": 5000,
+              "scored_stocks_available": 49,
+              "coverage_percent": 0.98,
+              "complete": false,
+              "evaluation_date": "2026-10-06",
+              "note": "Client percentile denominator is fixed at 5,000 for INDIA. The RS score is provisional until 5,000 verified stocks have usable comparison history on one persisted evaluation date."
+            }
+          }
+        },
+        "metadata": {
+          "name": "Reliance Industries Limited",
+          "isin": "INE002A01018",
+          "sector": "Energy",
+          "industry": "Oil & Gas Refining & Marketing"
+        },
+        "backtest": {
+          "row_count": 4946,
+          "actual_years": 20.05201916495551,
+          "history_status": "Complete",
+          "buy_hold_return_percent": 783.6060513779646
+        },
+        "xlsx": {
+          "valid": true,
+          "rows": 1506,
+          "price_matches": true,
+          "eps_matches": true
+        },
+        "statement_rows": {
+          "quarterly": 5,
+          "annual": 5
+        },
+        "ranking": {
+          "snapshot_at": "2026-10-16T04:08:28.205721Z",
+          "score_version": "client-rs5000-fiscal-v3",
+          "rs_score": 0.7,
+          "technical_score": 0.0,
+          "fundamental_score": 15.38,
+          "ownership_score": 49.7,
+          "sector_score": null,
+          "composite_score": 12.24,
+          "score_status": "Provisional"
+        },
+        "trade_backtest": {
+          "history_rows": 4930,
+          "actual_years": 19.983572895277206,
+          "trade_count": 228,
+          "total_return_percent": 22.371248716873303,
+          "cagr_percent": 1.0153966157609329,
+          "max_drawdown_percent": -23.187737775443516,
+          "point_in_time_status": "Technical prices only; published fundamental/ownership strategy data unavailable"
+        }
+      },
+      "BSE:TCS": {
+        "timeframes": {
+          "daily": {
+            "high_52w": 3336.699951171875,
+            "low_52w": 1976.0,
+            "distance_from_52w_high_percent": 31.01,
+            "distance_from_52w_low_percent": 16.5,
+            "daily_price": 2302.0,
+            "daily_price_date": "2026-10-14",
+            "ema": {
+              "10": 2167.17,
+              "20": 2158.67,
+              "34": 2179.18,
+              "50": 2200.48,
+              "100": 2271.91,
+              "150": 2364.68,
+              "200": 2463.55
+            },
+            "rsi_14": 64.01,
+            "atr_percent": 2.97,
+            "bollinger_width_percent": 12.81,
+            "indicator_bars_available": 5022,
+            "rs_rating": 0.55,
+            "rs_universe": {
+              "market": "INDIA",
+              "market_exchanges": [
+                "NSE",
+                "BSE"
+              ],
+              "target_size": 5000,
+              "scored_stocks_available": 49,
+              "coverage_percent": 0.98,
+              "complete": false,
+              "evaluation_date": "2026-10-06",
+              "note": "Client percentile denominator is fixed at 5,000 for INDIA. The RS score is provisional until 5,000 verified stocks have usable comparison history on one persisted evaluation date."
+            }
+          },
+          "weekly": {
+            "high_52w": 3336.699951171875,
+            "low_52w": 1976.0,
+            "distance_from_52w_high_percent": 31.01,
+            "distance_from_52w_low_percent": 16.5,
+            "daily_price": 2302.0,
+            "daily_price_date": "2026-10-14",
+            "ema": {
+              "10": 2210.39,
+              "20": 2262.65,
+              "34": 2377.97,
+              "50": 2521.92,
+              "100": 2863.76,
+              "150": 3029.15,
+              "200": 3085.5
+            },
+            "rsi_14": 49.19,
+            "atr_percent": 6.13,
+            "bollinger_width_percent": 20.43,
+            "indicator_bars_available": 1064,
+            "rs_rating": 0.55,
+            "rs_universe": {
+              "market": "INDIA",
+              "market_exchanges": [
+                "NSE",
+                "BSE"
+              ],
+              "target_size": 5000,
+              "scored_stocks_available": 49,
+              "coverage_percent": 0.98,
+              "complete": false,
+              "evaluation_date": "2026-10-06",
+              "note": "Client percentile denominator is fixed at 5,000 for INDIA. The RS score is provisional until 5,000 verified stocks have usable comparison history on one persisted evaluation date."
+            }
+          },
+          "monthly": {
+            "high_52w": 3336.699951171875,
+            "low_52w": 1976.0,
+            "distance_from_52w_high_percent": 31.01,
+            "distance_from_52w_low_percent": 16.5,
+            "daily_price": 2302.0,
+            "daily_price_date": "2026-10-14",
+            "ema": {
+              "10": 2432.67,
+              "20": 2746.46,
+              "34": 2978.41,
+              "50": 3049.93,
+              "100": 2826.49,
+              "150": 2464.39,
+              "200": 2011.57
+            },
+            "rsi_14": 38.72,
+            "atr_percent": 14.86,
+            "bollinger_width_percent": 70.4,
+            "indicator_bars_available": 245,
+            "rs_rating": 0.55,
+            "rs_universe": {
+              "market": "INDIA",
+              "market_exchanges": [
+                "NSE",
+                "BSE"
+              ],
+              "target_size": 5000,
+              "scored_stocks_available": 49,
+              "coverage_percent": 0.98,
+              "complete": false,
+              "evaluation_date": "2026-10-06",
+              "note": "Client percentile denominator is fixed at 5,000 for INDIA. The RS score is provisional until 5,000 verified stocks have usable comparison history on one persisted evaluation date."
+            }
+          }
+        },
+        "metadata": {
+          "name": "Tata Consultancy Services Limited",
+          "isin": "INE467B01029",
+          "sector": "Technology",
+          "industry": "Information Technology Services"
+        },
+        "backtest": {
+          "row_count": 4943,
+          "actual_years": 20.05201916495551,
+          "history_status": "Complete",
+          "buy_hold_return_percent": 798.1662542487022
+        },
+        "xlsx": {
+          "valid": true,
+          "rows": 5000,
+          "price_matches": true,
+          "eps_matches": true
+        },
+        "statement_rows": {
+          "quarterly": 5,
+          "annual": 4
+        },
+        "ranking": {
+          "snapshot_at": "2026-10-16T04:08:28.205721Z",
+          "score_version": "client-rs5000-fiscal-v3",
+          "rs_score": 0.55,
+          "technical_score": 60.0,
+          "fundamental_score": 10.25,
+          "ownership_score": 42.36,
+          "sector_score": null,
+          "composite_score": 24.57,
+          "score_status": "Provisional"
+        },
+        "trade_backtest": {
+          "history_rows": 4923,
+          "actual_years": 19.983572895277206,
+          "trade_count": 221,
+          "total_return_percent": 18.420256728168404,
+          "cagr_percent": 0.8496320049591777,
+          "max_drawdown_percent": -17.89570532711602,
+          "point_in_time_status": "Technical prices only; published fundamental/ownership strategy data unavailable"
+        }
+      }
+    },
+    "ranking_rows": 108,
+    "sector_rows": 4,
+    "portfolio": {
+      "mode": "Isolated QA paper transaction at verified real provider close",
+      "id": "350c07058eeb4b69a4c6be0a1b81756f",
+      "equity": 100000.0,
+      "cash": 96587.3,
+      "positions": 1
+    },
+    "http_checks": [
+      {
+        "name": "US:AAPL:chart:daily",
+        "route": "/market/chart/AAPL?exchange=US&timeframe=daily&limit=120",
+        "status": 200
+      },
+      {
+        "name": "US:AAPL:technical-summary:daily",
+        "route": "/market/technical-summary/AAPL?exchange=US&timeframe=daily",
+        "status": 200
+      },
+      {
+        "name": "US:AAPL:indicators:daily",
+        "route": "/market/indicators/AAPL?exchange=US&timeframe=daily",
+        "status": 200
+      },
+      {
+        "name": "US:AAPL:chart:weekly",
+        "route": "/market/chart/AAPL?exchange=US&timeframe=weekly&limit=120",
+        "status": 200
+      },
+      {
+        "name": "US:AAPL:technical-summary:weekly",
+        "route": "/market/technical-summary/AAPL?exchange=US&timeframe=weekly",
+        "status": 200
+      },
+      {
+        "name": "US:AAPL:indicators:weekly",
+        "route": "/market/indicators/AAPL?exchange=US&timeframe=weekly",
+        "status": 200
+      },
+      {
+        "name": "US:AAPL:chart:monthly",
+        "route": "/market/chart/AAPL?exchange=US&timeframe=monthly&limit=120",
+        "status": 200
+      },
+      {
+        "name": "US:AAPL:technical-summary:monthly",
+        "route": "/market/technical-summary/AAPL?exchange=US&timeframe=monthly",
+        "status": 200
+      },
+      {
+        "name": "US:AAPL:indicators:monthly",
+        "route": "/market/indicators/AAPL?exchange=US&timeframe=monthly",
+        "status": 200
+      },
+      {
+        "name": "US:AAPL:fundamentals:daily",
+        "route": "/market/fundamentals/AAPL?exchange=US",
+        "status": 200
+      },
+      {
+        "name": "US:AAPL:dashboard:daily",
+        "route": "/market/dashboard/AAPL?exchange=US",
+        "status": 200
+      },
+      {
+        "name": "US:AAPL:search:daily",
+        "route": "/companies/search?q=AAPL&exchange=US",
+        "status": 200
+      },
+      {
+        "name": "US:AAPL:fundamentals-history:daily",
+        "route": "/market/fundamentals-history/AAPL?exchange=US",
+        "status": 200
+      },
+      {
+        "name": "US:AAPL:risk-metrics:daily",
+        "route": "/market/risk-metrics/AAPL?exchange=US",
+        "status": 200
+      },
+      {
+        "name": "US:AAPL:backtest:daily",
+        "route": "/market/backtest/AAPL?exchange=US&years=20",
+        "status": 200
+      },
+      {
+        "name": "US:AAPL:excel-export:daily",
+        "route": "/market/excel-export/AAPL?exchange=US&limit=5000",
+        "status": 200
+      },
+      {
+        "name": "US:AAPL:excel-live-csv:daily",
+        "route": "/market/excel-live-csv/AAPL?exchange=US&limit=5000",
+        "status": 200
+      },
+      {
+        "name": "US:AAPL:excel-feed:daily",
+        "route": "/market/excel-feed/AAPL?exchange=US&limit=5000",
+        "status": 200
+      },
+      {
+        "name": "US:AAPL:benchmark:daily",
+        "route": "/market/benchmark/US",
+        "status": 200
+      },
+      {
+        "name": "US:AAPL:rs-status:daily",
+        "route": "/companies/rs-backfill/status?market=US",
+        "status": 200
+      },
+      {
+        "name": "US:NVDA:chart:daily",
+        "route": "/market/chart/NVDA?exchange=US&timeframe=daily&limit=120",
+        "status": 200
+      },
+      {
+        "name": "US:NVDA:technical-summary:daily",
+        "route": "/market/technical-summary/NVDA?exchange=US&timeframe=daily",
+        "status": 200
+      },
+      {
+        "name": "US:NVDA:indicators:daily",
+        "route": "/market/indicators/NVDA?exchange=US&timeframe=daily",
+        "status": 200
+      },
+      {
+        "name": "US:NVDA:chart:weekly",
+        "route": "/market/chart/NVDA?exchange=US&timeframe=weekly&limit=120",
+        "status": 200
+      },
+      {
+        "name": "US:NVDA:technical-summary:weekly",
+        "route": "/market/technical-summary/NVDA?exchange=US&timeframe=weekly",
+        "status": 200
+      },
+      {
+        "name": "US:NVDA:indicators:weekly",
+        "route": "/market/indicators/NVDA?exchange=US&timeframe=weekly",
+        "status": 200
+      },
+      {
+        "name": "US:NVDA:chart:monthly",
+        "route": "/market/chart/NVDA?exchange=US&timeframe=monthly&limit=120",
+        "status": 200
+      },
+      {
+        "name": "US:NVDA:technical-summary:monthly",
+        "route": "/market/technical-summary/NVDA?exchange=US&timeframe=monthly",
+        "status": 200
+      },
+      {
+        "name": "US:NVDA:indicators:monthly",
+        "route": "/market/indicators/NVDA?exchange=US&timeframe=monthly",
+        "status": 200
+      },
+      {
+        "name": "US:NVDA:fundamentals:daily",
+        "route": "/market/fundamentals/NVDA?exchange=US",
+        "status": 200
+      },
+      {
+        "name": "US:NVDA:dashboard:daily",
+        "route": "/market/dashboard/NVDA?exchange=US",
+        "status": 200
+      },
+      {
+        "name": "US:NVDA:search:daily",
+        "route": "/companies/search?q=NVDA&exchange=US",
+        "status": 200
+      },
+      {
+        "name": "US:NVDA:fundamentals-history:daily",
+        "route": "/market/fundamentals-history/NVDA?exchange=US",
+        "status": 200
+      },
+      {
+        "name": "US:NVDA:risk-metrics:daily",
+        "route": "/market/risk-metrics/NVDA?exchange=US",
+        "status": 200
+      },
+      {
+        "name": "US:NVDA:backtest:daily",
+        "route": "/market/backtest/NVDA?exchange=US&years=20",
+        "status": 200
+      },
+      {
+        "name": "US:NVDA:excel-export:daily",
+        "route": "/market/excel-export/NVDA?exchange=US&limit=5000",
+        "status": 200
+      },
+      {
+        "name": "US:NVDA:excel-live-csv:daily",
+        "route": "/market/excel-live-csv/NVDA?exchange=US&limit=5000",
+        "status": 200
+      },
+      {
+        "name": "US:NVDA:excel-feed:daily",
+        "route": "/market/excel-feed/NVDA?exchange=US&limit=5000",
+        "status": 200
+      },
+      {
+        "name": "US:NVDA:benchmark:daily",
+        "route": "/market/benchmark/US",
+        "status": 200
+      },
+      {
+        "name": "US:NVDA:rs-status:daily",
+        "route": "/companies/rs-backfill/status?market=US",
+        "status": 200
+      },
+      {
+        "name": "US:LITE:chart:daily",
+        "route": "/market/chart/LITE?exchange=US&timeframe=daily&limit=120",
+        "status": 200
+      },
+      {
+        "name": "US:LITE:technical-summary:daily",
+        "route": "/market/technical-summary/LITE?exchange=US&timeframe=daily",
+        "status": 200
+      },
+      {
+        "name": "US:LITE:indicators:daily",
+        "route": "/market/indicators/LITE?exchange=US&timeframe=daily",
+        "status": 200
+      },
+      {
+        "name": "US:LITE:chart:weekly",
+        "route": "/market/chart/LITE?exchange=US&timeframe=weekly&limit=120",
+        "status": 200
+      },
+      {
+        "name": "US:LITE:technical-summary:weekly",
+        "route": "/market/technical-summary/LITE?exchange=US&timeframe=weekly",
+        "status": 200
+      },
+      {
+        "name": "US:LITE:indicators:weekly",
+        "route": "/market/indicators/LITE?exchange=US&timeframe=weekly",
+        "status": 200
+      },
+      {
+        "name": "US:LITE:chart:monthly",
+        "route": "/market/chart/LITE?exchange=US&timeframe=monthly&limit=120",
+        "status": 200
+      },
+      {
+        "name": "US:LITE:technical-summary:monthly",
+        "route": "/market/technical-summary/LITE?exchange=US&timeframe=monthly",
+        "status": 200
+      },
+      {
+        "name": "US:LITE:indicators:monthly",
+        "route": "/market/indicators/LITE?exchange=US&timeframe=monthly",
+        "status": 200
+      },
+      {
+        "name": "US:LITE:fundamentals:daily",
+        "route": "/market/fundamentals/LITE?exchange=US",
+        "status": 200
+      },
+      {
+        "name": "US:LITE:dashboard:daily",
+        "route": "/market/dashboard/LITE?exchange=US",
+        "status": 200
+      },
+      {
+        "name": "US:LITE:search:daily",
+        "route": "/companies/search?q=LITE&exchange=US",
+        "status": 200
+      },
+      {
+        "name": "US:LITE:fundamentals-history:daily",
+        "route": "/market/fundamentals-history/LITE?exchange=US",
+        "status": 200
+      },
+      {
+        "name": "US:LITE:risk-metrics:daily",
+        "route": "/market/risk-metrics/LITE?exchange=US",
+        "status": 200
+      },
+      {
+        "name": "US:LITE:backtest:daily",
+        "route": "/market/backtest/LITE?exchange=US&years=20",
+        "status": 200
+      },
+      {
+        "name": "US:LITE:excel-export:daily",
+        "route": "/market/excel-export/LITE?exchange=US&limit=5000",
+        "status": 200
+      },
+      {
+        "name": "US:LITE:excel-live-csv:daily",
+        "route": "/market/excel-live-csv/LITE?exchange=US&limit=5000",
+        "status": 200
+      },
+      {
+        "name": "US:LITE:excel-feed:daily",
+        "route": "/market/excel-feed/LITE?exchange=US&limit=5000",
+        "status": 200
+      },
+      {
+        "name": "US:LITE:benchmark:daily",
+        "route": "/market/benchmark/US",
+        "status": 200
+      },
+      {
+        "name": "US:LITE:rs-status:daily",
+        "route": "/companies/rs-backfill/status?market=US",
+        "status": 200
+      },
+      {
+        "name": "NSE:RELIANCE:chart:daily",
+        "route": "/market/chart/RELIANCE?exchange=NSE&timeframe=daily&limit=120",
+        "status": 200
+      },
+      {
+        "name": "NSE:RELIANCE:technical-summary:daily",
+        "route": "/market/technical-summary/RELIANCE?exchange=NSE&timeframe=daily",
+        "status": 200
+      },
+      {
+        "name": "NSE:RELIANCE:indicators:daily",
+        "route": "/market/indicators/RELIANCE?exchange=NSE&timeframe=daily",
+        "status": 200
+      },
+      {
+        "name": "NSE:RELIANCE:chart:weekly",
+        "route": "/market/chart/RELIANCE?exchange=NSE&timeframe=weekly&limit=120",
+        "status": 200
+      },
+      {
+        "name": "NSE:RELIANCE:technical-summary:weekly",
+        "route": "/market/technical-summary/RELIANCE?exchange=NSE&timeframe=weekly",
+        "status": 200
+      },
+      {
+        "name": "NSE:RELIANCE:indicators:weekly",
+        "route": "/market/indicators/RELIANCE?exchange=NSE&timeframe=weekly",
+        "status": 200
+      },
+      {
+        "name": "NSE:RELIANCE:chart:monthly",
+        "route": "/market/chart/RELIANCE?exchange=NSE&timeframe=monthly&limit=120",
+        "status": 200
+      },
+      {
+        "name": "NSE:RELIANCE:technical-summary:monthly",
+        "route": "/market/technical-summary/RELIANCE?exchange=NSE&timeframe=monthly",
+        "status": 200
+      },
+      {
+        "name": "NSE:RELIANCE:indicators:monthly",
+        "route": "/market/indicators/RELIANCE?exchange=NSE&timeframe=monthly",
+        "status": 200
+      },
+      {
+        "name": "NSE:RELIANCE:fundamentals:daily",
+        "route": "/market/fundamentals/RELIANCE?exchange=NSE",
+        "status": 200
+      },
+      {
+        "name": "NSE:RELIANCE:dashboard:daily",
+        "route": "/market/dashboard/RELIANCE?exchange=NSE",
+        "status": 200
+      },
+      {
+        "name": "NSE:RELIANCE:search:daily",
+        "route": "/companies/search?q=RELIANCE&exchange=NSE",
+        "status": 200
+      },
+      {
+        "name": "NSE:RELIANCE:fundamentals-history:daily",
+        "route": "/market/fundamentals-history/RELIANCE?exchange=NSE",
+        "status": 200
+      },
+      {
+        "name": "NSE:RELIANCE:risk-metrics:daily",
+        "route": "/market/risk-metrics/RELIANCE?exchange=NSE",
+        "status": 200
+      },
+      {
+        "name": "NSE:RELIANCE:backtest:daily",
+        "route": "/market/backtest/RELIANCE?exchange=NSE&years=20",
+        "status": 200
+      },
+      {
+        "name": "NSE:RELIANCE:excel-export:daily",
+        "route": "/market/excel-export/RELIANCE?exchange=NSE&limit=5000",
+        "status": 200
+      },
+      {
+        "name": "NSE:RELIANCE:excel-live-csv:daily",
+        "route": "/market/excel-live-csv/RELIANCE?exchange=NSE&limit=5000",
+        "status": 200
+      },
+      {
+        "name": "NSE:RELIANCE:excel-feed:daily",
+        "route": "/market/excel-feed/RELIANCE?exchange=NSE&limit=5000",
+        "status": 200
+      },
+      {
+        "name": "NSE:RELIANCE:benchmark:daily",
+        "route": "/market/benchmark/NSE",
+        "status": 200
+      },
+      {
+        "name": "NSE:RELIANCE:rs-status:daily",
+        "route": "/companies/rs-backfill/status?market=INDIA",
+        "status": 200
+      },
+      {
+        "name": "BSE:TCS:chart:daily",
+        "route": "/market/chart/TCS?exchange=BSE&timeframe=daily&limit=120",
+        "status": 200
+      },
+      {
+        "name": "BSE:TCS:technical-summary:daily",
+        "route": "/market/technical-summary/TCS?exchange=BSE&timeframe=daily",
+        "status": 200
+      },
+      {
+        "name": "BSE:TCS:indicators:daily",
+        "route": "/market/indicators/TCS?exchange=BSE&timeframe=daily",
+        "status": 200
+      },
+      {
+        "name": "BSE:TCS:chart:weekly",
+        "route": "/market/chart/TCS?exchange=BSE&timeframe=weekly&limit=120",
+        "status": 200
+      },
+      {
+        "name": "BSE:TCS:technical-summary:weekly",
+        "route": "/market/technical-summary/TCS?exchange=BSE&timeframe=weekly",
+        "status": 200
+      },
+      {
+        "name": "BSE:TCS:indicators:weekly",
+        "route": "/market/indicators/TCS?exchange=BSE&timeframe=weekly",
+        "status": 200
+      },
+      {
+        "name": "BSE:TCS:chart:monthly",
+        "route": "/market/chart/TCS?exchange=BSE&timeframe=monthly&limit=120",
+        "status": 200
+      },
+      {
+        "name": "BSE:TCS:technical-summary:monthly",
+        "route": "/market/technical-summary/TCS?exchange=BSE&timeframe=monthly",
+        "status": 200
+      },
+      {
+        "name": "BSE:TCS:indicators:monthly",
+        "route": "/market/indicators/TCS?exchange=BSE&timeframe=monthly",
+        "status": 200
+      },
+      {
+        "name": "BSE:TCS:fundamentals:daily",
+        "route": "/market/fundamentals/TCS?exchange=BSE",
+        "status": 200
+      },
+      {
+        "name": "BSE:TCS:dashboard:daily",
+        "route": "/market/dashboard/TCS?exchange=BSE",
+        "status": 200
+      },
+      {
+        "name": "BSE:TCS:search:daily",
+        "route": "/companies/search?q=TCS&exchange=BSE",
+        "status": 200
+      },
+      {
+        "name": "BSE:TCS:fundamentals-history:daily",
+        "route": "/market/fundamentals-history/TCS?exchange=BSE",
+        "status": 200
+      },
+      {
+        "name": "BSE:TCS:risk-metrics:daily",
+        "route": "/market/risk-metrics/TCS?exchange=BSE",
+        "status": 200
+      },
+      {
+        "name": "BSE:TCS:backtest:daily",
+        "route": "/market/backtest/TCS?exchange=BSE&years=20",
+        "status": 200
+      },
+      {
+        "name": "BSE:TCS:excel-export:daily",
+        "route": "/market/excel-export/TCS?exchange=BSE&limit=5000",
+        "status": 200
+      },
+      {
+        "name": "BSE:TCS:excel-live-csv:daily",
+        "route": "/market/excel-live-csv/TCS?exchange=BSE&limit=5000",
+        "status": 200
+      },
+      {
+        "name": "BSE:TCS:excel-feed:daily",
+        "route": "/market/excel-feed/TCS?exchange=BSE&limit=5000",
+        "status": 200
+      },
+      {
+        "name": "BSE:TCS:benchmark:daily",
+        "route": "/market/benchmark/BSE",
+        "status": 200
+      },
+      {
+        "name": "BSE:TCS:rs-status:daily",
+        "route": "/companies/rs-backfill/status?market=INDIA",
+        "status": 200
+      },
+      {
+        "name": "ranking",
+        "route": "/market/top-composite?market=ALL&candidate_limit=200&limit=200",
+        "status": 200
+      },
+      {
+        "name": "US:NVDA:excel-snapshot:daily",
+        "route": "/market/excel-export/NVDA?exchange=US&snapshot_id=1dcdfeb9d8d34092ae16d80ca34a6247&limit=5000",
+        "status": 200
+      },
+      {
+        "name": "US:AAPL:excel-snapshot:daily",
+        "route": "/market/excel-export/AAPL?exchange=US&snapshot_id=20aa93b35c8646378c85bec99a32c072&limit=5000",
+        "status": 200
+      },
+      {
+        "name": "US:LITE:excel-snapshot:daily",
+        "route": "/market/excel-export/LITE?exchange=US&snapshot_id=6f717a2a9db348d4b466726997210b0b&limit=5000",
+        "status": 200
+      },
+      {
+        "name": "BSE:TCS:excel-snapshot:daily",
+        "route": "/market/excel-export/TCS?exchange=BSE&snapshot_id=441c4e9c7c8d4a80b68d4ffd6acbcf1e&limit=5000",
+        "status": 200
+      },
+      {
+        "name": "NSE:RELIANCE:excel-snapshot:daily",
+        "route": "/market/excel-export/RELIANCE?exchange=NSE&snapshot_id=64b60d818bd24915bf79bf4bb9725d5e&limit=5000",
+        "status": 200
+      },
+      {
+        "name": "sector-analysis",
+        "route": "/market/sector-analysis?market=ALL",
+        "status": 200
+      },
+      {
+        "name": "US:AAPL:trade-backtest",
+        "status": 200
+      },
+      {
+        "name": "US:NVDA:trade-backtest",
+        "status": 200
+      },
+      {
+        "name": "US:LITE:trade-backtest",
+        "status": 200
+      },
+      {
+        "name": "NSE:RELIANCE:trade-backtest",
+        "status": 200
+      },
+      {
+        "name": "BSE:TCS:trade-backtest",
+        "status": 200
+      },
+      {
+        "name": "Paper portfolio create/trade/reconciliation",
+        "status": 200
+      }
+    ],
+    "master_package": {
+      "valid_zip": true,
+      "entries": [
+        "StockScreener_Master.xlsx",
+        "excel_bridge.py",
+        "requirements.txt",
+        "README_MASTER_EXCEL.txt",
+        "INSTALL_MASTER_EXCEL.bat",
+        "START_MASTER_EXCEL.bat"
+      ]
+    }
+  }
+}
