@@ -166,6 +166,15 @@ class RSBackfillState(Base):
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
 
+class RankingResponse(Base):
+    """Last complete response per market; additive cache, not financial history."""
+    __tablename__ = "ranking_responses"
+    market = Column(String, primary_key=True)
+    request_key = Column(String, nullable=False)
+    payload_json = Column(Text, nullable=False)
+    updated_at = Column(DateTime, nullable=False, default=func.now())
+
+
 class ScoreSnapshot(Base):
     """Immutable, compact scoring source for a ranking row and its detail/export."""
     __tablename__ = "score_snapshots"

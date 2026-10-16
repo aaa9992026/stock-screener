@@ -1,0 +1,490 @@
+{
+  "scope": "Current local API replay on recorded real provider inputs; independent indicator calculations",
+  "results": {
+    "US:AAPL": {
+      "daily": {
+        "ema20": {
+          "independent": 334.7133254699812,
+          "app": 334.71,
+          "tolerance": 0.005001
+        },
+        "ema100": {
+          "independent": 315.6444531193998,
+          "app": 315.64,
+          "tolerance": 0.005001
+        },
+        "ema200": {
+          "independent": 297.43836415991416,
+          "app": 297.44,
+          "tolerance": 0.005001
+        },
+        "rsi": {
+          "independent": 60.48111610083881,
+          "app": 60.48,
+          "tolerance": 0.005001
+        },
+        "bb_width": {
+          "independent": 4.171585013889731,
+          "app": 4.17,
+          "tolerance": 0.005001
+        },
+        "roc20": {
+          "independent": 2.9969194137537736,
+          "app": 2.9969194137537736,
+          "tolerance": 0.005001
+        }
+      },
+      "weekly": {
+        "ema20": {
+          "independent": 318.85726299246835,
+          "app": 318.86,
+          "tolerance": 0.005001
+        },
+        "ema100": {
+          "independent": 266.2500358772475,
+          "app": 266.25,
+          "tolerance": 0.005001
+        },
+        "ema200": {
+          "independent": 231.59466289122963,
+          "app": 231.59,
+          "tolerance": 0.005001
+        },
+        "rsi": {
+          "independent": 65.06733092167778,
+          "app": 65.07,
+          "tolerance": 0.005001
+        },
+        "bb_width": {
+          "independent": 20.832259168205987,
+          "app": 20.83,
+          "tolerance": 0.005001
+        },
+        "roc20": {
+          "independent": 9.360376749215838,
+          "app": 9.360376749215838,
+          "tolerance": 0.005001
+        }
+      },
+      "monthly": {
+        "ema20": {
+          "independent": 276.4414763344088,
+          "app": 276.44,
+          "tolerance": 0.005001
+        },
+        "ema100": {
+          "independent": 177.46698057903907,
+          "app": 177.47,
+          "tolerance": 0.005001
+        },
+        "ema200": {
+          "independent": 111.61409466630725,
+          "app": 111.61,
+          "tolerance": 0.005001
+        },
+        "rsi": {
+          "independent": 71.8912538814143,
+          "app": 71.89,
+          "tolerance": 0.005001
+        },
+        "bb_width": {
+          "independent": 63.16386205624639,
+          "app": 63.16,
+          "tolerance": 0.005001
+        },
+        "roc20": {
+          "independent": 41.11395723677611,
+          "app": 41.11395723677611,
+          "tolerance": 0.005001
+        }
+      }
+    },
+    "US:NVDA": {
+      "daily": {
+        "ema20": {
+          "independent": 228.46334953017515,
+          "app": 228.46,
+          "tolerance": 0.005001
+        },
+        "ema100": {
+          "independent": 215.6351089041994,
+          "app": 215.64,
+          "tolerance": 0.005001
+        },
+        "ema200": {
+          "independent": 204.26583476159658,
+          "app": 204.27,
+          "tolerance": 0.005001
+        },
+        "rsi": {
+          "independent": 51.97373978889673,
+          "app": 51.97,
+          "tolerance": 0.005001
+        },
+        "bb_width": {
+          "independent": 10.533607475884446,
+          "app": 10.53,
+          "tolerance": 0.005001
+        },
+        "roc20": {
+          "independent": 7.70608768658072,
+          "app": 7.70608768658072,
+          "tolerance": 0.005001
+        }
+      },
+      "weekly": {
+        "ema20": {
+          "independent": 217.11123140165648,
+          "app": 217.11,
+          "tolerance": 0.005001
+        },
+        "ema100": {
+          "independent": 175.08592478801762,
+          "app": 175.09,
+          "tolerance": 0.005001
+        },
+        "ema200": {
+          "independent": 132.97693787256054,
+          "app": 132.98,
+          "tolerance": 0.005001
+        },
+        "rsi": {
+          "independent": 58.35878513203184,
+          "app": 58.36,
+          "tolerance": 0.005001
+        },
+        "bb_width": {
+          "independent": 22.393451159463503,
+          "app": 22.39,
+          "tolerance": 0.005001
+        },
+        "roc20": {
+          "independent": 8.231507498841362,
+          "app": 8.231507498841362,
+          "tolerance": 0.005001
+        }
+      },
+      "monthly": {
+        "ema20": {
+          "independent": 183.83626963127153,
+          "app": 183.84,
+          "tolerance": 0.005001
+        },
+        "ema100": {
+          "independent": 87.8212109601676,
+          "app": 87.82,
+          "tolerance": 0.005001
+        },
+        "ema200": {
+          "independent": 50.79100280627889,
+          "app": 50.79,
+          "tolerance": 0.005001
+        },
+        "rsi": {
+          "independent": 72.01190215770939,
+          "app": 72.01,
+          "tolerance": 0.005001
+        },
+        "bb_width": {
+          "independent": 72.61364199306598,
+          "app": 72.61,
+          "tolerance": 0.005001
+        },
+        "roc20": {
+          "independent": 82.933083270946,
+          "app": 82.933083270946,
+          "tolerance": 0.005001
+        }
+      }
+    },
+    "US:LITE": {
+      "daily": {
+        "ema20": {
+          "independent": 1004.7579175119143,
+          "app": 1004.76,
+          "tolerance": 0.005001
+        },
+        "ema100": {
+          "independent": 880.6501310474217,
+          "app": 880.65,
+          "tolerance": 0.005001
+        },
+        "ema200": {
+          "independent": 754.5764979199109,
+          "app": 754.58,
+          "tolerance": 0.005001
+        },
+        "rsi": {
+          "independent": 50.196487300840666,
+          "app": 50.2,
+          "tolerance": 0.005001
+        },
+        "bb_width": {
+          "independent": 29.587756513117363,
+          "app": 29.59,
+          "tolerance": 0.005001
+        },
+        "roc20": {
+          "independent": 17.76365552095116,
+          "app": 17.76365552095116,
+          "tolerance": 0.005001
+        }
+      },
+      "weekly": {
+        "ema20": {
+          "independent": 899.7956077061694,
+          "app": 899.8,
+          "tolerance": 0.005001
+        },
+        "ema100": {
+          "independent": 514.6131268436269,
+          "app": 514.61,
+          "tolerance": 0.005001
+        },
+        "ema200": {
+          "independent": 338.427997417566,
+          "app": 338.43,
+          "tolerance": 0.005001
+        },
+        "rsi": {
+          "independent": 59.05952174046771,
+          "app": 59.06,
+          "tolerance": 0.005001
+        },
+        "bb_width": {
+          "independent": 46.92565802920675,
+          "app": 46.93,
+          "tolerance": 0.005001
+        },
+        "roc20": {
+          "independent": 15.559788158840181,
+          "app": 15.559788158840181,
+          "tolerance": 0.005001
+        }
+      },
+      "monthly": {
+        "ema20": {
+          "independent": 581.2675109238834,
+          "app": 581.27,
+          "tolerance": 0.005001
+        },
+        "ema100": {
+          "independent": 210.9984053510862,
+          "app": 211.0,
+          "tolerance": 0.005001
+        },
+        "rsi": {
+          "independent": 81.26492780217852,
+          "app": 81.26,
+          "tolerance": 0.005001
+        },
+        "bb_width": {
+          "independent": 291.9729799537882,
+          "app": 291.97,
+          "tolerance": 0.005001
+        },
+        "roc20": {
+          "independent": 1304.7916458294776,
+          "app": 1304.7916458294776,
+          "tolerance": 0.005001
+        }
+      }
+    },
+    "NSE:RELIANCE": {
+      "daily": {
+        "ema20": {
+          "independent": 1200.9414522831817,
+          "app": 1200.94,
+          "tolerance": 0.005001
+        },
+        "ema100": {
+          "independent": 1278.6755987039382,
+          "app": 1278.68,
+          "tolerance": 0.005001
+        },
+        "ema200": {
+          "independent": 1322.1840089015336,
+          "app": 1322.18,
+          "tolerance": 0.005001
+        },
+        "rsi": {
+          "independent": 39.029432767919225,
+          "app": 39.03,
+          "tolerance": 0.005001
+        },
+        "bb_width": {
+          "independent": 9.93993460044688,
+          "app": 9.94,
+          "tolerance": 0.005001
+        },
+        "roc20": {
+          "independent": -5.274195517263102,
+          "app": -5.274195517263102,
+          "tolerance": 0.005001
+        }
+      },
+      "weekly": {
+        "ema20": {
+          "independent": 1270.0785105866953,
+          "app": 1270.08,
+          "tolerance": 0.005001
+        },
+        "ema100": {
+          "independent": 1347.3042061570056,
+          "app": 1347.3,
+          "tolerance": 0.005001
+        },
+        "ema200": {
+          "independent": 1299.6413119985407,
+          "app": 1299.64,
+          "tolerance": 0.005001
+        },
+        "rsi": {
+          "independent": 32.94346230875412,
+          "app": 32.94,
+          "tolerance": 0.005001
+        },
+        "bb_width": {
+          "independent": 16.54848589624079,
+          "app": 16.55,
+          "tolerance": 0.005001
+        },
+        "roc20": {
+          "independent": -11.095971919761771,
+          "app": -11.095971919761771,
+          "tolerance": 0.005001
+        }
+      },
+      "monthly": {
+        "ema20": {
+          "independent": 1331.9900576179286,
+          "app": 1331.99,
+          "tolerance": 0.005001
+        },
+        "ema100": {
+          "independent": 1086.5058268268112,
+          "app": 1086.51,
+          "tolerance": 0.005001
+        },
+        "ema200": {
+          "independent": 743.9102447287306,
+          "app": 743.91,
+          "tolerance": 0.005001
+        },
+        "rsi": {
+          "independent": 39.557570701983835,
+          "app": 39.56,
+          "tolerance": 0.005001
+        },
+        "bb_width": {
+          "independent": 30.618658190060472,
+          "app": 30.62,
+          "tolerance": 0.005001
+        },
+        "roc20": {
+          "independent": -2.1248229746484104,
+          "app": -2.1248229746484104,
+          "tolerance": 0.005001
+        }
+      }
+    },
+    "BSE:TCS": {
+      "daily": {
+        "ema20": {
+          "independent": 2158.6714251086405,
+          "app": 2158.67,
+          "tolerance": 0.005001
+        },
+        "ema100": {
+          "independent": 2271.9112885312265,
+          "app": 2271.91,
+          "tolerance": 0.005001
+        },
+        "ema200": {
+          "independent": 2463.553927142028,
+          "app": 2463.55,
+          "tolerance": 0.005001
+        },
+        "rsi": {
+          "independent": 64.01052919147608,
+          "app": 64.01,
+          "tolerance": 0.005001
+        },
+        "bb_width": {
+          "independent": 12.80758176518397,
+          "app": 12.81,
+          "tolerance": 0.005001
+        },
+        "roc20": {
+          "independent": 2.3111111111111082,
+          "app": 2.3111111111111082,
+          "tolerance": 0.005001
+        }
+      },
+      "weekly": {
+        "ema20": {
+          "independent": 2262.6503790031793,
+          "app": 2262.65,
+          "tolerance": 0.005001
+        },
+        "ema100": {
+          "independent": 2863.7612460949526,
+          "app": 2863.76,
+          "tolerance": 0.005001
+        },
+        "ema200": {
+          "independent": 3085.5008007102615,
+          "app": 3085.5,
+          "tolerance": 0.005001
+        },
+        "rsi": {
+          "independent": 49.18583112475086,
+          "app": 49.19,
+          "tolerance": 0.005001
+        },
+        "bb_width": {
+          "independent": 20.42898295949853,
+          "app": 20.43,
+          "tolerance": 0.005001
+        },
+        "roc20": {
+          "independent": 2.13408313324972,
+          "app": 2.13408313324972,
+          "tolerance": 0.005001
+        }
+      },
+      "monthly": {
+        "ema20": {
+          "independent": 2746.4588304098943,
+          "app": 2746.46,
+          "tolerance": 0.005001
+        },
+        "ema100": {
+          "independent": 2826.49196562517,
+          "app": 2826.49,
+          "tolerance": 0.005001
+        },
+        "ema200": {
+          "independent": 2011.5673923077456,
+          "app": 2011.57,
+          "tolerance": 0.005001
+        },
+        "rsi": {
+          "independent": 38.7246704207537,
+          "app": 38.72,
+          "tolerance": 0.005001
+        },
+        "bb_width": {
+          "independent": 70.40022046221276,
+          "app": 70.4,
+          "tolerance": 0.005001
+        },
+        "roc20": {
+          "independent": -33.92462285006069,
+          "app": -33.92462285006069,
+          "tolerance": 0.005001
+        }
+      }
+    }
+  }
+}

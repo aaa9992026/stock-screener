@@ -1,0 +1,44 @@
+[
+  {
+    "url": "https://api.github.com/repos/aaa9992026/stock-screener/deployments/7117870690/statuses",
+    "statuses": [
+      {
+        "state": "success",
+        "environment": "Production",
+        "environment_url": "https://stock-screener-p6ukguo6r-sato-haruto.vercel.app",
+        "target_url": "https://stock-screener-p6ukguo6r-sato-haruto.vercel.app",
+        "description": "Deployment has completed",
+        "created_at": "2026-10-16T11:31:45Z"
+      }
+    ]
+  },
+  {
+    "url": "https://api.github.com/repos/aaa9992026/stock-screener/deployments/7117867551/statuses",
+    "statuses": [
+      {
+        "state": "success",
+        "environment": "impartial-determination / production",
+        "environment_url": "https://railway.com/project/ee4a3e34-2623-4a82-ae17-57f7f1859039?environmentId=604bcb02-b444-4dc9-93ac-829d044d0a46",
+        "target_url": "https://railway.com/project/ee4a3e34-2623-4a82-ae17-57f7f1859039?environmentId=604bcb02-b444-4dc9-93ac-829d044d0a46",
+        "description": "",
+        "created_at": "2026-10-16T11:34:43Z"
+      },
+      {
+        "state": "success",
+        "environment": "impartial-determination / production",
+        "environment_url": "https://railway.com/project/ee4a3e34-2623-4a82-ae17-57f7f1859039?environmentId=604bcb02-b444-4dc9-93ac-829d044d0a46",
+        "target_url": "https://railway.com/project/ee4a3e34-2623-4a82-ae17-57f7f1859039?environmentId=604bcb02-b444-4dc9-93ac-829d044d0a46",
+        "description": "",
+        "created_at": "2026-10-16T11:32:09Z"
+      },
+      {
+        "state": "in_progress",
+        "environment": "impartial-determination / production",
+        "environment_url": "https://railway.com/project/ee4a3e34-2623-4a82-ae17-57f7f1859039?environmentId=604bcb02-b444-4dc9-93ac-829d044d0a46",
+        "target_url": "https://railway.com/project/ee4a3e34-2623-4a82-ae17-57f7f1859039?environmentId=604bcb02-b444-4dc9-93ac-829d044d0a46",
+        "description": "",
+        "created_at": "2026-10-16T11:31:35Z"
+      }
+    ]
+  }
+]

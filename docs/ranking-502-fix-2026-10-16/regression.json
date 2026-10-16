@@ -1,0 +1,38 @@
+{
+  "scope": "Local uncommitted 502-focused patch; no deployment. Recorded-provider replay and isolated persisted synthetic benchmark, not a production stress test.",
+  "backend": {
+    "tests": 70,
+    "failures": 0,
+    "result": "PASS"
+  },
+  "frontend": {
+    "tests": 8,
+    "failures": 0,
+    "result": "PASS"
+  },
+  "api_replay": {
+    "checks": 113,
+    "result": "PASS",
+    "warming_protocol": "Actual cached HTTP route, polls only explicit RANKING_WARMING"
+  },
+  "browser": {
+    "checks": 184,
+    "layouts": 110,
+    "errors": 0,
+    "layout_failures": 0,
+    "explicit_warming_responses": 1,
+    "result": "PASS",
+    "scope": "Local built UI with recorded-provider response replay"
+  },
+  "build": {
+    "result": "PASS",
+    "warning": "Existing bundle over 500 kB"
+  },
+  "lint": {
+    "result": "PASS",
+    "errors": 0,
+    "existing_warnings": 8
+  },
+  "components_unchanged": true,
+  "git_diff_check": "PASS"
+}

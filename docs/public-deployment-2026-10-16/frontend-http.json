@@ -1,0 +1,31 @@
+{
+  "url": "https://stock-screener-two-pied.vercel.app/",
+  "final_url": "https://stock-screener-two-pied.vercel.app/",
+  "status": 200,
+  "headers": {
+    "Etag": "\"b89c4a73e3c46105d1354399ff65fdc2\"",
+    "Last-Modified": "Fri, 16 Oct 2026 11:31:45 GMT",
+    "Server": "Vercel",
+    "X-Vercel-Cache": "HIT",
+    "X-Vercel-Id": "sfo1::kwgr6-1792150487726-7fce2977f4c6"
+  },
+  "html": "<!doctype html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"UTF-8\" />\n    <link rel=\"icon\" type=\"image/svg+xml\" href=\"/favicon.svg\" />\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n    <title>Stock Screener | Market Intelligence</title>\n    <script type=\"module\" crossorigin src=\"/assets/index-DMNVZ-q1.js\"></script>\n    <link rel=\"stylesheet\" crossorigin href=\"/assets/index-rHbpII_V.css\">\n  </head>\n  <body>\n    <div id=\"root\"></div>\n  </body>\n</html>\n",
+  "assets": [
+    {
+      "path": "/assets/index-DMNVZ-q1.js",
+      "status": 200,
+      "bytes": 1065034,
+      "sha256": "04bf270108eb3b7f8375fcd6384d34601f93d77fcfb65565da2195df87cfab20",
+      "matches_local_built_bytes": true,
+      "configured_railway_url_in_js": true
+    },
+    {
+      "path": "/assets/index-rHbpII_V.css",
+      "status": 200,
+      "bytes": 48173,
+      "sha256": "b9dcbe51a00c13f5d0117cf6dd47c4102fe2b61589a89b53e5326f6d2b6869d5",
+      "matches_local_built_bytes": true,
+      "configured_railway_url_in_js": null
+    }
+  ]
+}

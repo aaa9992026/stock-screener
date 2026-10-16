@@ -1,0 +1,23 @@
+{
+  "started_at": "2026-10-16T11:39:08.776619+00:00",
+  "scope": "Live production verification after GitHub push; no deployment or backfill commands",
+  "requests": [
+    {
+      "at": "2026-10-16T11:39:09.804704+00:00",
+      "path": "/market/excel-export/AAPL?exchange=US&snapshot_id=d50b24d11e514220ae8af798bb8bdf32&limit=20",
+      "method": "GET",
+      "status": 200,
+      "seconds": 1.03,
+      "headers": {
+        "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "Date": "Fri, 16 Oct 2026 11:39:10 GMT",
+        "Server": "railway-hikari",
+        "x-railway-request-id": "oy3GvQUDSTqGVYVd-_9nXA"
+      },
+      "body": {
+        "artifact": "retained-AAPL-0.xlsx",
+        "bytes": 14875
+      }
+    }
+  ]
+}

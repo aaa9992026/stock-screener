@@ -1,0 +1,15 @@
+{
+  "url": "https://stock-screener-two-pied.vercel.app/StockScreener_Master_Excel_Python.zip",
+  "status": 200,
+  "bytes": 51219,
+  "sha256": "1ab0a9b17f9cc9df9cac16f0f4c428fed0f7dc78acf91a060dcb33071195708c",
+  "invalid_entry": null,
+  "entries": [
+    "StockScreener_Master.xlsx",
+    "excel_bridge.py",
+    "requirements.txt",
+    "README_MASTER_EXCEL.txt",
+    "INSTALL_MASTER_EXCEL.bat",
+    "START_MASTER_EXCEL.bat"
+  ]
+}

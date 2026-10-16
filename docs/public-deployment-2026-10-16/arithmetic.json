@@ -1,0 +1,506 @@
+{
+  "scope": "Current default frontend rules evaluated on captured new-deployment real backend inputs; browser-local edits not inferred",
+  "components": {
+    "technical": 85.07462686567165,
+    "fundamental": 27.5,
+    "ownership": null,
+    "relative_strength": 83.46,
+    "sector": 89.49
+  },
+  "calculation": {
+    "provisional": 54.86,
+    "normalized": {
+      "fundamental": 30,
+      "technical": 25,
+      "relative_strength": 25,
+      "ownership": 15,
+      "sector": 5
+    },
+    "contributions": {
+      "technical": 21.26865671641791,
+      "fundamental": 8.25,
+      "relative_strength": 20.865,
+      "sector": 4.4745
+    },
+    "coverage": 85,
+    "missing": [
+      "ownership"
+    ]
+  },
+  "rule_coverage": {
+    "fundamental": {
+      "required": 41,
+      "available": 38,
+      "complete": false,
+      "required_weight": 460,
+      "available_weight": 400,
+      "missing": [
+        "cfo_q_yoy_growth",
+        "cfo_q_qoq_growth",
+        "cfo_industry_compare"
+      ]
+    },
+    "technical": {
+      "required": 9,
+      "available": 9,
+      "complete": true,
+      "required_weight": 67,
+      "available_weight": 67,
+      "missing": []
+    },
+    "ownership": {
+      "required": 9,
+      "available": 0,
+      "complete": false,
+      "required_weight": 78,
+      "available_weight": 0,
+      "missing": [
+        "promoter_qoq",
+        "promoter_above",
+        "promoter_rising",
+        "pledge",
+        "fii_qoq",
+        "fii_rising",
+        "dii_mf_qoq",
+        "dii_mf_rising",
+        "insider_activity"
+      ]
+    }
+  },
+  "rows": {
+    "technical": {
+      "price_gt_ema20": {
+        "currentValue": 342,
+        "score": 100,
+        "targetText": 336.12
+      },
+      "price_gt_ema34": {
+        "currentValue": 342,
+        "score": 100,
+        "targetText": 332.24
+      },
+      "distance52_low": {
+        "currentValue": 40.5,
+        "score": 100,
+        "targetText": null
+      },
+      "rs_score": {
+        "currentValue": 83.46,
+        "score": 100,
+        "targetText": null
+      },
+      "roc20": {
+        "currentValue": 1.4836795252225476,
+        "score": 100,
+        "targetText": null
+      },
+      "adx14": {
+        "currentValue": 17.375117931440723,
+        "score": 0,
+        "targetText": null
+      },
+      "atr_percent": {
+        "currentValue": 1.94,
+        "score": 100,
+        "targetText": null
+      },
+      "rvol": {
+        "currentValue": 1.04,
+        "score": 100,
+        "targetText": null
+      },
+      "avg_volume_10": {
+        "currentValue": 36011380,
+        "score": 100,
+        "targetText": null
+      },
+      "price_breadth": {
+        "currentValue": null,
+        "score": null,
+        "targetText": "Definition/provider input needs confirmation"
+      },
+      "volume_dry_up": {
+        "currentValue": 10.22468944317707,
+        "score": 0,
+        "targetText": 40112788
+      },
+      "volume_contraction": {
+        "currentValue": 6.86,
+        "score": 100,
+        "targetText": null
+      },
+      "di_spread": {
+        "currentValue": 12.17654078201534,
+        "score": 100,
+        "targetText": null
+      },
+      "pivot_breakout": {
+        "currentValue": 342,
+        "score": 0,
+        "targetText": 348.15
+      },
+      "bb_width": {
+        "currentValue": 4.56,
+        "score": 100,
+        "targetText": null
+      },
+      "atr5_lt20": {
+        "currentValue": 2.07,
+        "score": 0,
+        "targetText": 1.91
+      },
+      "atr10_lt20": {
+        "currentValue": 1.75,
+        "score": 100,
+        "targetText": 1.91
+      },
+      "rsi14": {
+        "currentValue": 60.58,
+        "score": 100,
+        "targetText": "Bands"
+      },
+      "volume10_lt20": {
+        "currentValue": 36011380,
+        "score": 100,
+        "targetText": 38320055
+      },
+      "volume20_lt40": {
+        "currentValue": 38320055,
+        "score": 100,
+        "targetText": 39760930
+      },
+      "distance52": {
+        "currentValue": 1.77,
+        "score": 100,
+        "targetText": "Bands"
+      },
+      "ema20_gt50": {
+        "currentValue": 336.12,
+        "score": 100,
+        "targetText": 328.19
+      },
+      "ema50_gt150": {
+        "currentValue": 328.19,
+        "score": 100,
+        "targetText": 306.8
+      }
+    },
+    "fundamental": {
+      "q_eps_yoy_latest": {
+        "currentValue": 28.6624203821656,
+        "score": 100,
+        "targetText": null
+      },
+      "q_eps_yoy_delta_latest_prior": {
+        "currentValue": 6.844238563983787,
+        "score": 0,
+        "targetText": "Prior Q YoY 21.82%"
+      },
+      "q_eps_yoy_delta_prior_second": {
+        "currentValue": 3.484848484848481,
+        "score": 0,
+        "targetText": "Second-prior Q YoY 18.33%"
+      },
+      "q_eps_yoy_accel_vs_avg": {
+        "currentValue": 8.586662806408029,
+        "score": 0,
+        "targetText": "Prior-two YoY avg 20.08%"
+      },
+      "q_eps_qoq_latest": {
+        "currentValue": 0.4975124378109568,
+        "score": 0,
+        "targetText": null
+      },
+      "q_eps_qoq_prior": {
+        "currentValue": -29.225352112676063,
+        "score": 0,
+        "targetText": null
+      },
+      "q_eps_qoq_second": {
+        "currentValue": 53.5135135135135,
+        "score": 100,
+        "targetText": null
+      },
+      "q_eps_qoq_accel_vs_avg": {
+        "currentValue": -11.646568262607762,
+        "score": 0,
+        "targetText": "Prior-two QoQ avg 12.14%"
+      },
+      "a_eps_yoy_latest": {
+        "currentValue": 22.69736842105263,
+        "score": 100,
+        "targetText": null
+      },
+      "a_eps_yoy_delta_latest_prior": {
+        "currentValue": 23.513029106207604,
+        "score": 100,
+        "targetText": "Prior annual YoY -0.82%"
+      },
+      "a_eps_yoy_accel_vs_avg": {
+        "currentValue": 22.941532642517192,
+        "score": 100,
+        "targetText": "Prior-two annual YoY avg -0.24%"
+      },
+      "q_pat_yoy_latest": {
+        "currentValue": 27.11871639498165,
+        "score": 100,
+        "targetText": null
+      },
+      "q_pat_yoy_delta_latest_prior": {
+        "currentValue": 7.756327371575676,
+        "score": 0,
+        "targetText": "Prior Q YoY 19.36%"
+      },
+      "q_pat_yoy_delta_prior_second": {
+        "currentValue": 3.488455635021717,
+        "score": 0,
+        "targetText": "Second-prior Q YoY 15.87%"
+      },
+      "q_pat_yoy_accel_vs_avg": {
+        "currentValue": 9.500555189086533,
+        "score": 0,
+        "targetText": "Prior-two YoY avg 17.62%"
+      },
+      "q_pat_qoq_latest": {
+        "currentValue": 0.71336804381635,
+        "score": 0,
+        "targetText": null
+      },
+      "q_pat_qoq_prior": {
+        "currentValue": -29.738461173005206,
+        "score": 0,
+        "targetText": null
+      },
+      "q_pat_qoq_second": {
+        "currentValue": 53.269496832447395,
+        "score": 100,
+        "targetText": null
+      },
+      "q_pat_qoq_accel_vs_avg": {
+        "currentValue": -11.052149785904744,
+        "score": 0,
+        "targetText": "Prior-two QoQ avg 11.77%"
+      },
+      "a_pat_yoy_latest": {
+        "currentValue": 19.495177946573357,
+        "score": 0,
+        "targetText": null
+      },
+      "a_pat_yoy_delta_latest_prior": {
+        "currentValue": 22.85514495518205,
+        "score": 100,
+        "targetText": "Prior annual YoY -3.36%"
+      },
+      "a_pat_yoy_accel_vs_avg": {
+        "currentValue": 22.581932790416595,
+        "score": 100,
+        "targetText": "Prior-two annual YoY avg -3.09%"
+      },
+      "q_sales_yoy_latest": {
+        "currentValue": 16.35650176528138,
+        "score": 0,
+        "targetText": null
+      },
+      "q_sales_yoy_delta_latest_prior": {
+        "currentValue": -0.23868065064160504,
+        "score": 0,
+        "targetText": "Prior Q YoY 16.60%"
+      },
+      "q_sales_yoy_delta_prior_second": {
+        "currentValue": 0.9427286749736687,
+        "score": 0,
+        "targetText": "Second-prior Q YoY 15.65%"
+      },
+      "q_sales_yoy_accel_vs_avg": {
+        "currentValue": 0.23268368684522756,
+        "score": 0,
+        "targetText": "Prior-two YoY avg 16.12%"
+      },
+      "q_sales_qoq_latest": {
+        "currentValue": -1.5892574471146927,
+        "score": 0,
+        "targetText": null
+      },
+      "q_sales_qoq_prior": {
+        "currentValue": -22.65783689028632,
+        "score": 0,
+        "targetText": null
+      },
+      "q_sales_qoq_second": {
+        "currentValue": 40.296293404641546,
+        "score": 100,
+        "targetText": null
+      },
+      "q_sales_qoq_accel_vs_avg": {
+        "currentValue": -10.408485704292307,
+        "score": 0,
+        "targetText": "Prior-two QoQ avg 8.82%"
+      },
+      "a_sales_yoy_latest": {
+        "currentValue": 6.425511782832739,
+        "score": 0,
+        "targetText": null
+      },
+      "a_sales_yoy_delta_latest_prior": {
+        "currentValue": 4.4035177053186185,
+        "score": 0,
+        "targetText": "Prior annual YoY 2.02%"
+      },
+      "a_sales_yoy_accel_vs_avg": {
+        "currentValue": 6.814745009235647,
+        "score": 0,
+        "targetText": "Prior-two annual YoY avg -0.39%"
+      },
+      "npm_q_yoy_growth": {
+        "currentValue": 9.26966292134831,
+        "score": 0,
+        "targetText": null
+      },
+      "npm_q_qoq_growth": {
+        "currentValue": 2.368421052631575,
+        "score": 0,
+        "targetText": null
+      },
+      "npm_a_yoy_growth": {
+        "currentValue": 12.307050479766387,
+        "score": 0,
+        "targetText": null
+      },
+      "npm_expansion_3y": {
+        "currentValue": 7.204724409448812,
+        "score": 100,
+        "targetText": "3-year average NPM 25.40%"
+      },
+      "npm_industry_compare": {
+        "currentValue": 27.23,
+        "score": 100,
+        "targetText": "Industry median NPM -7.76%"
+      },
+      "npm_q_yoy_delta": {
+        "currentValue": 6.92260636113283,
+        "score": 0,
+        "targetText": "Prior Q NPM YoY 2.35%"
+      },
+      "cfo_q_yoy_growth": {
+        "currentValue": null,
+        "score": null,
+        "targetText": null
+      },
+      "cfo_q_qoq_growth": {
+        "currentValue": null,
+        "score": null,
+        "targetText": null
+      },
+      "cfo_a_yoy_growth": {
+        "currentValue": -5.726656180763441,
+        "score": 0,
+        "targetText": null
+      },
+      "cfo_expansion_3y": {
+        "currentValue": -1.7141815980416026,
+        "score": 0,
+        "targetText": "3-year average CFO 113426333333.33"
+      },
+      "cfo_industry_compare": {
+        "currentValue": 111482000000,
+        "score": null,
+        "targetText": "Industry median CFO unavailable"
+      },
+      "cfo_q_yoy_delta": {
+        "currentValue": null,
+        "score": null,
+        "targetText": "Prior Q CFO YoY unavailable"
+      },
+      "cashflow_per_share": {
+        "currentValue": 7.638798479942004,
+        "score": 100,
+        "targetText": null
+      },
+      "roe_above": {
+        "currentValue": 151.91,
+        "score": 100,
+        "targetText": null
+      },
+      "roce_above": {
+        "currentValue": 68.72,
+        "score": 100,
+        "targetText": null
+      },
+      "shares_outstanding": {
+        "currentValue": 14594180000,
+        "score": null,
+        "targetText": "Disabled until exact point rule is confirmed"
+      },
+      "float_shares": {
+        "currentValue": 14569078010,
+        "score": null,
+        "targetText": "Disabled until exact point rule is confirmed"
+      }
+    },
+    "ownership": {},
+    "groupScores": {
+      "technical": 85.07462686567165,
+      "fundamental": 27.5,
+      "ownership": null
+    },
+    "groupCoverage": {
+      "fundamental": {
+        "required": 41,
+        "available": 38,
+        "complete": false,
+        "required_weight": 460,
+        "available_weight": 400,
+        "missing": [
+          "cfo_q_yoy_growth",
+          "cfo_q_qoq_growth",
+          "cfo_industry_compare"
+        ]
+      },
+      "technical": {
+        "required": 9,
+        "available": 9,
+        "complete": true,
+        "required_weight": 67,
+        "available_weight": 67,
+        "missing": []
+      },
+      "ownership": {
+        "required": 9,
+        "available": 0,
+        "complete": false,
+        "required_weight": 78,
+        "available_weight": 0,
+        "missing": [
+          "promoter_qoq",
+          "promoter_above",
+          "promoter_rising",
+          "pledge",
+          "fii_qoq",
+          "fii_rising",
+          "dii_mf_qoq",
+          "dii_mf_rising",
+          "insider_activity"
+        ]
+      }
+    },
+    "fundamentalGroupScores": {
+      "EPS": 45,
+      "PAT": 35,
+      "Sales": 10,
+      "NPM": 25,
+      "CFO": 0,
+      "Other": null
+    }
+  },
+  "baseline_dashboard": {
+    "score": 87.68,
+    "components": {
+      "technical": 100,
+      "fundamental": 100,
+      "relative_strength": 83.46,
+      "ownership": 48.92,
+      "sector": 89.49
+    },
+    "sector_cohort_id": "c2504e228b2f066e467d"
+  }
+}

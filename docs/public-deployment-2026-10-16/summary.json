@@ -1,0 +1,1382 @@
+{
+  "scope": "Read-only public backend verification after deployment; three HTTP phases. Browser results and public deployment metadata saved separately.",
+  "started_at": "2026-10-16T11:33:45.022078+00:00",
+  "last_observation": "2026-10-16T11:39:09.804704+00:00",
+  "requests": 46,
+  "status_counts": {
+    "200": 38,
+    "422": 1,
+    "502": 7
+  },
+  "runtime_failures": [
+    {
+      "at": "2026-10-16T11:34:37.257792+00:00",
+      "path": "/market/top-composite?market=US&candidate_limit=200&limit=200",
+      "status": 502,
+      "seconds": 12.22,
+      "body": "{\"status\":\"error\",\"code\":502,\"message\":\"Application failed to respond\",\"request_id\":\"ebSrpFN7SumSwJK7WUN5dQ\"}"
+    },
+    {
+      "at": "2026-10-16T11:34:37.955416+00:00",
+      "path": "/health",
+      "status": 502,
+      "seconds": 0.68,
+      "body": "{\"status\":\"error\",\"code\":502,\"message\":\"Application failed to respond\",\"request_id\":\"JyrZ_ap-TT-osPGdYqVb7A\"}"
+    },
+    {
+      "at": "2026-10-16T11:34:38.641717+00:00",
+      "path": "/market/top-composite?market=INDIA&candidate_limit=200&limit=200",
+      "status": 502,
+      "seconds": 0.68,
+      "body": "{\"status\":\"error\",\"code\":502,\"message\":\"Application failed to respond\",\"request_id\":\"OzIdpw2UQ3Kc-BP39o6EoQ\"}"
+    },
+    {
+      "at": "2026-10-16T11:34:39.333800+00:00",
+      "path": "/companies/rs-backfill/status?market=US",
+      "status": 502,
+      "seconds": 0.69,
+      "body": "{\"status\":\"error\",\"code\":502,\"message\":\"Application failed to respond\",\"request_id\":\"KKlU0DWfTSS3BgSTjq4OvQ\"}"
+    },
+    {
+      "at": "2026-10-16T11:38:29.936892+00:00",
+      "path": "/market/top-composite?market=US&candidate_limit=200&limit=200",
+      "status": 502,
+      "seconds": 15.17,
+      "body": "{\"status\":\"error\",\"code\":502,\"message\":\"Application failed to respond\",\"request_id\":\"BkCwHG0AReiiLy29pHNmDw\"}"
+    },
+    {
+      "at": "2026-10-16T11:38:30.618097+00:00",
+      "path": "/health",
+      "status": 502,
+      "seconds": 0.67,
+      "body": "{\"status\":\"error\",\"code\":502,\"message\":\"Application failed to respond\",\"request_id\":\"z89Zl6HXQsmB-sfCWUN5dQ\"}"
+    },
+    {
+      "at": "2026-10-16T11:38:31.290244+00:00",
+      "path": "/market/top-composite?market=INDIA&candidate_limit=200&limit=200",
+      "status": 502,
+      "seconds": 0.66,
+      "body": "{\"status\":\"error\",\"code\":502,\"message\":\"Application failed to respond\",\"request_id\":\"r2cJ5iyHQICjHUfw-_9nXA\"}"
+    }
+  ],
+  "harness_validation_422": [
+    {
+      "at": "2026-10-16T11:34:24.079352+00:00",
+      "path": "/market/excel-live-csv/AAPL?exchange=US&limit=5",
+      "method": "GET",
+      "status": 422,
+      "seconds": 0.66,
+      "headers": {},
+      "body": "{\"detail\":[{\"type\":\"greater_than_equal\",\"loc\":[\"query\",\"limit\"],\"msg\":\"Input should be greater than or equal to 20\",\"input\":\"5\",\"ctx\":{\"ge\":20}}]}"
+    }
+  ],
+  "checks": [
+    {
+      "name": "Baseline composite US:AAPL 2026-10-16T11:34:01.874488+00:00",
+      "status": "PASS",
+      "details": {
+        "independent": 87.68,
+        "api": 87.68,
+        "components": {
+          "technical": 100.0,
+          "fundamental": 100.0,
+          "relative_strength": 83.46,
+          "ownership": 48.92,
+          "sector": 89.49
+        },
+        "cohort": "c2504e228b2f066e467d"
+      }
+    },
+    {
+      "name": "Baseline composite NSE:RELIANCE 2026-10-16T11:37:20.847799+00:00",
+      "status": "PASS",
+      "details": {
+        "independent": 55.25,
+        "api": 55.25,
+        "components": {
+          "technical": 30.0,
+          "fundamental": 80.0,
+          "relative_strength": 60.11,
+          "ownership": 49.63,
+          "sector": 25.48
+        },
+        "cohort": "1d49c61a1286fcd31c82"
+      }
+    },
+    {
+      "name": "Baseline composite BSE:TCS 2026-10-16T11:37:36.354482+00:00",
+      "status": "PASS",
+      "details": {
+        "independent": 29.47,
+        "api": 29.47,
+        "components": {
+          "technical": 70.0,
+          "fundamental": null,
+          "relative_strength": 47.89,
+          "ownership": null,
+          "sector": null
+        },
+        "cohort": "1d49c61a1286fcd31c82"
+      }
+    },
+    {
+      "name": "Baseline composite US:AAPL 2026-10-16T11:38:05.401766+00:00",
+      "status": "PASS",
+      "details": {
+        "independent": 87.91,
+        "api": 87.91,
+        "components": {
+          "technical": 100.0,
+          "fundamental": 100.0,
+          "relative_strength": 83.46,
+          "ownership": 48.92,
+          "sector": 94.1
+        },
+        "cohort": "f8d29c6f66febc53cbdf"
+      }
+    },
+    {
+      "name": "Populated sector weighted arithmetic",
+      "status": "PASS",
+      "details": [
+        {
+          "market": "US",
+          "sector": "Technology",
+          "cohort": "c2504e228b2f066e467d",
+          "independent": 89.49,
+          "api": 89.49
+        },
+        {
+          "market": "US",
+          "sector": "Financial Services",
+          "cohort": "c2504e228b2f066e467d",
+          "independent": 84.4,
+          "api": 84.4
+        },
+        {
+          "market": "US",
+          "sector": "Consumer Cyclical",
+          "cohort": "c2504e228b2f066e467d",
+          "independent": 82.45,
+          "api": 82.45
+        },
+        {
+          "market": "US",
+          "sector": "Industrials",
+          "cohort": "c2504e228b2f066e467d",
+          "independent": 61.67,
+          "api": 61.67
+        },
+        {
+          "market": "US",
+          "sector": "Healthcare",
+          "cohort": "c2504e228b2f066e467d",
+          "independent": 58.37,
+          "api": 58.37
+        },
+        {
+          "market": "US",
+          "sector": "Consumer Defensive",
+          "cohort": "c2504e228b2f066e467d",
+          "independent": 42.72,
+          "api": 42.72
+        },
+        {
+          "market": "US",
+          "sector": "Communication Services",
+          "cohort": "c2504e228b2f066e467d",
+          "independent": 26.2,
+          "api": 26.2
+        },
+        {
+          "market": "US",
+          "sector": "Utilities",
+          "cohort": "c2504e228b2f066e467d",
+          "independent": 20.05,
+          "api": 20.05
+        },
+        {
+          "market": "INDIA",
+          "sector": "Basic Materials",
+          "cohort": "1d49c61a1286fcd31c82",
+          "independent": 89.91,
+          "api": 89.91
+        },
+        {
+          "market": "INDIA",
+          "sector": "Consumer Cyclical",
+          "cohort": "1d49c61a1286fcd31c82",
+          "independent": 70.23,
+          "api": 70.23
+        },
+        {
+          "market": "INDIA",
+          "sector": "Utilities",
+          "cohort": "1d49c61a1286fcd31c82",
+          "independent": 63.31,
+          "api": 63.31
+        },
+        {
+          "market": "INDIA",
+          "sector": "Consumer Defensive",
+          "cohort": "1d49c61a1286fcd31c82",
+          "independent": 59.76,
+          "api": 59.76
+        },
+        {
+          "market": "INDIA",
+          "sector": "Healthcare",
+          "cohort": "1d49c61a1286fcd31c82",
+          "independent": 51.78,
+          "api": 51.78
+        },
+        {
+          "market": "INDIA",
+          "sector": "Communication Services",
+          "cohort": "1d49c61a1286fcd31c82",
+          "independent": 50.5,
+          "api": 50.5
+        },
+        {
+          "market": "INDIA",
+          "sector": "Financial Services",
+          "cohort": "1d49c61a1286fcd31c82",
+          "independent": 48.47,
+          "api": 48.47
+        },
+        {
+          "market": "INDIA",
+          "sector": "Industrials",
+          "cohort": "1d49c61a1286fcd31c82",
+          "independent": 39.01,
+          "api": 39.01
+        },
+        {
+          "market": "INDIA",
+          "sector": "Technology",
+          "cohort": "1d49c61a1286fcd31c82",
+          "independent": 38.46,
+          "api": 38.46
+        },
+        {
+          "market": "INDIA",
+          "sector": "Real Estate",
+          "cohort": "1d49c61a1286fcd31c82",
+          "independent": 29.83,
+          "api": 29.83
+        },
+        {
+          "market": "INDIA",
+          "sector": "Energy",
+          "cohort": "1d49c61a1286fcd31c82",
+          "independent": 25.48,
+          "api": 25.48
+        },
+        {
+          "market": "US",
+          "sector": "Technology",
+          "cohort": "f8d29c6f66febc53cbdf",
+          "independent": 94.1,
+          "api": 94.1
+        },
+        {
+          "market": "US",
+          "sector": "Consumer Cyclical",
+          "cohort": "f8d29c6f66febc53cbdf",
+          "independent": 85.03,
+          "api": 85.03
+        },
+        {
+          "market": "US",
+          "sector": "Financial Services",
+          "cohort": "f8d29c6f66febc53cbdf",
+          "independent": 81.26,
+          "api": 81.26
+        },
+        {
+          "market": "US",
+          "sector": "Healthcare",
+          "cohort": "f8d29c6f66febc53cbdf",
+          "independent": 65.85,
+          "api": 65.85
+        },
+        {
+          "market": "US",
+          "sector": "Industrials",
+          "cohort": "f8d29c6f66febc53cbdf",
+          "independent": 62.34,
+          "api": 62.34
+        },
+        {
+          "market": "US",
+          "sector": "Consumer Defensive",
+          "cohort": "f8d29c6f66febc53cbdf",
+          "independent": 44.72,
+          "api": 44.72
+        },
+        {
+          "market": "US",
+          "sector": "Utilities",
+          "cohort": "f8d29c6f66febc53cbdf",
+          "independent": 20.05,
+          "api": 20.05
+        },
+        {
+          "market": "US",
+          "sector": "Communication Services",
+          "cohort": "f8d29c6f66febc53cbdf",
+          "independent": 13.71,
+          "api": 13.71
+        }
+      ]
+    },
+    {
+      "name": "Three-market live CSV observations",
+      "status": "PASS",
+      "details": [
+        {
+          "path": "/market/excel-live-csv/AAPL?exchange=US&limit=20",
+          "rows": 20,
+          "first": {
+            "Symbol": "AAPL",
+            "Exchange": "US",
+            "Company": "Apple Inc.",
+            "ISIN": "US0378331005",
+            "Sector": "Technology",
+            "Industry": "Consumer Electronics",
+            "Date": "2026-09-18",
+            "Open": "337.9100036621094",
+            "High": "338.489990234375",
+            "Low": "332.5299987792969",
+            "Close": "336.1300048828125",
+            "Volume": "86588200.0"
+          },
+          "last": {
+            "Symbol": "AAPL",
+            "Exchange": "US",
+            "Company": "Apple Inc.",
+            "ISIN": "US0378331005",
+            "Sector": "Technology",
+            "Industry": "Consumer Electronics",
+            "Date": "2026-10-15",
+            "Open": "346.95001220703125",
+            "High": "347.8500061035156",
+            "Low": "341.6000061035156",
+            "Close": "342.0",
+            "Volume": "39678300.0"
+          }
+        },
+        {
+          "path": "/market/excel-live-csv/RELIANCE?exchange=NSE&limit=20",
+          "rows": 20,
+          "first": {
+            "Symbol": "RELIANCE",
+            "Exchange": "NSE",
+            "Company": "Reliance Industries Limited",
+            "ISIN": "INE002A01018",
+            "Sector": "Energy",
+            "Industry": "Oil & Gas Refining & Marketing",
+            "Date": "2026-09-18",
+            "Open": "1245.0",
+            "High": "1247.300048828125",
+            "Low": "1226.4000244140625",
+            "Close": "1226.4000244140625",
+            "Volume": "15122715.0"
+          },
+          "last": {
+            "Symbol": "RELIANCE",
+            "Exchange": "NSE",
+            "Company": "Reliance Industries Limited",
+            "ISIN": "INE002A01018",
+            "Sector": "Energy",
+            "Industry": "Oil & Gas Refining & Marketing",
+            "Date": "2026-10-16",
+            "Open": "1215.0",
+            "High": "1215.4000244140625",
+            "Low": "1193.0",
+            "Close": "1211.199951171875",
+            "Volume": "17221171.0"
+          }
+        },
+        {
+          "path": "/market/excel-live-csv/TCS?exchange=BSE&limit=20",
+          "rows": 20,
+          "first": {
+            "Symbol": "TCS",
+            "Exchange": "BSE",
+            "Company": "Tata Consultancy Services Ltd.",
+            "ISIN": "INE467B01029",
+            "Sector": "",
+            "Industry": "",
+            "Date": "2026-09-18",
+            "Open": "2179.5",
+            "High": "2179.5",
+            "Low": "2101.0",
+            "Close": "2101.0",
+            "Volume": "340214.0"
+          },
+          "last": {
+            "Symbol": "TCS",
+            "Exchange": "BSE",
+            "Company": "Tata Consultancy Services Ltd.",
+            "ISIN": "INE467B01029",
+            "Sector": "",
+            "Industry": "",
+            "Date": "2026-10-16",
+            "Open": "2380.0",
+            "High": "2482.0",
+            "Low": "2377.35009765625",
+            "Close": "2463.0",
+            "Volume": "853716.0"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Three-market live workbooks",
+      "status": "PASS",
+      "details": [
+        {
+          "artifact": "AAPL-15.xlsx",
+          "sheets": [
+            "Summary",
+            "OHLCV",
+            "Fundamental_Ownership",
+            "Ranking_Config",
+            "Technical_Filter_Config",
+            "Fundamental_Filter_Config",
+            "Sector_Ranking_Config",
+            "Notes"
+          ],
+          "summary": {
+            "Symbol": "AAPL",
+            "Exchange": "US",
+            "Company": "Apple Inc.",
+            "ISIN": "US0378331005",
+            "Sector": "Technology",
+            "Industry": "Consumer Electronics",
+            "Generated At": "2026-10-16T11:34:25.828082Z",
+            "Price Data Source": "Live daily provider history; score snapshot is separate"
+          },
+          "ohlcv_rows": 20
+        },
+        {
+          "artifact": "followup-RELIANCE-7.xlsx",
+          "sheets": [
+            "Summary",
+            "OHLCV",
+            "Fundamental_Ownership",
+            "Ranking_Config",
+            "Technical_Filter_Config",
+            "Fundamental_Filter_Config",
+            "Sector_Ranking_Config",
+            "Notes"
+          ],
+          "summary": {
+            "Symbol": "RELIANCE",
+            "Exchange": "NSE",
+            "Company": "Reliance Industries Limited",
+            "ISIN": "INE002A01018",
+            "Sector": "Energy",
+            "Industry": "Oil & Gas Refining & Marketing",
+            "Generated At": "2026-10-16T11:37:31.742026Z",
+            "Price Data Source": "Live daily provider history; score snapshot is separate"
+          },
+          "ohlcv_rows": 20
+        },
+        {
+          "artifact": "followup-TCS-12.xlsx",
+          "sheets": [
+            "Summary",
+            "OHLCV",
+            "Fundamental_Ownership",
+            "Ranking_Config",
+            "Technical_Filter_Config",
+            "Fundamental_Filter_Config",
+            "Sector_Ranking_Config",
+            "Notes"
+          ],
+          "summary": {
+            "Symbol": "TCS",
+            "Exchange": "BSE",
+            "Company": "Tata Consultancy Services Ltd.",
+            "ISIN": "INE467B01029",
+            "Sector": "N/A",
+            "Industry": "N/A",
+            "Generated At": "2026-10-16T11:37:45.828852Z",
+            "Price Data Source": "Live daily provider history; score snapshot is separate"
+          },
+          "ohlcv_rows": 20
+        },
+        {
+          "artifact": "retained-AAPL-0.xlsx",
+          "sheets": [
+            "Summary",
+            "OHLCV",
+            "Fundamental_Ownership",
+            "Ranking_Config",
+            "Technical_Filter_Config",
+            "Fundamental_Filter_Config",
+            "Sector_Ranking_Config",
+            "Notes"
+          ],
+          "summary": {
+            "Symbol": "AAPL",
+            "Exchange": "US",
+            "Company": "Apple Inc.",
+            "ISIN": "US0378331005",
+            "Sector": "Technology",
+            "Industry": "Consumer Electronics",
+            "Generated At": "2026-10-16T11:39:10.600233Z",
+            "Price Data Source": "Live daily provider history; score snapshot is separate",
+            "Score Source": "Ranking snapshot",
+            "Score Snapshot ID": "d50b24d11e514220ae8af798bb8bdf32",
+            "Score Snapshot At": "2026-10-16T11:16:45.718259Z",
+            "Score Version": "client-rs5000-fiscal-v3",
+            "Snapshot Price": 342,
+            "Snapshot EPS": 8.72,
+            "Score Status": "Provisional"
+          },
+          "ohlcv_rows": 20
+        }
+      ]
+    },
+    {
+      "name": "Immutable predeployment snapshot retained",
+      "status": "PASS",
+      "details": {
+        "snapshot_id": "d50b24d11e514220ae8af798bb8bdf32",
+        "components": {
+          "fundamental_score": {
+            "export": 30,
+            "original": 30.0
+          },
+          "technical_score": {
+            "export": 100,
+            "original": 100.0
+          },
+          "rs_score": {
+            "export": 83.46,
+            "original": 83.46
+          },
+          "ownership_score": {
+            "export": 48.92,
+            "original": 48.92
+          },
+          "sector_score": {
+            "export": 84.22,
+            "original": 84.22
+          }
+        }
+      }
+    },
+    {
+      "name": "Three-market live 20-year backtests",
+      "status": "PASS",
+      "details": {
+        "US:AAPL": {
+          "row_count": 5046,
+          "actual_years": 20.05475701574264,
+          "history_status": "Complete",
+          "earliest_date": "2006-09-25",
+          "latest_date": "2026-10-15",
+          "source": "Yahoo Finance/yfinance long history"
+        },
+        "NSE:RELIANCE": {
+          "row_count": 4948,
+          "actual_years": 20.057494866529773,
+          "history_status": "Complete",
+          "earliest_date": "2006-09-25",
+          "latest_date": "2026-10-16",
+          "source": "Yahoo Finance/yfinance long history"
+        },
+        "BSE:TCS": {
+          "row_count": 4945,
+          "actual_years": 20.057494866529773,
+          "history_status": "Complete",
+          "earliest_date": "2006-09-25",
+          "latest_date": "2026-10-16",
+          "source": "Yahoo Finance/yfinance long history"
+        }
+      }
+    }
+  ],
+  "rs": {
+    "US": {
+      "market": "US",
+      "evaluation_date": "2026-10-14",
+      "target_rs_universe": 5000,
+      "active_symbols": 5756,
+      "history_ready_symbols": 5426,
+      "pending_active_symbols": 330,
+      "no_history_symbols": 34,
+      "stale_or_short_history_symbols": 296,
+      "target_coverage_percent": 100.0,
+      "active_coverage_percent": 94.27,
+      "symbol_master_shortfall": 0,
+      "complete": true,
+      "history_requirements": {
+        "minimum_rows": 180,
+        "minimum_span_days": 350,
+        "maximum_stale_days": 14,
+        "requested_backfill_days": 500
+      },
+      "by_exchange": {
+        "US": {
+          "active": 5756,
+          "ready": 5426,
+          "pending": 330
+        }
+      },
+      "last_batch": {
+        "market": "US",
+        "status": "completed",
+        "requested_batch_size": 25,
+        "attempted": 25,
+        "succeeded": 25,
+        "failed": 0,
+        "empty": 0,
+        "provider": "Yahoo Finance/yfinance bulk OHLCV",
+        "real_data_only": true,
+        "before_ready": 5426,
+        "after_ready": 5426,
+        "remaining_active": 330,
+        "started_at": "2026-10-16T11:35:10.736192Z",
+        "finished_at": "2026-10-16T11:35:13.723474Z",
+        "details": [
+          {
+            "symbol": "ASBH",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 22,
+            "compact_rows": 22
+          },
+          {
+            "symbol": "ATCX",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 193,
+            "compact_rows": 193
+          },
+          {
+            "symbol": "ATTO",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 51,
+            "compact_rows": 51
+          },
+          {
+            "symbol": "AUXX",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 28,
+            "compact_rows": 28
+          },
+          {
+            "symbol": "AVEX",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 126,
+            "compact_rows": 126
+          },
+          {
+            "symbol": "AVLN",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 117,
+            "compact_rows": 117
+          },
+          {
+            "symbol": "AZUL",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 98,
+            "compact_rows": 98
+          },
+          {
+            "symbol": "BBCI",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 7,
+            "compact_rows": 7
+          },
+          {
+            "symbol": "BCSS",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 226,
+            "compact_rows": 226
+          },
+          {
+            "symbol": "BEBE",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 174,
+            "compact_rows": 174
+          },
+          {
+            "symbol": "BETA",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 238,
+            "compact_rows": 238
+          },
+          {
+            "symbol": "BGSI",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 239,
+            "compact_rows": 239
+          },
+          {
+            "symbol": "BIOT",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 59,
+            "compact_rows": 59
+          },
+          {
+            "symbol": "BLLN",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 236,
+            "compact_rows": 236
+          },
+          {
+            "symbol": "BLSM",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 49,
+            "compact_rows": 49
+          },
+          {
+            "symbol": "BMM",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 183,
+            "compact_rows": 183
+          },
+          {
+            "symbol": "BOBS",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 175,
+            "compact_rows": 175
+          },
+          {
+            "symbol": "BOT",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 110,
+            "compact_rows": 110
+          },
+          {
+            "symbol": "BPAC",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 196,
+            "compact_rows": 196
+          },
+          {
+            "symbol": "BRAI",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 170,
+            "compact_rows": 170
+          },
+          {
+            "symbol": "BRTM",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 26,
+            "compact_rows": 26
+          },
+          {
+            "symbol": "BRVE",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 50,
+            "compact_rows": 50
+          },
+          {
+            "symbol": "BSP",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 75,
+            "compact_rows": 75
+          },
+          {
+            "symbol": "BTGO",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 186,
+            "compact_rows": 186
+          },
+          {
+            "symbol": "BUDA",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 194,
+            "compact_rows": 194
+          }
+        ]
+      },
+      "retry_cooldown_symbols": 297,
+      "scheduler_enabled": true,
+      "scheduler": {
+        "running": true,
+        "registered": true,
+        "next_run_at": "2026-10-16T11:39:03.315599+00:00"
+      },
+      "storage": "compressed provider date/open/close observations"
+    },
+    "INDIA": {
+      "market": "INDIA",
+      "evaluation_date": "2026-10-07",
+      "target_rs_universe": 5000,
+      "active_symbols": 5278,
+      "history_ready_symbols": 4423,
+      "pending_active_symbols": 855,
+      "no_history_symbols": 193,
+      "stale_or_short_history_symbols": 662,
+      "target_coverage_percent": 88.46,
+      "active_coverage_percent": 83.8,
+      "symbol_master_shortfall": 0,
+      "complete": false,
+      "history_requirements": {
+        "minimum_rows": 180,
+        "minimum_span_days": 350,
+        "maximum_stale_days": 14,
+        "requested_backfill_days": 500
+      },
+      "by_exchange": {
+        "NSE": {
+          "active": 2605,
+          "ready": 2193,
+          "pending": 412
+        },
+        "BSE": {
+          "active": 2673,
+          "ready": 2230,
+          "pending": 443
+        }
+      },
+      "last_batch": {
+        "market": "INDIA",
+        "status": "idle",
+        "requested_batch_size": 25,
+        "attempted": 0,
+        "succeeded": 0,
+        "failed": 0,
+        "empty": 0,
+        "before": {
+          "market": "INDIA",
+          "evaluation_date": "2026-10-07",
+          "target_rs_universe": 5000,
+          "active_symbols": 5278,
+          "history_ready_symbols": 4423,
+          "pending_active_symbols": 855,
+          "no_history_symbols": 193,
+          "stale_or_short_history_symbols": 662,
+          "target_coverage_percent": 88.46,
+          "active_coverage_percent": 83.8,
+          "symbol_master_shortfall": 0,
+          "complete": false,
+          "history_requirements": {
+            "minimum_rows": 180,
+            "minimum_span_days": 350,
+            "maximum_stale_days": 14,
+            "requested_backfill_days": 500
+          },
+          "by_exchange": {
+            "NSE": {
+              "active": 2605,
+              "ready": 2193,
+              "pending": 412
+            },
+            "BSE": {
+              "active": 2673,
+              "ready": 2230,
+              "pending": 443
+            }
+          },
+          "retry_cooldown_symbols": 857,
+          "scheduler_enabled": true,
+          "scheduler": {
+            "running": true,
+            "registered": true,
+            "next_run_at": "2026-10-16T11:40:10.735610+00:00"
+          },
+          "storage": "compressed provider date/open/close observations"
+        },
+        "after": {
+          "market": "INDIA",
+          "evaluation_date": "2026-10-07",
+          "target_rs_universe": 5000,
+          "active_symbols": 5278,
+          "history_ready_symbols": 4423,
+          "pending_active_symbols": 855,
+          "no_history_symbols": 193,
+          "stale_or_short_history_symbols": 662,
+          "target_coverage_percent": 88.46,
+          "active_coverage_percent": 83.8,
+          "symbol_master_shortfall": 0,
+          "complete": false,
+          "history_requirements": {
+            "minimum_rows": 180,
+            "minimum_span_days": 350,
+            "maximum_stale_days": 14,
+            "requested_backfill_days": 500
+          },
+          "by_exchange": {
+            "NSE": {
+              "active": 2605,
+              "ready": 2193,
+              "pending": 412
+            },
+            "BSE": {
+              "active": 2673,
+              "ready": 2230,
+              "pending": 443
+            }
+          },
+          "retry_cooldown_symbols": 857,
+          "scheduler_enabled": true,
+          "scheduler": {
+            "running": true,
+            "registered": true,
+            "next_run_at": "2026-10-16T11:40:10.735610+00:00"
+          },
+          "storage": "compressed provider date/open/close observations"
+        },
+        "started_at": "2026-10-16T11:35:13.733456Z",
+        "finished_at": "2026-10-16T11:35:13.969531Z"
+      },
+      "retry_cooldown_symbols": 857,
+      "scheduler_enabled": true,
+      "scheduler": {
+        "running": true,
+        "registered": true,
+        "next_run_at": "2026-10-16T11:39:03.315599+00:00"
+      },
+      "storage": "compressed provider date/open/close observations"
+    }
+  },
+  "baseline_dashboard": {
+    "symbol": "AAPL",
+    "name": "Apple Inc.",
+    "isin": "US0378331005",
+    "exchange": "US",
+    "score": 87.91,
+    "provisional_score": 87.91,
+    "score_source": "Live baseline daily components; frontend rule editor is labeled separately",
+    "score_version": "client-rs5000-fiscal-v3",
+    "rs_universe": {
+      "market": "US",
+      "evaluation_date": "2026-10-14",
+      "target_rs_universe": 5000,
+      "active_symbols": 5756,
+      "history_ready_symbols": 5426,
+      "pending_active_symbols": 330,
+      "no_history_symbols": 34,
+      "stale_or_short_history_symbols": 296,
+      "target_coverage_percent": 100.0,
+      "active_coverage_percent": 94.27,
+      "symbol_master_shortfall": 0,
+      "complete": true,
+      "history_requirements": {
+        "minimum_rows": 180,
+        "minimum_span_days": 350,
+        "maximum_stale_days": 14,
+        "requested_backfill_days": 500
+      },
+      "by_exchange": {
+        "US": {
+          "active": 5756,
+          "ready": 5426,
+          "pending": 330
+        }
+      },
+      "last_batch": {
+        "market": "US",
+        "status": "completed",
+        "requested_batch_size": 25,
+        "attempted": 25,
+        "succeeded": 25,
+        "failed": 0,
+        "empty": 0,
+        "provider": "Yahoo Finance/yfinance bulk OHLCV",
+        "real_data_only": true,
+        "before_ready": 5426,
+        "after_ready": 5426,
+        "remaining_active": 330,
+        "started_at": "2026-10-16T11:35:10.736192Z",
+        "finished_at": "2026-10-16T11:35:13.723474Z",
+        "details": [
+          {
+            "symbol": "ASBH",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 22,
+            "compact_rows": 22
+          },
+          {
+            "symbol": "ATCX",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 193,
+            "compact_rows": 193
+          },
+          {
+            "symbol": "ATTO",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 51,
+            "compact_rows": 51
+          },
+          {
+            "symbol": "AUXX",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 28,
+            "compact_rows": 28
+          },
+          {
+            "symbol": "AVEX",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 126,
+            "compact_rows": 126
+          },
+          {
+            "symbol": "AVLN",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 117,
+            "compact_rows": 117
+          },
+          {
+            "symbol": "AZUL",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 98,
+            "compact_rows": 98
+          },
+          {
+            "symbol": "BBCI",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 7,
+            "compact_rows": 7
+          },
+          {
+            "symbol": "BCSS",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 226,
+            "compact_rows": 226
+          },
+          {
+            "symbol": "BEBE",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 174,
+            "compact_rows": 174
+          },
+          {
+            "symbol": "BETA",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 238,
+            "compact_rows": 238
+          },
+          {
+            "symbol": "BGSI",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 239,
+            "compact_rows": 239
+          },
+          {
+            "symbol": "BIOT",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 59,
+            "compact_rows": 59
+          },
+          {
+            "symbol": "BLLN",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 236,
+            "compact_rows": 236
+          },
+          {
+            "symbol": "BLSM",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 49,
+            "compact_rows": 49
+          },
+          {
+            "symbol": "BMM",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 183,
+            "compact_rows": 183
+          },
+          {
+            "symbol": "BOBS",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 175,
+            "compact_rows": 175
+          },
+          {
+            "symbol": "BOT",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 110,
+            "compact_rows": 110
+          },
+          {
+            "symbol": "BPAC",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 196,
+            "compact_rows": 196
+          },
+          {
+            "symbol": "BRAI",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 170,
+            "compact_rows": 170
+          },
+          {
+            "symbol": "BRTM",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 26,
+            "compact_rows": 26
+          },
+          {
+            "symbol": "BRVE",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 50,
+            "compact_rows": 50
+          },
+          {
+            "symbol": "BSP",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 75,
+            "compact_rows": 75
+          },
+          {
+            "symbol": "BTGO",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 186,
+            "compact_rows": 186
+          },
+          {
+            "symbol": "BUDA",
+            "exchange": "US",
+            "status": "success",
+            "records_received": 194,
+            "compact_rows": 194
+          }
+        ]
+      },
+      "retry_cooldown_symbols": 297,
+      "scheduler_enabled": true,
+      "scheduler": {
+        "running": true,
+        "registered": true,
+        "next_run_at": "2026-10-16T11:40:10.735610+00:00"
+      },
+      "storage": "compressed provider date/open/close observations"
+    },
+    "signal": "Buy",
+    "missing_required_score_categories": [],
+    "score_coverage_percent": 100,
+    "score_components": {
+      "technical": 100.0,
+      "fundamental": 100.0,
+      "relative_strength": 83.46,
+      "ownership": 48.92,
+      "sector": 94.1
+    },
+    "score_weights": {
+      "technical": 25.0,
+      "fundamental": 30.0,
+      "ownership": 15.0,
+      "sector": 5.0,
+      "relative_strength": 25.0
+    },
+    "ranking_subweights": {
+      "technical": {
+        "ema20": 20.0,
+        "ema50": 20.0,
+        "ema150": 20.0,
+        "ema200": 20.0,
+        "rsi": 20.0
+      },
+      "fundamental": {
+        "eps": 20.0,
+        "net_income": 20.0,
+        "profit_margin": 20.0,
+        "roe": 20.0,
+        "roa": 20.0
+      },
+      "ownership": {
+        "institution": 70.0,
+        "insider": 30.0
+      }
+    },
+    "rs_period_weights": {
+      "1w": 30.0,
+      "2w": 0.0,
+      "1m": 25.0,
+      "2m": 0.0,
+      "3m": 20.0,
+      "6m": 15.0,
+      "1y": 10.0,
+      "sector": 0.0
+    },
+    "sector": "Technology",
+    "industry": "Consumer Electronics",
+    "industry_median_npm": -7.7619995,
+    "industry_npm_peer_count": 8,
+    "sector_rank": {
+      "available": false,
+      "rank": null,
+      "total": 100,
+      "group": "Technology",
+      "note": "The selected stock does not yet have enough comparable scored peer data."
+    },
+    "industry_rank": {
+      "available": true,
+      "rank": 1,
+      "total": 8,
+      "group": "Consumer Electronics",
+      "note": null
+    },
+    "sector_score_peer_count": 62,
+    "sector_score_status": "Provisional shared stored-market cohort",
+    "sector_cohort_id": "f8d29c6f66febc53cbdf",
+    "method_note": "Milestone-2 composite follows the client note: Fundamental 30% + Technical 25% + RS 25% + Ownership 15% + Sector 5%. The selected-stock Sector component reuses real compact Top-200 EPS/PAT/Sales peer history and requires at least 5 real peers; it is never substituted with price RS. For NSE/BSE, a score is withheld when a positively weighted fundamental or ownership category is unavailable, rather than producing a misleading partial ranking."
+  },
+  "ownership": {
+    "institutional_percent": 66.348,
+    "insider_percent": 1.648,
+    "retail_public_percent": 32.004,
+    "retail_public_method": "100% - institutional ownership - insider ownership"
+  },
+  "historical_ownership_status": "BLOCKED",
+  "backtests": {
+    "US:AAPL": {
+      "row_count": 5046,
+      "actual_years": 20.05475701574264,
+      "history_status": "Complete",
+      "earliest_date": "2006-09-25",
+      "latest_date": "2026-10-15",
+      "source": "Yahoo Finance/yfinance long history"
+    },
+    "NSE:RELIANCE": {
+      "row_count": 4948,
+      "actual_years": 20.057494866529773,
+      "history_status": "Complete",
+      "earliest_date": "2006-09-25",
+      "latest_date": "2026-10-16",
+      "source": "Yahoo Finance/yfinance long history"
+    },
+    "BSE:TCS": {
+      "row_count": 4945,
+      "actual_years": 20.057494866529773,
+      "history_status": "Complete",
+      "earliest_date": "2006-09-25",
+      "latest_date": "2026-10-16",
+      "source": "Yahoo Finance/yfinance long history"
+    }
+  },
+  "risk_metrics": {
+    "symbol": "AAPL",
+    "exchange": "US",
+    "beta": 1.064578,
+    "alpha": 7.234458,
+    "observations": 104,
+    "basis": "2Y weekly adjusted closes; common daily observation dates; completed weeks",
+    "as_of": "2026-10-12",
+    "provider": "Yahoo auto_adjust=True"
+  },
+  "coverage": {
+    "US": {
+      "market": "US",
+      "eligible_equities": 5747,
+      "price_history_available": 5713,
+      "price_history_percent": 99.4,
+      "fundamentals_available": 2250,
+      "fundamentals_percent": 39.2,
+      "ownership_available": 2250,
+      "ownership_percent": 39.2,
+      "classification_available": 2219,
+      "classification_percent": 38.6,
+      "automatic_enrichment": true,
+      "scheduler": {
+        "running": true,
+        "registered": true,
+        "next_run_at": "2026-10-16T11:44:05.057754+00:00"
+      },
+      "coverage_basis": "Any current field; not complete historical statement or ownership coverage. Counts include exchange listings, not deduplicated issuers.",
+      "price_history_basis": "Stored OHLCV or compressed date/open/close history; not full OHLCV availability",
+      "data_rule": "Only real provider values are stored; unavailable fields remain N/A."
+    },
+    "INDIA": {
+      "market": "INDIA",
+      "eligible_equities": 7746,
+      "price_history_available": 5095,
+      "price_history_percent": 65.8,
+      "fundamentals_available": 2216,
+      "fundamentals_percent": 28.6,
+      "ownership_available": 2214,
+      "ownership_percent": 28.6,
+      "classification_available": 2638,
+      "classification_percent": 34.1,
+      "automatic_enrichment": true,
+      "scheduler": {
+        "running": true,
+        "registered": true,
+        "next_run_at": "2026-10-16T11:44:05.057754+00:00"
+      },
+      "coverage_basis": "Any current field; not complete historical statement or ownership coverage. Counts include exchange listings, not deduplicated issuers.",
+      "price_history_basis": "Stored OHLCV or compressed date/open/close history; not full OHLCV availability",
+      "data_rule": "Only real provider values are stored; unavailable fields remain N/A."
+    }
+  },
+  "last_health": {
+    "at": "2026-10-16T11:38:34.393629+00:00",
+    "path": "/health",
+    "method": "GET",
+    "status": 200,
+    "seconds": 0.69,
+    "headers": {
+      "Content-Type": "application/json",
+      "Date": "Fri, 16 Oct 2026 11:38:35 GMT",
+      "Server": "railway-hikari",
+      "x-railway-request-id": "46K5wxRxQj6VkVuslt7tkg"
+    },
+    "body": {
+      "status": "ok",
+      "database": "ready"
+    }
+  },
+  "current_top200_qualified_count": {
+    "US": null,
+    "INDIA": null,
+    "reason": "All four explicit US/India ranking attempts returned HTTP 502; no current count inferred."
+  },
+  "private_runtime_diagnosis": "BLOCKED: no private access. Public error says Application failed to respond; no cause is established."
+}

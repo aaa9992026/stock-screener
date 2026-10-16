@@ -1,0 +1,49 @@
+{
+  "scope": "Isolated persisted SQLite benchmark: 11034 synthetic listing identities, 9849 compact histories, 11034 compact financial snapshots, repeated recorded real AAPL/provider series. Provider I/O stubbed; no production mutations. tracemalloc Python allocations, not process RSS.",
+  "results": [
+    {
+      "market": "US",
+      "candidate_count": 220,
+      "returned_count": 200,
+      "cohort": {
+        "US": {
+          "scored_stocks_available": 5000,
+          "target_size": 5000,
+          "evaluation_date": "2026-10-13",
+          "complete": true
+        }
+      },
+      "seconds": 26.59,
+      "python_peak_mib": 38.12,
+      "queries": 11,
+      "response_bytes": 706571,
+      "stages": {
+        "RS_universe_seconds": 19.644875799975125,
+        "enrichment_load_seconds": 0.05198530000052415
+      },
+      "component_digest": "db8302203932298800d1adbb6bbaa6c4488c1ff70abb871d5c40038d731c7c6f"
+    },
+    {
+      "market": "INDIA",
+      "candidate_count": 220,
+      "returned_count": 200,
+      "cohort": {
+        "INDIA": {
+          "scored_stocks_available": 4423,
+          "target_size": 5000,
+          "evaluation_date": "2026-10-13",
+          "complete": false
+        }
+      },
+      "seconds": 21.7163,
+      "python_peak_mib": 34.73,
+      "queries": 14,
+      "response_bytes": 707178,
+      "stages": {
+        "RS_universe_seconds": 16.074005600006785,
+        "enrichment_load_seconds": 0.048554399982094765
+      },
+      "component_digest": "4d9633895b759ecfbae6ca713e1913cb3ff3abc1e2f5302a0f6241239dab7204"
+    }
+  ]
+}

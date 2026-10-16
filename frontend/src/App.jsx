@@ -18,6 +18,7 @@ import {
 } from "recharts";
 import "./App.css";
 import { buildClientFundamentalRows, compareNumeric, ruleCoverage, reconcileComposite } from "./scoring";
+import { requestRanking } from "./rankingRequest.js";
 import { SectorWorkspace, PortfolioWorkspace, TradeBacktest } from "./MilestoneWorkspaces";
 
 const DEFAULT_API_BASE = "https://stock-screener-production-d90e.up.railway.app";
@@ -734,7 +735,7 @@ function App() {
     await waitForApiReady(12000);
 
     const requestComposite = (candidateLimit, timeout) =>
-      axios.get(`${API}/market/top-composite`, {
+      requestRanking(remaining => axios.get(`${API}/market/top-composite`, {
         params: {
           market: marketOverride || "ALL",
           limit: 200,
@@ -745,8 +746,8 @@ function App() {
           sector_weight: safeWeights.sector,
           relative_strength_weight: safeWeights.relative_strength,
         },
-        timeout,
-      });
+        timeout: remaining,
+      }), { timeoutMs: timeout });
 
     const cacheKey = `fiscal-v3:top200:${marketOverride || "ALL"}:${JSON.stringify(safeWeights)}`;
     try {
@@ -784,8 +785,9 @@ function App() {
         setTopComposite(cached.data);
         setTopCompositeError(`Live Top 200 refresh is temporarily unavailable. Showing the last verified dashboard saved ${cached.saved_at || "earlier"}.`);
       } else {
+        const detail = error?.response?.data?.detail;
         setTopCompositeError(
-          error?.response?.data?.detail ||
+          (typeof detail === "string" ? detail : detail?.message) ||
           "Top 200 data is temporarily unavailable. The backend is reconnecting; please retry shortly."
         );
       }

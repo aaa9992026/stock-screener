@@ -40,6 +40,7 @@ from app.models import RSHistory
 from app.services.rs_history import decode_points, persist_history
 from app.services.financial_periods import align_financial_history
 from app.services.score_math import composite_points
+from app.services.ranking_delivery import delivery, trace_stage
 
 FINANCIAL_CALCULATION_VERSION = "fiscal-date-v3"
 
@@ -52,6 +53,8 @@ _LIVE_ROW_CACHE_LOCK = threading.Lock()
 _LIVE_SCREENER_SNAPSHOT_CACHE = {}
 _LIVE_BENCHMARK_CLOSE_CACHE = {}
 _RANKING_ENRICH_CACHE = {}
+_RANKING_ENRICH_CACHE_LOCK = threading.Lock()
+_RANKING_ENRICH_CACHE_LIMIT = 512
 _RANKING_ENRICH_TTL = 21600
 _RANKING_SEC_PROVIDER = None
 _RANKING_WARM_LOCK = threading.Lock()
@@ -223,8 +226,8 @@ def _live_close_history_for_candidates(rows):
     for ex, symbols in by_exchange.items():
         # Keep the free-tier request bounded.  Top 200 needs only a modest
         # candidate buffer, not history for the full 8k/11k market universe.
-        for offset in range(0, len(symbols), 80):
-            chunk = symbols[offset:offset + 80]
+        for offset in range(0, len(symbols), 20):
+            chunk = symbols[offset:offset + 20]
             ticker_map = {provider.format_symbol(sym, ex): sym for sym in chunk}
             tickers = list(ticker_map.keys())
             if not tickers:
@@ -236,7 +239,8 @@ def _live_close_history_for_candidates(rows):
                     interval="1d",
                     auto_adjust=False,
                     progress=False,
-                    threads=4,
+                    threads=2,
+                    timeout=10,
                     group_by="ticker",
                 )
             except Exception:
@@ -608,7 +612,10 @@ def _fetch_ranking_enrichment(row):
 
     payload = {"history": history, "metadata": metadata}
     payload.update(_ranking_fundamental_bundle(history, metadata))
-    _RANKING_ENRICH_CACHE[key] = (now, payload)
+    with _RANKING_ENRICH_CACHE_LOCK:
+        _RANKING_ENRICH_CACHE[key] = (now, payload)
+        while len(_RANKING_ENRICH_CACHE) > _RANKING_ENRICH_CACHE_LIMIT:
+            _RANKING_ENRICH_CACHE.pop(next(iter(_RANKING_ENRICH_CACHE)))
     return payload
 
 
@@ -626,7 +633,7 @@ def _apply_ranking_enrichment(rows, limit=None):
         return {}
 
     result = {}
-    workers = max(1, min(8, len(targets)))
+    workers = max(1, min(2, len(targets)))
     with ThreadPoolExecutor(max_workers=workers) as executor:
         futures = {executor.submit(_fetch_ranking_enrichment, row): row for row in targets}
         for future in as_completed(futures):
@@ -736,7 +743,9 @@ def _persist_ranking_enrichment(payloads):
                 snap.payload_json = encoded
                 snap.updated_at = datetime.utcnow()
         db.commit()
-    except Exception:
+    except Exception as error:
+        from app.services.ranking_delivery import logger
+        logger.error('ranking_enrichment_write_failed error_type=%s', type(error).__name__)
         try:
             db.rollback()
         except Exception:
@@ -745,6 +754,7 @@ def _persist_ranking_enrichment(payloads):
         db.close()
 
 
+@trace_stage('enrichment_read')
 def _load_persisted_ranking_enrichment(rows):
     """Load compact persisted enrichment and fill metadata gaps."""
     rows = list(rows or [])
@@ -757,12 +767,17 @@ def _load_persisted_ranking_enrichment(rows):
     cutoff = datetime.utcnow() - timedelta(seconds=_ranking_snapshot_ttl_seconds())
     db = SessionLocal()
     try:
-        snapshots = db.query(RankingSnapshot).filter(RankingSnapshot.updated_at >= cutoff).all()
-    except Exception:
+        snapshots = db.query(RankingSnapshot).filter(
+            RankingSnapshot.updated_at >= cutoff,
+            tuple_(RankingSnapshot.exchange, RankingSnapshot.symbol).in_(wanted),
+        ).all()
+    except Exception as error:
         try:
             db.rollback()
         except Exception:
             pass
+        from app.services.ranking_delivery import logger
+        logger.error('ranking_enrichment_read_failed error_type=%s', type(error).__name__)
         snapshots = []
     finally:
         db.close()
@@ -2221,6 +2236,7 @@ def _percentile_rank(values, target_value, total_count=None):
     return round(max(0.0, min(100.0, percentile)), 2)
 
 
+@trace_stage('rs_cohort')
 def _rs_universe_metrics(db: Session, exchange: str, benchmark_points):
     """Evaluate real persisted observations using one benchmark date and 5,000 slots."""
     if db is None or not benchmark_points:
@@ -2251,23 +2267,24 @@ def _rs_universe_metrics(db: Session, exchange: str, benchmark_points):
             consume(key, decode_points(item.points_payload))
     # Stream legacy OHLCV fallback one symbol at a time, retaining only the
     # small return summary. Existing observations are never deleted.
-    query = db.query(OHLCV.exchange, OHLCV.symbol, OHLCV.date, OHLCV.open, OHLCV.close).join(
-        Company, (Company.symbol == OHLCV.symbol) & (Company.exchange == OHLCV.exchange)).filter(
-        OHLCV.exchange.in_(_rs_market_exchanges(exchange)), Company.is_active == 1,
-        OHLCV.date >= date.today() - timedelta(days=500))
-    current_key, points = None, []
-    for row in query.order_by(OHLCV.exchange, OHLCV.symbol, OHLCV.date).yield_per(500):
-        key = (row.exchange, row.symbol)
-        if key in covered or key not in eligible:
-            continue
-        if key != current_key:
-            if current_key is not None:
-                consume(current_key, points)
-            current_key, points = key, []
-        if row.open is not None and row.close is not None and row.date.weekday() < 5 and all(math.isfinite(float(v)) and float(v) > 0 for v in (row.open, row.close)):
-            points.append((row.date, float(row.open), float(row.close)))
-    if current_key is not None:
-        consume(current_key, points)
+    # Do not transfer millions of already-covered legacy rows just to skip
+    # them in Python. Bound SQL parameters and decode one fallback at a time.
+    missing = sorted(set(eligible) - covered)
+    for offset in range(0, len(missing), 200):
+        query = db.query(OHLCV.exchange, OHLCV.symbol, OHLCV.date, OHLCV.open, OHLCV.close).filter(
+            tuple_(OHLCV.exchange, OHLCV.symbol).in_(missing[offset:offset + 200]),
+            OHLCV.date >= date.today() - timedelta(days=500))
+        current_key, points = None, []
+        for row in query.order_by(OHLCV.exchange, OHLCV.symbol, OHLCV.date).yield_per(500):
+            key = (row.exchange, row.symbol)
+            if key != current_key:
+                if current_key is not None:
+                    consume(current_key, points)
+                current_key, points = key, []
+            if row.open is not None and row.close is not None and row.date.weekday() < 5 and all(math.isfinite(float(v)) and float(v) > 0 for v in (row.open, row.close)):
+                points.append((row.date, float(row.open), float(row.close)))
+        if current_key is not None:
+            consume(current_key, points)
     selected = sorted(metrics)[:_rs_percentile_total(exchange)]
     return {k: metrics[k] for k in selected}, {k: sectors[k] for k in selected}
 
@@ -5009,6 +5026,32 @@ def get_sector_analysis(
 
 
 @router.get("/top-composite")
+def serve_top_composite_dashboard(
+    market: str = "ALL",
+    limit: int = Query(200, ge=20, le=200),
+    candidate_limit: int = Query(700, ge=200, le=1200),
+    technical_weight: float = Query(25.0, ge=0),
+    fundamental_weight: float = Query(30.0, ge=0),
+    ownership_weight: float = Query(15.0, ge=0),
+    sector_weight: float = Query(5.0, ge=0),
+    relative_strength_weight: float = Query(25.0, ge=0),
+    db: Session = Depends(get_db),
+):
+    """Read a complete, dated ranking; one bounded worker refreshes it."""
+    market = str(market or 'ALL').upper()
+    market = 'INDIA' if market == 'IN' else market if market in {'US', 'INDIA', 'NSE', 'BSE'} else 'ALL'
+    weights = dict(technical_weight=technical_weight, fundamental_weight=fundamental_weight,
+                   ownership_weight=ownership_weight, sector_weight=sector_weight,
+                   relative_strength_weight=relative_strength_weight)
+    if not all(math.isfinite(value) and value >= 0 for value in weights.values()) or not math.isfinite(sum(weights.values())) or sum(weights.values()) <= 0:
+        raise HTTPException(400, 'Composite weights must be finite, non-negative and have a positive total.')
+    args = dict(market=market, limit=limit,
+                candidate_limit=min(candidate_limit, 220) if _free_tier_mode() else candidate_limit,
+                **weights)
+    return delivery.serve(db, args, SessionLocal, get_top_composite_dashboard)
+
+
+@trace_stage('ranking_calculation')
 def get_top_composite_dashboard(
     market: str = "ALL",
     limit: int = Query(200, ge=20, le=200),
@@ -5303,30 +5346,17 @@ def get_top_composite_dashboard(
             if candidate_key not in enrichment or not candidate_payload.get("fundamental_rule_values"):
                 missing_rows.append(candidate_row)
 
-        # Only a small first batch is synchronous. The old 50-stock cold fetch
-        # could exceed the browser/Railway timeout and forced the UI back to an
-        # older cached dashboard. The remainder is warmed and persisted by a
-        # daemon worker, so later refreshes gain coverage without growing OHLCV.
-        try:
-            sync_limit = int(os.getenv("TOP200_SYNC_ENRICH_LIMIT", "20") or 20)
-        except Exception:
-            sync_limit = 20
-        # Enrich enough leading candidates synchronously that the first visible
-        # ranking page is not dominated by low-coverage rows. Keep the cap
-        # bounded for the Railway free tier; remaining candidates continue in
-        # the background/persisted cache.
-        sync_limit = max(0, min(30, sync_limit))
-        if missing_rows and sync_limit > 0:
-            enrichment.update(_apply_ranking_enrichment(missing_rows, limit=sync_limit))
-            enrichment.update(_apply_cached_ranking_enrichment(enrichment_rows))
-
+        # Ranking delivery must never wait for statement-provider fan-out.
+        # Existing compatible inputs are served; the bounded warm worker fills
+        # genuine missing observations independently. N/A remains N/A.
+        missing_keys = {(str(r.get("exchange") or "").upper(), str(r.get("symbol") or "").upper()) for r in missing_rows}
         enrichment_remaining = []
         for candidate_row in enrichment_rows[:200]:
             candidate_key = (
                 str(candidate_row.get("exchange") or "").upper(),
                 str(candidate_row.get("symbol") or "").upper(),
             )
-            if candidate_key not in enrichment:
+            if candidate_key in missing_keys:
                 enrichment_remaining.append(candidate_row)
         _warm_ranking_enrichment_background(enrichment_remaining)
     from app.services.sector_cohort import sector_scores
@@ -5486,7 +5516,7 @@ def get_top_composite_dashboard(
         "enrichment_target_count": min(200, len(enrichment_rows)),
         "enrichment_remaining_count": len(enrichment_remaining) if _free_tier_mode() else 0,
         "enrichment_in_progress": bool(enrichment_remaining) if _free_tier_mode() else False,
-        "sync_enrichment_limit": int(os.getenv("TOP200_SYNC_ENRICH_LIMIT", "20") or 20) if _free_tier_mode() else 0,
+        "sync_enrichment_limit": 0,
     })
 
 

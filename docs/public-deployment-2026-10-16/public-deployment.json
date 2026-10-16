@@ -1,0 +1,2843 @@
+{
+  "started_at": "2026-10-16T11:33:44.080939+00:00",
+  "scope": "Live production verification after GitHub push; no deployment or backfill commands",
+  "requests": [
+    {
+      "at": "2026-10-16T11:33:45.022078+00:00",
+      "path": "/health",
+      "method": "GET",
+      "status": 200,
+      "seconds": 0.94,
+      "headers": {
+        "Content-Type": "application/json",
+        "Date": "Fri, 16 Oct 2026 11:33:45 GMT",
+        "Server": "railway-hikari",
+        "x-railway-request-id": "1VhS4XQDTMyZ4Xcb9fVATg"
+      },
+      "body": {
+        "status": "ok",
+        "database": "ready"
+      }
+    },
+    {
+      "at": "2026-10-16T11:33:46.163835+00:00",
+      "path": "/",
+      "method": "GET",
+      "status": 200,
+      "seconds": 1.14,
+      "headers": {
+        "Content-Type": "application/json",
+        "Date": "Fri, 16 Oct 2026 11:33:47 GMT",
+        "Server": "railway-hikari",
+        "x-railway-request-id": "yYL-pFSqTTS4Khw92h0iww"
+      },
+      "body": {
+        "status": "ok",
+        "message": "Stock Screener API is running",
+        "database": "ready"
+      }
+    },
+    {
+      "at": "2026-10-16T11:33:46.820661+00:00",
+      "path": "/market/provider-status",
+      "method": "GET",
+      "status": 200,
+      "seconds": 0.66,
+      "headers": {
+        "Content-Type": "application/json",
+        "Date": "Fri, 16 Oct 2026 11:33:47 GMT",
+        "Server": "railway-hikari",
+        "x-railway-request-id": "5OJi1wkdQAyiLGjr-_9nXA"
+      },
+      "body": {
+        "providers": {
+          "yahoo_finance": {
+            "configured": true,
+            "uses_personal_api_key": false,
+            "purpose": "US/NSE OHLCV, quotes, provider fallback fundamentals/ownership"
+          },
+          "sec_edgar": {
+            "configured": true,
+            "uses_personal_api_key": false,
+            "purpose": "Official US XBRL fundamentals and filing metadata",
+            "required_env": "SEC_USER_AGENT"
+          },
+          "twelve_data_bse": {
+            "configured": true,
+            "uses_personal_api_key": true,
+            "purpose": "BSE/XBOM daily OHLCV",
+            "required_env": "TWELVE_DATA_API_KEY"
+          },
+          "kotak_neo_india": {
+            "configured": false,
+            "ready_for_live_quotes": false,
+            "uses_personal_api_key": true,
+            "purpose": "Indian-stock market data only; kept separate from US sources",
+            "required_env": "KOTAK_NEO_API_KEY / KOTAK_NEO_ACCESS_TOKEN / KOTAK_NEO_BASE_URL",
+            "note": "Credential/auth flow will be validated with the client's Kotak Neo account before enabling it as the live Indian provider."
+          }
+        },
+        "automatic_refresh": {
+          "configured_symbols": [],
+          "enabled": false,
+          "note": "Configure AUTO_REFRESH_SYMBOLS as EXCHANGE:SYMBOL entries; no CSV upload is required."
+        }
+      }
+    },
+    {
+      "at": "2026-10-16T11:33:47.812826+00:00",
+      "path": "/companies/rs-backfill/status?market=US",
+      "method": "GET",
+      "status": 200,
+      "seconds": 0.99,
+      "headers": {
+        "Content-Type": "application/json",
+        "Date": "Fri, 16 Oct 2026 11:33:48 GMT",
+        "Server": "railway-hikari",
+        "x-railway-request-id": "HcJZp0vdRPmR3Ldi-_9nXA"
+      },
+      "body": {
+        "market": "US",
+        "evaluation_date": "2026-10-14",
+        "target_rs_universe": 5000,
+        "active_symbols": 5756,
+        "history_ready_symbols": 5426,
+        "pending_active_symbols": 330,
+        "no_history_symbols": 34,
+        "stale_or_short_history_symbols": 296,
+        "target_coverage_percent": 100.0,
+        "active_coverage_percent": 94.27,
+        "symbol_master_shortfall": 0,
+        "complete": true,
+        "history_requirements": {
+          "minimum_rows": 180,
+          "minimum_span_days": 350,
+          "maximum_stale_days": 14,
+          "requested_backfill_days": 500
+        },
+        "by_exchange": {
+          "US": {
+            "active": 5756,
+            "ready": 5426,
+            "pending": 330
+          }
+        },
+        "last_batch": {
+          "market": "US",
+          "status": "completed",
+          "requested_batch_size": 25,
+          "attempted": 25,
+          "succeeded": 25,
+          "failed": 0,
+          "empty": 0,
+          "provider": "Yahoo Finance/yfinance bulk OHLCV",
+          "real_data_only": true,
+          "before_ready": 5426,
+          "after_ready": 5426,
+          "remaining_active": 330,
+          "started_at": "2026-10-16T11:32:35.066600Z",
+          "finished_at": "2026-10-16T11:32:38.314589Z",
+          "details": [
+            {
+              "symbol": "AADX",
+              "exchange": "US",
+              "status": "success",
+              "records_received": 94,
+              "compact_rows": 94
+            },
+            {
+              "symbol": "ACCV",
+              "exchange": "US",
+              "status": "success",
+              "records_received": 8,
+              "compact_rows": 8
+            },
+            {
+              "symbol": "ADBT",
+              "exchange": "US",
+              "status": "success",
+              "records_received": 37,
+              "compact_rows": 37
+            },
+            {
+              "symbol": "ADIG",
+              "exchange": "US",
+              "status": "success",
+              "records_received": 55,
+              "compact_rows": 55
+            },
+            {
+              "symbol": "ADRX",
+              "exchange": "US",
+              "status": "success",
+              "records_received": 15,
+              "compact_rows": 15
+            },
+            {
+              "symbol": "AERO",
+              "exchange": "US",
+              "status": "success",
+              "records_received": 236,
+              "compact_rows": 236
+            },
+            {
+              "symbol": "AESP",
+              "exchange": "US",
+              "status": "success",
+              "records_received": 75,
+              "compact_rows": 75
+            },
+            {
+              "symbol": "AGBK",
+              "exchange": "US",
+              "status": "success",
+              "records_received": 171,
+              "compact_rows": 171
+            },
+            {
+              "symbol": "AGMB",
+              "exchange": "US",
+              "status": "success",
+              "records_received": 174,
+              "compact_rows": 174
+            },
+            {
+              "symbol": "AIAI",
+              "exchange": "US",
+              "status": "success",
+              "records_received": 107,
+              "compact_rows": 107
+            },
+            {
+              "symbol": "AIB",
+              "exchange": "US",
+              "status": "success",
+              "records_received": 148,
+              "compact_rows": 148
+            },
+            {
+              "symbol": "AIBZ",
+              "exchange": "US",
+              "status": "success",
+              "records_received": 90,
+              "compact_rows": 90
+            },
+            {
+              "symbol": "AIDX",
+              "exchange": "US",
+              "status": "success",
+              "records_received": 166,
+              "compact_rows": 166
+            },
+            {
+              "symbol": "AKTS",
+              "exchange": "US",
+              "status": "success",
+              "records_received": 193,
+              "compact_rows": 193
+            },
+            {
+              "symbol": "ALMR",
+              "exchange": "US",
+              "status": "success",
+              "records_received": 126,
+              "compact_rows": 126
+            },
+            {
+              "symbol": "ALPS",
+              "exchange": "US",
+              "status": "success",
+              "records_received": 240,
+              "compact_rows": 240
+            },
+            {
+              "symbol": "AMSS",
+              "exchange": "US",
+              "status": "success",
+              "records_received": 103,
+              "compact_rows": 103
+            },
+            {
+              "symbol": "ANDG",
+              "exchange": "US",
+              "status": "success",
+              "records_received": 208,
+              "compact_rows": 208
+            },
+            {
+              "symbol": "APAC",
+              "exchange": "US",
+              "status": "success",
+              "records_received": 225,
+              "compact_rows": 225
+            },
+            {
+              "symbol": "APC",
+              "exchange": "US",
+              "status": "success",
+              "records_received": 170,
+              "compact_rows": 170
+            },
+            {
+              "symbol": "APMD",
+              "exchange": "US",
+              "status": "success",
+              "records_received": 54,
+              "compact_rows": 54
+            },
+            {
+              "symbol": "APUR",
+              "exchange": "US",
+              "status": "success",
+              "records_received": 102,
+              "compact_rows": 102
+            },
+            {
+              "symbol": "APXT",
+              "exchange": "US",
+              "status": "success",
+              "records_received": 229,
+              "compact_rows": 229
+            },
+            {
+              "symbol": "ARCL",
+              "exchange": "US",
+              "status": "success",
+              "records_received": 97,
+              "compact_rows": 97
+            },
+            {
+              "symbol": "ARXS",
+              "exchange": "US",
+              "status": "success",
+              "records_received": 127,
+              "compact_rows": 127
+            }
+          ]
+        },
+        "retry_cooldown_symbols": 297,
+        "scheduler_enabled": true,
+        "scheduler": {
+          "running": true,
+          "registered": true,
+          "next_run_at": "2026-10-16T11:37:35.057720+00:00"
+        },
+        "storage": "compressed provider date/open/close observations"
+      }
+    },
+    {
+      "at": "2026-10-16T11:33:48.624397+00:00",
+      "path": "/companies/rs-backfill/status?market=INDIA",
+      "method": "GET",
+      "status": 200,
+      "seconds": 0.81,
+      "headers": {
+        "Content-Type": "application/json",
+        "Date": "Fri, 16 Oct 2026 11:33:49 GMT",
+        "Server": "railway-hikari",
+        "x-railway-request-id": "E17ZbWFbTfyXMSyDjq4OvQ"
+      },
+      "body": {
+        "market": "INDIA",
+        "evaluation_date": "2026-10-07",
+        "target_rs_universe": 5000,
+        "active_symbols": 5278,
+        "history_ready_symbols": 4423,
+        "pending_active_symbols": 855,
+        "no_history_symbols": 193,
+        "stale_or_short_history_symbols": 662,
+        "target_coverage_percent": 88.46,
+        "active_coverage_percent": 83.8,
+        "symbol_master_shortfall": 0,
+        "complete": false,
+        "history_requirements": {
+          "minimum_rows": 180,
+          "minimum_span_days": 350,
+          "maximum_stale_days": 14,
+          "requested_backfill_days": 500
+        },
+        "by_exchange": {
+          "NSE": {
+            "active": 2605,
+            "ready": 2193,
+            "pending": 412
+          },
+          "BSE": {
+            "active": 2673,
+            "ready": 2230,
+            "pending": 443
+          }
+        },
+        "last_batch": {
+          "market": "INDIA",
+          "status": "idle",
+          "requested_batch_size": 25,
+          "attempted": 0,
+          "succeeded": 0,
+          "failed": 0,
+          "empty": 0,
+          "before": {
+            "market": "INDIA",
+            "evaluation_date": "2026-10-07",
+            "target_rs_universe": 5000,
+            "active_symbols": 5278,
+            "history_ready_symbols": 4423,
+            "pending_active_symbols": 855,
+            "no_history_symbols": 193,
+            "stale_or_short_history_symbols": 662,
+            "target_coverage_percent": 88.46,
+            "active_coverage_percent": 83.8,
+            "symbol_master_shortfall": 0,
+            "complete": false,
+            "history_requirements": {
+              "minimum_rows": 180,
+              "minimum_span_days": 350,
+              "maximum_stale_days": 14,
+              "requested_backfill_days": 500
+            },
+            "by_exchange": {
+              "NSE": {
+                "active": 2605,
+                "ready": 2193,
+                "pending": 412
+              },
+              "BSE": {
+                "active": 2673,
+                "ready": 2230,
+                "pending": 443
+              }
+            },
+            "retry_cooldown_symbols": 857,
+            "scheduler_enabled": true,
+            "scheduler": {
+              "running": true,
+              "registered": true,
+              "next_run_at": "2026-10-16T11:37:35.057720+00:00"
+            },
+            "storage": "compressed provider date/open/close observations"
+          },
+          "after": {
+            "market": "INDIA",
+            "evaluation_date": "2026-10-07",
+            "target_rs_universe": 5000,
+            "active_symbols": 5278,
+            "history_ready_symbols": 4423,
+            "pending_active_symbols": 855,
+            "no_history_symbols": 193,
+            "stale_or_short_history_symbols": 662,
+            "target_coverage_percent": 88.46,
+            "active_coverage_percent": 83.8,
+            "symbol_master_shortfall": 0,
+            "complete": false,
+            "history_requirements": {
+              "minimum_rows": 180,
+              "minimum_span_days": 350,
+              "maximum_stale_days": 14,
+              "requested_backfill_days": 500
+            },
+            "by_exchange": {
+              "NSE": {
+                "active": 2605,
+                "ready": 2193,
+                "pending": 412
+              },
+              "BSE": {
+                "active": 2673,
+                "ready": 2230,
+                "pending": 443
+              }
+            },
+            "retry_cooldown_symbols": 857,
+            "scheduler_enabled": true,
+            "scheduler": {
+              "running": true,
+              "registered": true,
+              "next_run_at": "2026-10-16T11:37:35.057720+00:00"
+            },
+            "storage": "compressed provider date/open/close observations"
+          },
+          "started_at": "2026-10-16T11:32:38.328810Z",
+          "finished_at": "2026-10-16T11:32:38.630449Z"
+        },
+        "retry_cooldown_symbols": 857,
+        "scheduler_enabled": true,
+        "scheduler": {
+          "running": true,
+          "registered": true,
+          "next_run_at": "2026-10-16T11:37:35.057720+00:00"
+        },
+        "storage": "compressed provider date/open/close observations"
+      }
+    },
+    {
+      "at": "2026-10-16T11:33:50.080935+00:00",
+      "path": "/companies/data-backfill/status?market=ALL",
+      "method": "GET",
+      "status": 200,
+      "seconds": 1.46,
+      "headers": {
+        "Content-Type": "application/json",
+        "Date": "Fri, 16 Oct 2026 11:33:50 GMT",
+        "Server": "railway-hikari",
+        "x-railway-request-id": "1TcuK4W5Rbuz8mLPWUN5dQ"
+      },
+      "body": {
+        "US": {
+          "market": "US",
+          "eligible_equities": 5747,
+          "price_history_available": 5713,
+          "price_history_percent": 99.4,
+          "fundamentals_available": 2250,
+          "fundamentals_percent": 39.2,
+          "ownership_available": 2250,
+          "ownership_percent": 39.2,
+          "classification_available": 2219,
+          "classification_percent": 38.6,
+          "automatic_enrichment": true,
+          "scheduler": {
+            "running": true,
+            "registered": true,
+            "next_run_at": "2026-10-16T11:44:05.057754+00:00"
+          },
+          "coverage_basis": "Any current field; not complete historical statement or ownership coverage. Counts include exchange listings, not deduplicated issuers.",
+          "price_history_basis": "Stored OHLCV or compressed date/open/close history; not full OHLCV availability",
+          "data_rule": "Only real provider values are stored; unavailable fields remain N/A."
+        },
+        "INDIA": {
+          "market": "INDIA",
+          "eligible_equities": 7746,
+          "price_history_available": 5095,
+          "price_history_percent": 65.8,
+          "fundamentals_available": 2216,
+          "fundamentals_percent": 28.6,
+          "ownership_available": 2214,
+          "ownership_percent": 28.6,
+          "classification_available": 2638,
+          "classification_percent": 34.1,
+          "automatic_enrichment": true,
+          "scheduler": {
+            "running": true,
+            "registered": true,
+            "next_run_at": "2026-10-16T11:44:05.057754+00:00"
+          },
+          "coverage_basis": "Any current field; not complete historical statement or ownership coverage. Counts include exchange listings, not deduplicated issuers.",
+          "price_history_basis": "Stored OHLCV or compressed date/open/close history; not full OHLCV availability",
+          "data_rule": "Only real provider values are stored; unavailable fields remain N/A."
+        }
+      }
+    },
+    {
+      "at": "2026-10-16T11:34:01.874488+00:00",
+      "path": "/market/dashboard/AAPL?exchange=US",
+      "method": "GET",
+      "status": 200,
+      "seconds": 11.79,
+      "headers": {
+        "Content-Type": "application/json",
+        "Date": "Fri, 16 Oct 2026 11:34:02 GMT",
+        "Server": "railway-hikari",
+        "x-railway-request-id": "dW8F1RLgRBC17PYYxtoGcA"
+      },
+      "body": {
+        "symbol": "AAPL",
+        "name": "Apple Inc.",
+        "isin": "US0378331005",
+        "exchange": "US",
+        "score": 87.68,
+        "provisional_score": 87.68,
+        "score_source": "Live baseline daily components; frontend rule editor is labeled separately",
+        "score_version": "client-rs5000-fiscal-v3",
+        "rs_universe": {
+          "market": "US",
+          "evaluation_date": "2026-10-14",
+          "target_rs_universe": 5000,
+          "active_symbols": 5756,
+          "history_ready_symbols": 5426,
+          "pending_active_symbols": 330,
+          "no_history_symbols": 34,
+          "stale_or_short_history_symbols": 296,
+          "target_coverage_percent": 100.0,
+          "active_coverage_percent": 94.27,
+          "symbol_master_shortfall": 0,
+          "complete": true,
+          "history_requirements": {
+            "minimum_rows": 180,
+            "minimum_span_days": 350,
+            "maximum_stale_days": 14,
+            "requested_backfill_days": 500
+          },
+          "by_exchange": {
+            "US": {
+              "active": 5756,
+              "ready": 5426,
+              "pending": 330
+            }
+          },
+          "last_batch": {
+            "market": "US",
+            "status": "completed",
+            "requested_batch_size": 25,
+            "attempted": 25,
+            "succeeded": 25,
+            "failed": 0,
+            "empty": 0,
+            "provider": "Yahoo Finance/yfinance bulk OHLCV",
+            "real_data_only": true,
+            "before_ready": 5426,
+            "after_ready": 5426,
+            "remaining_active": 330,
+            "started_at": "2026-10-16T11:32:35.066600Z",
+            "finished_at": "2026-10-16T11:32:38.314589Z",
+            "details": [
+              {
+                "symbol": "AADX",
+                "exchange": "US",
+                "status": "success",
+                "records_received": 94,
+                "compact_rows": 94
+              },
+              {
+                "symbol": "ACCV",
+                "exchange": "US",
+                "status": "success",
+                "records_received": 8,
+                "compact_rows": 8
+              },
+              {
+                "symbol": "ADBT",
+                "exchange": "US",
+                "status": "success",
+                "records_received": 37,
+                "compact_rows": 37
+              },
+              {
+                "symbol": "ADIG",
+                "exchange": "US",
+                "status": "success",
+                "records_received": 55,
+                "compact_rows": 55
+              },
+              {
+                "symbol": "ADRX",
+                "exchange": "US",
+                "status": "success",
+                "records_received": 15,
+                "compact_rows": 15
+              },
+              {
+                "symbol": "AERO",
+                "exchange": "US",
+                "status": "success",
+                "records_received": 236,
+                "compact_rows": 236
+              },
+              {
+                "symbol": "AESP",
+                "exchange": "US",
+                "status": "success",
+                "records_received": 75,
+                "compact_rows": 75
+              },
+              {
+                "symbol": "AGBK",
+                "exchange": "US",
+                "status": "success",
+                "records_received": 171,
+                "compact_rows": 171
+              },
+              {
+                "symbol": "AGMB",
+                "exchange": "US",
+                "status": "success",
+                "records_received": 174,
+                "compact_rows": 174
+              },
+              {
+                "symbol": "AIAI",
+                "exchange": "US",
+                "status": "success",
+                "records_received": 107,
+                "compact_rows": 107
+              },
+              {
+                "symbol": "AIB",
+                "exchange": "US",
+                "status": "success",
+                "records_received": 148,
+                "compact_rows": 148
+              },
+              {
+                "symbol": "AIBZ",
+                "exchange": "US",
+                "status": "success",
+                "records_received": 90,
+                "compact_rows": 90
+              },
+              {
+                "symbol": "AIDX",
+                "exchange": "US",
+                "status": "success",
+                "records_received": 166,
+                "compact_rows": 166
+              },
+              {
+                "symbol": "AKTS",
+                "exchange": "US",
+                "status": "success",
+                "records_received": 193,
+                "compact_rows": 193
+              },
+              {
+                "symbol": "ALMR",
+                "exchange": "US",
+                "status": "success",
+                "records_received": 126,
+                "compact_rows": 126
+              },
+              {
+                "symbol": "ALPS",
+                "exchange": "US",
+                "status": "success",
+                "records_received": 240,
+                "compact_rows": 240
+              },
+              {
+                "symbol": "AMSS",
+                "exchange": "US",
+                "status": "success",
+                "records_received": 103,
+                "compact_rows": 103
+              },
+              {
+                "symbol": "ANDG",
+                "exchange": "US",
+                "status": "success",
+                "records_received": 208,
+                "compact_rows": 208
+              },
+              {
+                "symbol": "APAC",
+                "exchange": "US",
+                "status": "success",
+                "records_received": 225,
+                "compact_rows": 225
+              },
+              {
+                "symbol": "APC",
+                "exchange": "US",
+                "status": "success",
+                "records_received": 170,
+                "compact_rows": 170
+              },
+              {
+                "symbol": "APMD",
+                "exchange": "US",
+                "status": "success",
+                "records_received": 54,
+                "compact_rows": 54
+              },
+              {
+                "symbol": "APUR",
+                "exchange": "US",
+                "status": "success",
+                "records_received": 102,
+                "compact_rows": 102
+              },
+              {
+                "symbol": "APXT",
+                "exchange": "US",
+                "status": "success",
+                "records_received": 229,
+                "compact_rows": 229
+              },
+              {
+                "symbol": "ARCL",
+                "exchange": "US",
+                "status": "success",
+                "records_received": 97,
+                "compact_rows": 97
+              },
+              {
+                "symbol": "ARXS",
+                "exchange": "US",
+                "status": "success",
+                "records_received": 127,
+                "compact_rows": 127
+              }
+            ]
+          },
+          "retry_cooldown_symbols": 297,
+          "scheduler_enabled": true,
+          "scheduler": {
+            "running": true,
+            "registered": true,
+            "next_run_at": "2026-10-16T11:37:35.057720+00:00"
+          },
+          "storage": "compressed provider date/open/close observations"
+        },
+        "signal": "Buy",
+        "missing_required_score_categories": [],
+        "score_coverage_percent": 100,
+        "score_components": {
+          "technical": 100.0,
+          "fundamental": 100.0,
+          "relative_strength": 83.46,
+          "ownership": 48.92,
+          "sector": 89.49
+        },
+        "score_weights": {
+          "technical": 25.0,
+          "fundamental": 30.0,
+          "ownership": 15.0,
+          "sector": 5.0,
+          "relative_strength": 25.0
+        },
+        "ranking_subweights": {
+          "technical": {
+            "ema20": 20.0,
+            "ema50": 20.0,
+            "ema150": 20.0,
+            "ema200": 20.0,
+            "rsi": 20.0
+          },
+          "fundamental": {
+            "eps": 20.0,
+            "net_income": 20.0,
+            "profit_margin": 20.0,
+            "roe": 20.0,
+            "roa": 20.0
+          },
+          "ownership": {
+            "institution": 70.0,
+            "insider": 30.0
+          }
+        },
+        "rs_period_weights": {
+          "1w": 30.0,
+          "2w": 0.0,
+          "1m": 25.0,
+          "2m": 0.0,
+          "3m": 20.0,
+          "6m": 15.0,
+          "1y": 10.0,
+          "sector": 0.0
+        },
+        "sector": "Technology",
+        "industry": "Consumer Electronics",
+        "industry_median_npm": -7.7619995,
+        "industry_npm_peer_count": 8,
+        "sector_rank": {
+          "available": false,
+          "rank": null,
+          "total": 100,
+          "group": "Technology",
+          "note": "The selected stock does not yet have enough comparable scored peer data."
+        },
+        "industry_rank": {
+          "available": true,
+          "rank": 1,
+          "total": 8,
+          "group": "Consumer Electronics",
+          "note": null
+        },
+        "sector_score_peer_count": 56,
+        "sector_score_status": "Provisional shared stored-market cohort",
+        "sector_cohort_id": "c2504e228b2f066e467d",
+        "method_note": "Milestone-2 composite follows the client note: Fundamental 30% + Technical 25% + RS 25% + Ownership 15% + Sector 5%. The selected-stock Sector component reuses real compact Top-200 EPS/PAT/Sales peer history and requires at least 5 real peers; it is never substituted with price RS. For NSE/BSE, a score is withheld when a positively weighted fundamental or ownership category is unavailable, rather than producing a misleading partial ranking."
+      }
+    },
+    {
+      "at": "2026-10-16T11:34:08.293432+00:00",
+      "path": "/market/technical-summary/AAPL?exchange=US",
+      "method": "GET",
+      "status": 200,
+      "seconds": 6.42,
+      "headers": {
+        "Content-Type": "application/json",
+        "Date": "Fri, 16 Oct 2026 11:34:08 GMT",
+        "Server": "railway-hikari",
+        "x-railway-request-id": "8vo2LmJrQwuz0yiJWUN5dQ"
+      },
+      "body": {
+        "symbol": "AAPL",
+        "exchange": "US",
+        "timeframe": "daily",
+        "ema": {
+          "10": 339.05,
+          "20": 336.12,
+          "34": 332.24,
+          "50": 328.19,
+          "100": 316.7,
+          "150": 306.8,
+          "200": 298.33
+        },
+        "ema_alignment": "Bullish",
+        "average_volume_10": 36011380.0,
+        "average_volume_20": 38320055.0,
+        "average_volume_40": 39760930.0,
+        "average_volume_50": 40112788.0,
+        "volume_ratio": 1.04,
+        "volume_ratio_50": 0.99,
+        "adr_20": 6.12,
+        "adr_percent": 1.83,
+        "atr_14": 6.65,
+        "atr_percent": 1.94,
+        "average_atr_percent_5": 2.07,
+        "average_atr_percent_10": 1.75,
+        "average_atr_percent_20": 1.91,
+        "rsi_14": 60.58,
+        "bollinger_upper": 344.75,
+        "bollinger_lower": 329.37,
+        "bollinger_width_percent": 4.56,
+        "range_20d_percent": 6.86,
+        "technical_metric_series": {
+          "observed_length": 260,
+          "sha256": "3438a38d6e529147fd20909ba9016ceb1e00daf56c4764d2b33c284c561e770c",
+          "first": {
+            "date": "2025-10-03",
+            "adr_percent": 1.86,
+            "atr_percent": 1.82,
+            "bollinger_width_percent": 16.89,
+            "range_20d_percent": 14.73
+          },
+          "last": {
+            "date": "2026-10-15",
+            "adr_percent": 1.83,
+            "atr_percent": 1.94,
+            "bollinger_width_percent": 4.56,
+            "range_20d_percent": 6.86
+          }
+        },
+        "technical_metric_timeframe": "daily",
+        "technical_metric_window_periods": 20,
+        "distance_from_52w_high_percent": 1.77,
+        "distance_from_52w_low_percent": 40.5,
+        "high_52w": 348.1499938964844,
+        "low_52w": 243.4199981689453,
+        "daily_price": 342.0,
+        "daily_price_date": "2026-10-15",
+        "daily_52w_rows": 252,
+        "indicator_bars_available": 1531,
+        "indicator_semantics": {
+          "period_metrics": "daily bars",
+          "52w": "Trailing 365 calendar days of daily OHLCV",
+          "adr_20": "20 daily bars",
+          "bollinger_width": "(Upper Band - Lower Band) / Middle Band * 100"
+        },
+        "pivot": 348.15,
+        "breakout_status": "Near Pivot",
+        "breakout_strength": 20,
+        "gap_percent": 1.16,
+        "gap_classification": "Normal / No Material Gap",
+        "vcp_stage": "VCP Contraction",
+        "vcp_contractions": [
+          {
+            "depth_percent": 12.93,
+            "atr_percent": 2.53,
+            "standard_deviation_percent": 3.98,
+            "average_volume": 53044260.0,
+            "high": 344.57,
+            "low": 300.0
+          },
+          {
+            "depth_percent": 9.26,
+            "atr_percent": 2.15,
+            "standard_deviation_percent": 2.71,
+            "average_volume": 41201805.0,
+            "high": 338.34,
+            "low": 307.01
+          },
+          {
+            "depth_percent": 6.42,
+            "atr_percent": 1.88,
+            "standard_deviation_percent": 1.14,
+            "average_volume": 38320055.0,
+            "high": 348.15,
+            "low": 325.81
+          }
+        ],
+        "vcp_standard_deviation_contraction": true,
+        "vcp_volume_contraction": true,
+        "pattern": "VCP / Volatility Contraction",
+        "client_technical_filters": {
+          "trend": {
+            "price": 342.0,
+            "price_gt_ema20": true,
+            "ema20_slope_positive": true,
+            "price_gt_ema50": true,
+            "ema50_slope_positive": true,
+            "price_gt_ema200": true,
+            "ema200_slope_positive": true
+          },
+          "strength": {
+            "rs_score": 83.46,
+            "distance_from_52w_high_percent": 1.7664782433725836,
+            "periods_since_52w_high": 2,
+            "new_52w_high_within_30_periods": true,
+            "adx_14": 17.375117931440723,
+            "plus_di_14": 29.658695776499705,
+            "minus_di_14": 17.482154994484365,
+            "di_spread": 12.17654078201534,
+            "di_spread_gt_10": true
+          },
+          "momentum": {
+            "roc_20_period_percent": 1.4836795252225476,
+            "roc_timeframe": "daily",
+            "roc_1m_percent": 1.4836795252225476,
+            "roc_3m_percent": 2.4749835222995786,
+            "roc_6m_percent": 29.840549705709286,
+            "roc_12m_percent": 38.03123626858351,
+            "roc_1m_two_weeks_ago_percent": 1.5962852900263336,
+            "roc_1m_acceleration_points": -0.11260576480378592
+          },
+          "participation": {
+            "average_volume_10": 36011380.0,
+            "average_volume_20": 38320055.0,
+            "average_volume_40": 39760930.0,
+            "average_volume_50": 40112788.0,
+            "delivery_percent": {
+              "available": false,
+              "source": "US",
+              "note": "True delivery percentage requires exchange deliverable-quantity data; ordinary OHLCV volume is not substituted."
+            }
+          },
+          "volatility": {
+            "atr_percent": 1.943726798348695,
+            "average_atr_percent_5": 2.0679776987871903,
+            "average_atr_percent_10": 1.7516441985712248,
+            "average_atr_percent_20": 1.906573848233896,
+            "bollinger_width_percent": 4.563505068916292,
+            "bollinger_width_20_periods_ago_percent": 10.843934367242229,
+            "bb_width_contracting": true
+          },
+          "base_formation": {
+            "range_20_period_percent": 6.856755932995272,
+            "range_90_period_percent": 27.178079962186075,
+            "range_90_le_20_percent": false,
+            "vcp_stage": "VCP Contraction",
+            "standard_deviation_contracting": true,
+            "volume_contracting": true
+          },
+          "note": "These are real-data filter inputs from the client handwritten technical sheet. Ambiguous handwritten point allocations remain configurable rather than guessed."
+        },
+        "rs_comparison": {
+          "periods": [
+            "1d",
+            "1w",
+            "2w",
+            "3w",
+            "1m",
+            "2m",
+            "3m",
+            "6m",
+            "1y"
+          ],
+          "rows": [
+            {
+              "key": "stock",
+              "label": "Stock Return",
+              "returns": {
+                "1d": -1.43,
+                "1w": 1.12,
+                "2w": 2.76,
+                "3w": 0.48,
+                "1m": 3.64,
+                "2m": 7.89,
+                "3m": 3.64,
+                "6m": 16.55,
+                "1y": 25.62
+              }
+            },
+            {
+              "key": "dow_jones",
+              "label": "Dow Jones",
+              "returns": {
+                "1d": 0.62,
+                "1w": 0.8,
+                "2w": 1.91,
+                "3w": 1.02,
+                "1m": 2.29,
+                "2m": -1.71,
+                "3m": 2.29,
+                "6m": -0.1,
+                "1y": 8.46
+              }
+            },
+            {
+              "key": "sp500",
+              "label": "S&P 500",
+              "returns": {
+                "1d": 0.74,
+                "1w": -0.88,
+                "2w": 0.17,
+                "3w": 0.29,
+                "1m": 1.01,
+                "2m": 1.42,
+                "3m": 1.01,
+                "6m": 3.55,
+                "1y": 12.59
+              }
+            },
+            {
+              "key": "industry",
+              "label": "Industry",
+              "name": "Consumer Electronics",
+              "returns": {},
+              "note": "Insufficient stored peer history; N/A shown."
+            },
+            {
+              "key": "sector",
+              "label": "Sector",
+              "name": "Technology",
+              "returns": {},
+              "note": "Insufficient stored peer history; N/A shown."
+            }
+          ],
+          "method": "Current-period open to latest close; industry/sector are equal-weight averages of at least 5 stored peers, excluding the selected stock. If fewer peers are available, N/A is shown. These raw returns do not use RS scoring weights."
+        },
+        "volume_delivery": {
+          "available": false,
+          "source": "US",
+          "note": "True delivery percentage requires exchange deliverable-quantity data; ordinary OHLCV volume is not substituted."
+        },
+        "rs_rating": 83.46,
+        "rs_available": true,
+        "rs_universe": {
+          "market": "US",
+          "market_exchanges": [
+            "US"
+          ],
+          "target_size": 5000,
+          "scored_stocks_available": 5000,
+          "coverage_percent": 100.0,
+          "complete": true,
+          "evaluation_date": "2026-10-14",
+          "note": "The stored RS comparison universe meets the client-required 5,000-stock denominator for US."
+        },
+        "rs_weighted_relative_return_percent": 5.67,
+        "rs_benchmark": "S&P 500",
+        "rs_periods": {
+          "1w": {
+            "weight_percent": 1.0,
+            "stock_return_percent": 1.4,
+            "benchmark_return_percent": -1.2,
+            "relative_return_percent": 2.61,
+            "start_date": "2026-10-12",
+            "benchmark_start_date": "2026-10-12",
+            "period_start_date": "2026-10-12",
+            "end_date": "2026-10-14",
+            "return_method": "period_open_to_current_close",
+            "percentile": 84.02,
+            "universe_size": 5000,
+            "scored_stocks_available": 5000,
+            "score_weight_percent": 30.0
+          },
+          "2w": {
+            "weight_percent": 1.0,
+            "stock_return_percent": 3.05,
+            "benchmark_return_percent": -0.15,
+            "relative_return_percent": 3.2,
+            "start_date": "2026-10-05",
+            "benchmark_start_date": "2026-10-05",
+            "period_start_date": "2026-10-05",
+            "end_date": "2026-10-14",
+            "return_method": "period_open_to_current_close",
+            "percentile": 82.76,
+            "universe_size": 5000,
+            "scored_stocks_available": 5000,
+            "score_weight_percent": 0.0
+          },
+          "1m": {
+            "weight_percent": 1.0,
+            "stock_return_percent": 3.93,
+            "benchmark_return_percent": 0.68,
+            "relative_return_percent": 3.24,
+            "start_date": "2026-10-01",
+            "benchmark_start_date": "2026-10-01",
+            "period_start_date": "2026-10-01",
+            "end_date": "2026-10-14",
+            "return_method": "period_open_to_current_close",
+            "percentile": 82.63,
+            "universe_size": 5000,
+            "scored_stocks_available": 5000,
+            "score_weight_percent": 25.0
+          },
+          "2m": {
+            "weight_percent": 1.0,
+            "stock_return_percent": 8.2,
+            "benchmark_return_percent": 1.09,
+            "relative_return_percent": 7.1,
+            "start_date": "2026-09-01",
+            "benchmark_start_date": "2026-09-01",
+            "period_start_date": "2026-09-01",
+            "end_date": "2026-10-14",
+            "return_method": "period_open_to_current_close",
+            "percentile": 90.39,
+            "universe_size": 5000,
+            "scored_stocks_available": 5000,
+            "score_weight_percent": 0.0
+          },
+          "3m": {
+            "weight_percent": 1.0,
+            "stock_return_percent": 3.93,
+            "benchmark_return_percent": 0.68,
+            "relative_return_percent": 3.24,
+            "start_date": "2026-10-01",
+            "benchmark_start_date": "2026-10-01",
+            "period_start_date": "2026-10-01",
+            "end_date": "2026-10-14",
+            "return_method": "period_open_to_current_close",
+            "percentile": 82.63,
+            "universe_size": 5000,
+            "scored_stocks_available": 5000,
+            "score_weight_percent": 20.0
+          },
+          "6m": {
+            "weight_percent": 1.0,
+            "stock_return_percent": 16.88,
+            "benchmark_return_percent": 3.21,
+            "relative_return_percent": 13.67,
+            "start_date": "2026-07-01",
+            "benchmark_start_date": "2026-07-01",
+            "period_start_date": "2026-07-01",
+            "end_date": "2026-10-14",
+            "return_method": "period_open_to_current_close",
+            "percentile": 86.68,
+            "universe_size": 5000,
+            "scored_stocks_available": 5000,
+            "score_weight_percent": 15.0
+          },
+          "1y": {
+            "weight_percent": 1.0,
+            "stock_return_percent": 25.97,
+            "benchmark_return_percent": 12.22,
+            "relative_return_percent": 13.74,
+            "start_date": "2026-01-02",
+            "benchmark_start_date": "2026-01-02",
+            "period_start_date": "2026-01-01",
+            "end_date": "2026-10-14",
+            "return_method": "period_open_to_current_close",
+            "percentile": 80.67,
+            "universe_size": 5000,
+            "scored_stocks_available": 5000,
+            "score_weight_percent": 10.0
+          },
+          "sector": {
+            "sector": "Technology",
+            "score": 41.68,
+            "percentile": 30.0,
+            "universe_size": 11,
+            "score_weight_percent": 0.0
+          },
+          "_universe_size": 5000,
+          "_scored_stocks_available": 5000,
+          "_score_complete": true,
+          "_score_weight_total": 100.0,
+          "_relative_return_weight_independent": true,
+          "_fixed_relative_return_reference_weights": {
+            "1w": 30.0,
+            "2w": 0.0,
+            "1m": 25.0,
+            "2m": 0.0,
+            "3m": 20.0,
+            "6m": 15.0,
+            "1y": 10.0
+          }
+        },
+        "rs_chart": {
+          "observed_length": 1253,
+          "sha256": "0d9fa70a4d1499f4dad391326df7274184158b63fb7344f71571d66332156506",
+          "first": {
+            "date": "2021-10-18",
+            "rs": 100.0
+          },
+          "last": {
+            "date": "2026-10-14",
+            "rs": 136.0203
+          }
+        },
+        "rs_period_weights": {
+          "1w": 30.0,
+          "2w": 0.0,
+          "1m": 25.0,
+          "2m": 0.0,
+          "3m": 20.0,
+          "6m": 15.0,
+          "1y": 10.0,
+          "sector": 0.0
+        },
+        "rs_formula": {
+          "period_return": "((current close / current period candle open) - 1) * 100",
+          "relative_return": "stock return % - benchmark return %",
+          "relative_return_uses_editable_weights": false,
+          "stock_percentile": "((lower stocks + (same-return stocks - 1) / 2) / (5000 - 1)) * 100",
+          "stock_percentile_denominator": 5000,
+          "final_rs_score": "sum(period percentile * enabled weight) / sum(enabled weights)",
+          "default_weights": {
+            "1w": 30,
+            "1m": 25,
+            "3m": 20,
+            "6m": 15,
+            "1y": 10,
+            "2w": 0,
+            "2m": 0,
+            "sector": 0
+          }
+        },
+        "rs_note": "Relative Strength: period relative returns are raw market calculations and never change when RS score weights change. Each period uses TradingView-style current period candle return (period open to current close); relative return = stock return % - benchmark return %. Stock percentiles use the client formula [lower + (same-1)/2] / (total-1) \u00d7 100 with the client-required 5,000-stock universe for US: [(lower stocks + 0.5 x equal stocks) x 100 / 5000]. Final RS Score uses weighted percentile components. Default weights are 1W x 30% + 1M x 25% + 3M x 20% + 6M x 15% + 12M x 10%. 2W/2M and Sector RS are optional components with zero default weight; Sector RS is included only when its weight is greater than 0.",
+        "criteria_note": "Metrics use the selected daily timeframe. For a detected VCP, Pivot = highest high of the final contraction; otherwise it is the recent consolidation high. Near Pivot = 95%-102% of pivot. Confirmed breakout requires close > pivot by 0.3%, volume >= 1.4x 50-period average, close > open, and close in the upper half of the period's range. VCP requires successive price-depth, ATR%, standard-deviation, and average-volume contractions."
+      }
+    },
+    {
+      "at": "2026-10-16T11:34:09.964875+00:00",
+      "path": "/market/fundamentals-history/AAPL?exchange=US",
+      "method": "GET",
+      "status": 200,
+      "seconds": 1.67,
+      "headers": {
+        "Content-Type": "application/json",
+        "Date": "Fri, 16 Oct 2026 11:34:10 GMT",
+        "Server": "railway-hikari",
+        "x-railway-request-id": "eCWW12xJSBK0oq3QnPRhug"
+      },
+      "body": {
+        "symbol": "AAPL",
+        "exchange": "US",
+        "quarterly": [
+          {
+            "period": "2026-06-27",
+            "sales": 109417000000.0,
+            "pat": 29789000000.0,
+            "eps": 2.02,
+            "ebit": 35695000000.0,
+            "opm": 32.62,
+            "npm": 27.23,
+            "debt_to_equity": null,
+            "operating_cash_flow": null,
+            "free_cash_flow": null,
+            "roe": null,
+            "roa": null,
+            "roce": null,
+            "cash_flow_per_share": null,
+            "qoq_sales": -1.5892574471146927,
+            "qoq_pat": 0.71336804381635,
+            "qoq_eps": 0.4975124378109568,
+            "yoy_sales": 16.35650176528138,
+            "yoy_pat": 27.11871639498165,
+            "yoy_eps": 28.6624203821656
+          },
+          {
+            "period": "2026-03-28",
+            "sales": 111184000000.0,
+            "pat": 29578000000.0,
+            "eps": 2.01,
+            "ebit": 35885000000.0,
+            "opm": 32.28,
+            "npm": 26.6,
+            "debt_to_equity": null,
+            "operating_cash_flow": null,
+            "free_cash_flow": null,
+            "roe": null,
+            "roa": null,
+            "roce": null,
+            "cash_flow_per_share": null,
+            "qoq_sales": -22.65783689028632,
+            "qoq_pat": -29.738461173005206,
+            "qoq_eps": -29.225352112676063,
+            "yoy_sales": 16.595182415922984,
+            "yoy_pat": 19.362389023405974,
+            "yoy_eps": 21.818181818181813
+          },
+          {
+            "period": "2025-12-27",
+            "sales": 143756000000.0,
+            "pat": 42097000000.0,
+            "eps": 2.84,
+            "ebit": 50852000000.0,
+            "opm": 35.37,
+            "npm": 29.28,
+            "debt_to_equity": null,
+            "operating_cash_flow": 53925000000.0,
+            "free_cash_flow": 51552000000.0,
+            "roe": null,
+            "roa": null,
+            "roce": null,
+            "cash_flow_per_share": null,
+            "qoq_sales": 40.296293404641546,
+            "qoq_pat": 53.269496832447395,
+            "qoq_eps": 53.5135135135135,
+            "yoy_sales": 15.652453740949316,
+            "yoy_pat": 15.873933388384257,
+            "yoy_eps": 18.333333333333332
+          },
+          {
+            "period": "2025-09-30",
+            "sales": 102466000000.0,
+            "pat": 27466000000.0,
+            "eps": 1.85,
+            "ebit": 32427000000.0,
+            "opm": 31.65,
+            "npm": 26.8,
+            "debt_to_equity": 1.34,
+            "operating_cash_flow": 111482000000.0,
+            "free_cash_flow": 98767000000.0,
+            "roe": 37.25,
+            "roa": 7.65,
+            "roce": 16.75,
+            "cash_flow_per_share": 7.5,
+            "qoq_sales": 8.964651835467267,
+            "qoq_pat": 17.205769394896304,
+            "qoq_eps": 17.834394904458602,
+            "yoy_sales": null,
+            "yoy_pat": null,
+            "yoy_eps": null
+          },
+          {
+            "period": "2025-06-28",
+            "sales": 94036000000.0,
+            "pat": 23434000000.0,
+            "eps": 1.57,
+            "ebit": 28202000000.0,
+            "opm": 29.99,
+            "npm": 24.92,
+            "debt_to_equity": null,
+            "operating_cash_flow": null,
+            "free_cash_flow": null,
+            "roe": null,
+            "roa": null,
+            "roce": null,
+            "cash_flow_per_share": null,
+            "qoq_sales": -1.3873887100326137,
+            "qoq_pat": -5.4317998385795,
+            "qoq_eps": -4.84848484848484,
+            "yoy_sales": 9.628455180293086,
+            "yoy_pat": 9.259604625139874,
+            "yoy_eps": 12.142857142857153
+          },
+          {
+            "period": "2025-03-29",
+            "sales": 95359000000.0,
+            "pat": 24780000000.0,
+            "eps": 1.65,
+            "ebit": 29589000000.0,
+            "opm": 31.03,
+            "npm": 25.99,
+            "debt_to_equity": null,
+            "operating_cash_flow": null,
+            "free_cash_flow": null,
+            "roe": null,
+            "roa": null,
+            "roce": null,
+            "cash_flow_per_share": null,
+            "yoy_eps": 7.843137254901953,
+            "qoq_eps": -31.25,
+            "yoy_pat": 4.840074462684042,
+            "qoq_pat": -31.79190751445087,
+            "yoy_sales": 5.075314314678303,
+            "qoq_sales": -23.283185840707965
+          },
+          {
+            "period": "2024-12-28",
+            "sales": 124300000000.0,
+            "pat": 36330000000.0,
+            "eps": 2.4,
+            "ebit": 42832000000.0,
+            "opm": 34.46,
+            "npm": 29.23,
+            "debt_to_equity": null,
+            "operating_cash_flow": 29935000000.0,
+            "free_cash_flow": 26995000000.0,
+            "roe": null,
+            "roa": null,
+            "roce": null,
+            "cash_flow_per_share": null,
+            "yoy_eps": 10.091743119266043,
+            "qoq_eps": null,
+            "yoy_pat": 7.1175846208279285,
+            "qoq_pat": null,
+            "yoy_sales": 3.9514948776918253,
+            "qoq_sales": null
+          },
+          {
+            "period": "2024-06-29",
+            "sales": 85777000000.0,
+            "pat": 21448000000.0,
+            "eps": 1.4,
+            "ebit": 25352000000.0,
+            "opm": 29.56,
+            "npm": 25.0,
+            "debt_to_equity": null,
+            "operating_cash_flow": null,
+            "free_cash_flow": null,
+            "roe": null,
+            "roa": null,
+            "roce": null,
+            "cash_flow_per_share": null,
+            "yoy_eps": 11.111111111111104,
+            "qoq_eps": -8.496732026143798,
+            "yoy_pat": 7.881897288868769,
+            "qoq_pat": -9.257065493315283,
+            "yoy_sales": 4.865704121178038,
+            "qoq_sales": -5.483014335614249
+          },
+          {
+            "period": "2024-03-30",
+            "sales": 90753000000.0,
+            "pat": 23636000000.0,
+            "eps": 1.53,
+            "ebit": 27900000000.0,
+            "opm": 30.74,
+            "npm": 26.04,
+            "debt_to_equity": null,
+            "operating_cash_flow": null,
+            "free_cash_flow": null,
+            "roe": null,
+            "roa": null,
+            "roce": null,
+            "cash_flow_per_share": null,
+            "yoy_eps": 0.6578947368421059,
+            "qoq_eps": -29.816513761467895,
+            "yoy_pat": -2.16887417218543,
+            "qoq_pat": -30.310178087038565,
+            "yoy_sales": -4.30532709097811,
+            "qoq_sales": -24.103700606314028
+          },
+          {
+            "period": "2023-12-30",
+            "sales": 119575000000.0,
+            "pat": 33916000000.0,
+            "eps": 2.18,
+            "ebit": 40373000000.0,
+            "opm": 33.76,
+            "npm": 28.36,
+            "debt_to_equity": null,
+            "operating_cash_flow": 39895000000.0,
+            "free_cash_flow": 37503000000.0,
+            "roe": null,
+            "roa": null,
+            "roce": null,
+            "cash_flow_per_share": null,
+            "yoy_eps": null,
+            "qoq_eps": null,
+            "yoy_pat": null,
+            "qoq_pat": null,
+            "yoy_sales": null,
+            "qoq_sales": null
+          },
+          {
+            "period": "2023-07-01",
+            "sales": 81797000000.0,
+            "pat": 19881000000.0,
+            "eps": 1.26,
+            "ebit": 22998000000.0,
+            "opm": 28.12,
+            "npm": 24.31,
+            "debt_to_equity": null,
+            "operating_cash_flow": null,
+            "free_cash_flow": null,
+            "roe": null,
+            "roa": null,
+            "roce": null,
+            "cash_flow_per_share": null,
+            "yoy_eps": null,
+            "qoq_eps": -17.105263157894736,
+            "yoy_pat": null,
+            "qoq_pat": -17.71109271523179,
+            "yoy_sales": null,
+            "qoq_sales": -13.74899827069889
+          },
+          {
+            "period": "2023-04-01",
+            "sales": 94836000000.0,
+            "pat": 24160000000.0,
+            "eps": 1.52,
+            "ebit": 28318000000.0,
+            "opm": 29.86,
+            "npm": 25.48,
+            "debt_to_equity": null,
+            "operating_cash_flow": null,
+            "free_cash_flow": null,
+            "roe": null,
+            "roa": null,
+            "roce": null,
+            "cash_flow_per_share": null,
+            "yoy_eps": null,
+            "qoq_eps": null,
+            "yoy_pat": null,
+            "qoq_pat": null,
+            "yoy_sales": null,
+            "qoq_sales": null
+          }
+        ],
+        "annual": [
+          {
+            "period": "2025-09-27",
+            "sales": 416161000000.0,
+            "pat": 112010000000.0,
+            "eps": 7.46,
+            "ebit": 133050000000.0,
+            "opm": 31.97,
+            "npm": 26.92,
+            "debt_to_equity": 1.23,
+            "operating_cash_flow": 111482000000.0,
+            "free_cash_flow": 98767000000.0,
+            "roe": 151.91,
+            "roa": 31.18,
+            "roce": 68.72,
+            "cash_flow_per_share": 7.43,
+            "qoq_sales": 6.43,
+            "qoq_pat": 19.5,
+            "qoq_eps": 22.7,
+            "yoy_sales": 6.425511782832739,
+            "yoy_pat": 19.495177946573357,
+            "yoy_eps": 22.69736842105263
+          },
+          {
+            "period": "2024-09-28",
+            "sales": 391035000000.0,
+            "pat": 93736000000.0,
+            "eps": 6.08,
+            "ebit": 123216000000.0,
+            "opm": 31.51,
+            "npm": 23.97,
+            "debt_to_equity": 1.7,
+            "operating_cash_flow": 118254000000.0,
+            "free_cash_flow": 108807000000.0,
+            "roe": 164.59,
+            "roa": 25.68,
+            "roce": 65.34,
+            "cash_flow_per_share": 7.67,
+            "qoq_sales": 2.02,
+            "qoq_pat": -3.36,
+            "qoq_eps": -0.82,
+            "yoy_sales": 2.021994077514121,
+            "yoy_pat": -3.3599670086086912,
+            "yoy_eps": -0.8156606851549727
+          },
+          {
+            "period": "2023-09-30",
+            "sales": 383285000000.0,
+            "pat": 96995000000.0,
+            "eps": 6.13,
+            "ebit": 114301000000.0,
+            "opm": 29.82,
+            "npm": 25.31,
+            "debt_to_equity": 1.69,
+            "operating_cash_flow": 110543000000.0,
+            "free_cash_flow": 99584000000.0,
+            "roe": 156.08,
+            "roa": 27.51,
+            "roce": 55.14,
+            "cash_flow_per_share": 6.99,
+            "qoq_sales": -2.8,
+            "qoq_pat": -2.81,
+            "qoq_eps": 0.33,
+            "yoy_sales": -2.8004605303199366,
+            "yoy_pat": -2.8135426790777833,
+            "yoy_eps": 0.3273322422258522
+          },
+          {
+            "period": "2022-09-24",
+            "sales": 394328000000.0,
+            "pat": 99803000000.0,
+            "eps": 6.11,
+            "ebit": 119437000000.0,
+            "opm": 30.29,
+            "npm": 25.31,
+            "debt_to_equity": 2.17,
+            "operating_cash_flow": 122151000000.0,
+            "free_cash_flow": 111443000000.0,
+            "roe": 196.96,
+            "roa": 28.29,
+            "roce": 60.09,
+            "cash_flow_per_share": 7.48,
+            "qoq_sales": null,
+            "qoq_pat": null,
+            "qoq_eps": null,
+            "yoy_sales": 7.7937876041846055,
+            "yoy_pat": 5.410857625686523,
+            "yoy_eps": 8.9126559714795
+          },
+          {
+            "period": "2021-09-25",
+            "sales": 365817000000.0,
+            "pat": 94680000000.0,
+            "eps": 5.61,
+            "ebit": 108949000000.0,
+            "opm": 29.78,
+            "npm": 25.88,
+            "debt_to_equity": 1.88,
+            "operating_cash_flow": 104038000000.0,
+            "free_cash_flow": 92953000000.0,
+            "roe": 150.07,
+            "roa": 26.97,
+            "roce": 48.31,
+            "cash_flow_per_share": 6.17,
+            "yoy_eps": 71.03658536585368,
+            "yoy_pat": 64.9161310550243,
+            "yoy_sales": 33.25938473307469
+          },
+          {
+            "period": "2020-09-26",
+            "sales": 274515000000.0,
+            "pat": 57411000000.0,
+            "eps": 3.28,
+            "ebit": 66288000000.0,
+            "opm": 24.15,
+            "npm": 20.91,
+            "debt_to_equity": null,
+            "operating_cash_flow": 80674000000.0,
+            "free_cash_flow": 73365000000.0,
+            "roe": 87.87,
+            "roa": 17.73,
+            "roce": 30.34,
+            "cash_flow_per_share": 4.6,
+            "yoy_eps": 10.437710437710424,
+            "yoy_pat": 3.9000289561314605,
+            "yoy_sales": 5.512080376978483
+          },
+          {
+            "period": "2019-09-28",
+            "sales": 260174000000.0,
+            "pat": 55256000000.0,
+            "eps": 2.97,
+            "ebit": 63930000000.0,
+            "opm": 24.57,
+            "npm": 21.24,
+            "debt_to_equity": null,
+            "operating_cash_flow": 69391000000.0,
+            "free_cash_flow": 58896000000.0,
+            "roe": 61.06,
+            "roa": 16.32,
+            "roce": 27.46,
+            "cash_flow_per_share": 3.73,
+            "yoy_eps": null,
+            "yoy_pat": null,
+            "yoy_sales": null
+          }
+        ],
+        "cagr_3y": {
+          "sales": 1.81,
+          "pat": 3.92,
+          "eps": 6.88
+        },
+        "cagr_5y": {
+          "sales": 8.68,
+          "pat": 14.3,
+          "eps": 17.86
+        },
+        "source": "SEC companyfacts + Yahoo Finance merged fallback",
+        "ratio_methodology": {
+          "roe": "Net income / period-end stockholders equity",
+          "roa": "Net income / period-end total assets",
+          "roce": "EBIT / (period-end total assets - period-end current liabilities)"
+        },
+        "period_alignment": "Actual fiscal end dates; no index-shift substitution for missing quarters. Announcement availability is not inferred."
+      }
+    },
+    {
+      "at": "2026-10-16T11:34:11.680701+00:00",
+      "path": "/market/fundamentals/AAPL?exchange=US",
+      "method": "GET",
+      "status": 200,
+      "seconds": 1.71,
+      "headers": {
+        "Content-Type": "application/json",
+        "Date": "Fri, 16 Oct 2026 11:34:12 GMT",
+        "Server": "railway-hikari",
+        "x-railway-request-id": "fpHYvHG-TSS2qaLJ9I3ezw"
+      },
+      "body": {
+        "symbol": "AAPL",
+        "name": "Apple Inc.",
+        "isin": "US0378331005",
+        "exchange": "US",
+        "fundamentals": {
+          "market_cap": 4991209701376.0,
+          "trailing_eps": 8.72,
+          "forward_eps": 9.57785,
+          "revenue": 466822987776.0,
+          "net_income": 128929996800.0,
+          "profit_margin": 0.27618998,
+          "return_on_equity": 1.5191,
+          "return_on_assets": 0.3118
+        },
+        "ownership": {
+          "insider_percent": 0.01648,
+          "institution_percent": 0.66348,
+          "shares_outstanding": 14594180000.0,
+          "float_shares": 14569078010.0
+        }
+      }
+    },
+    {
+      "at": "2026-10-16T11:34:12.515662+00:00",
+      "path": "/market/ownership-details/AAPL?exchange=US",
+      "method": "GET",
+      "status": 200,
+      "seconds": 0.83,
+      "headers": {
+        "Content-Type": "application/json",
+        "Date": "Fri, 16 Oct 2026 11:34:13 GMT",
+        "Server": "railway-hikari",
+        "x-railway-request-id": "zq7urHsUTRCY1Q3u0_TJvA"
+      },
+      "body": {
+        "symbol": "AAPL",
+        "exchange": "US",
+        "change_semantics": "For Yahoo holder tables, pctChange is the provider-reported proportional change in the holder position (shares), not a quarter-over-quarter change in ownership percentage points.",
+        "institutional_holders": [
+          {
+            "index": 0,
+            "Date Reported": "2026-06-30T00:00:00",
+            "Holder": "Blackrock Inc.",
+            "pctHeld": 0.0797,
+            "Shares": 1162996939,
+            "Value": 397744953138,
+            "pctChange": 0.016
+          },
+          {
+            "index": 1,
+            "Date Reported": "2026-06-30T00:00:00",
+            "Holder": "Vanguard Capital Management LLC",
+            "pctHeld": 0.0657,
+            "Shares": 959107911,
+            "Value": 328014905562,
+            "pctChange": 0.0055
+          },
+          {
+            "index": 2,
+            "Date Reported": "2026-06-30T00:00:00",
+            "Holder": "State Street Corporation",
+            "pctHeld": 0.0421,
+            "Shares": 615129929,
+            "Value": 210374435718,
+            "pctChange": 0.0212
+          },
+          {
+            "index": 3,
+            "Date Reported": "2026-06-30T00:00:00",
+            "Holder": "Geode Capital Management, LLC",
+            "pctHeld": 0.0254,
+            "Shares": 371336543,
+            "Value": 126997097706,
+            "pctChange": 0.0074
+          },
+          {
+            "index": 4,
+            "Date Reported": "2026-06-30T00:00:00",
+            "Holder": "Vanguard Portfolio Management LLC",
+            "pctHeld": 0.0229,
+            "Shares": 334119156,
+            "Value": 114268751352,
+            "pctChange": 0.0081
+          },
+          {
+            "index": 5,
+            "Date Reported": "2026-06-30T00:00:00",
+            "Holder": "FMR, LLC",
+            "pctHeld": 0.0223,
+            "Shares": 325348754,
+            "Value": 111269273868,
+            "pctChange": 0.0582
+          },
+          {
+            "index": 6,
+            "Date Reported": "2026-06-30T00:00:00",
+            "Holder": "Morgan Stanley",
+            "pctHeld": 0.0166,
+            "Shares": 242614238,
+            "Value": 82974069396,
+            "pctChange": -0.0076
+          },
+          {
+            "index": 7,
+            "Date Reported": "2026-06-30T00:00:00",
+            "Holder": "JPMORGAN CHASE & CO",
+            "pctHeld": 0.015700001,
+            "Shares": 228762008,
+            "Value": 78236606736,
+            "pctChange": -0.0123000005
+          },
+          {
+            "index": 8,
+            "Date Reported": "2026-06-30T00:00:00",
+            "Holder": "Berkshire Hathaway, Inc",
+            "pctHeld": 0.0156,
+            "Shares": 227917808,
+            "Value": 77947890336,
+            "pctChange": 0.0
+          },
+          {
+            "index": 9,
+            "Date Reported": "2026-06-30T00:00:00",
+            "Holder": "NORGES BANK",
+            "pctHeld": 0.013099999,
+            "Shares": 190726866,
+            "Value": 65228588172,
+            "pctChange": -0.007900001
+          }
+        ],
+        "mutual_fund_holders": [
+          {
+            "index": 0,
+            "Date Reported": "2026-06-30T00:00:00",
+            "Holder": "VANGUARD INDEX FUNDS-Vanguard Total Stock Market Index Fund",
+            "pctHeld": 0.0319,
+            "Shares": 466272244,
+            "Value": 159465107448,
+            "pctChange": 0.0001
+          },
+          {
+            "index": 1,
+            "Date Reported": "2026-06-30T00:00:00",
+            "Holder": "VANGUARD INDEX FUNDS-Vanguard 500 Index Fund",
+            "pctHeld": 0.026099999,
+            "Shares": 380610709,
+            "Value": 130168862478,
+            "pctChange": 0.0202
+          },
+          {
+            "index": 2,
+            "Date Reported": "2026-08-31T00:00:00",
+            "Holder": "iShares Trust-iShares Core S&P 500 ETF",
+            "pctHeld": 0.0134000005,
+            "Shares": 195583632,
+            "Value": 66889602144,
+            "pctChange": -0.013099999
+          },
+          {
+            "index": 3,
+            "Date Reported": "2026-08-31T00:00:00",
+            "Holder": "Fidelity Concord Street Trust-Fidelity 500 Index Fund",
+            "pctHeld": 0.013099999,
+            "Shares": 190655125,
+            "Value": 65204052750,
+            "pctChange": 0.0039
+          },
+          {
+            "index": 4,
+            "Date Reported": "2026-09-30T00:00:00",
+            "Holder": "SPDR S&P 500 ETF TRUST-State Street SPDR S&P 500 ETF Trust",
+            "pctHeld": 0.0124,
+            "Shares": 180560995,
+            "Value": 61751860290,
+            "pctChange": 0.0047
+          },
+          {
+            "index": 5,
+            "Date Reported": "2026-06-30T00:00:00",
+            "Holder": "VANGUARD INDEX FUNDS-Vanguard Growth Index Fund",
+            "pctHeld": 0.0105,
+            "Shares": 152961842,
+            "Value": 52312949964,
+            "pctChange": -0.0092
+          },
+          {
+            "index": 6,
+            "Date Reported": "2026-08-31T00:00:00",
+            "Holder": "Invesco QQQ Trust, Series 1",
+            "pctHeld": 0.0078,
+            "Shares": 114447943,
+            "Value": 39141196506,
+            "pctChange": 0.0388
+          },
+          {
+            "index": 7,
+            "Date Reported": "2026-05-31T00:00:00",
+            "Holder": "VANGUARD WORLD FUND-Vanguard Information Technology Index Fund",
+            "pctHeld": 0.0055,
+            "Shares": 80206224,
+            "Value": 27430528608,
+            "pctChange": 0.0925
+          },
+          {
+            "index": 8,
+            "Date Reported": "2026-06-30T00:00:00",
+            "Holder": "VANGUARD INSTITUTIONAL INDEX FUNDS-Vanguard Institutional Index Fund",
+            "pctHeld": 0.0055,
+            "Shares": 79732730,
+            "Value": 27268593660,
+            "pctChange": -0.0368
+          },
+          {
+            "index": 9,
+            "Date Reported": "2026-09-30T00:00:00",
+            "Holder": "SELECT SECTOR SPDR TRT-State Street Technology Select Sector SPDR ETF",
+            "pctHeld": 0.0036000002,
+            "Shares": 52127235,
+            "Value": 17827514370,
+            "pctChange": 0.0871
+          }
+        ],
+        "insider_transactions": [
+          {
+            "index": 0,
+            "Shares": 2399,
+            "Value": 796492.0,
+            "URL": "",
+            "Text": "Sale at price 332.01 per share.",
+            "Insider": "NEWSTEAD JENNIFER",
+            "Position": "General Counsel",
+            "Transaction": "",
+            "Start Date": "2026-10-06T00:00:00",
+            "Ownership": "D"
+          },
+          {
+            "index": 1,
+            "Shares": 26325,
+            "Value": 0.0,
+            "URL": "",
+            "Text": "Stock Gift at price 0.00 per share.",
+            "Insider": "COOK TIMOTHY D",
+            "Position": "Officer and Director",
+            "Transaction": "",
+            "Start Date": "2026-10-02T00:00:00",
+            "Ownership": "D"
+          },
+          {
+            "index": 2,
+            "Shares": 46389,
+            "Value": 15466923.0,
+            "URL": "",
+            "Text": "Sale at price 333.35 - 333.91 per share.",
+            "Insider": "O'BRIEN DEIRDRE",
+            "Position": "Officer",
+            "Transaction": "",
+            "Start Date": "2026-10-02T00:00:00",
+            "Ownership": "D"
+          },
+          {
+            "index": 3,
+            "Shares": 25412,
+            "Value": 8460740.0,
+            "URL": "",
+            "Text": "Sale at price 331.38 - 334.05 per share.",
+            "Insider": "TERNUS JOHN",
+            "Position": "Chief Executive Officer",
+            "Transaction": "",
+            "Start Date": "2026-10-02T00:00:00",
+            "Ownership": "D"
+          },
+          {
+            "index": 4,
+            "Shares": 191753,
+            "Value": 63845841.0,
+            "URL": "",
+            "Text": "Sale at price 331.44 - 333.94 per share.",
+            "Insider": "COOK TIMOTHY D",
+            "Position": "Officer and Director",
+            "Transaction": "",
+            "Start Date": "2026-10-02T00:00:00",
+            "Ownership": "D"
+          },
+          {
+            "index": 5,
+            "Shares": 99878,
+            "Value": null,
+            "URL": "",
+            "Text": "",
+            "Insider": "O'BRIEN DEIRDRE",
+            "Position": "Officer",
+            "Transaction": "",
+            "Start Date": "2026-10-01T00:00:00",
+            "Ownership": "D"
+          },
+          {
+            "index": 6,
+            "Shares": 99878,
+            "Value": null,
+            "URL": "",
+            "Text": "",
+            "Insider": "KHAN SABIH",
+            "Position": "Chief Operating Officer",
+            "Transaction": "",
+            "Start Date": "2026-10-01T00:00:00",
+            "Ownership": "D"
+          },
+          {
+            "index": 7,
+            "Shares": 99878,
+            "Value": null,
+            "URL": "",
+            "Text": "",
+            "Insider": "TERNUS JOHN",
+            "Position": "Chief Executive Officer",
+            "Transaction": "",
+            "Start Date": "2026-10-01T00:00:00",
+            "Ownership": "D"
+          },
+          {
+            "index": 8,
+            "Shares": 374541,
+            "Value": null,
+            "URL": "",
+            "Text": "",
+            "Insider": "COOK TIMOTHY D",
+            "Position": "Officer and Director",
+            "Transaction": "",
+            "Start Date": "2026-10-01T00:00:00",
+            "Ownership": "D"
+          },
+          {
+            "index": 9,
+            "Shares": 2399,
+            "Value": 806496.0,
+            "URL": "",
+            "Text": "Sale at price 336.18 per share.",
+            "Insider": "NEWSTEAD JENNIFER",
+            "Position": "General Counsel",
+            "Transaction": "",
+            "Start Date": "2026-09-29T00:00:00",
+            "Ownership": "D"
+          }
+        ],
+        "major_holders": [
+          {
+            "index": "insidersPercentHeld",
+            "Value": 0.01648
+          },
+          {
+            "index": "institutionsPercentHeld",
+            "Value": 0.66348
+          },
+          {
+            "index": "institutionsFloatPercentHeld",
+            "Value": 0.6746
+          },
+          {
+            "index": "institutionsCount",
+            "Value": 7699.0
+          }
+        ],
+        "current_summary": {
+          "institutional_percent": 66.348,
+          "insider_percent": 1.648,
+          "retail_public_percent": 32.004,
+          "retail_public_method": "100% - institutional ownership - insider ownership"
+        },
+        "historical_aggregate_series_available": false,
+        "historical_score_status": "BLOCKED",
+        "historical_score_reason": "Dated aggregate ownership history is unavailable; current aggregates and top-holder share changes cannot establish quarterly/yearly aggregate ownership changes.",
+        "provider_note": "US ownership uses the market-appropriate headings Institutional Ownership, Insider Ownership and Retail/Public Investors. Yahoo provides current aggregate institutional/insider percentages; Retail/Public is the transparent remainder 100% - institutional - insider when both aggregates are available. Historical top-holder tables are kept as source detail and are not presented as total-market history."
+      }
+    },
+    {
+      "at": "2026-10-16T11:34:21.345516+00:00",
+      "path": "/market/sector-analysis?market=US",
+      "method": "GET",
+      "status": 200,
+      "seconds": 8.82,
+      "headers": {
+        "Content-Type": "application/json",
+        "Date": "Fri, 16 Oct 2026 11:34:22 GMT",
+        "Server": "railway-hikari",
+        "x-railway-request-id": "SDf6GM7ZSUKNlW499I3ezw"
+      },
+      "body": {
+        "market": "US",
+        "rows": [
+          {
+            "market": "US",
+            "sector_cohort_id": "c2504e228b2f066e467d",
+            "sector": "Technology",
+            "stock_count": 402,
+            "enriched_count": 56,
+            "price_count": 402,
+            "data_coverage_percent": 13.930348258706468,
+            "eps_growth_rs": 100.0,
+            "pat_growth_rs": 90.0,
+            "sales_growth_rs": 90.0,
+            "growth_acceleration_rs": 77.78,
+            "growth_breadth": 84.00167442620273,
+            "acceleration_breadth": 62.504254112308566,
+            "eps_growth_percent": 36.61971830985916,
+            "pat_growth_percent": 31.333308853229536,
+            "sales_growth_percent": 20.02923312429016,
+            "acceleration": 5.66,
+            "sector_rs_score": 89.49,
+            "momentum_1m_percent": -7.57,
+            "relative_return_1m_percent": -8.25,
+            "price_breadth_percent": 26.865671641791046,
+            "status": "Provisional",
+            "history_status": "Partial stored constituent coverage; no final universe rank",
+            "evaluation_date": "2026-10-14",
+            "component_coverage_percent": 100.0,
+            "rank": 1,
+            "leadership": "Leading"
+          },
+          {
+            "market": "US",
+            "sector_cohort_id": "c2504e228b2f066e467d",
+            "sector": "Financial Services",
+            "stock_count": 377,
+            "enriched_count": 20,
+            "price_count": 377,
+            "data_coverage_percent": 5.305039787798409,
+            "eps_growth_rs": 90.0,
+            "pat_growth_rs": 100.0,
+            "sales_growth_rs": 60.0,
+            "growth_acceleration_rs": 88.89,
+            "growth_breadth": 81.05263157894737,
+            "acceleration_breadth": 60.276806526806524,
+            "eps_growth_percent": 33.1805810142754,
+            "pat_growth_percent": 32.205854400304126,
+            "sales_growth_percent": 13.169176295019211,
+            "acceleration": 6.008333333333333,
+            "sector_rs_score": 84.4,
+            "momentum_1m_percent": -0.44,
+            "relative_return_1m_percent": -1.13,
+            "price_breadth_percent": 38.726790450928384,
+            "status": "Provisional",
+            "history_status": "Partial stored constituent coverage; no final universe rank",
+            "evaluation_date": "2026-10-14",
+            "component_coverage_percent": 100.0,
+            "rank": 2,
+            "leadership": "Leading"
+          },
+          {
+            "market": "US",
+            "sector_cohort_id": "c2504e228b2f066e467d",
+            "sector": "Consumer Cyclical",
+            "stock_count": 193,
+            "enriched_count": 13,
+            "price_count": 192,
+            "data_coverage_percent": 6.7357512953367875,
+            "eps_growth_rs": 80.0,
+            "pat_growth_rs": 80.0,
+            "sales_growth_rs": 80.0,
+            "growth_acceleration_rs": 100.0,
+            "growth_breadth": 78.84615384615385,
+            "acceleration_breadth": 70.13888888888889,
+            "eps_growth_percent": 30.36967239319548,
+            "pat_growth_percent": 27.101762206589118,
+            "sales_growth_percent": 16.190864600326265,
+            "acceleration": 19.281666666666666,
+            "sector_rs_score": 82.45,
+            "momentum_1m_percent": -2.085,
+            "relative_return_1m_percent": -2.7750000000000004,
+            "price_breadth_percent": 36.45833333333333,
+            "status": "Provisional",
+            "history_status": "Partial stored constituent coverage; no final universe rank",
+            "evaluation_date": "2026-10-14",
+            "component_coverage_percent": 100.0,
+            "rank": 3,
+            "leadership": "Middle"
+          },
+          {
+            "market": "US",
+            "sector_cohort_id": "c2504e228b2f066e467d",
+            "sector": "Industrials",
+            "stock_count": 251,
+            "enriched_count": 14,
+            "price_count": 251,
+            "data_coverage_percent": 5.577689243027888,
+            "eps_growth_rs": 70.0,
+            "pat_growth_rs": 70.0,
+            "sales_growth_rs": 40.0,
+            "growth_acceleration_rs": 55.56,
+            "growth_breadth": 86.24708624708624,
+            "acceleration_breadth": 50.41666666666666,
+            "eps_growth_percent": 22.727272727272734,
+            "pat_growth_percent": 20.86851628468034,
+            "sales_growth_percent": 10.63796290843138,
+            "acceleration": -0.8933333333333332,
+            "sector_rs_score": 61.67,
+            "momentum_1m_percent": -5.58,
+            "relative_return_1m_percent": -6.27,
+            "price_breadth_percent": 27.490039840637447,
+            "status": "Provisional",
+            "history_status": "Partial stored constituent coverage; no final universe rank",
+            "evaluation_date": "2026-10-14",
+            "component_coverage_percent": 100.0,
+            "rank": 4,
+            "leadership": "Middle"
+          },
+          {
+            "market": "US",
+            "sector_cohort_id": "c2504e228b2f066e467d",
+            "sector": "Healthcare",
+            "stock_count": 621,
+            "enriched_count": 29,
+            "price_count": 621,
+            "data_coverage_percent": 4.669887278582931,
+            "eps_growth_rs": 60.0,
+            "pat_growth_rs": 60.0,
+            "sales_growth_rs": 70.0,
+            "growth_acceleration_rs": 33.33,
+            "growth_breadth": 79.40917107583773,
+            "acceleration_breadth": 48.05253623188406,
+            "eps_growth_percent": 17.63085399449035,
+            "pat_growth_percent": 16.702462055717344,
+            "sales_growth_percent": 15.158657565297702,
+            "acceleration": -1.3066666666666666,
+            "sector_rs_score": 58.37,
+            "momentum_1m_percent": -11.68,
+            "relative_return_1m_percent": -12.37,
+            "price_breadth_percent": 18.035426731078903,
+            "status": "Provisional",
+            "history_status": "Partial stored constituent coverage; no final universe rank",
+            "evaluation_date": "2026-10-14",
+            "component_coverage_percent": 100.0,
+            "rank": 5,
+            "leadership": "Middle"
+          },
+          {
+            "market": "US",
+            "sector_cohort_id": "c2504e228b2f066e467d",
+            "sector": "Consumer Defensive",
+            "stock_count": 89,
+            "enriched_count": 8,
+            "price_count": 89,
+            "data_coverage_percent": 8.98876404494382,
+            "eps_growth_rs": 50.0,
+            "pat_growth_rs": 10.0,
+            "sales_growth_rs": 50.0,
+            "growth_acceleration_rs": 66.67,
+            "growth_breadth": 73.80952380952381,
+            "acceleration_breadth": 30.5,
+            "eps_growth_percent": 15.186915887850455,
+            "pat_growth_percent": -0.0289198637900574,
+            "sales_growth_percent": 11.098083367006211,
+            "acceleration": 1.7333333333333325,
+            "sector_rs_score": 42.72,
+            "momentum_1m_percent": 0.3,
+            "relative_return_1m_percent": -0.38,
+            "price_breadth_percent": 50.56179775280899,
+            "status": "Provisional",
+            "history_status": "Partial stored constituent coverage; no final universe rank",
+            "evaluation_date": "2026-10-14",
+            "component_coverage_percent": 100.0,
+            "rank": 6,
+            "leadership": "Lagging"
+          },
+          {
+            "market": "US",
+            "sector_cohort_id": "c2504e228b2f066e467d",
+            "sector": "Communication Services",
+            "stock_count": 118,
+            "enriched_count": 12,
+            "price_count": 118,
+            "data_coverage_percent": 10.16949152542373,
+            "eps_growth_rs": 0.0,
+            "pat_growth_rs": 0.0,
+            "sales_growth_rs": 100.0,
+            "growth_acceleration_rs": 11.11,
+            "growth_breadth": 50.0,
+            "acceleration_breadth": 40.75,
+            "eps_growth_percent": -16.085984955780066,
+            "pat_growth_percent": -16.206380993743966,
+            "sales_growth_percent": 24.23362508814867,
+            "acceleration": -33.81166666666667,
+            "sector_rs_score": 26.2,
+            "momentum_1m_percent": -4.165,
+            "relative_return_1m_percent": -4.855,
+            "price_breadth_percent": 25.423728813559322,
+            "status": "Provisional",
+            "history_status": "Partial stored constituent coverage; no final universe rank",
+            "evaluation_date": "2026-10-14",
+            "component_coverage_percent": 100.0,
+            "rank": 7,
+            "leadership": "Lagging"
+          },
+          {
+            "market": "US",
+            "sector_cohort_id": "c2504e228b2f066e467d",
+            "sector": "Utilities",
+            "stock_count": 24,
+            "enriched_count": 6,
+            "price_count": 24,
+            "data_coverage_percent": 25.0,
+            "eps_growth_rs": 10.0,
+            "pat_growth_rs": 20.0,
+            "sales_growth_rs": 30.0,
+            "growth_acceleration_rs": 0.0,
+            "growth_breadth": 72.22222222222223,
+            "acceleration_breadth": 48.75,
+            "eps_growth_percent": 2.40963855421687,
+            "pat_growth_percent": 3.2215458136714576,
+            "sales_growth_percent": 10.341626186627945,
+            "acceleration": -221.20833333333334,
+            "sector_rs_score": 20.05,
+            "momentum_1m_percent": 0.855,
+            "relative_return_1m_percent": 0.17500000000000002,
+            "price_breadth_percent": 54.166666666666664,
+            "status": "Provisional",
+            "history_status": "Partial stored constituent coverage; no final universe rank",
+            "evaluation_date": "2026-10-14",
+            "component_coverage_percent": 100.0,
+            "rank": 8,
+            "leadership": "Lagging"
+          },
+          {
+            "market": "US",
+            "sector_cohort_id": "c2504e228b2f066e467d",
+            "sector": "Basic Materials",
+            "stock_count": 67,
+            "enriched_count": 1,
+            "price_count": 67,
+            "data_coverage_percent": 1.4925373134328357,
+            "eps_growth_rs": 40.0,
+            "pat_growth_rs": 40.0,
+            "sales_growth_rs": 20.0,
+            "growth_acceleration_rs": 44.44,
+            "growth_breadth": 100.0,
+            "acceleration_breadth": 30.0,
+            "eps_growth_percent": 11.26005361930296,
+            "pat_growth_percent": 9.173272933182334,
+            "sales_growth_percent": 9.346674514420247,
+            "acceleration": -0.9499999999999998,
+            "sector_rs_score": null,
+            "momentum_1m_percent": -10.56,
+            "relative_return_1m_percent": -11.25,
+            "price_breadth_percent": 25.37313432835821,
+            "status": "Provisional",
+            "history_status": "Partial stored constituent coverage; no final universe rank",
+            "evaluation_date": "2026-10-14",
+            "component_coverage_percent": 100.0
+          },
+          {
+            "market": "US",
+            "sector_cohort_id": "c2504e228b2f066e467d",
+            "sector": "Energy",
+            "stock_count": 32,
+            "enriched_count": 4,
+            "price_count": 32,
+            "data_coverage_percent": 12.5,
+            "eps_growth_rs": 30.0,
+            "pat_growth_rs": 50.0,
+            "sales_growth_rs": 0.0,
+            "growth_acceleration_rs": null,
+            "growth_breadth": 50.0,
+            "acceleration_breadth": null,
+            "eps_growth_percent": 11.060976638272754,
+            "pat_growth_percent": 10.513764983924883,
+            "sales_growth_percent": 3.2609544996073083,
+            "acceleration": null,
+            "sector_rs_score": null,
+            "momentum_1m_percent": -2.745,
+            "relative_return_1m_percent": -3.4299999999999997,
+            "price_breadth_percent": 40.625,
+            "status": "Provisional",
+            "history_status": "Partial stored constituent coverage; no final universe rank",
+            "evaluation_date": "2026-10-14",
+            "component_coverage_percent": 80.0
+          },
+          {
+            "market": "US",
+            "sector_cohort_id": "c2504e228b2f066e467d",
+            "sector": "Real Estate",
+            "stock_count": 45,
+            "enriched_count": 3,
+            "price_count": 45,
+            "data_coverage_percent": 6.666666666666667,
+            "eps_growth_rs": 20.0,
+            "pat_growth_rs": 30.0,
+            "sales_growth_rs": 10.0,
+            "growth_acceleration_rs": 22.22,
+            "growth_breadth": 100.0,
+            "acceleration_breadth": 65.0,
+            "eps_growth_percent": 9.374999999999991,
+            "pat_growth_percent": 7.239819004524888,
+            "sales_growth_percent": 6.462504595976945,
+            "acceleration": -27.266666666666666,
+            "sector_rs_score": null,
+            "momentum_1m_percent": -3.52,
+            "relative_return_1m_percent": -4.2,
+            "price_breadth_percent": 37.77777777777778,
+            "status": "Provisional",
+            "history_status": "Partial stored constituent coverage; no final universe rank",
+            "evaluation_date": "2026-10-14",
+            "component_coverage_percent": 100.0
+          },
+          {
+            "market": "US",
+            "sector_cohort_id": "c2504e228b2f066e467d",
+            "sector": "Unclassified",
+            "stock_count": 3537,
+            "enriched_count": 11,
+            "price_count": 3497,
+            "data_coverage_percent": 0.31099802092168505,
+            "eps_growth_rs": null,
+            "pat_growth_rs": null,
+            "sales_growth_rs": null,
+            "growth_acceleration_rs": null,
+            "growth_breadth": null,
+            "acceleration_breadth": null,
+            "eps_growth_percent": null,
+            "pat_growth_percent": null,
+            "sales_growth_percent": null,
+            "acceleration": null,
+            "sector_rs_score": null,
+            "momentum_1m_percent": -1.29,
+            "relative_return_1m_percent": -1.97,
+            "price_breadth_percent": 38.947669430940806,
+            "status": "Provisional",
+            "history_status": "Partial stored constituent coverage; no final universe rank",
+            "evaluation_date": "2026-10-14",
+            "component_coverage_percent": 0
+          }
+        ],
+        "formula": "EPS Growth RS 30% + PAT Growth RS 25% + Sales Growth RS 20% + Growth Acceleration RS 15% + Growth Breadth 5% + Acceleration Breadth 5%",
+        "aggregation": "Median stock growth; US and India ranked separately; deduplicated constituents.",
+        "data_rule": "Persisted real statement enrichment and dated prices only. Missing components stay N/A; all sector ranks are provisional until constituent coverage is verified."
+      }
+    },
+    {
+      "at": "2026-10-16T11:34:22.046635+00:00",
+      "path": "/portfolios",
+      "method": "GET",
+      "status": 200,
+      "seconds": 0.7,
+      "headers": {
+        "Content-Type": "application/json",
+        "Date": "Fri, 16 Oct 2026 11:34:22 GMT",
+        "Server": "railway-hikari",
+        "x-railway-request-id": "TwbnO8u0RCOG48ae-_9nXA"
+      },
+      "body": [
+        {
+          "id": "0861b0087cf04f679d906134a8eface8",
+          "name": "test-1",
+          "currency": "USD",
+          "inception_date": "2026-10-14"
+        }
+      ]
+    },
+    {
+      "at": "2026-10-16T11:34:23.418092+00:00",
+      "path": "/market/backtest/AAPL?exchange=US&years=20",
+      "method": "GET",
+      "status": 200,
+      "seconds": 1.37,
+      "headers": {
+        "Content-Type": "application/json",
+        "Date": "Fri, 16 Oct 2026 11:34:23 GMT",
+        "Server": "railway-hikari",
+        "x-railway-request-id": "dMV8W_QGQiK2tgt4ljLL4A"
+      },
+      "body": {
+        "symbol": "AAPL",
+        "exchange": "US",
+        "requested_years": 20,
+        "actual_years": 20.05475701574264,
+        "row_count": 5046,
+        "earliest_date": "2006-09-25",
+        "latest_date": "2026-10-15",
+        "history_status": "Complete",
+        "source": "Yahoo Finance/yfinance long history",
+        "provider_warning": null,
+        "buy_hold_return_percent": 12541.584476724805,
+        "buy_hold_cagr_percent": 27.292595014466258,
+        "buy_hold_max_drawdown_percent": -60.866741164267225,
+        "strategies": [
+          {
+            "strategy": "SMA",
+            "last_signal": "Buy",
+            "strategy_return_percent": 2903.4808861418996,
+            "buy_hold_percent": 12541.584476724805,
+            "value_added_percent": -9638.103590582905,
+            "cagr_percent": 18.489405392910683,
+            "max_drawdown_percent": -27.413948037325277,
+            "trades": 165,
+            "status": "Fail"
+          },
+          {
+            "strategy": "ROC",
+            "last_signal": "Buy",
+            "strategy_return_percent": 6099.404078095918,
+            "buy_hold_percent": 12541.584476724805,
+            "value_added_percent": -6442.180398628887,
+            "cagr_percent": 22.849334403861874,
+            "max_drawdown_percent": -40.85833634397842,
+            "trades": 267,
+            "status": "Fail"
+          },
+          {
+            "strategy": "MACD",
+            "last_signal": "Buy",
+            "strategy_return_percent": 3507.1657304306077,
+            "buy_hold_percent": 12541.584476724805,
+            "value_added_percent": -9034.418746294195,
+            "cagr_percent": 19.57646831693014,
+            "max_drawdown_percent": -34.89578291278357,
+            "trades": 186,
+            "status": "Fail"
+          },
+          {
+            "strategy": "RSI",
+            "last_signal": "Sell",
+            "strategy_return_percent": 111.11359144242043,
+            "buy_hold_percent": 12541.584476724805,
+            "value_added_percent": -12430.470885282384,
+            "cagr_percent": 3.7962126557231857,
+            "max_drawdown_percent": -55.99653135822101,
+            "trades": 16,
+            "status": "Fail"
+          },
+          {
+            "strategy": "BOLL",
+            "last_signal": "Sell",
+            "strategy_return_percent": 244.3124594808232,
+            "buy_hold_percent": 12541.584476724805,
+            "value_added_percent": -12297.27201724398,
+            "cagr_percent": 6.359021407279841,
+            "max_drawdown_percent": -58.58259607799693,
+            "trades": 53,
+            "status": "Fail"
+          },
+          {
+            "strategy": "Combined",
+            "last_signal": "Buy",
+            "strategy_return_percent": 2753.1372333023755,
+            "buy_hold_percent": 12541.584476724805,
+            "value_added_percent": -9788.44724342243,
+            "cagr_percent": 18.18638642583139,
+            "max_drawdown_percent": -35.40968493535858,
+            "trades": 221,
+            "status": "Fail"
+          }
+        ],
+        "equity_curve": {
+          "observed_length": 562,
+          "sha256": "958ed8deff0f488228882e742a06a562330501e657f53407a0bb0ac4c89f514d",
+          "first": {
+            "date": "2006-09-25",
+            "buy_hold": 0.0,
+            "combined": 0.0
+          },
+          "last": {
+            "date": "2026-10-15",
+            "buy_hold": 12541.584476724805,
+            "combined": 2753.1372333023755
+          }
+        },
+        "method": "Long/cash signals: SMA50, ROC14, MACD 12/26/9, RSI14, Bollinger 20/2; Combined is majority vote of 3 or more active signals.",
+        "data_rule": "Only verified provider OHLCV is used. Missing years remain partial rather than being fabricated."
+      }
+    },
+    {
+      "at": "2026-10-16T11:34:24.079352+00:00",
+      "path": "/market/excel-live-csv/AAPL?exchange=US&limit=5",
+      "method": "GET",
+      "status": 422,
+      "seconds": 0.66,
+      "headers": {},
+      "body": "{\"detail\":[{\"type\":\"greater_than_equal\",\"loc\":[\"query\",\"limit\"],\"msg\":\"Input should be greater than or equal to 20\",\"input\":\"5\",\"ctx\":{\"ge\":20}}]}"
+    },
+    {
+      "at": "2026-10-16T11:34:25.031066+00:00",
+      "path": "/market/excel-export/AAPL?exchange=US&limit=20",
+      "method": "GET",
+      "status": 200,
+      "seconds": 0.95,
+      "headers": {
+        "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "Date": "Fri, 16 Oct 2026 11:34:25 GMT",
+        "Server": "railway-hikari",
+        "x-railway-request-id": "A7T_19AtRkCwKXPyY53eZw"
+      },
+      "body": {
+        "artifact": "AAPL-15.xlsx",
+        "bytes": 14635
+      }
+    },
+    {
+      "at": "2026-10-16T11:34:37.257792+00:00",
+      "path": "/market/top-composite?market=US&candidate_limit=200&limit=200",
+      "method": "GET",
+      "status": 502,
+      "seconds": 12.22,
+      "headers": {},
+      "body": "{\"status\":\"error\",\"code\":502,\"message\":\"Application failed to respond\",\"request_id\":\"ebSrpFN7SumSwJK7WUN5dQ\"}"
+    },
+    {
+      "at": "2026-10-16T11:34:37.955416+00:00",
+      "path": "/health",
+      "method": "GET",
+      "status": 502,
+      "seconds": 0.68,
+      "headers": {},
+      "body": "{\"status\":\"error\",\"code\":502,\"message\":\"Application failed to respond\",\"request_id\":\"JyrZ_ap-TT-osPGdYqVb7A\"}"
+    },
+    {
+      "at": "2026-10-16T11:34:38.641717+00:00",
+      "path": "/market/top-composite?market=INDIA&candidate_limit=200&limit=200",
+      "method": "GET",
+      "status": 502,
+      "seconds": 0.68,
+      "headers": {},
+      "body": "{\"status\":\"error\",\"code\":502,\"message\":\"Application failed to respond\",\"request_id\":\"OzIdpw2UQ3Kc-BP39o6EoQ\"}"
+    },
+    {
+      "at": "2026-10-16T11:34:39.333800+00:00",
+      "path": "/companies/rs-backfill/status?market=US",
+      "method": "GET",
+      "status": 502,
+      "seconds": 0.69,
+      "headers": {},
+      "body": "{\"status\":\"error\",\"code\":502,\"message\":\"Application failed to respond\",\"request_id\":\"KKlU0DWfTSS3BgSTjq4OvQ\"}"
+    },
+    {
+      "at": "2026-10-16T11:34:40.171084+00:00",
+      "path": "/companies/rs-backfill/status?market=INDIA",
+      "method": "GET",
+      "status": 200,
+      "seconds": 0.83,
+      "headers": {
+        "Content-Type": "application/json",
+        "Date": "Fri, 16 Oct 2026 11:34:41 GMT",
+        "Server": "railway-hikari",
+        "x-railway-request-id": "7zlHIKcpRF6js6nH6WHkDg"
+      },
+      "body": {
+        "market": "INDIA",
+        "evaluation_date": "2026-10-07",
+        "target_rs_universe": 5000,
+        "active_symbols": 5278,
+        "history_ready_symbols": 4423,
+        "pending_active_symbols": 855,
+        "no_history_symbols": 193,
+        "stale_or_short_history_symbols": 662,
+        "target_coverage_percent": 88.46,
+        "active_coverage_percent": 83.8,
+        "symbol_master_shortfall": 0,
+        "complete": false,
+        "history_requirements": {
+          "minimum_rows": 180,
+          "minimum_span_days": 350,
+          "maximum_stale_days": 14,
+          "requested_backfill_days": 500
+        },
+        "by_exchange": {
+          "NSE": {
+            "active": 2605,
+            "ready": 2193,
+            "pending": 412
+          },
+          "BSE": {
+            "active": 2673,
+            "ready": 2230,
+            "pending": 443
+          }
+        },
+        "last_batch": {
+          "market": "INDIA",
+          "status": "idle",
+          "requested_batch_size": 25,
+          "attempted": 0,
+          "succeeded": 0,
+          "failed": 0,
+          "empty": 0,
+          "before": {
+            "market": "INDIA",
+            "evaluation_date": "2026-10-07",
+            "target_rs_universe": 5000,
+            "active_symbols": 5278,
+            "history_ready_symbols": 4423,
+            "pending_active_symbols": 855,
+            "no_history_symbols": 193,
+            "stale_or_short_history_symbols": 662,
+            "target_coverage_percent": 88.46,
+            "active_coverage_percent": 83.8,
+            "symbol_master_shortfall": 0,
+            "complete": false,
+            "history_requirements": {
+              "minimum_rows": 180,
+              "minimum_span_days": 350,
+              "maximum_stale_days": 14,
+              "requested_backfill_days": 500
+            },
+            "by_exchange": {
+              "NSE": {
+                "active": 2605,
+                "ready": 2193,
+                "pending": 412
+              },
+              "BSE": {
+                "active": 2673,
+                "ready": 2230,
+                "pending": 443
+              }
+            },
+            "retry_cooldown_symbols": 857,
+            "scheduler_enabled": true,
+            "scheduler": {
+              "running": true,
+              "registered": true,
+              "next_run_at": "2026-10-16T11:37:35.057720+00:00"
+            },
+            "storage": "compressed provider date/open/close observations"
+          },
+          "after": {
+            "market": "INDIA",
+            "evaluation_date": "2026-10-07",
+            "target_rs_universe": 5000,
+            "active_symbols": 5278,
+            "history_ready_symbols": 4423,
+            "pending_active_symbols": 855,
+            "no_history_symbols": 193,
+            "stale_or_short_history_symbols": 662,
+            "target_coverage_percent": 88.46,
+            "active_coverage_percent": 83.8,
+            "symbol_master_shortfall": 0,
+            "complete": false,
+            "history_requirements": {
+              "minimum_rows": 180,
+              "minimum_span_days": 350,
+              "maximum_stale_days": 14,
+              "requested_backfill_days": 500
+            },
+            "by_exchange": {
+              "NSE": {
+                "active": 2605,
+                "ready": 2193,
+                "pending": 412
+              },
+              "BSE": {
+                "active": 2673,
+                "ready": 2230,
+                "pending": 443
+              }
+            },
+            "retry_cooldown_symbols": 857,
+            "scheduler_enabled": true,
+            "scheduler": {
+              "running": true,
+              "registered": true,
+              "next_run_at": "2026-10-16T11:37:35.057720+00:00"
+            },
+            "storage": "compressed provider date/open/close observations"
+          },
+          "started_at": "2026-10-16T11:32:38.328810Z",
+          "finished_at": "2026-10-16T11:32:38.630449Z"
+        },
+        "retry_cooldown_symbols": 857,
+        "scheduler_enabled": true,
+        "scheduler": {
+          "running": true,
+          "registered": true,
+          "next_run_at": "2026-10-16T11:35:10.735610+00:00"
+        },
+        "storage": "compressed provider date/open/close observations"
+      }
+    },
+    {
+      "at": "2026-10-16T11:34:40.861632+00:00",
+      "path": "/health",
+      "method": "GET",
+      "status": 200,
+      "seconds": 0.69,
+      "headers": {
+        "Content-Type": "application/json",
+        "Date": "Fri, 16 Oct 2026 11:34:41 GMT",
+        "Server": "railway-hikari",
+        "x-railway-request-id": "1gEptZYxQS2YaLvUwUFZXw"
+      },
+      "body": {
+        "status": "ok",
+        "database": "ready"
+      }
+    }
+  ]
+}

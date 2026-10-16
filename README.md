@@ -361,3 +361,37 @@ The complete dashboard now uses one spacing system across Overview, Top 200 Rank
 ## 2026-10-08 UI V37 — simple clean rebuild
 
 The dashboard now uses a deliberately low-noise UI: one accent color, flatter cards, fewer decorative icons and helper labels, simpler spacing, and consistent typography across every workspace. Functional data and controls remain intact.
+# Top-200 request delivery
+
+`GET /market/top-composite` now reads completed, dated response snapshots. One
+bounded worker per process performs ranking generation, so simultaneous reads
+do not repeat provider downloads or full RS-cohort calculations. The ranking
+formulas, candidate selection and 200-row response limit are unchanged.
+
+Responses remain fresh for 120 seconds. A matching completed snapshot up to
+15 minutes old may be served with `X-Ranking-Cache: stale` while refreshing;
+its original `snapshot_at` and immutable row IDs remain unchanged. With no
+usable snapshot, the API returns HTTP 503 with `detail.code=RANKING_WARMING`
+and `Retry-After: 5`. The frontend polls the same request within its existing
+timeout budget. Other 502/503 errors are not treated as cache warmup.
+
+Startup creates the additive `ranking_responses` cache table, holding the last
+complete response per market. It does not migrate, delete or rewrite existing
+prices, financial observations, portfolios or immutable score snapshots.
+Custom weights and limits must match the cached request fingerprint. The
+process retains at most eight response bodies and eight pending builds; a
+serialized response may not exceed 2 MiB. Statement enrichment is asynchronous;
+the former `TOP200_SYNC_ENRICH_LIMIT` setting no longer triggers synchronous
+provider calls.
+
+Safe stderr diagnostics include request/build/stage durations, response bytes,
+Linux RSS when available, and exception class names. SQL text, parameters,
+credentials, provider URLs and exception messages are excluded.
+
+From the repository root with backend dependencies installed, run
+`python backend/scripts/benchmark_top200.py` for the isolated persisted-data
+HTTP benchmark. It uses its own `.completion-qa/ranking-502.sqlite` database,
+synthetic listing identities and recorded provider fixtures; it never connects
+to production. Fixtures are dated October 2026 and must be refreshed if they
+no longer meet the live history-readiness dates. See
+`docs/MILESTONE2_FINAL_ACCEPTANCE.md` for measured results and deployment limits.

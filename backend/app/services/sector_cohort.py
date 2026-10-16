@@ -5,6 +5,9 @@ from datetime import datetime, timedelta
 from app.models import RankingSnapshot
 from app.services.rs_universe_backfill import eligible_companies, market_exchanges
 
+GROWTH_FIELDS = ('eps_latest_yoy', 'pat_latest_yoy', 'sales_latest_yoy',
+                 'eps_acceleration', 'pat_acceleration', 'sales_acceleration')
+
 
 def sector_inputs(db, market):
     from app.api.market import FINANCIAL_CALCULATION_VERSION, _ranking_snapshot_ttl_seconds
@@ -16,7 +19,12 @@ def sector_inputs(db, market):
         try:
             payload = json.loads(snapshot.payload_json)
             if payload.get('financial_calculation_version') == FINANCIAL_CALCULATION_VERSION:
-                enrichment[(snapshot.exchange, snapshot.symbol)] = payload
+                # Sector consumers need six growth observations, not every
+                # candidate's financial rules, periods and provider metadata.
+                enrichment[(snapshot.exchange, snapshot.symbol)] = {
+                    **{field: payload.get(field) for field in GROWTH_FIELDS},
+                    'metadata': {'sector': (payload.get('metadata') or {}).get('sector')},
+                }
         except (TypeError, ValueError):
             continue
     rows = []
@@ -31,7 +39,7 @@ def sector_scores(db, market):
     from app.api.market import _sector_scores_from_enriched, FINANCIAL_CALCULATION_VERSION
     rows, enrichment = sector_inputs(db, market)
     stats = _sector_scores_from_enriched([r for r in rows if r['sector'] != 'Unclassified'], enrichment)
-    fields = ('eps_latest_yoy', 'pat_latest_yoy', 'sales_latest_yoy', 'eps_acceleration', 'pat_acceleration', 'sales_acceleration')
+    fields = GROWTH_FIELDS
     observations = [(r['exchange'], r['symbol'], r['sector'], [enrichment[(r['exchange'], r['symbol'])].get(f) for f in fields]) for r in rows if (r['exchange'], r['symbol']) in enrichment]
     cohort_id = hashlib.sha256(json.dumps([market, FINANCIAL_CALCULATION_VERSION, sorted(observations)], sort_keys=True).encode()).hexdigest()[:20]
     # Apply the same minimum genuine constituent count to every consumer.

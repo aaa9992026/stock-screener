@@ -1,0 +1,454 @@
+{
+  "scope": "Actual public Vercel frontend with real Railway responses. No API replay; non-read methods blocked by QA guard.",
+  "startedAt": "2026-10-16T11:35:36.815Z",
+  "requests": [
+    {
+      "url": "https://stock-screener-two-pied.vercel.app/",
+      "method": "GET",
+      "id": "16DC50520CE4B03E48B5A02296756889",
+      "at": "2026-10-16T11:35:38.508Z"
+    },
+    {
+      "url": "https://stock-screener-two-pied.vercel.app/assets/index-DMNVZ-q1.js",
+      "method": "GET",
+      "id": "19944.2",
+      "at": "2026-10-16T11:35:42.644Z"
+    },
+    {
+      "url": "https://stock-screener-two-pied.vercel.app/assets/index-rHbpII_V.css",
+      "method": "GET",
+      "id": "19944.3",
+      "at": "2026-10-16T11:35:42.645Z"
+    },
+    {
+      "url": "https://stock-screener-production-d90e.up.railway.app/health",
+      "method": "GET",
+      "id": "19944.6",
+      "at": "2026-10-16T11:35:44.180Z"
+    },
+    {
+      "url": "https://stock-screener-production-d90e.up.railway.app/health",
+      "method": "GET",
+      "id": "19944.7",
+      "at": "2026-10-16T11:35:44.180Z"
+    },
+    {
+      "url": "https://stock-screener-two-pied.vercel.app/favicon.svg",
+      "method": "GET",
+      "id": "19944.8",
+      "at": "2026-10-16T11:35:44.181Z"
+    },
+    {
+      "url": "https://stock-screener-production-d90e.up.railway.app/market/screener?page_size=25&page=1&market=ALL&sort_by=data_coverage&sort_dir=desc",
+      "method": "GET",
+      "id": "19944.9",
+      "at": "2026-10-16T11:35:45.100Z"
+    },
+    {
+      "url": "https://stock-screener-production-d90e.up.railway.app/health",
+      "method": "GET",
+      "id": "19944.10",
+      "at": "2026-10-16T11:35:45.101Z"
+    },
+    {
+      "url": "https://stock-screener-production-d90e.up.railway.app/companies/search?q=AAPL&exchange=US&limit=10",
+      "method": "GET",
+      "id": "19944.11",
+      "at": "2026-10-16T11:35:45.350Z"
+    },
+    {
+      "url": "https://stock-screener-production-d90e.up.railway.app/health",
+      "method": "GET",
+      "id": "19944.12",
+      "at": "2026-10-16T11:35:45.351Z"
+    },
+    {
+      "url": "https://stock-screener-production-d90e.up.railway.app/market/indicators/AAPL?exchange=US&timeframe=daily&sma_short=20&sma_long=50&rsi_period=14",
+      "method": "GET",
+      "id": "19944.13",
+      "at": "2026-10-16T11:35:45.351Z"
+    },
+    {
+      "url": "https://stock-screener-production-d90e.up.railway.app/market/benchmark/US?limit=1400",
+      "method": "GET",
+      "id": "19944.14",
+      "at": "2026-10-16T11:35:45.351Z"
+    },
+    {
+      "url": "https://stock-screener-production-d90e.up.railway.app/market/dashboard/AAPL?exchange=US&technical_weight=25&fundamental_weight=30&relative_strength_weight=25&ownership_weight=15&sector_weight=5&technical_ema20_weight=20&technical_ema50_weight=20&technical_ema150_weight=20&technical_ema200_weight=20&technical_rsi_weight=20&fundamental_eps_weight=20&fundamental_net_income_weight=20&fundamental_profit_margin_weight=20&fundamental_roe_weight=20&fundamental_roa_weight=20&ownership_institution_weight=70&ownership_insider_weight=30&rs_1w_weight=30&rs_2w_weight=0&rs_1m_weight=25&rs_2m_weight=0&rs_3m_weight=20&rs_6m_weight=15&rs_1y_weight=10&rs_sector_weight=0",
+      "method": "GET",
+      "id": "19944.15",
+      "at": "2026-10-16T11:35:45.351Z"
+    },
+    {
+      "url": "https://stock-screener-production-d90e.up.railway.app/market/technical-summary/AAPL?exchange=US&timeframe=daily&rs_1w_weight=30&rs_2w_weight=0&rs_1m_weight=25&rs_2m_weight=0&rs_3m_weight=20&rs_6m_weight=15&rs_1y_weight=10&rs_sector_weight=0",
+      "method": "GET",
+      "id": "19944.16",
+      "at": "2026-10-16T11:35:45.351Z"
+    },
+    {
+      "url": "https://stock-screener-production-d90e.up.railway.app/market/ownership-details/AAPL?exchange=US",
+      "method": "GET",
+      "id": "19944.17",
+      "at": "2026-10-16T11:35:45.351Z"
+    },
+    {
+      "url": "https://stock-screener-production-d90e.up.railway.app/market/fundamentals/AAPL?exchange=US",
+      "method": "POST",
+      "id": "19944.18",
+      "at": "2026-10-16T11:35:45.351Z"
+    },
+    {
+      "url": "https://stock-screener-production-d90e.up.railway.app/market/fundamentals-history/AAPL?exchange=US",
+      "method": "GET",
+      "id": "19944.19",
+      "at": "2026-10-16T11:35:45.352Z"
+    },
+    {
+      "url": "https://stock-screener-production-d90e.up.railway.app/market/sec-edgar/AAPL?exchange=US&filings_limit=12",
+      "method": "GET",
+      "id": "19944.20",
+      "at": "2026-10-16T11:35:45.352Z"
+    },
+    {
+      "url": "https://stock-screener-production-d90e.up.railway.app/market/fundamentals/AAPL?exchange=US",
+      "method": "GET",
+      "id": "19944.21",
+      "at": "2026-10-16T11:35:45.356Z"
+    },
+    {
+      "url": "https://stock-screener-production-d90e.up.railway.app/market/top-composite?market=ALL&limit=200&candidate_limit=220&technical_weight=25&fundamental_weight=30&ownership_weight=15&sector_weight=5&relative_strength_weight=25",
+      "method": "GET",
+      "id": "19944.22",
+      "at": "2026-10-16T11:35:45.749Z"
+    },
+    {
+      "url": "https://stock-screener-production-d90e.up.railway.app/market/chart/AAPL?exchange=US&timeframe=daily&limit=1040",
+      "method": "GET",
+      "id": "19944.23",
+      "at": "2026-10-16T11:35:46.000Z"
+    },
+    {
+      "url": "https://stock-screener-production-d90e.up.railway.app/market/dashboard/AAPL?exchange=US&technical_weight=25&fundamental_weight=30&relative_strength_weight=25&ownership_weight=15&sector_weight=5&technical_ema20_weight=20&technical_ema50_weight=20&technical_ema150_weight=20&technical_ema200_weight=20&technical_rsi_weight=20&fundamental_eps_weight=20&fundamental_net_income_weight=20&fundamental_profit_margin_weight=20&fundamental_roe_weight=20&fundamental_roa_weight=20&ownership_institution_weight=70&ownership_insider_weight=30&rs_1w_weight=30&rs_2w_weight=0&rs_1m_weight=25&rs_2m_weight=0&rs_3m_weight=20&rs_6m_weight=15&rs_1y_weight=10&rs_sector_weight=0",
+      "method": "GET",
+      "id": "19944.24",
+      "at": "2026-10-16T11:35:47.270Z"
+    },
+    {
+      "url": "https://stock-screener-production-d90e.up.railway.app/companies/rs-backfill/status?market=US",
+      "method": "GET",
+      "id": "19944.25",
+      "at": "2026-10-16T11:36:16.053Z"
+    },
+    {
+      "url": "https://stock-screener-production-d90e.up.railway.app/market/sector-analysis?market=ALL",
+      "method": "GET",
+      "id": "19944.26",
+      "at": "2026-10-16T11:36:38.408Z"
+    },
+    {
+      "url": "https://stock-screener-production-d90e.up.railway.app/portfolios",
+      "method": "GET",
+      "id": "19944.27",
+      "at": "2026-10-16T11:36:43.074Z"
+    },
+    {
+      "url": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNSIgdmlld0JveD0iMCAwIDI0IDI0Ij48cGF0aCBmaWxsPSJXaW5kb3dUZXh0IiBkPSJNMjAgM2gtMVYxaC0ydjJIN1YxSDV2Mkg0Yy0xLjEgMC0yIC45LTIgMnYxNmMwIDEuMS45IDIgMiAyaDE2YzEuMSAwIDItLjkgMi0yVjVjMC0xLjEtLjktMi0yLTJ6bTAgMThINFY4aDE2djEzeiIvPjxwYXRoIGZpbGw9Im5vbmUiIGQ9Ik0wIDBoMjR2MjRIMHoiLz48L3N2Zz4=",
+      "method": "GET",
+      "id": "19944.28",
+      "at": "2026-10-16T11:36:43.075Z"
+    },
+    {
+      "url": "https://stock-screener-production-d90e.up.railway.app/market/backtest/AAPL?exchange=US&years=20",
+      "method": "GET",
+      "id": "19944.29",
+      "at": "2026-10-16T11:36:47.785Z"
+    }
+  ],
+  "responses": [
+    {
+      "url": "https://stock-screener-two-pied.vercel.app/",
+      "status": 200,
+      "mime": "text/html",
+      "id": "16DC50520CE4B03E48B5A02296756889",
+      "at": "2026-10-16T11:35:42.627Z"
+    },
+    {
+      "url": "https://stock-screener-two-pied.vercel.app/assets/index-rHbpII_V.css",
+      "status": 200,
+      "mime": "text/css",
+      "id": "19944.3",
+      "at": "2026-10-16T11:35:43.236Z"
+    },
+    {
+      "url": "https://stock-screener-two-pied.vercel.app/assets/index-DMNVZ-q1.js",
+      "status": 200,
+      "mime": "application/javascript",
+      "id": "19944.2",
+      "at": "2026-10-16T11:35:43.966Z"
+    },
+    {
+      "url": "https://stock-screener-two-pied.vercel.app/favicon.svg",
+      "status": 200,
+      "mime": "image/svg+xml",
+      "id": "19944.8",
+      "at": "2026-10-16T11:35:44.412Z"
+    },
+    {
+      "url": "https://stock-screener-production-d90e.up.railway.app/health",
+      "status": 200,
+      "mime": "application/json",
+      "id": "19944.6",
+      "at": "2026-10-16T11:35:45.098Z"
+    },
+    {
+      "url": "https://stock-screener-production-d90e.up.railway.app/health",
+      "status": 200,
+      "mime": "application/json",
+      "id": "19944.7",
+      "at": "2026-10-16T11:35:45.350Z"
+    },
+    {
+      "url": "https://stock-screener-production-d90e.up.railway.app/health",
+      "status": 200,
+      "mime": "application/json",
+      "id": "19944.10",
+      "at": "2026-10-16T11:35:45.748Z"
+    },
+    {
+      "url": "https://stock-screener-production-d90e.up.railway.app/companies/search?q=AAPL&exchange=US&limit=10",
+      "status": 200,
+      "mime": "application/json",
+      "id": "19944.11",
+      "at": "2026-10-16T11:35:45.954Z"
+    },
+    {
+      "url": "https://stock-screener-production-d90e.up.railway.app/health",
+      "status": 200,
+      "mime": "application/json",
+      "id": "19944.12",
+      "at": "2026-10-16T11:35:45.998Z"
+    },
+    {
+      "url": "https://stock-screener-production-d90e.up.railway.app/market/benchmark/US?limit=1400",
+      "status": 200,
+      "mime": "application/json",
+      "id": "19944.14",
+      "at": "2026-10-16T11:35:46.085Z"
+    },
+    {
+      "url": "https://stock-screener-production-d90e.up.railway.app/market/indicators/AAPL?exchange=US&timeframe=daily&sma_short=20&sma_long=50&rsi_period=14",
+      "status": 200,
+      "mime": "application/json",
+      "id": "19944.13",
+      "at": "2026-10-16T11:35:46.342Z"
+    },
+    {
+      "url": "https://stock-screener-production-d90e.up.railway.app/market/chart/AAPL?exchange=US&timeframe=daily&limit=1040",
+      "status": 200,
+      "mime": "application/json",
+      "id": "19944.23",
+      "at": "2026-10-16T11:35:46.397Z"
+    },
+    {
+      "url": "https://stock-screener-production-d90e.up.railway.app/market/screener?page_size=25&page=1&market=ALL&sort_by=data_coverage&sort_dir=desc",
+      "status": 200,
+      "mime": "application/json",
+      "id": "19944.9",
+      "at": "2026-10-16T11:35:46.846Z"
+    },
+    {
+      "url": "https://stock-screener-production-d90e.up.railway.app/market/ownership-details/AAPL?exchange=US",
+      "status": 200,
+      "mime": "application/json",
+      "id": "19944.17",
+      "at": "2026-10-16T11:35:46.847Z"
+    },
+    {
+      "url": "https://stock-screener-production-d90e.up.railway.app/market/fundamentals/AAPL?exchange=US",
+      "status": 200,
+      "mime": "application/json",
+      "id": "19944.21",
+      "at": "2026-10-16T11:35:47.269Z"
+    },
+    {
+      "url": "https://stock-screener-production-d90e.up.railway.app/market/sec-edgar/AAPL?exchange=US&filings_limit=12",
+      "status": 200,
+      "mime": "application/json",
+      "id": "19944.20",
+      "at": "2026-10-16T11:35:47.742Z"
+    },
+    {
+      "url": "https://stock-screener-production-d90e.up.railway.app/market/fundamentals-history/AAPL?exchange=US",
+      "status": 200,
+      "mime": "application/json",
+      "id": "19944.19",
+      "at": "2026-10-16T11:35:48.365Z"
+    },
+    {
+      "url": "https://stock-screener-production-d90e.up.railway.app/market/technical-summary/AAPL?exchange=US&timeframe=daily&rs_1w_weight=30&rs_2w_weight=0&rs_1m_weight=25&rs_2m_weight=0&rs_3m_weight=20&rs_6m_weight=15&rs_1y_weight=10&rs_sector_weight=0",
+      "status": 200,
+      "mime": "application/json",
+      "id": "19944.16",
+      "at": "2026-10-16T11:36:02.195Z"
+    },
+    {
+      "url": "https://stock-screener-production-d90e.up.railway.app/market/dashboard/AAPL?exchange=US&technical_weight=25&fundamental_weight=30&relative_strength_weight=25&ownership_weight=15&sector_weight=5&technical_ema20_weight=20&technical_ema50_weight=20&technical_ema150_weight=20&technical_ema200_weight=20&technical_rsi_weight=20&fundamental_eps_weight=20&fundamental_net_income_weight=20&fundamental_profit_margin_weight=20&fundamental_roe_weight=20&fundamental_roa_weight=20&ownership_institution_weight=70&ownership_insider_weight=30&rs_1w_weight=30&rs_2w_weight=0&rs_1m_weight=25&rs_2m_weight=0&rs_3m_weight=20&rs_6m_weight=15&rs_1y_weight=10&rs_sector_weight=0",
+      "status": 200,
+      "mime": "application/json",
+      "id": "19944.15",
+      "at": "2026-10-16T11:36:14.915Z"
+    },
+    {
+      "url": "https://stock-screener-production-d90e.up.railway.app/companies/rs-backfill/status?market=US",
+      "status": 200,
+      "mime": "application/json",
+      "id": "19944.25",
+      "at": "2026-10-16T11:36:16.753Z"
+    },
+    {
+      "url": "https://stock-screener-production-d90e.up.railway.app/market/top-composite?market=ALL&limit=200&candidate_limit=220&technical_weight=25&fundamental_weight=30&ownership_weight=15&sector_weight=5&relative_strength_weight=25",
+      "status": 200,
+      "mime": "application/json",
+      "id": "19944.22",
+      "at": "2026-10-16T11:36:20.086Z"
+    },
+    {
+      "url": "https://stock-screener-production-d90e.up.railway.app/market/dashboard/AAPL?exchange=US&technical_weight=25&fundamental_weight=30&relative_strength_weight=25&ownership_weight=15&sector_weight=5&technical_ema20_weight=20&technical_ema50_weight=20&technical_ema150_weight=20&technical_ema200_weight=20&technical_rsi_weight=20&fundamental_eps_weight=20&fundamental_net_income_weight=20&fundamental_profit_margin_weight=20&fundamental_roe_weight=20&fundamental_roa_weight=20&ownership_institution_weight=70&ownership_insider_weight=30&rs_1w_weight=30&rs_2w_weight=0&rs_1m_weight=25&rs_2m_weight=0&rs_3m_weight=20&rs_6m_weight=15&rs_1y_weight=10&rs_sector_weight=0",
+      "status": 200,
+      "mime": "application/json",
+      "id": "19944.24",
+      "at": "2026-10-16T11:36:29.478Z"
+    },
+    {
+      "url": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNSIgdmlld0JveD0iMCAwIDI0IDI0Ij48cGF0aCBmaWxsPSJXaW5kb3dUZXh0IiBkPSJNMjAgM2gtMVYxaC0ydjJIN1YxSDV2Mkg0Yy0xLjEgMC0yIC45LTIgMnYxNmMwIDEuMS45IDIgMiAyaDE2YzEuMSAwIDItLjkgMi0yVjVjMC0xLjEtLjktMi0yLTJ6bTAgMThINFY4aDE2djEzeiIvPjxwYXRoIGZpbGw9Im5vbmUiIGQ9Ik0wIDBoMjR2MjRIMHoiLz48L3N2Zz4=",
+      "status": 200,
+      "mime": "image/svg+xml",
+      "id": "19944.28",
+      "at": "2026-10-16T11:36:43.075Z"
+    },
+    {
+      "url": "https://stock-screener-production-d90e.up.railway.app/portfolios",
+      "status": 200,
+      "mime": "application/json",
+      "id": "19944.27",
+      "at": "2026-10-16T11:36:43.341Z"
+    },
+    {
+      "url": "https://stock-screener-production-d90e.up.railway.app/market/backtest/AAPL?exchange=US&years=20",
+      "status": 200,
+      "mime": "application/json",
+      "id": "19944.29",
+      "at": "2026-10-16T11:36:48.390Z"
+    },
+    {
+      "url": "https://stock-screener-production-d90e.up.railway.app/market/sector-analysis?market=ALL",
+      "status": 200,
+      "mime": "application/json",
+      "id": "19944.26",
+      "at": "2026-10-16T11:36:54.095Z"
+    }
+  ],
+  "failures": [
+    {
+      "id": "19944.18",
+      "error": "net::ERR_BLOCKED_BY_CLIENT.Inspector",
+      "canceled": false,
+      "at": "2026-10-16T11:35:45.356Z"
+    }
+  ],
+  "errors": [],
+  "views": [
+    {
+      "label": "Overview",
+      "title": "Stock Screener | Market Intelligence",
+      "url": "https://stock-screener-two-pied.vercel.app/",
+      "text": "US Market\nSearch\nRefresh\nExport Excel\nDaily\nWeekly\nMonthly\nScore source: live daily rule evaluation as of 2026-10-15; missing inputs remain N/A. Ranking rows have a separate dated daily snapshot.\nComposite Score\nProvisional · Overall ranking\n54.9\n/ 100\nFundamental Score\nProvisional · Business quality\n27.5\n/ 100\nTechnical Score\nTrend & momentum\n85.1\n/ 100\nRelative Strength\nMarket-relative\n83.5\n/ 100\nOwnership Score\nProvisional · Shareholding quality\nN/A\n/ 100\nSelected company\nApple Inc.\nObserved\nAAPL\nUS\nConsumer Electronics\nISIN US0378331005\nWatchlist\nPrice\n$342.00\n-0.28%\nMarket Cap\n$4.99T\nEPS (TTM)\n8.72\nSector\nTechnology\nIndustry\nConsumer Electronics\nMomentum snapshot\nLatest verified values\nRSI 14\n60.6\nMomentum\nMACD\n4.03\nTrend\nROC 20\n0.3%\nVelocity\nADX 14\n17.4\nStrength\nAAPL Stock Chart\ndaily • DD/MM/YYYY • live hover values\nEMA\nBB\nVolume\nEPS\nRS\nEMA: 10 / 20 / 34 / 50 / 100 / 150 / 200\nBB: 20-period\nRS: price / benchmark · own pane\nEPS: quarterly · own pane\nVolume: own pane\nOHLCV\n15/10/2026\nO 346.95\nH 347.85\nL 341.60\nC 342.00\nV 39,678,300\nEMA line colors:\nEMA 10\nEMA 20\nEMA 34\nEMA 50\nEMA 100\nEMA 150\nEMA 200\nHovered chart values — 15/10/2026:\nEMA 10: 339.05\nEMA 20: 336.12\nEMA 34: 332.24\nEMA 50: 328.19\nEMA 100: 316.7\nEMA 150: 306.8\nEMA 200: 298.33\nBB Upper: 344.75\nBB Middle: 337.06\nBB Lower: 329.37\nEPS (quarterly): 2.02\nRS ratio (Price/Benchmark): 0.0442\n\t\n\t\n\n\n\t\n\t\n\n\n\t\n\t\n\n\n\t\n\t\n\n\t\n\t\nFundamental Filters\n\nGrowth, profitability and quality filters.\n\nView all →\nLatest quarter EPS growth (YoY)\n>\n>=\n<\n<=\nLatest YoY minus prior-quarter YoY\n>\n>=\n<\n<=\nPrior YoY minus second-prior YoY\n>\n>=\n<\n<=\nLatest YoY vs prior-two average\n>\n>=\n<\n<=\nTechnical Filters\n\nTrend, momentum and technical indicators.\n\nView all →\nPrice > 20 EMA\n>\n>=\n<\n<=\nPrice > 34 EMA\n>\n>=\n<\n<=\n20 EMA > 50 EMA\n>\n>=\n<\n<=\n50 EMA > 150 EMA\n>\n>=\n<\n<=\nOwnership Filters\n\nInstitutional ownership and shareholding.\n\nView all →\nInstitutional Ownership\n>\n%\nInsider Ownership\n>\n%\nShares Outstanding\n<\nRetail/Public Investors\n—\n%\nTop 200 preview\n\nRanked by composite score across fundamental, technical, relative-strength and ownership metrics.\n\nOpen Top 200 →\nSort by\nComposite Score\nFundamental\nTechnical\nRelative Strength\nOwnership\nSymbol\nOrder\nDescending ↓\nAscending ↑\nRefreshing…\n#\tSymbol\tCompany Name\tPrice\tChange\tComposite ↓\tFundamental\tTechnical\tRS\tOwnership\tMarket Cap\tSector\tWatch",
+      "scores": [],
+      "width": 1440,
+      "clientWidth": 1425,
+      "scrollWidth": 1425,
+      "alerts": [],
+      "at": "2026-10-16T11:36:15.456Z"
+    },
+    {
+      "label": "Top 200 Ranking",
+      "title": "Stock Screener | Market Intelligence",
+      "url": "https://stock-screener-two-pied.vercel.app/",
+      "text": "US Market\nSearch\nRefresh\nExport Excel\nDaily\nWeekly\nMonthly\nScore source: live daily rule evaluation as of 2026-10-15; missing inputs remain N/A. Ranking rows have a separate dated daily snapshot.\nComposite Score\nProvisional · Overall ranking\n54.9\n/ 100\nFundamental Score\nProvisional · Business quality\n27.5\n/ 100\nTechnical Score\nTrend & momentum\n85.1\n/ 100\nRelative Strength\nMarket-relative\n83.5\n/ 100\nOwnership Score\nProvisional · Shareholding quality\nN/A\n/ 100\nSelected Stock Ranking Detail\n\nSelect a row in the ranking table to review its company, chart and scores.\n\nMarket\nUS + India\nUS Stocks\nIndian Stocks\nNSE Only\nBSE Only\nRefresh Top 200\nStock detail\nIndicators\nWeights\nRanking table\nData quality\nCharts, indicator values and ranking filters use the latest verified provider data available. Missing provider fields stay N/A and are never fabricated.\nSelected company\nApple Inc.\nObserved\nAAPL\nUS\nConsumer Electronics\nISIN US0378331005\nWatchlist\nPrice\n$342.00\n-0.28%\nMarket Cap\n$4.99T\nEPS (TTM)\n8.72\nSector\nTechnology\nIndustry\nConsumer Electronics\nMomentum snapshot\nLatest verified values\nRSI 14\n60.6\nMomentum\nMACD\n4.03\nTrend\nROC 20\n0.3%\nVelocity\nADX 14\n17.4\nStrength\nAAPL Stock Chart\ndaily • DD/MM/YYYY • live hover values\nEMA\nBB\nVolume\nEPS\nRS\nEMA: 10 / 20 / 34 / 50 / 100 / 150 / 200\nBB: 20-period\nRS: price / benchmark · own pane\nEPS: quarterly · own pane\nVolume: own pane\nOHLCV\n15/10/2026\nO 346.95\nH 347.85\nL 341.60\nC 342.00\nV 39,678,300\nEMA line colors:\nEMA 10\nEMA 20\nEMA 34\nEMA 50\nEMA 100\nEMA 150\nEMA 200\nHovered chart values — 15/10/2026:\nEMA 10: 339.05\nEMA 20: 336.12\nEMA 34: 332.24\nEMA 50: 328.19\nEMA 100: 316.7\nEMA 150: 306.8\nEMA 200: 298.33\nBB Upper: 344.75\nBB Middle: 337.06\nBB Lower: 329.37\nEPS (quarterly): 2.02\nRS ratio (Price/Benchmark): 0.0442\n\t\n\t\n\n\n\t\n\t\n\n\n\t\n\t\n\n\n\t\n\t\n\n\t\n\t\nCustomizable Indicator Basket\nPeriods use daily bars; basket ADR uses active bars, while summary ADR uses daily bars.\nRS Score: 83.46\nRSI\nMACD\nROC\nADX/+DI/-DI\nDI Spread\nATR\nATR %\nADR %\nADR Ratio\nBB Width %\nVolume Ratio\nVolume Contraction\nVolume Dry-Up\nRS\nDelivery %\nRSI\nROC\nADX / DI\nATR / ATR%\nADR / ADR%\nVolume Ratio\nBB Width %\nVol Short\nVol Long\nDry-Up\nDelivery\nMACD\n/\n/\nRSI 14\n02/04/2026\n30/06/2026\n15/10/2026\n30\n50\n70\nMACD 12/26/9\n01/04/2026\n29/06/2026\n15/10/2026\n-5\n0\n5\n10\n15\nMACD\nSignal\nROC 14 (%)\n01/04/2026\n29/06/2026\n15/10/2026\n-22\n-11\n0\n11\n22\nADX / +DI / -DI 14\n02/04/2026\n30/06/2026\n15/10/2026\n0\n25\n50\n75\n100\nADX\n+DI\n-DI\nATR 14\n01/04/2026\n29/06/2026\n15/10/2026\n0\n3\n6\n9\n12\nATR % (14)\n01/04/2026\n29/06/2026\n15/10/2026\n0%\n0.85%\n1.7%\n2.55%\n3.4%\nADR % (20)\n01/04/2026\n29/06/2026\n15/10/2026\n0%\n0.8%\n1.6%\n2.4%\n3.2%\nADR Ratio (20)\n01/04/2026\n29/06/2026\n15/10/2026\n0\n0.7\n1.4\n2.1\n2.8\nVolume Ratio (20 daily bars)\n01/04/2026\n29/06/2026\n15/10/2026\n0\n1\n2\n3\n4\nDI Spread (14)\n01/04/2026\n29/06/2026\n15/10/2026\n-20\n0\n20\n40\n60\nBB Width % (20)\n01/04/2026\n29/06/2026\n15/10/2026\n0\n6\n12\n18\n24\nVolume Contraction (10 / 30 daily bars Avg)\n01/04/2026\n29/06/2026\n15/10/2026\n0\n0.35\n0.7\n1.05\n1.4\nVolume Dry-Up (50 daily bars Avg)\n01/04/2026\n29/06/2026\n15/10/2026\n0\n2\n4\n6\n8\nRelative-price percentile (own history)\n31/03/2026\n26/06/2026\n14/10/2026\n0\n25\n50\n75\n100\nDelivery % (5D)\nFramework slot ready. Delivery data will be connected in the next data stage, as requested.\nComposite weights\n\nSet each category’s contribution, then apply your weights.\n\nTechnical\n%\nFundamental\n%\nOwnership\n%\nSector\n%\nRS\n%\nEntered total\n100%\nAll five fields are editable. Weights are normalized to 100%; Apply Weights saves them and refreshes backend data.\nApply Weights\nReset Defaults\nSort by\nComposite\nSymbol\nTechnical\nFundamental\nOwnership\nSector\nRS\nEPS\nPAT\nSales\nAlpha\nBeta\nStd Deviation\nCoverage\nOrder\nDescending ↓\nAscending ↑\n200 displayed / 220 ranked candidates; 0 fully qualified in this evaluated set. Snapshot 2026-10-16T11:36:20.832818Z · client-rs5000-fiscal-v3. Daily scoring; displayed weights apply to these saved components.\n#\tStock\tComposite\tTechnical\tFundamental\tOwnership\tSector\tRS\tEPS Score\tPAT Score\tSales Score\tAlpha\tBeta (2Y weekly)\tStd Deviation\tCoverage\n1\tCCEP\nCoca-Cola Europacific Partners plc - Ordinary Shares\n\t76.94\nP\n\t100\t66.67\t56.01\t44.72\t85.19\t100\t100\t0\tN/A\tN/A\t23%\t100%\n2\tFANG\nDiamondback Energy, Inc. - Common Stock\n\t76.84\nP\n\t100\t59.52\t81.37\tN/A\t87.12\t50\t50\t78.57\tN/A\tN/A\t32.36%\t95%\n3\tAMGN\nAmgen Inc. - Common Stock\n\t75.54\nP\n\t100\t60.42\t59.86\t65.85\t80.58\t87.5\t87.5\t6.25\tN/A\tN/A\t29.36%\t100%\n4\tRAIN\nRain Industries Limited\n\t75.28\nP\n\t100\t74.36\t35.21\t89.91\t72.76\t100\t100\t23.08\tN/A\tN/A\t55.52%\t100%\n5\tADI\nAnalog Devices, Inc. - Common Stock\n\t74\nP\n\t100\t51.67\t66.06\t94.1\t75.55\t65\t65\t25\tN/A\tN/A\t35.73%\t100%\n6\tAFRM\nAffirm Holdings, Inc. - Class A Common Stock\n\t72.06\nP\n\t100\t68.33\t70.69\t81.26\t47.57\t80\t80\t45\tN/A\tN/A\t60.01%\t100%\n7\tMRNA\nModerna, Inc. - Common Stock\n\t70.45\nP\n\t90\t37.5\t67.33\t65.85\t93.22\t56.25\t56.25\t0\tN/A\tN/A\t193.27%\t100%\n8\tOKTA\nOkta, Inc. - Class A Common Stock\n\t69.3\nP\n\t80\t62.5\t70.31\t94.1\t61.18\t100\t87.5\t0\tN/A\tN/A\t66.34%\t100%\n9\tABNB\nAirbnb, Inc. - Class A Common Stock\n\t69.13\nP\n\t100\t34.78\t65.46\t85.03\t78.49\t35.71\t50\t18.75\tN/A\tN/A\t36.05%\t100%\n10\tGEHC\nGE HealthCare Technologies Inc. - Common Stock\n\t67.51\nP\n\t100\t29.17\t66.36\t65.85\t82.06\t43.75\t43.75\t0\tN/A\tN/A\t34.48%\t100%\n11\tMEDP\nMedpace Holdings, Inc. - Common Stock\n\t67.48\nP\n\t100\t29.17\t92.2\t65.85\t66.41\t50\t37.5\t0\tN/A\tN/A\t44.05%\t100%\n12\tEBAY\neBay Inc. - Common Stock\n\t67.35\nP\n\t90\t20.83\t81.77\t85.03\t88.33\t31.25\t31.25\t0\tN/A\tN/A\t35.88%\t100%\n13\tAAPL\nApple Inc.\n\t66.91\nP\n\t100\t30\t48.92\t94.1\t83.46\t45\t35\t10\tN/A\tN/A\t24.4%\t100%\n14\tPAYX\nPaychex, Inc. - Common Stock\n\t66.9\nP\n\t100\t13.33\t75.37\t94.1\t87.58\t20\t20\t0\tN/A\tN/A\t29.98%\t100%\n15\tESLT\nElbit Systems Ltd. - Ordinary Shares\n\t66.63\nP\n\t100\t38.09\t46.11\t62.34\t80.69\t57.14\t57.14\t0\tN/A\tN/A\t44.98%\t100%\n16\tNTRA\nNatera, Inc. - Common Stock\n\t66.47\nP\n\t100\t44.19\t71.93\t65.85\t56.53\t54.55\t56.25\t25\tN/A\tN/A\t48.39%\t100%\n17\tNDAQ\nNasdaq, Inc. - Common Stock\n\t65.54\nP\n\t100\t33.33\t77.47\t81.26\t59.41\t43.75\t43.75\t12.5\tN/A\tN/A\t27.59%\t100%\n18\tEVRG\nEvergy, Inc. - Common Stock\n\t65.12\nP\n\t100\t27.91\t68.14\t20.05\t82.11\t36.36\t43.75\t6.25\tN/A\tN/A\t16.15%\t100%\n19\tMDLZ\nMondelez International, Inc. - Class A Common Stock\n\t65.05\nP\n\t100\t20.59\t62.94\t44.72\t88.78\t43.75\t0\t0\tN/A\tN/A\t23.54%\t100%\n20\tMNST\nMonster Beverage Corporation - Common Stock\n\t64.71\nP\n\t100\t19.57\t78.69\t44.72\t79.19\t14.29\t31.25\t12.5\tN/A\tN/A\t26.54%\t100%\n21\tONC\nBeOne Medicines Ltd. - American Depositary Shares\n\t64.66\nP\n\t100\t47.83\t49.14\t65.85\t58.57\t64.29\t56.25\t25\tN/A\tN/A\t35.01%\t100%\n22\tGILD\nGilead Sciences, Inc. - Common Stock\n\t64.61\nP\n\t100\t20.83\t64.73\t65.85\t81.43\t31.25\t31.25\t0\tN/A\tN/A\t26.84%\t100%\n23\tGOOGL\nAlphabet Inc. - Class A Common Stock\n\t64.42\nP\n\t100\t50\t59.09\t13.71\t59.47\t68.75\t68.75\t12.5\tN/A\tN/A\t31.42%\t100%\n24\tADP\nAutomatic Data Processing, Inc. - Common Stock\n\t63.37\nP\n\t100\t6.67\t64.43\t94.1\t87.99\t10\t10\t0\tN/A\tN/A\t27.78%\t100%\n25\tDLTR\nDollar Tree, Inc. - Common Stock\n\t63.11\nP\n\t100\t50\t1\t44.72\t82.88\t75\t75\t0\tN/A\tN/A\t41.23%\t100%\n26\tCME\nCME Group Inc. - Class A Common Stock\n\t63.09\nP\n\t100\t8.7\t64.94\t81.26\t86.7\t12.5\t14.29\t0\tN/A\tN/A\t24.55%\t100%\n27\tAMZN\nAmazon.com, Inc. - Common Stock\n\t62.97\nP\n\t80\t45.83\t61.4\t85.03\t63.02\t68.75\t68.75\t0\tN/A\tN/A\t34.19%\t100%\n28\tCSX\nCSX Corporation - Common Stock\n\t62.54\nP\n\t100\t16.67\t57.38\t62.34\t83.26\t25\t25\t0\tN/A\tN/A\t21.56%\t100%\n29\tFOX\nFox Corporation - Class B Common Stock\n\t62.52\nP\n\t100\t33.33\t75.49\t13.71\t62.03\t35\t21.43\t40\tN/A\tN/A\t33.72%\t100%\n30\tMSFT\nMicrosoft Corporation - Common Stock\n\t62.45\nP\n\t100\t20\t53.18\t94.1\t75.08\t30\t30\t0\tN/A\tN/A\t32.79%\t100%\n31\tCASY\nCaseys General Stores, Inc. - Common Stock\n\t62.31\nP\n\t40\t64.28\t64.6\t85.03\t76.33\t71.43\t85.71\t35.71\tN/A\tN/A\t37.6%\t100%\n32\tPERSISTENT\nPersistent Systems Limited\n\t62.2\nP\n\t100\t30.77\t60.82\t38.46\t67.71\t30.77\t30.77\t30.77\tN/A\tN/A\t34.83%\t100%\n33\tGOOG\nAlphabet Inc. - Class C Capital Stock\n\t61.79\nP\n\t100\t50\t44.27\t13.71\t57.84\t68.75\t68.75\t12.5\tN/A\tN/A\t30.94%\t100%\n34\tNTNX\nNutanix, Inc. - Class A Common Stock\n\t61.77\nP\n\t70\t53.33\t70.99\t94.1\t51.68\t80\t80\t0\tN/A\tN/A\t45.9%\t100%\n35\tFTNT\nFortinet, Inc. - Common Stock\n\t61.45\nP\n\t100\t12.5\t76.07\t94.1\t66.33\t12.5\t12.5\t12.5\tN/A\tN/A\t42.53%\t100%\n36\tBHARTIARTL\nBharti Airtel Limited\n\t61.2\nP\n\t100\t25.64\t55.7\t50.5\t70.5\t30.77\t30.77\t15.38\tN/A\tN/A\t21.47%\t100%\n37\tKDP\nKeurig Dr Pepper Inc. - Common Stock\n\t61\nP\n\t100\t35.42\t7.83\t44.72\t87.84\t31.25\t31.25\t43.75\tN/A\tN/A\t27.54%\t100%\n38\tBIIB\nBiogen Inc. - Common Stock\n\t60.35\nP\n\t100\t8.33\t69.93\t65.85\t76.27\t12.5\t12.5\t0\tN/A\tN/A\t33.46%\t100%\n39\tGMAB\nGenmab A/S - American Depositary Shares\n\t60.34\nP\n\t100\t35.89\t11.91\t65.85\t77.98\t36.36\t35.71\t35.71\tN/A\tN/A\t34.73%\t100%\n40\tA\nAgilent Technologies, Inc. Common Stock\n\t60.33\nP\n\t100\t6.67\t67.07\t65.85\t79.89\t10\t10\t0\tN/A\tN/A\t32.2%\t100%\n41\tBAJAJHLDNG\nBajaj Holdings & Investment Limited\n\t60.24\nP\n\t100\t50\t39.22\t48.47\t47.72\t64.29\t64.29\t21.43\tN/A\tN/A\t28.54%\t100%\n42\tNDSN\nNordson Corporation - Common Stock\n\t60.1\nP\n\t100\t16.67\t55.16\t62.34\t74.83\t25\t25\t0\tN/A\tN/A\t21.77%\t100%\n43\tNWS\nNews Corporation - Class B Common Stock\n\t59.82\nP\n\t100\t16.67\t65.11\t13.71\t77.48\t25\t25\t0\tN/A\tN/A\t26.64%\t100%\n44\tACGL\nArch Capital Group Ltd. - Common Stock\n\t59.71\nP\n\t100\t0\t70.08\t81.26\t80.52\t0\t0\t0\tN/A\tN/A\t20.71%\t100%\n45\tEXPE\nExpedia Group, Inc. - Common Stock\n\t59.59\nP\n\t100\t35.42\t1.68\t85.03\t77.84\t43.75\t43.75\t18.75\tN/A\tN/A\t50.68%\t100%\n46\tMU\nMicron Technology, Inc. - Common Stock\n\t58.78\nP\n\t40\t93.33\t56.28\t94.1\t30.52\t90\t90\t100\tN/A\tN/A\t80.97%\t100%\n47\tMETA\nMeta Platforms, Inc. - Class A Common Stock\n\t58.44\nP\n\t100\t16.67\t55.52\t13.71\t77.72\t12.5\t12.5\t25\tN/A\tN/A\t41.86%\t100%\n48\tSWANDEF\nSwan Defence and Heavy Industries Limited\n\t58.33\nP\n\t90\t43.59\t31.17\t39.01\t64.52\t35.71\t42.86\t54.55\tN/A\tN/A\t38.93%\t100%\n49\tCTAS\nCintas Corporation - Common Stock\n\t58.27\nP\n\t90\t0\t70.78\t62.34\t88.13\t0\t0\t0\tN/A\tN/A\t23.38%\t100%\n50\tFCNCA\nFirst Citizens BancShares, Inc. - Class A Common Stock\n\t58.22\nP\n\t80\t22.92\t77.89\t81.26\t62.38\t37.5\t25\t6.25\tN/A\tN/A\t26.88%\t100%\n51\tMELI\nMercadoLibre, Inc. - Common Stock\n\t57.78\nP\n\t80\t20.83\t66.61\t85.03\t69.16\t12.5\t12.5\t37.5\tN/A\tN/A\t40.66%\t100%\n52\tMDB\nMongoDB, Inc. - Class A Common Stock\n\t57.54\nP\n\t50\t54.17\t71.61\t94.1\t53.36\t68.75\t68.75\t25\tN/A\tN/A\t70.32%\t100%\n53\tILMN\nIllumina, Inc. - Common Stock\n\t57.4\nP\n\t100\t41.67\t1.06\t65.85\t65.78\t62.5\t62.5\t0\tN/A\tN/A\t49.45%\t100%\n54\tHUHTAMAKI\nHuhtamaki India Limited\n\t57.32\nP\n\t80\t61.54\t30.5\t70.23\t43.08\t69.23\t69.23\t46.15\tN/A\tN/A\t41.55%\t100%\n55\tCOST\nCostco Wholesale Corporation - Common Stock\n\t57.09\nP\n\t100\t0\t52.37\t44.72\t88\t0\t0\t0\tN/A\tN/A\t19.88%\t100%\n56\tLIN\nLinde plc - Ordinary Shares\n\t56.84\nP\n\t100\t8.33\t62.43\tN/A\t79.89\t12.5\t12.5\t0\tN/A\tN/A\t19.05%\t95%\n57\tANTELOPUS\nAntelopus Selan Energy Limited\n\t56.76\nP\n\t50\t73.81\t30.13\t25.48\t65.31\t92.86\t71.43\t57.14\tN/A\tN/A\t71.33%\t100%\n58\tINDIANB\nIndian Bank\n\t56.51\nP\n\t100\t20.51\t42.12\t48.47\t66.45\t30.77\t30.77\t0\tN/A\tN/A\t32.97%\t100%\n59\tAXISBANK\nAxis Bank Limited\n\t56.41\nP\n\t100\t20.51\t55.05\t48.47\t58.31\t30.77\t30.77\t0\tN/A\tN/A\t24.44%\t100%\n60\tISRG\nIntuitive Surgical, Inc. - Common Stock\n\t56.24\nP\n\t80\t20.83\t63.38\t65.85\t68.76\t25\t25\t12.5\tN/A\tN/A\t36.83%\t100%\n61\tINTU\nIntuit Inc. - Common Stock\n\t56.15\nP\n\t60\t20\t69.12\t94.1\t80.3\t30\t20\t10\tN/A\tN/A\t50.14%\t100%\n62\tPNB\nPunjab National Bank\n\t56.15\nP\n\t100\t20.51\t43.46\t48.47\t64.2\t30.77\t30.77\t0\tN/A\tN/A\t27.15%\t100%\n63\tEXE\nExpand Energy Corporation - Common Stock\n\t56.05\nP\n\t40\t50\t68.05\tN/A\t83.36\t50\t50\t50\tN/A\tN/A\t31.21%\t95%\n64\tDDOG\nDatadog, Inc. - Class A Common Stock\n\t55.74\nP\n\t80\t33.33\t65.84\t94.1\t44.63\t37.5\t37.5\t25\tN/A\tN/A\t69.58%\t100%\n65\tCASTROLIND\nCastrol India Limited\n\t55.19\nP\n\t100\t41.02\t42.41\t25.48\t40.98\t46.15\t46.15\t30.77\tN/A\tN/A\t14.6%\t100%\n66\tALAB\nAstera Labs, Inc. - Common Stock\n\t54.59\nP\n\t50\t70.83\t68.69\t94.1\t23.34\t87.5\t87.5\t37.5\tN/A\tN/A\t96.91%\t100%\n67\tCRISIL\nCrisil Limited\n\t54.31\nP\n\t100\t15.38\t40.94\t48.47\t64.52\t15.38\t15.38\t15.38\tN/A\tN/A\t27.01%\t100%\n68\tCDW\nCDW Corporation - Common Stock\n\t54.02\nP\n\t100\t4.17\t1.48\t94.1\t91.36\t6.25\t6.25\t0\tN/A\tN/A\t46.37%\t100%\n69\tKMB\nKimberly-Clark Corporation - Common Stock\n\t53.97\nP\n\t80\t6.67\t70.57\t44.72\t76.6\t10\t10\t0\tN/A\tN/A\t27.92%\t100%\n70\tJINDALPOLY\nJindal Poly Films Limited\n\t53.92\nP\n\t100\t28.57\t36.96\t70.23\t45.18\t35.71\t35.71\t14.29\tN/A\tN/A\t49.08%\t100%\n71\tMRVL\nMarvell Technology, Inc. - Common Stock\n\t53.89\nP\n\t50\t64.58\t57.99\t94.1\t34.43\t75\t75\t43.75\tN/A\tN/A\t79.41%\t100%\n72\tMPHASIS\nMphasiS Limited\n\t53.5\nP\n\t100\t0\t69\t38.46\t64.91\t0\t0\t0\tN/A\tN/A\t30.07%\t100%\n73\tJBHT\nJ.B. Hunt Transport Services, Inc. - Common Stock\n\t53.34\nP\n\t30\t38.09\t85.13\t62.34\t74.09\t57.14\t57.14\t0\tN/A\tN/A\t40.39%\t100%\n74\tADSK\nAutodesk, Inc. - Common Stock\n\t53.29\nP\n\t100\t16.67\t1.06\t94.1\t73.69\t25\t25\t0\tN/A\tN/A\t39.01%\t100%\n75\tDXCM\nDexCom, Inc. - Common Stock\n\t52.87\nP\n\t100\t33.33\t1.14\t65.85\t57.62\t50\t50\t0\tN/A\tN/A\t39.77%\t100%\n76\tNVDA\nNVIDIA Corporation - Common Stock\n\t52.65\nP\n\t50\t47.62\t56\t94.1\t51.05\t57.14\t57.14\t28.57\tN/A\tN/A\t37.24%\t100%\n77\tFAST\nFastenal Company - Common Stock\n\t52.42\nP\n\t70\t4.17\t61.41\t62.34\t85.38\t12.5\t0\t0\tN/A\tN/A\t24.34%\t100%\n78\tCTSH\nCognizant Technology Solutions Corporation - Class A Common Stock\n\t51.91\nP\n\t100\t8.33\t1.01\t94.1\t78.23\t12.5\t12.5\t0\tN/A\tN/A\t42.04%\t100%\n79\tIDXX\nIDEXX Laboratories, Inc. - Common Stock\n\t51.72\nP\n\t60\t16.67\t68.04\t65.85\t72.9\t31.25\t18.75\t0\tN/A\tN/A\t32.06%\t100%\n80\tFOXA\nFox Corporation - Class A Common Stock\n\t51.58\nP\n\t100\t33.33\t3.01\t13.71\t61.79\t35\t21.43\t40\tN/A\tN/A\t34.93%\t100%\n81\tOFSS\nOracle Financial Services Software Limited\n\t51.27\nP\n\t50\t56.41\t39.35\t38.46\t56.08\t61.54\t61.54\t46.15\tN/A\tN/A\t32.84%\t100%\n82\tFFIV\nF5, Inc. - Common Stock\n\t51.2\nP\n\t100\t16.67\t1.46\t94.1\t65.1\t25\t25\t0\tN/A\tN/A\t36.69%\t100%\n83\tICICIBANK\nICICI Bank Limited\n\t51.17\nP\n\t100\t0\t46.74\t48.47\t66.95\t0\t0\t0\tN/A\tN/A\t19.92%\t100%\n84\tAVGO\nBroadcom Inc. - Common Stock\n\t51.06\nP\n\t10\t75.92\t58.78\t94.1\t49.05\t90\t85.71\t55\tN/A\tN/A\t45.46%\t100%\n85\tDRREDDY\nDr. Reddy's Laboratories Limited\n\t51.04\nP\n\t100\t12.19\t66.98\t51.78\t38.97\t15.38\t21.43\t0\tN/A\tN/A\t23.89%\t100%\n86\tCINF\nCincinnati Financial Corporation - Common Stock\n\t50.94\nP\n\t60\t15.62\t54.41\t81.26\t76.13\t35.71\t0\t0\tN/A\tN/A\t20.65%\t100%\n87\tLITE\nLumentum Holdings Inc. - Common Stock\n\t50.75\nP\n\t50\t48.33\t67.16\t94.1\t35.88\t30\t30\t85\tN/A\tN/A\t98.55%\t100%\n88\tCRWD\nCrowdStrike Holdings, Inc. - Class A Common Stock\n\t50.34\nP\n\t70\t28.57\t55.58\t94.1\t44.9\t28.57\t28.57\t28.57\tN/A\tN/A\t55.11%\t100%\n89\tFUTU\nFutu Holdings Limited - American Depositary Shares\n\t50.29\nP\n\t10\t71.43\t58.38\t81.26\t54.16\t71.43\t71.43\t71.43\tN/A\tN/A\t60.51%\t100%\n90\tHEXT\nHexaware Technologies Limited\n\t50.29\nP\n\t90\t15.38\t43.39\t38.46\t58.98\t30.77\t15.38\t0\tN/A\tN/A\t38.48%\t100%\n91\tLNT\nAlliant Energy Corporation - Common Stock\n\t50.21\nP\n\t40\t28.57\t69.6\t20.05\t80.78\t35.71\t35.71\t14.29\tN/A\tN/A\t16.52%\t100%\n92\tODFL\nOld Dominion Freight Line, Inc. - Common Stock\n\t50.15\nP\n\t40\t23.81\t69.22\t62.34\t78.02\t35.71\t35.71\t0\tN/A\tN/A\t37.65%\t100%\n93\tCSCO\nCisco Systems, Inc. - Common Stock\n\t50.12\nP\n\t50\t23.33\t58.45\t94.1\t68.58\t35\t35\t0\tN/A\tN/A\t35.09%\t100%\n94\tIBKR\nInteractive Brokers Group, Inc. - Class A Common Stock\n\t49.79\nP\n\t50\t34.78\t65.99\t81.26\t51.58\t37.5\t28.57\t37.5\tN/A\tN/A\t39.29%\t100%\n95\tMTSI\nMACOM Technology Solutions Holdings, Inc. - Common Stock\n\t49.74\nP\n\t30\t41.67\t77.88\t94.1\t53.42\t45\t45\t35\tN/A\tN/A\t62.89%\t100%\n96\tNTAP\nNetApp, Inc. - Common Stock\n\t49.64\nP\n\t80\t23.81\t1.3\t94.1\t70.4\t28.57\t28.57\t14.29\tN/A\tN/A\t44.99%\t100%\n97\tFOSECOIND\nFoseco India Limited\n\t49.51\nP\n\t70\t33.33\t38.3\t89.91\t47.07\t28.57\t28.57\t42.86\tN/A\tN/A\t39.27%\t100%\n98\tAEP\nAmerican Electric Power Company, Inc. - Common Stock\n\t49.4\nP\n\t60\t9.76\t66.07\t20.05\t82.23\t0\t28.57\t0\tN/A\tN/A\t18.89%\t100%\n99\tADBE\nAdobe Inc. - Common Stock\n\t49.39\nP\n\t60\t13.33\t62.65\t94.1\t65.17\t25\t15\t0\tN/A\tN/A\t41.17%\t100%\n100\tHOOD\nRobinhood Markets, Inc. - Class A Common Stock\n\t48.57\nP\n\t50\t50\t57.07\t81.26\t33.8\t50\t50\t50\tN/A\tN/A\t71.5%\t100%\n101\tHST\nHost Hotels & Resorts, Inc. - Common Stock\n\t48.36\nP\n\t100\t12.5\t2.94\tN/A\t76.69\t12.5\t12.5\t12.5\tN/A\tN/A\t25.3%\t95%\n102\tEWBC\nEast West Bancorp, Inc. - Common Stock\n\t48.3\nP\n\t70\t0\t67.12\t81.26\t66.67\t0\t0\t0\tN/A\tN/A\t23.84%\t100%\n103\tELANTAS\nElantas Beck India Limited\n\t48.05\nP\n\t100\t42.5\t38.67\t89.91\tN/A\t35.71\t46.15\t46.15\tN/A\tN/A\t49.4%\t75%\n104\tHON\nHoneywell International Inc. - Common Stock\n\t47.36\nP\n\t30\t43.33\t59.27\t62.34\t59.4\t65\t65\t0\tN/A\tN/A\t27.05%\t100%\n105\tHDFCLIFE\nHDFC Life Insurance Company Limited\n\t46.91\nP\n\t60\t20.51\t50.35\t48.47\t63.12\t15.38\t15.38\t30.77\tN/A\tN/A\t24.52%\t100%\n106\tMSTR\nStrategy Inc - Class A Common Stock\n\t46.55\nP\n\t80\t16.67\t42.67\t94.1\t41.78\t25\t25\t0\tN/A\tN/A\t81.36%\t100%\n107\tBA\nBoeing Company (The) Common Stock\n\t45.44\nP\n\t10\t65.63\t53.87\t62.34\t48.2\t64.29\t77.78\t55.56\tN/A\tN/A\t34.08%\t100%\n108\tPDD\nPDD Holdings Inc. - American Depositary Shares\n\t45.39\nP\n\t60\t14.29\t23.15\t85.03\t73.52\t21.43\t21.43\t0\tN/A\tN/A\t33.24%\t100%\n109\tNTES\nNetEase, Inc. - American Depositary Shares, each representing 5 ordinary shares\n\t45.28\nP\n\t100\t9.53\t9.11\t13.71\t61.49\t14.29\t14.29\t0\tN/A\tN/A\t33.28%\t100%\n110\tCRDO\nCredo Technology Group Holding Ltd - Ordinary Shares\n\t45.2\nP\n\t10\t72.98\t65.79\t94.1\t24.93\t100\t64.29\t64.29\tN/A\tN/A\t94.96%\t100%\n111\tMAHABANK\nBank of Maharashtra\n\t45.12\nP\n\t50\t20.51\t42\t48.47\t70.98\t30.77\t30.77\t0\tN/A\tN/A\t36.25%\t100%\n112\tHBAN\nHuntington Bancshares Incorporated - Common Stock\n\t44.99\nP\n\t10\t52.08\t64.16\t81.26\t52.73\t43.75\t56.25\t56.25\tN/A\tN/A\t26.45%\t100%\n113\tSTARHEALTH\nStar Health and Allied Insurance Company Limited\n\t44.88\nP\n\t50\t20.51\t46.9\t48.47\t67.07\t30.77\t30.77\t0\tN/A\tN/A\t23.32%\t100%\n114\tDASH\nDoorDash, Inc. - Common Stock\n\t44.76\nP\n\t30\t33.33\t67.95\t85.03\t51.28\t37.5\t37.5\t25\tN/A\tN/A\t48.53%\t100%\n115\tEXC\nExelon Corporation - Common Stock\n\t44.74\nP\n\t40\t13.04\t67.11\t20.05\t79.03\t12.5\t14.29\t12.5\tN/A\tN/A\t19.4%\t100%\n116\tSASKEN\nSasken Technologies Limited\n\t44.67\nP\n\t60\t54.76\t36.51\t38.46\t23.38\t50\t50\t64.29\tN/A\tN/A\t55.5%\t100%\n117\tGFS\nGlobalFoundries Inc. - Ordinary Share\n\t44.57\nP\n\t40\t38.09\t0.79\t94.1\t73.27\t57.14\t57.14\t0\tN/A\tN/A\t59.55%\t100%\n118\tASHIANA\nAshiana Housing Limited\n\t44.08\nP\n\t50\t50\t36.11\t29.83\t38.68\t50\t50\t50\tN/A\tN/A\t34.96%\t100%\n119\tHCLTECH\nHCL Technologies Limited\n\t43.68\nP\n\t100\t10.25\t49.72\t38.46\t24.88\t15.38\t15.38\t0\tN/A\tN/A\t30.51%\t100%\n120\tMAHLIFE\nMahindra Lifespace Developers Limited\n\t43.55\nP\n\t10\t74.36\t50.87\t29.83\t38.49\t69.23\t69.23\t84.62\tN/A\tN/A\t31.04%\t100%\n121\tINTC\nIntel Corporation - Common Stock\n\t43.36\nP\n\t40\t37.5\t64.78\t94.1\t30.77\t50\t50\t12.5\tN/A\tN/A\t77.28%\t100%\n122\tCOIN\nCoinbase Global, Inc. - Class A Common Stock\n\t43.35\nP\n\t60\t20.83\t50.06\t81.26\t42.11\t31.25\t31.25\t0\tN/A\tN/A\t72.19%\t100%\n123\tDLF\nDLF Limited\n\t42.69\nP\n\t100\t0\t40.5\t29.83\t40.51\t0\t0\t0\tN/A\tN/A\t30.33%\t100%\n124\tPOLYCAB\nPolycab In",
+      "scores": [],
+      "width": 1440,
+      "clientWidth": 1425,
+      "scrollWidth": 1425,
+      "alerts": [],
+      "at": "2026-10-16T11:36:38.065Z"
+    },
+    {
+      "label": "Sector Analysis",
+      "title": "Stock Screener | Market Intelligence",
+      "url": "https://stock-screener-two-pied.vercel.app/",
+      "text": "Sector Analysis\n\nCompare real constituent growth, momentum and breadth. US and India are ranked separately.\n\nUS + India\nUS\nIndia\nNSE\nBSE\nRefresh sectors\nExport sectors\n\nMarket\tProvisional rank\tSector\tLeadership\tEligible constituents\tStatements evaluated\tStatement coverage %\tPrice observations\t1M momentum %\t1M relative return %\tPositive price breadth %\tMedian EPS growth %\tMedian PAT growth %\tMedian sales growth %\tGrowth acceleration\tGrowth breadth %\tAcceleration breadth %\tSector score\tStatus\tPrice comparison date\nNo verified observations available.",
+      "scores": [],
+      "width": 1440,
+      "clientWidth": 1440,
+      "scrollWidth": 1440,
+      "alerts": [],
+      "at": "2026-10-16T11:36:42.914Z"
+    },
+    {
+      "label": "Portfolio Management",
+      "title": "Stock Screener | Market Intelligence",
+      "url": "https://stock-screener-two-pied.vercel.app/",
+      "text": "Portfolio Management\n\nPaper portfolios only. No broker orders, sample holdings or inferred currency conversions.\n\nOpen portfolio \nSelect a portfolio\ntest-1 · USD\nCreate a paper portfolio\nName\nCurrency\nUSD\nINR\nInception date\nStarting capital\nMax position %\nMax exposure %\nPosition risk %\nCommission bps\nCreate portfolio",
+      "scores": [],
+      "width": 1440,
+      "clientWidth": 1440,
+      "scrollWidth": 1440,
+      "alerts": [],
+      "at": "2026-10-16T11:36:47.579Z"
+    },
+    {
+      "label": "Backtesting",
+      "title": "Stock Screener | Market Intelligence",
+      "url": "https://stock-screener-two-pied.vercel.app/",
+      "text": "Score source: live daily rule evaluation as of 2026-10-15; missing inputs remain N/A. Ranking rows have a separate dated daily snapshot.\nTrade & portfolio simulation\n\nHistorical technical signals execute next session. Current financial or ownership snapshots are never used as historical observations.\n\nFrom\nThrough\nStarting capital\nAllocation %\nRisk %\nInitial stop %\nTrailing stop %\nEMA bars\nRelative-return bars\nCommission bps\nSlippage bps\nEMA trailing stop\nStrategy components (all enabled conditions required)\nPrice above EMA\nPositive historical relative return\nFundamental · published history unavailable\nOwnership · published history unavailable\nRun trade simulation\n↗\nBacktesting\n\nTest the selected stock on verified provider OHLCV and compare strategy performance over time.\n\nAAPL\nApple Inc.\nUS\nComplete\nMarket\nUS Market\nNSE India\nBSE India\nStock\nSearch\nHistory\n5Y\n10Y\n15Y\n20Y\n▶\nRun Backtest\nRequested: 20 years\nVerified daily OHLCV only\nNo synthetic history\n◷\nVerified History\n20.1Y\n2006-09-25 → 2026-10-15\n↗\nBuy & Hold\n12541.58%\nCAGR 27.29%\n◆\nCombined Strategy\n2753.14%\nBuy\n↓\nMax Drawdown\n-60.87%\n5,046 daily rows\nPERFORMANCE\nEquity Curve\n\nBuy & Hold compared with the combined strategy.\n\nBuy & Hold\nCombined\n2008-08-29\n2012-03-14\n2015-09-29\n2019-04-15\n2022-10-26\n2026-10-15\n-4500%\n0%\n4500%\n9000%\n13500%\nSource Yahoo Finance/yfinance long history\nRows 5,046\nCoverage 20.1 years\nMETHODOLOGY\nStrategy Rules\n\nLong / cash rules used in this test.\n\nSMA\nTrend\nClose above SMA50\nROC\nMomentum\nROC14 above 0\nMACD\nMomentum\nMACD above signal\nRSI\nReversal\nEnter below 30, exit above 70\nBB\nReversal\nEnter below lower, exit above upper\nALL\nCombined\nLong when at least 3 of 5 rules are active\n✓\n\nOnly verified real OHLCV is used. Missing years remain missing instead of being synthesized.\n\nCOMPARISON\nStrategy Performance\n\nCompare returns, CAGR, value added, drawdown and current signal.\n\nComplete\nStrategy\tSignal\tReturn\tBuy & Hold\tValue Added\tCAGR\tMax DD\tEntries\tStatus\nSMA\tBuy\t2903.48%\t12541.58%\t-9638.10%\t18.49%\t-27.41%\t165\tFail\nROC\tBuy\t6099.40%\t12541.58%\t-6442.18%\t22.85%\t-40.86%\t267\tFail\nMACD\tBuy\t3507.17%\t12541.58%\t-9034.42%\t19.58%\t-34.90%\t186\tFail\nRSI\tSell\t111.11%\t12541.58%\t-12430.47%\t3.80%\t-56.00%\t16\tFail\nBOLL\tSell\t244.31%\t12541.58%\t-12297.27%\t6.36%\t-58.58%\t53\tFail\nCombined\tBuy\t2753.14%\t12541.58%\t-9788.45%\t18.19%\t-35.41%\t221\tFail",
+      "scores": [],
+      "width": 1440,
+      "clientWidth": 1425,
+      "scrollWidth": 1425,
+      "alerts": [],
+      "at": "2026-10-16T11:36:52.292Z"
+    },
+    {
+      "label": "Export / Excel",
+      "title": "Stock Screener | Market Intelligence",
+      "url": "https://stock-screener-two-pied.vercel.app/",
+      "text": "Score source: live daily rule evaluation as of 2026-10-15; missing inputs remain N/A. Ranking rows have a separate dated daily snapshot.\nEXPORT / EXCEL\nExcel & Data Workspace\n\nExport the selected stock, create a refreshable Excel connection, or download the full Master Excel + Python workflow.\n\nCurrent selection\nAAPL\nApple Inc. · US · daily\n01\n↓\nExport Current Stock\n\nDownload a ready-to-open Excel snapshot for the stock currently selected in the dashboard.\n\nStock\nAAPL\nMarket\nUS\nDownload .xlsx\n02\n↻\nExcel Live Connection\n\nCreate a refreshable Excel Web Query tied to the selected symbol. Use Data → Refresh All in Excel to fetch the latest rows.\n\nConnection\nRefreshable\nRows\nUp to 5,000\nCreate Live Link\n03\n⌘\nMaster Excel + Python\n\nDownload the reusable workbook, Python/xlwings bridge, and Windows launchers for the complete interactive workflow.\n\nHistory\nUp to 20Y\nWorkbook\nReusable\nDownload Package\nWORKFLOW\nHow to use the Master workbook\n3 steps\n1\nInstall once\nRun INSTALL_MASTER_EXCEL.bat to install the Python/xlwings requirements.\n2\nSelect any stock\nOpen StockScreener_Master.xlsx and set Market + Symbol on the Control sheet.\n3\nRefresh in place\nRun START_MASTER_EXCEL.bat. The same workbook is updated with history and indicators.\nCONNECTION\nCurrent data link\nfresh\nSelected stock\nUS:AAPL\nTimeframe\ndaily\nProvider policy\nVerified data only\nMissing values\nShown as N/A",
+      "scores": [],
+      "width": 1440,
+      "clientWidth": 1425,
+      "scrollWidth": 1425,
+      "alerts": [],
+      "at": "2026-10-16T11:36:57.082Z"
+    },
+    {
+      "label": "Mobile Export",
+      "title": "Stock Screener | Market Intelligence",
+      "url": "https://stock-screener-two-pied.vercel.app/",
+      "text": "Score source: live daily rule evaluation as of 2026-10-15; missing inputs remain N/A. Ranking rows have a separate dated daily snapshot.\nEXPORT / EXCEL\nExcel & Data Workspace\n\nExport the selected stock, create a refreshable Excel connection, or download the full Master Excel + Python workflow.\n\nCurrent selection\nAAPL\nApple Inc. · US · daily\n01\n↓\nExport Current Stock\n\nDownload a ready-to-open Excel snapshot for the stock currently selected in the dashboard.\n\nStock\nAAPL\nMarket\nUS\nDownload .xlsx\n02\n↻\nExcel Live Connection\n\nCreate a refreshable Excel Web Query tied to the selected symbol. Use Data → Refresh All in Excel to fetch the latest rows.\n\nConnection\nRefreshable\nRows\nUp to 5,000\nCreate Live Link\n03\n⌘\nMaster Excel + Python\n\nDownload the reusable workbook, Python/xlwings bridge, and Windows launchers for the complete interactive workflow.\n\nHistory\nUp to 20Y\nWorkbook\nReusable\nDownload Package\nWORKFLOW\nHow to use the Master workbook\n3 steps\n1\nInstall once\nRun INSTALL_MASTER_EXCEL.bat to install the Python/xlwings requirements.\n2\nSelect any stock\nOpen StockScreener_Master.xlsx and set Market + Symbol on the Control sheet.\n3\nRefresh in place\nRun START_MASTER_EXCEL.bat. The same workbook is updated with history and indicators.\nCONNECTION\nCurrent data link\nfresh\nSelected stock\nUS:AAPL\nTimeframe\ndaily\nProvider policy\nVerified data only\nMissing values\nShown as N/A",
+      "scores": [],
+      "width": 390,
+      "clientWidth": 390,
+      "scrollWidth": 390,
+      "alerts": [],
+      "at": "2026-10-16T11:36:57.761Z"
+    }
+  ],
+  "blockedWrites": [
+    {
+      "url": "https://stock-screener-production-d90e.up.railway.app/market/fundamentals/AAPL?exchange=US",
+      "method": "POST"
+    }
+  ],
+  "finishedAt": "2026-10-16T11:36:57.809Z"
+}
