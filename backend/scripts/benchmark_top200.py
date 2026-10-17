@@ -63,7 +63,7 @@ client=TestClient(app);calculations=[];original=market.get_top_composite_dashboa
 def build(**kw):
  t=time.perf_counter();result=original(**kw);calculations.append({'market':kw['market'],'seconds':time.perf_counter()-t});return result
 reports=[]
-with patch.object(market,'delivery',delivery),patch.object(market,'SessionLocal',Session),patch.object(market,'get_top_composite_dashboard',side_effect=build),patch.object(market,'_benchmark_close_points',return_value=(points,'INDEX','Benchmark','recorded-input benchmark')),patch.object(market,'_live_close_history_for_candidates',side_effect=lambda rows:{(r['exchange'],r['symbol']):[p['close'] for p in real] for r in rows}),patch.object(market,'_warm_ranking_enrichment_background'),patch('app.services.risk_metrics.cached_beta_batch',return_value={}):
+with patch.object(market,'delivery',delivery),patch.object(market,'SessionLocal',Session),patch.object(market,'get_top_composite_dashboard',side_effect=build),patch.object(market,'_benchmark_close_points',return_value=(points,'INDEX','Benchmark','recorded-input benchmark')),patch.object(market,'_live_close_history_for_candidates',side_effect=AssertionError('ranking candidate provider fan-out')),patch.object(market,'_warm_ranking_enrichment_background'),patch('app.services.risk_metrics.cached_beta_batch',return_value={}):
  for group in ['US','INDIA']:
   url=f'/market/top-composite?market={group}&limit=200&candidate_limit=220'
   t=time.perf_counter();cold=client.get(url);cold_elapsed=time.perf_counter()-t
@@ -93,5 +93,5 @@ with patch.object(market,'delivery',delivery),patch.object(market,'SessionLocal'
   reports.append({'market':group,'cold_status':cold.status_code,'cold_seconds':cold_elapsed,'burst':burst,'health_while_building_seconds':health_elapsed,'warm_http_median_seconds':median(hits),'warm_http_max_seconds':max(hits),'restart_read_seconds':restart_elapsed,'rows':len(body['rows']),'response_bytes':len(response.content),'stable_immutable_snapshot_ids':True,'snapshot_database_matches':True,'cohort':body['rs_progress']})
   print(json.dumps(reports[-1]),flush=True)
 assert len(calculations)==2
-Path('docs/ranking-502-fix-2026-10-16/http-load.json').write_text(json.dumps({'scope':'Local actual FastAPI HTTP routes with production-sized isolated persisted SQLite cohorts; repeated recorded provider prices; provider I/O stubbed. No production load test.','calculations':calculations,'results':reports},indent=2),encoding='utf-8')
+Path('docs/final-delivery-2026-10-16/http-load.json').write_text(json.dumps({'scope':'Local actual FastAPI HTTP routes with production-sized isolated persisted SQLite cohorts; repeated recorded provider prices; candidate price histories read from persisted database; exact benchmark and existing risk cache stubbed. Candidate provider fan-out forbidden. No production load test.','calculations':calculations,'results':reports},indent=2),encoding='utf-8')
 db.close();engine.dispose()

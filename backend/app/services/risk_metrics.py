@@ -11,10 +11,10 @@ _cache = {}
 _warming = threading.Lock()
 
 
-def cached_beta_batch(rows):
+def cached_beta_batch(rows, warm=True):
     output = { (r["exchange"], r["symbol"]): _cache.get((r["exchange"], r["symbol"]), (0, {}))[1]
                for r in rows }
-    if _warming.acquire(blocking=False):
+    if warm and _warming.acquire(blocking=False):
         def warm():
             try:
                 beta_batch(rows)

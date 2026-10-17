@@ -1,114 +1,110 @@
-# Milestone 2 acceptance - focused Top-200 HTTP 502 repair
+# Milestone 2 final stabilization acceptance - October 16, 2026
 
-**The local repair is implemented and tested, but NOT deployed. Milestone 2 remains PROVISIONAL; production reliability remains FAIL. The actual Railway root cause remains BLOCKED without private runtime evidence.** No OOM, process restart, database failure or timeout mechanism is asserted as the proven cause.
+**Final acceptance: FAIL. Ready for scoped client review with disclosed limitations; not ready for unconditional final sign-off.** Both deployed Top-200 routes still returned HTTP 502. A focused local stabilization patch is ready and tested, but has not been committed, pushed or deployed by this pass. The actual private Railway failure mechanism remains BLOCKED; no OOM, restart, timeout or database failure is asserted as its proven cause.
 
-Starting application commit: `fd114426ab84aa1fc2e118ccf261f2aced7d07ec`. This pass only addresses ranking request cost, memory/query bounds, snapshot delivery and safe diagnostics. The approved layout/CSS, ranking formulas, eligible cohorts, missing-data rules and existing financial/price/portfolio history are preserved. No production deployment, settings change, direct SQL write, forced backfill or trade was performed. Existing public GET handlers may maintain normal caches/snapshots.
+The verified deployed commit is `d1d631e97419d4f94bbe47b8dbb3440a765413e5`. Public GitHub deployment metadata reports Railway success at 13:01:25 UTC and Vercel success at 13:00:32 UTC. The stable frontend HTML, JavaScript and CSS returned 200 at 19:16 UTC; its bundle identifies the expected Railway backend. Deployment success does not establish runtime reliability. See [deployment metadata](final-delivery-2026-10-16/deployments.json) and [frontend HTTP evidence](final-delivery-2026-10-16/frontend-live.json).
 
-The complete preceding public frontend/backend acceptance matrix is archived in [prior-acceptance.md](ranking-502-fix-2026-10-16/prior-acceptance.md). Its seven 502s and other live module checks remain dated evidence; this focused pass does not rerun unrelated production workflows or relabel local tests as production success.
+This pass preserves the approved UI source/CSS and production data. No deployment, settings change, trade, portfolio creation, POST, forced backfill, SQL mutation, database reset or destructive migration was performed against production. Public GET handlers can perform their normal cache maintenance. All test writes used isolated local databases. No Railway credentials or private logs were requested.
 
-## Confirmed implementation problems and repairs
+## Acceptance matrix
 
-Both requested market routes are the same `GET /market/top-composite` implementation with `market=US` or `market=INDIA`.
+PASS means the stated, bounded behavior was verified. BLOCKED identifies unverified scope or missing inputs; it does not imply the feature was removed. Provisional data remains described as provisional even though this matrix uses only the requested PASS / FAIL / BLOCKED labels.
 
-Before this patch, each request selected candidates, downloaded candidate price histories, built full persisted RS reference metrics, calculated ranks, loaded financial enrichment, optionally fetched up to 20 statement histories synchronously, built the shared sector cohort, triggered background enrichment/Beta work, serialized every row into an immutable score snapshot, committed those snapshots, and returned a dictionary for FastAPI to serialize again. Concurrent HTTP calls could independently repeat that work.
-
-Confirmed costly paths:
-
-- `_load_persisted_ranking_enrichment` selected **every fresh market snapshot** with `.all()`, then filtered the requested candidates in Python.
-- Sector calculations retained every snapshot's complete rule/metadata payload although they only need six growth observations and the sector name.
-- RS fallback queried all eligible-market legacy OHLCV and discarded already-covered symbols in Python after database transfer.
-- Candidate downloads used 80-symbol frames/four provider threads; statement enrichment used up to eight workers. Statement history cache had no entry bound. Provider downloads and synchronous statement work extended the ranking HTTP lifetime.
-- The bounded candidate/response count did not bound the full-universe RS work or deduplicate concurrent ranking requests.
-
-These are locally verified software/resource problems. They are **not proof of the private production failure mechanism**.
-
-The repair introduces a completed-response delivery layer:
-
-1. HTTP reads a matching completed response; it performs no ranking generation or full-universe calculation synchronously. One background ranking worker **per process** builds responses, with at most eight queued requests and eight cached response bodies. Identical concurrent requests share one build. Market, candidate limit, response limit and all entered weights are part of the cache fingerprint.
-2. A completed response persists in a new additive `ranking_responses` table: one replaceable slot per canonical market, at most five market slots through the public route. Existing `ScoreSnapshot` records remain immutable and retained. Process-cache loss/restart can load the completed response directly.
-3. Responses are fresh for **120 seconds**. A matching completed response up to **900 seconds** old can be served while refreshing, with its original timestamp/row IDs, `X-Ranking-Cache: stale` and `Age`. Older or mismatched responses are withheld. No wrong-weight or indefinitely stale snapshot is silently reused.
-4. On a cold/expired cache, the API returns an explicit **503 `RANKING_WARMING`**, with `Retry-After: 5`. The existing frontend waits for this code within its existing 50/45-second request budgets. It does not poll generic 502/database-503 failures as warmup. If generation cannot finish within that budget, the existing unavailable/cached-data message remains. A cold cache is not falsely presented as an immediately available ranking.
-5. Candidate enrichment reads now filter exchange/symbol in SQL. RS legacy fallback only requests uncovered eligible keys in 200-key chunks. Sector processing retains only required growth/sector inputs, preserving its full cohort and cohort ID. The full statement memory cache is capped at **512 entries**; evicting memory entries does not delete persisted financial observations.
-6. Provider price batches are capped at **20 symbols/two threads**, with a 10-second per-provider timeout. Statement workers are capped at two. Statement enrichment is asynchronous; `TOP200_SYNC_ENRICH_LIMIT` no longer triggers synchronous statement calls. An individual provider timeout is not claimed to be a total build deadline.
-7. Each completed response is JSON-encoded once, persisted and served as JSON bytes without FastAPI recursively re-encoding its full dictionary on every read. The existing **20-200 response-row** and **200-1,200 candidate** validation remains; free-tier candidates still cap at 220. Responses over **2 MiB** are rejected rather than silently truncated. Pagination/selection formulas were not changed to return a different ranked population.
-8. Dedicated stderr diagnostics log request/cache/build/serialization/stage duration, row and byte counts, exception class, and Linux RSS when available. Query failures, response oversize and `MemoryError` are captured without SQL text, bound parameters, provider URLs, exception messages, environment values or credentials. Failed refreshes preserve the last complete response and back off for 30 seconds. Linux RSS is unavailable on this Windows host; measured local memory below is Python allocation tracing, not RSS.
-
-The supplied uvicorn startup command runs one process by default. Coordination is process-local; this is not a distributed build lock for an independently configured multi-worker/replica deployment. Actual production worker topology and PostgreSQL query plans were not verified through private access.
-
-## Local reproduction and measured evidence
-
-The isolated on-disk SQLite benchmark contains **11,034 synthetic listing identities**, **9,849 compressed histories**, and **11,034 persisted financial enrichment snapshots**. It repeats recorded real AAPL/provider/benchmark inputs solely to exercise realistic cohort sizes and payload shapes. It does not represent 11,034 verified real issuers or invent production financial observations. All provider network I/O is stubbed for this benchmark. Test reference date is **2026-10-13**, not the live US/India evaluation dates.
-
-| Measure | US before | US after | India before | India after |
-|---|---:|---:|---:|---:|
-| Eligible synthetic listings | 5,756 | 5,756 | 5,278 | 5,278 |
-| Ready compact histories | 5,426 | 5,426 | 4,423 | 4,423 |
-| Scoring reference population | 5,000 | 5,000 | 4,423 | 4,423 |
-| Candidates / returned rows | 220 / 200 | 220 / 200 | 220 / 200 | 220 / 200 |
-| Traced builder time, seconds | 24.60 | 26.59 | 20.70 | 21.72 |
-| Peak traced Python allocations, MiB | 80.17 | **38.12** | 73.43 | **34.73** |
-| Candidate enrichment loading, seconds | 0.511 | **0.052** | 0.520 | **0.049** |
-| Database statements | 10 | 11 | 10 | 14 |
-
-Full builder CPU time was **not improved** in this traced run; bounded fallback chunks add statements while preventing covered-history transfers. The benefit is lower memory and isolation from HTTP traffic. Runs were local and subject to concurrent test/host load. The final digest of symbol, exchange, Composite, RS, Fundamental, Technical, Ownership and Sector values matches **exactly before/after for both markets**.
-
-Actual local FastAPI delivery checks on the same persisted population:
-
-| Delivery check | US | India |
-|---|---:|---:|
-| Initial explicit warmup response | 503 / 66.9 ms | 503 / 15.7 ms |
-| Warm HTTP response median | **4.82 ms** | **4.48 ms** |
-| Warm HTTP response maximum, ten reads | 7.07 ms | 17.18 ms |
-| Health database read while building | 3.70 ms | 4.05 ms |
-| Persisted response read after process-cache replacement | 8.42 ms | 5.48 ms |
-| Returned rows / compact JSON bytes | 200 / 660,916 | 200 / 661,523 |
-
-Ten cold reads per market did not multiply generation: **one calculation per market**. The resulting background calculations took about **8.06/6.09 seconds** without allocation tracing; this is not a comparison against the traced before timings. Repeated warm reads retained the exact same immutable row IDs. Every returned row's composite matches its stored `ScoreSnapshot`; recreated delivery instances load byte-identical responses from SQLite. These numbers are local results, not Railway latency or a production load test. Provider delays, process RSS and Postgres behavior are excluded from these measurements.
-
-A separate regression verifies that only **one requested candidate out of 300 snapshots** is materialized, already-covered legacy OHLCV is not queried, many custom configurations cannot create unbounded workers/queues, expired/mismatched responses are withheld, failed refreshes preserve completed data, and memory/database exceptions cannot leak the test secret strings.
-
-## Fresh production observations - unpatched release
-
-Only **four** public requests were sent, one per market plus two health checks, to avoid repeatedly loading Railway:
-
-| Time UTC, October 16 | Request | Status | Seconds |
-|---|---|---:|---:|
-| 12:01:36.534877 | `/health` | 200 | 0.94 |
-| 12:01:56.508106 | US Top-200, candidate limit 200 / response limit 20 | 200 | 19.97 |
-| 12:02:02.471468 | India Top-200, candidate limit 200 / response limit 20 | 502 | 5.96 |
-| 12:02:03.130155 | `/health` | 502 | 0.66 |
-
-Client-local window: **05:01:36-05:02:03 America/Los_Angeles**. The US response contained 20 rows and still took nearly 20 seconds; this does not isolate serialization as the cause. India and subsequent health failed. Error bodies/request IDs are saved. No follow-up load test, deployment or settings change was performed. **The patch cannot be certified against production until an authorized deployment and subsequent checks.** The earlier full 200-row public verification and seven 502s remain archived, not combined into this four-request count.
-
-## Acceptance and validation
-
-| Requirement | Status | Evidence / remaining limit |
+| Existing module / requirement | Status | Evidence and limits |
 |---|---|---|
-| Locally reproduce expensive persisted ranking work | PASS | Production-sized on-disk fixture, full RS calculations, persisted enrichment, no production data changes. Reproduced CPU/memory cost; not the actual Railway process failure. |
-| Stop synchronous full-universe work in HTTP routes | PASS | Public route serves completed responses or bounded warmup. Both local market routes, cold bursts and health responsiveness tested. |
-| Preserve ranking math/cohorts and immutable snapshots | PASS | Identical component digests, fixed 5,000 denominator/tie tests, retained missing values and snapshot identity/database checks. |
-| Query/memory/serialization bounds and restart access | PASS | Filtered SQL, uncovered-only fallback, compact sector inputs, bounded queues/caches/payloads, restart/stale/mismatch/error cases tested. |
-| Safe diagnostics | PASS | Dedicated logging enabled; database/MemoryError secrecy regressions pass. No production RSS/log trace collected. |
-| Approved UI/UX | PASS | CSS/layout unchanged. Only warmup polling and structured-error handling added. Eight frontend tests and 184 replay-browser checks / 110 layouts pass, including one explicit warmup response followed by success. |
-| Backend and API regression | PASS | **70 backend tests**, **113 API replay checks**, five stocks x three timeframe independent indicator replay pass. API replay polls the actual new warmup protocol, then validates real-recorded-input calculations/exports/portfolio/backtesting contracts on isolated SQLite. |
-| Frontend build / lint | PASS | Build and lint pass; eight existing lint warnings and the existing large-bundle warning remain. |
-| Current production ranking reliability | FAIL | Fresh limited sample: US 200 but slow; India 502, health then 502. Local patch is not deployed. |
-| Actual production root cause | BLOCKED | Public evidence cannot identify the private runtime failure. No Railway credential/log request and no guessed OOM/restart explanation. |
-| Production validation of local repair | BLOCKED | Deployment intentionally not performed; requires user authorization. First cache warmup can produce explicit retryable 503 and must be distinguished from generic runtime 503/502. |
-| Full Milestone 2 acceptance | PROVISIONAL | Runtime acceptance remains open. Earlier historical Ownership, quarterly/industry CFO, client NPM/CFO definitions, incomplete India cohort, PIT vintages/universe data and native Excel blockers remain unchanged. |
+| Vercel release and public frontend assets | PASS | Stable frontend HTML/JS/CSS 200; bundled API points to the correct Railway URL; deployment metadata matches starting commit. |
+| Approved UI/UX preservation | PASS | No frontend source, CSS or layout changes. Build and eight frontend tests pass. Prior browser checks remain dated evidence. |
+| Fresh interactive browser retest | BLOCKED | Required browser-control Node REPL tool is unavailable in this session; HTTP/asset verification succeeded. No new interactive or console-error certification is claimed. |
+| Railway deployment and health/database response | PASS | Successful public deployment metadata; initial and final health GET 200, database ready. Health failures during the same window are counted separately below. |
+| Railway sustained runtime reliability | FAIL | 29 backend GET observations: 24 HTTP 200, four HTTP 502, one explicit ranking-warmup 503. Health also failed during the ranking window before recovering. |
+| US Top-200 production availability | FAIL | First response 503 `RANKING_WARMING`, next read after five seconds 502. No repeated generic-502 polling. |
+| India Top-200 production availability | FAIL | One read returned 502. No repeated load or forced recalculation. |
+| Actual Railway 502 root cause | BLOCKED | Public bodies/request IDs confirm failure but cannot identify private process/resource/SQL failure. No guessed cause. |
+| Focused local Top-200 stabilization | PASS | Persisted candidate-only prices; no candidate download or statement/Beta crawl initiated by ranking; binary date lookup; existing completed-response delivery retained. Real API, large persisted fixture and regression tests pass. This is not a production-fix certification. |
+| Production validation of this new local patch | BLOCKED | No deployment authorized/performed. Requires an approved release and subsequent bounded automated verification. |
+| US screener, search, company details and prices | PASS | AAPL search/detail/technical endpoints 200 with real identity and dated observations. Stored screener price date differs from selected-stock live price; not represented as a synchronized quote. |
+| NSE screener, search, company details and prices | PASS | RELIANCE search/detail/technical/XLSX 200; correct company and ISIN. Only sampled paths, not every listed security. |
+| BSE screener, search, company details and prices | PASS | TCS search/detail/technical/XLSX 200; correct BSE identity/ISIN. Missing export Sector/Industry correctly N/A. |
+| Technical and fundamental filter implementation | PASS | Existing filter/scoring/API regressions pass on isolated inputs; public q/search filtering works across all three markets. Production qualified-scan POST was not run because it can launch provider work. |
+| Full production qualified-filter coverage | BLOCKED | Full eligible financial/ownership histories are incomplete. A successful filter response is not proof of complete provider coverage or 200 qualified stocks. |
+| Technical calculations and chart history | PASS | Public daily summaries succeed for all three sampled markets. Independent recorded-real-input EMA/RSI/ROC/Bollinger checks pass for five stocks x daily/weekly/monthly; insufficient monthly history stays N/A. |
+| Fundamental inputs and implemented growth calculations | PASS | AAPL fundamentals/history 200, SEC companyfacts + Yahoo merged source; dated fiscal comparisons, gap handling and implemented handwritten EPS/PAT/Sales regressions pass. This does not accept unresolved NPM/CFO definitions. |
+| Complete Fundamental scoring/data acceptance | BLOCKED | Quarter-duration CFO missing in sampled AAPL history; unresolved client NPM/CFO point allocations/industry comparisons and full-market compatible history coverage remain unavailable. No fabricated points. |
+| Ownership current provider information | PASS | Public AAPL holder details and current summary 200; holder pctChange semantics explicitly identify position/share changes. |
+| Historical aggregate Ownership scoring | BLOCKED | Aggregate dated ownership series unavailable; historical score withheld. Current institution/insider percentages are not a substitute for quarter-over-quarter aggregate ownership history. |
+| US RS population target | PASS | 5,428 ready / 5,757 active; 5,000 target met, evaluation 2026-10-14. AAPL RS 83.45. Readiness count is distinct from the fixed 5,000 scoring cohort. |
+| India RS population target | BLOCKED | 4,423 / 5,278 active, 855 pending; target 5,000 short by 577. NSE 2,193 ready, BSE 2,230 ready; evaluation 2026-10-07. Incomplete ranks remain provisional. |
+| Background processing public diagnostics | PASS | Status reports scheduler enabled/running and persisted last batches; India latest batch three successful downloads, zero increase in ready count. Short histories are not falsely counted as ready. No private log certification. |
+| Composite arithmetic and missing-category treatment | PASS | Live backend baseline AAPL components reconcile to 87.91. Decimal/half-cent, missing-value and snapshot regressions pass. Editable frontend growth-rule score is a separate calculation; see reconciliation below. |
+| Sector Analysis shared cohort calculation | PASS | Public US sector endpoint 200. Technology 94.12 matches AAPL Sector component and shared cohort ID, 66 enriched / 414 constituents. |
+| Complete Sector/final score qualification | BLOCKED | Sector cohort is explicitly provisional and incomplete; unresolved scoring definitions prevent final classification. Data coverage is not equivalent to final qualification. |
+| Current production ranking/detail/export snapshot identity | BLOCKED | Both ranking reads failed; no fresh production snapshot could be compared. Local actual routes and persisted ScoreSnapshot/export regressions pass. |
+| Production Top-200 final-qualified count | BLOCKED | No successful fresh ranking body. Local builds return 200 provisional rows per market; implementation currently withholds final qualification (`final_composite_score=None`, final-qualified count zero). Do not promise 200 fully qualified stocks. |
+| Portfolio Management existing read/list | PASS | Existing portfolio list GET 200. No production create/trade/valuation requests; valuation GET can persist marks. |
+| Portfolio paper-trade/accounting implementation | PASS | Isolated API create/trade/reconciliation and backend portfolio/risk regressions pass. Stops are informational; this is paper portfolio management. |
+| Production portfolio write/valuation acceptance | BLOCKED | Intentionally outside production-safe read-only checks; existing records preserved. Local tests are not certification of real brokerage execution. |
+| Existing technical Backtesting | PASS | Live AAPL 20-year GET 200: 5,047 bars, 20.0575 years, 2006-09-25 to 2026-10-16. Local US/NSE/BSE recorded history checks pass; younger listings correctly Partial. Strategy result 'Fail' means strategy performance, not HTTP/software failure. |
+| Historical point-in-time Fundamental/Ownership backtesting | BLOCKED | Missing publication-time financial/ownership vintages and historical eligible-universe membership. Technical backtesting availability does not remove survivorship/look-ahead limitations. No new historical dataset implemented. |
+| Beta calculation | PASS | Live AAPL Beta 1.064577, alpha 7.234464, 104 aligned completed-week observations, as-of 2026-10-12; adjusted Yahoo basis disclosed. Ranking now reads only existing Beta cache and otherwise N/A. |
+| Excel XLSX / live CSV endpoints | PASS | AAPL CSV 200; AAPL/NSE RELIANCE/BSE TCS XLSX 200, eight sheets and 20 dated OHLCV rows each. Downloaded files parsed locally. Snapshot export identity passes local regressions; fresh production ranking identity remains separately blocked. |
+| Existing Master Excel package/backend contract | PASS | Current recorded-input API replay passes package/Excel contracts; earlier public ZIP success is archived, not claimed as a new request. |
+| Native Excel/xlwings refresh execution | BLOCKED | This environment did not exercise a native Excel bridge. File parsing and API success do not certify Excel automation. |
+| Backend regression | PASS | Final 73 tests pass, zero failures/errors. Includes no candidate fan-out, preserved records, stale/invalid observations and original linear-vs-binary lookup equivalence. |
+| Frontend regression, lint and build | PASS | Eight Node tests pass; lint/build succeed. Eight existing lint warnings and the existing large-bundle warning remain. UI unchanged. |
+| API integration and independent indicator regression | PASS | 113 recorded-real-provider API replay checks; independent five-stock x three-timeframe indicator checks. Isolated SQLite; not live market coverage or a production load test. |
+| Full Milestone 2 final acceptance | FAIL | Critical deployed Top-200/runtime failures persist. External-data/definition/runtime limitations above remain open. |
 
-Regression uses recorded October 14 real provider histories and explicitly isolated synthetic error/performance fixtures. No data in these tests was inserted into the production application. Native Excel and live trading were not exercised in this runtime-focused pass.
+## Focused repair and evidence
 
-## Evidence and reproduction
+The deployed completed-response layer was already in place. Inspection confirmed that its background build still downloaded candidate two-year price histories and launched additional statement and Beta crawls. Moving that work off the HTTP thread did not remove its process resource cost. This pass removes that confirmed ranking-triggered fan-out; it does not claim that fan-out caused the private Railway failures.
 
-- [Before persisted benchmark](ranking-502-fix-2026-10-16/local-before.json), [after benchmark and unchanged component digests](ranking-502-fix-2026-10-16/local-after.json), [actual local HTTP load/restart checks](ranking-502-fix-2026-10-16/http-load.json), [recorded benchmark provider inputs](ranking-502-fix-2026-10-16/benchmark-provider-inputs.json).
-- [Four fresh public responses](ranking-502-fix-2026-10-16/public-checks.json), [regression summary](ranking-502-fix-2026-10-16/regression.json), [113-check API replay](ranking-502-fix-2026-10-16/local-api-report.json), [independent indicator replay](ranking-502-fix-2026-10-16/local-independent-indicators.json), [browser results](ranking-502-fix-2026-10-16/browser/browser-report.json).
-- [Complete preceding acceptance matrix and live deployment evidence](ranking-502-fix-2026-10-16/prior-acceptance.md). Earlier local/live pass claims remain dated; this report supersedes the runtime investigation status only.
+Candidate prices now stream only requested keys: chunks of 100, legacy OHLCV projected columns/yield 1,000 and compact RS payloads/yield 10. The helper merges actual dated observations, prefers compact values on duplicate dates, excludes future/weekend/invalid values and withholds price/Technical when the latest stored observation is older than 14 days. It performs no source-record writes. `latest_date` and `price_source` identify the stored basis. The compact series can have a shorter history and older quote date than a newly downloaded two-year series, so Technical/price values can change with input vintage even though scoring rules are unchanged. No missing sessions are synthesized.
 
-Run from repository root with backend dependencies and PYTHONPATH configured: `python -m unittest discover -s backend/tests -v`; `node --test frontend/tests/scoring.test.mjs frontend/tests/ranking.test.mjs`; `npm.cmd --prefix frontend run build`; `npm.cmd --prefix frontend run lint`; `git diff --check`. This workstation uses the existing isolated QA dependency launcher and `-X utf8`.
+Ranking reads do not start statement or Beta provider work. Existing caches are used; missing ranking statements/Beta remain N/A. `enrichment_remaining_count` still discloses missing coverage and `enrichment_in_progress` is false, rather than claiming a crawl is running. Other existing selected-stock/filter/scheduled data workflows remain intact; no new worker or backfill was added. **The exact benchmark retains its existing cache/provider fallback**, so this is not a claim that all ranking work is network-free or that a total build deadline is enforced.
 
-Portable persisted HTTP reproducer: `python backend/scripts/benchmark_top200.py`. It explicitly selects `.completion-qa/ranking-502.sqlite`, never the production database, and only clears that benchmark's completed-response cache. Recorded fixture dates must remain within the configured readiness windows or be refreshed for a later reproduction. It emits `http-load.json` with the actual measurements.
+RS candle-open lookup now locates the boundary with binary search over ordered dates instead of scanning hundreds of preceding observations per stock/period. A 254-case boundary/gap/fallback equivalence test compares it to the original linear lookup. Period definitions, tie handling, fixed 5,000 denominator, full reference distribution, candidate selection and score weights are unchanged. Completed-response cache fingerprint v2 prevents old price-source bodies being reused after deployment; no old snapshot or market record is deleted.
 
-Patch handoff: the additive cache table is created by the existing startup `Base.metadata.create_all` path on an approved deployment. There are no destructive migrations. Review cold warmup, stale snapshot age and per-process worker coordination before approving deployment. No production setting or credential change is required by this patch, and none was made.
+The existing single background builder per process, bounded queue/cache, 2 MiB payload cap, candidate-filtered enrichment SQL, shared sector cohort, immutable ScoreSnapshot storage, stale-age headers and explicit cold-cache 503 remain in place. Safe exception-class/stage-duration/RSS diagnostics remain enabled. The new stored-price stage uses the same safe tracing. Cross-process builds are not globally serialized; Railway Postgres/process RSS/provider latency are not reproduced by SQLite.
 
-Suggested Git commit message: `Move Top 200 ranking builds off requests and bound memory use`
+The isolated persisted fixture contains 11,034 synthetic listing identities, 5,426 US / 4,423 India ready histories and recorded real provider prices/statements. Synthetic identities exist only in the benchmark database, never production. The exact benchmark and risk cache are supplied by recorded/stubbed fixtures; candidate-provider access raises an error. One build per market serves the burst, 200 provisional rows return, immutable IDs remain stable, every stored row Composite matches, and new delivery instances reload byte-identical responses.
+
+| Final local HTTP metric | US | India |
+|---|---:|---:|
+| Background build | 5.34 s | 4.51 s |
+| Warm response median | 4.18 ms | 4.15 ms |
+| Restart read | 6.10 ms | 5.70 ms |
+| Response size | 671657 | 672264 |
+
+The preceding same-fixture run exposed the repeated scan cost (US 48.89 s / India 17.81 s under concurrent local verification). Host load differed, so this is **not a controlled speedup claim**. The final measured 5.34/4.51-second build timings are local, not a guarantee against Railway 502s. See [final load results](final-delivery-2026-10-16/http-load.json) and [earlier local measurements](final-delivery-2026-10-16/http-load-before-date-lookup.json).
+
+## Score reconciliation and production observations
+
+Independent arithmetic on the saved provider responses confirms AAPL quarterly EPS/PAT/Sales YoY comparisons, current-summary ownership weighting, five positive Fundamental baseline fields, price-above-EMA/RSI Technical rules and Sector component weighting. This validates the implemented baseline and available growth inputs, not missing historical Ownership/CFO data.
+
+Current AAPL backend baseline components are Fundamental 100, Technical 100, RS 83.45, current-summary Ownership 48.92 and provisional Sector 94.12. The exact weighted sum is `100*0.30 + 100*0.25 + 83.45*0.25 + 48.92*0.15 + 94.12*0.05 = 87.9065`, rounded **87.91**. The endpoint labels this the live baseline; it is not the frontend editable handwritten-growth score or a Top-200 immutable snapshot. Current Fundamental baseline positivity rules and current-summary Ownership must not be confused with the client's growth/history definitions.
+
+The earlier user-reported editable components Fundamental 28.2, Technical 85.1, RS 83.5 and Ownership N/A produce **50.61 + 0.05*Sector** under weights 30/25/25/15/5. For example, a genuine Sector 85.0 would yield 54.86, displayed 54.9. This is arithmetic, not an assertion that the current Sector is 85.0. Current live Sector is 94.12; the older 54.9 cannot be certified as today's immutable ranking result because the public ranking endpoints failed. Missing Ownership earns no points and stays N/A, never renormalized into a fabricated higher score. Full/final classification stays withheld while definition/cohort/history requirements remain unresolved. Earlier browser-derived reconciliation is archived and is not relabeled current.
+
+Public response evidence records request times, status, duration, safe headers/request IDs, score inputs, dated prices, cohort counts and provider limitations. The 503 is explicit application warmup, distinct from four generic Railway 502s. Two 502s affected rankings and two affected intervening health checks. Later stock modules recovered; this does not prove stable service. The search screener's AAPL stored price was 330.32 dated October 1, while selected-stock Technical returned 341.62 dated October 16. Dated stored ranking inputs must not be described as synchronized live quotes.
+
+## Remaining external inputs and boundaries
+
+- Client-approved exact NPM/CFO point allocations, period/industry comparison definitions; actual quarter-duration CFO and industry CFO reference inputs where unavailable.
+- Verified dated aggregate ownership history with category definitions, not individual-holder changes or current ownership snapshots.
+- Sufficient eligible India histories to meet 5,000 (577 additional ready histories needed in this sample), and complete compatible statement/sector constituent coverage. Short newly listed histories cannot be invented or made ready by changing the requirement.
+- Publication-time financial/ownership vintages and historical eligible-universe constituents for point-in-time fundamental simulations. No historical dataset implementation is part of this final pass.
+- Provider entitlement/source data only where these histories are not available from existing public sources; no new credential is asserted necessary for already-working sampled endpoints. No Railway credentials requested.
+- Native Excel/xlwings runtime verification. Public XLSX/CSV contract validation is complete within the stated scope.
+- Approved deployment and automated public recheck of this patch. Private Railway evidence would be required to establish the actual platform failure cause if public diagnostics remain insufficient; that diagnosis is BLOCKED under the user's access boundary, without asking for access.
+
+## Evidence and delivery
+
+- [Independent production Fundamental/Technical/Ownership/Sector arithmetic](final-delivery-2026-10-16/production-arithmetic.json); [Public backend observations and response/export arithmetic](final-delivery-2026-10-16/public-evidence.json); [frontend HTML/assets](final-delivery-2026-10-16/frontend-live.json); [deployment metadata](final-delivery-2026-10-16/deployments.json).
+- [Final 73 backend test results](final-delivery-2026-10-16/backend-tests.txt); [113 API replay checks](final-delivery-2026-10-16/local-api-report.json); [independent indicators](final-delivery-2026-10-16/local-independent-indicators.json); [local production-sized load/snapshot checks](final-delivery-2026-10-16/http-load.json).
+- [AAPL workbook](final-delivery-2026-10-16/AAPL-28.xlsx), [NSE RELIANCE workbook](final-delivery-2026-10-16/RELIANCE-21.xlsx), [BSE TCS workbook](final-delivery-2026-10-16/TCS-25.xlsx); workbook sheet/identity/row summaries and SHA-256 hashes are in public evidence.
+- [Preceding report](final-delivery-2026-10-16/prior-acceptance.md) and [earlier full live/browser matrix](ranking-502-fix-2026-10-16/prior-acceptance.md) remain dated evidence; they are superseded by this report's current status.
+- [Client delivery summary and authorized-release instructions](MILESTONE2_CLIENT_DELIVERY.md).
+
+Fresh browser limitation: the installed [browser skill](C:/Users/USER/.codex/plugins/cache/openai-bundled/browser/26.1007.21434/skills/control-in-app-browser/SKILL.md) states: "Only the Node REPL `js` tool (`mcp__node_repl__js`) can be used to control the selected browser." That tool is unavailable here, so no alternate browser automation was used and no fresh interactive-browser pass is claimed. Existing approved UI files were preserved.
+
+Reproduce with configured backend dependencies from repo root: `python -m unittest discover -s backend/tests -v`; `python backend/scripts/benchmark_top200.py`; `node --test frontend/tests/scoring.test.mjs frontend/tests/ranking.test.mjs`; `npm.cmd --prefix frontend run lint`; `npm.cmd --prefix frontend run build`; `git diff --check`. The benchmark selects only its isolated local database and expects recorded dates within the readiness window. This workstation used its existing isolated dependency launcher. API replay uses the existing recorded provider fixtures, not production mutations.

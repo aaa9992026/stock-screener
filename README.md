@@ -380,9 +380,14 @@ complete response per market. It does not migrate, delete or rewrite existing
 prices, financial observations, portfolios or immutable score snapshots.
 Custom weights and limits must match the cached request fingerprint. The
 process retains at most eight response bodies and eight pending builds; a
-serialized response may not exceed 2 MiB. Statement enrichment is asynchronous;
-the former `TOP200_SYNC_ENRICH_LIMIT` setting no longer triggers synchronous
-provider calls.
+serialized response may not exceed 2 MiB. Ranking builds read candidate prices
+from existing compact RS histories and legacy OHLCV in bounded SQL chunks.
+`latest_date` identifies each stored quote date; prices older than 14 days are
+withheld. Missing observations remain N/A. The exact benchmark retains its
+existing cache/provider fallback. Ranking traffic does not start candidate
+price, statement-history or Beta downloads; other existing data workflows
+remain available. Missing ranking Beta/history stays N/A until verified inputs
+exist. The former `TOP200_SYNC_ENRICH_LIMIT` setting has no effect.
 
 Safe stderr diagnostics include request/build/stage durations, response bytes,
 Linux RSS when available, and exception class names. SQL text, parameters,

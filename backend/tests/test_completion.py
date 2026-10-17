@@ -117,6 +117,52 @@ class CompletionTests(unittest.TestCase):
                 self.assertEqual(book["Ranking_Config"]["B4"].value,row["rs_score"])
                 self.assertIn(row["snapshot_id"],[r[1] for r in book["Summary"].values])
 
+    def test_ranking_uses_persisted_prices_without_candidate_provider_fanout(self):
+        rows = observations()
+        persist_history(self.db, "AAPL", "US", rows)
+        benchmark = [(r["date"], r["open"], r["close"]) for r in rows]
+        with patch.object(market, "_benchmark_close_points", return_value=(benchmark, "INDEX", "Benchmark", "test")), patch.object(market, "_live_close_history_for_candidates", side_effect=AssertionError("candidate download")), patch.object(market, "_warm_ranking_enrichment_background", side_effect=AssertionError("statement crawl")), patch("app.services.risk_metrics.cached_beta_batch", return_value={}) as risk:
+            result = market.get_top_composite_dashboard("US", 200, 200, 25, 30, 15, 5, 25, self.db)
+        row = result["rows"][0]
+        self.assertEqual(row["close"], rows[-1]["close"])
+        self.assertEqual(row["latest_date"], rows[-1]["date"].isoformat())
+        self.assertIsNotNone(row["technical_score"])
+        self.assertFalse(result["enrichment_in_progress"])
+        risk.assert_called_once_with(unittest.mock.ANY, warm=False)
+
+    def test_stored_ranking_prices_merge_dates_and_reject_stale_missing_invalid(self):
+        rows = observations()
+        persist_history(self.db, "AAPL", "US", rows)
+        last = rows[-1]["date"]
+        self.db.add_all([
+            OHLCV(symbol="AAPL", exchange="US", date=last, close=1),
+            OHLCV(symbol="AAPL", exchange="US", date=date.today()+timedelta(days=1), close=999),
+            OHLCV(symbol="STALE", exchange="US", date=date.today()-timedelta(days=30), close=42),
+            OHLCV(symbol="INVALID", exchange="US", date=last, close=-1),
+            OHLCV(symbol="UNREQUESTED", exchange="US", date=last, close=99),
+        ])
+        self.db.commit()
+        prices, dates = market._stored_ranking_closes(self.db, [{"exchange":"US","symbol":s} for s in ["AAPL","STALE","INVALID","MISSING"]])
+        self.assertEqual(set(prices), {("US","AAPL")})
+        self.assertEqual(prices[("US","AAPL")][-1], rows[-1]["close"])
+        self.assertEqual(dates[("US","AAPL")], last.isoformat())
+        self.assertEqual(self.db.query(OHLCV).count(), 5)
+
+    def test_rs_candle_binary_lookup_matches_original_linear_lookup(self):
+        rows = observations()
+        points = [(r["date"], r["open"], r["close"]) for r in rows]
+        points[100] = (points[100][0], None, points[100][2])
+        for offset in range(-10, 750, 3):
+            target = points[0][0] + timedelta(days=offset)
+            expected = None
+            for point in points:
+                if point[0] >= target:
+                    value = market._point_open(point) or market._point_close(point)
+                    if value is not None:
+                        expected = (point[0], value)
+                        break
+            self.assertEqual(market._open_on_or_after(points, target), expected)
+
     def test_top200_percentile_work_is_bounded_by_candidates(self):
         # Synthetic return summaries isolate ranking work from provider/DB I/O.
         # The full 5,000-stock distribution must remain the reference cohort.

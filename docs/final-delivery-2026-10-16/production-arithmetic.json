@@ -1,0 +1,90 @@
+{
+  "scope": "Independent arithmetic on actual saved public provider responses, not new provider data or production writes",
+  "fundamental_yoy": [
+    {
+      "metric": "eps",
+      "current_date": "2026-06-27",
+      "prior_date": "2025-06-28",
+      "current": 2.02,
+      "prior": 1.57,
+      "calculated_yoy": 28.6624203821656,
+      "reported_yoy": 28.6624203821656
+    },
+    {
+      "metric": "pat",
+      "current_date": "2026-06-27",
+      "prior_date": "2025-06-28",
+      "current": 29789000000.0,
+      "prior": 23434000000.0,
+      "calculated_yoy": 27.118716394981647,
+      "reported_yoy": 27.11871639498165
+    },
+    {
+      "metric": "sales",
+      "current_date": "2026-06-27",
+      "prior_date": "2025-06-28",
+      "current": 109417000000.0,
+      "prior": 94036000000.0,
+      "calculated_yoy": 16.356501765281383,
+      "reported_yoy": 16.35650176528138
+    }
+  ],
+  "fundamental_baseline_positive_fields": {
+    "trailing_eps": 8.72,
+    "net_income": 128929996800.0,
+    "profit_margin": 0.27618998,
+    "return_on_equity": 1.5191,
+    "return_on_assets": 0.3118
+  },
+  "technical": {
+    "price": 341.6199951171875,
+    "date": "2026-10-16",
+    "ema": {
+      "20": 336.64,
+      "50": 328.72,
+      "150": 307.26,
+      "200": 298.76
+    },
+    "rsi": 59.97,
+    "verified_baseline_score": 100
+  },
+  "ownership_current_baseline": {
+    "institution_percent": 66.348,
+    "insider_percent": 1.6480000000000001,
+    "verified_score": 48.92,
+    "historical_aggregate_score": "Unavailable; no substitute"
+  },
+  "sector": {
+    "inputs": {
+      "eps_growth_rs": 100.0,
+      "pat_growth_rs": 100.0,
+      "sales_growth_rs": 100.0,
+      "growth_acceleration_rs": 77.78,
+      "growth_breadth": 85.45343545343546,
+      "acceleration_breadth": 63.61255140354014
+    },
+    "weighted_sum": 94.12029934284878,
+    "reported": 94.12,
+    "status": "Provisional"
+  },
+  "composite": {
+    "components": {
+      "technical": 100.0,
+      "fundamental": 100.0,
+      "relative_strength": 83.45,
+      "ownership": 48.92,
+      "sector": 94.12
+    },
+    "weights": {
+      "technical": 25.0,
+      "fundamental": 30.0,
+      "ownership": 15.0,
+      "sector": 5.0,
+      "relative_strength": 25.0
+    },
+    "unrounded_weighted_sum": "87.9065",
+    "reported": 87.91,
+    "verified": true,
+    "scope": "Backend baseline daily score; not frontend editable handwritten growth-rule score or a Top-200 snapshot"
+  }
+}

@@ -21,7 +21,7 @@ if not logger.handlers:
     logger.addHandler(handler)
 logger.setLevel(logging.INFO)
 logger.propagate = False
-VERSION = "ranking-delivery-v1"
+VERSION = "ranking-delivery-v2-stored-prices"
 FRESH_SECONDS = 120
 MAX_AGE_SECONDS = 900
 MAX_PAYLOAD_BYTES = 2 * 1024 * 1024

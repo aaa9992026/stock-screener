@@ -212,6 +212,46 @@ def _market_rows_with_live_fallback(db: Session, symbol: str, exchange: str, min
     return stored or live
 
 
+@trace_stage('stored_candidate_prices')
+def _stored_ranking_closes(db, rows):
+    """Bounded candidate-only reads; compact observations win duplicate dates.
+
+    No provider calls, interpolation, price adjustment or source-record writes.
+    Keep up to two calendar years where legacy history exists; compact history
+    retains its actual shorter window. Reject old/future/invalid observations.
+    """
+    today = date.today()
+    cutoff = today - timedelta(days=731)
+    keys = sorted({(r["exchange"], r["symbol"]) for r in rows})
+    grouped, dates = {}, {}
+    for offset in range(0, len(keys), 100):
+        chunk = keys[offset:offset + 100]
+        histories = {key: {} for key in chunk}
+        legacy = (db.query(OHLCV.exchange, OHLCV.symbol, OHLCV.date, OHLCV.close)
+                  .filter(tuple_(OHLCV.exchange, OHLCV.symbol).in_(chunk),
+                          OHLCV.date >= cutoff, OHLCV.date <= today)
+                  .yield_per(1000))
+        for ex, symbol, day, close in legacy:
+            if day.weekday() < 5 and close is not None and math.isfinite(close) and close > 0:
+                histories[(ex, symbol)][day] = float(close)
+        compact = (db.query(RSHistory.exchange, RSHistory.symbol, RSHistory.points_payload)
+                   .filter(tuple_(RSHistory.exchange, RSHistory.symbol).in_(chunk))
+                   .yield_per(10))
+        for ex, symbol, payload in compact:
+            for day, _, close in decode_points(payload):
+                if cutoff <= day <= today and day.weekday() < 5 and math.isfinite(close) and close > 0:
+                    histories[(ex, symbol)][day] = close
+        for key, history in histories.items():
+            if not history:
+                continue
+            last = max(history)
+            if last < today - timedelta(days=14):
+                continue
+            grouped[key] = [history[day] for day in sorted(history)]
+            dates[key] = last.isoformat()
+    return grouped, dates
+
+
 def _live_close_history_for_candidates(rows):
     """Batch-download up to a few hundred candidate close histories without DB writes."""
     result = {}
@@ -1984,7 +2024,11 @@ def _period_start_date(end_date, label):
 
 
 def _open_on_or_after(points, target_date):
-    for point in points:
+    # All callers supply date-ordered observations. Find the candle boundary
+    # once instead of walking hundreds of old bars for every cohort/period.
+    from bisect import bisect_left
+    for index in range(bisect_left(points, target_date, key=_point_date), len(points)):
+        point = points[index]
         trade_date = _point_date(point)
         if trade_date < target_date:
             continue
@@ -5182,45 +5226,9 @@ def get_top_composite_dashboard(
             "data_rule": "Verified stored data only; missing values remain N/A.",
         }
 
-    by_exchange = {}
-    for row in base_rows:
-        ex = row.get("exchange") or ""
-        symbol = row.get("symbol")
-        if symbol:
-            by_exchange.setdefault(ex, []).append(symbol)
-
-    # 400 calendar days safely covers the 252-trading-day 1Y window.
-    grouped = {}
-    if not _free_tier_mode():
-        # Larger-volume mode can use the persisted OHLCV cache.
-        cutoff = date.today() - timedelta(days=400)
-        history_chunk_size = 150
-        for ex, symbols in by_exchange.items():
-            for offset in range(0, len(symbols), history_chunk_size):
-                chunk = symbols[offset:offset + history_chunk_size]
-                price_rows = (
-                    db.query(OHLCV.symbol, OHLCV.close)
-                    .filter(
-                        OHLCV.exchange == ex,
-                        OHLCV.symbol.in_(chunk),
-                        OHLCV.date >= cutoff,
-                        OHLCV.close.isnot(None),
-                    )
-                    .order_by(OHLCV.symbol.asc(), OHLCV.date.asc())
-                    .yield_per(5000)
-                )
-                for item in price_rows:
-                    try:
-                        close = float(item.close)
-                    except (TypeError, ValueError):
-                        continue
-                    if not math.isfinite(close) or close <= 0:
-                        continue
-                    grouped.setdefault((ex, item.symbol), []).append(close)
-    else:
-        # Free-tier mode reads bounded candidate history directly from Yahoo
-        # and never writes the multi-million-row OHLCV universe back to DB.
-        grouped.update(_live_close_history_for_candidates(base_rows))
+    # Ranking generation consumes existing dated observations, never hundreds
+    # of provider histories. Selected-stock charts retain their live refresh.
+    grouped, price_dates = _stored_ranking_closes(db, base_rows)
 
     def technical_score(closes):
         if not closes or len(closes) < 20:
@@ -5358,7 +5366,8 @@ def get_top_composite_dashboard(
             )
             if candidate_key in missing_keys:
                 enrichment_remaining.append(candidate_row)
-        _warm_ranking_enrichment_background(enrichment_remaining)
+        # Missing statement history stays unavailable. Ranking traffic must not
+        # launch a second provider crawl alongside the scheduled data workers.
     from app.services.sector_cohort import sector_scores
     sector_stats, sector_cohorts = {}, {}
     for market_group in {_rs_market_group(r["exchange"]) for r in enrichment_rows}:
@@ -5366,10 +5375,10 @@ def get_top_composite_dashboard(
         sector_stats.update({(market_group, name): value for name, value in scores.items()})
         sector_cohorts[market_group] = cohort_id
 
-    # Beta uses adjusted, dated 2Y WEEKLY returns. Warm missing histories off
-    # the request thread; an undated daily tail is never substituted.
+    # Read only existing verified risk values; ranking traffic must not start
+    # another 220-symbol download alongside its own build.
     from app.services.risk_metrics import cached_beta_batch
-    weekly_risk = cached_beta_batch(base_rows)
+    weekly_risk = cached_beta_batch(base_rows, warm=False)
     ranked = []
     for row in base_rows:
         ex, symbol = row.get("exchange"), row.get("symbol")
@@ -5434,6 +5443,8 @@ def get_top_composite_dashboard(
             "provisional_composite_score": provisional,
             "score_status": "Final" if final_composite is not None else "Provisional",
             "close": latest_close,
+            "latest_date": price_dates.get((ex, symbol)),
+            "price_source": "Persisted dated observations" if closes else "Unavailable or stale persisted observations",
             "change_percent": change_percent,
             "score_coverage_percent": round(available_weight, 2),
             "technical_score": technical,
@@ -5511,11 +5522,11 @@ def get_top_composite_dashboard(
         "score_weights": {key: round(value, 2) for key, value in weights.items()},
         "entered_weight_total": round(entered_weight_total, 2),
         "rs_note": "RS uses the same persisted market cohort and fixed 5,000-stock percentile formula as selected-stock detail. Missing cohort observations stay N/A; incomplete cohorts stay provisional.",
-        "data_rule": "The free-tier dashboard uses a compact persisted real-provider enrichment cache for statement history, sector metadata and EPS/PAT/Sales handwritten-rule scores, while price history remains live and is never stored as a huge universe cache. Missing provider values remain N/A. Fundamental excludes ambiguous NPM/CFO point allocations, and sector/RS peer ranks remain Provisional until the full client universe is available.",
+        "data_rule": "Ranking prices and technical inputs use persisted dated observations, not live quotes; latest_date identifies each price date. Statement history uses the existing verified enrichment cache. Missing or stale prices and missing provider values remain N/A. Fundamental excludes ambiguous NPM/CFO point allocations; sector and incomplete RS cohorts remain Provisional.",
         "enrichment_cached_count": len(enrichment) if _free_tier_mode() else len(base_rows),
         "enrichment_target_count": min(200, len(enrichment_rows)),
         "enrichment_remaining_count": len(enrichment_remaining) if _free_tier_mode() else 0,
-        "enrichment_in_progress": bool(enrichment_remaining) if _free_tier_mode() else False,
+        "enrichment_in_progress": False,
         "sync_enrichment_limit": 0,
     })
 

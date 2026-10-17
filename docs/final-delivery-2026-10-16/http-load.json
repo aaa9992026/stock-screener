@@ -1,0 +1,141 @@
+{
+  "scope": "Local actual FastAPI HTTP routes with production-sized isolated persisted SQLite cohorts; repeated recorded provider prices; candidate price histories read from persisted database; exact benchmark and existing risk cache stubbed. Candidate provider fan-out forbidden. No production load test.",
+  "calculations": [
+    {
+      "market": "US",
+      "seconds": 5.338449200000468
+    },
+    {
+      "market": "INDIA",
+      "seconds": 4.506461400000262
+    }
+  ],
+  "results": [
+    {
+      "market": "US",
+      "cold_status": 503,
+      "cold_seconds": 0.06764699999985169,
+      "burst": [
+        {
+          "status": 503,
+          "seconds": 0.004948199999489589
+        },
+        {
+          "status": 503,
+          "seconds": 0.005825799999001902
+        },
+        {
+          "status": 503,
+          "seconds": 0.0040026999995461665
+        },
+        {
+          "status": 503,
+          "seconds": 0.004099600002518855
+        },
+        {
+          "status": 503,
+          "seconds": 0.004622899999958463
+        },
+        {
+          "status": 503,
+          "seconds": 0.004380599999421975
+        },
+        {
+          "status": 503,
+          "seconds": 0.0036799999979848508
+        },
+        {
+          "status": 503,
+          "seconds": 0.004398299999593291
+        },
+        {
+          "status": 503,
+          "seconds": 0.004707899999630172
+        },
+        {
+          "status": 503,
+          "seconds": 0.0047260999999707565
+        }
+      ],
+      "health_while_building_seconds": 0.0033834999994724058,
+      "warm_http_median_seconds": 0.004180900001301779,
+      "warm_http_max_seconds": 0.005499200000485871,
+      "restart_read_seconds": 0.006097599998611258,
+      "rows": 200,
+      "response_bytes": 671657,
+      "stable_immutable_snapshot_ids": true,
+      "snapshot_database_matches": true,
+      "cohort": {
+        "US": {
+          "scored_stocks_available": 5000,
+          "target_size": 5000,
+          "evaluation_date": "2026-10-13",
+          "complete": true
+        }
+      }
+    },
+    {
+      "market": "INDIA",
+      "cold_status": 503,
+      "cold_seconds": 0.010490000000572763,
+      "burst": [
+        {
+          "status": 503,
+          "seconds": 0.004373699997813674
+        },
+        {
+          "status": 503,
+          "seconds": 0.004116799998882925
+        },
+        {
+          "status": 503,
+          "seconds": 0.005945499997324077
+        },
+        {
+          "status": 503,
+          "seconds": 0.020821499998419313
+        },
+        {
+          "status": 503,
+          "seconds": 0.01652739999917685
+        },
+        {
+          "status": 503,
+          "seconds": 0.011170599998877151
+        },
+        {
+          "status": 503,
+          "seconds": 0.013530500000342727
+        },
+        {
+          "status": 503,
+          "seconds": 0.011845100001664832
+        },
+        {
+          "status": 503,
+          "seconds": 0.019228500001190696
+        },
+        {
+          "status": 503,
+          "seconds": 0.02422419999857084
+        }
+      ],
+      "health_while_building_seconds": 0.01621000000159256,
+      "warm_http_median_seconds": 0.004150750000917469,
+      "warm_http_max_seconds": 0.0049336000010953285,
+      "restart_read_seconds": 0.005700899997464148,
+      "rows": 200,
+      "response_bytes": 672264,
+      "stable_immutable_snapshot_ids": true,
+      "snapshot_database_matches": true,
+      "cohort": {
+        "INDIA": {
+          "scored_stocks_available": 4423,
+          "target_size": 5000,
+          "evaluation_date": "2026-10-13",
+          "complete": false
+        }
+      }
+    }
+  ]
+}

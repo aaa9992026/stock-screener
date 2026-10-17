@@ -1,0 +1,39 @@
+{
+  "backend": {
+    "tests": 73,
+    "failures": 0,
+    "errors": 0,
+    "evidence": "backend-tests.txt"
+  },
+  "frontend": {
+    "node_tests": 8,
+    "failures": 0,
+    "lint": "PASS; 8 existing warnings",
+    "build": "PASS; existing large-bundle warning",
+    "production_assets_match_local_build": true
+  },
+  "integration": {
+    "api_replay_checks": 113,
+    "independent_indicator_stocks": 5,
+    "independent_indicator_timeframes": [
+      "daily",
+      "weekly",
+      "monthly"
+    ],
+    "scope": "Recorded real provider input replay, isolated SQLite; not production writes"
+  },
+  "public_smoke_script": {
+    "isolated_protocol_replay": "PASS, 9 HTTP stubs using saved public observations and local persisted ranking responses",
+    "production_rerun": "NOT RUN; reserved for approved deployment"
+  },
+  "production": {
+    "backend_GET_observations": 29,
+    "http200": 24,
+    "http502": 4,
+    "explicit_warmup503": 1,
+    "ranking_reliability": "FAIL",
+    "actual_runtime_root_cause": "BLOCKED"
+  },
+  "deployment_performed": false,
+  "commit_or_push_performed": false
+}

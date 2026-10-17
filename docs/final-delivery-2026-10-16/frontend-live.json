@@ -1,0 +1,37 @@
+{
+  "at": "2026-10-16T19:16:53.171391+00:00",
+  "url": "https://stock-screener-two-pied.vercel.app/",
+  "checks": [
+    {
+      "url": "https://stock-screener-two-pied.vercel.app/",
+      "status": 200,
+      "bytes": 486,
+      "sha256": "a48c4949712d96951c93809d0b0b816d7e8754b74bd6a20a30bdc3bc3cbec758"
+    },
+    {
+      "url": "https://stock-screener-two-pied.vercel.app/assets/index-DZxKaUDb.js",
+      "status": 200,
+      "bytes": 1065501,
+      "sha256": "d46e815fbde9b377ba52d1c631fda41414cb9dfffffd1fff0f5c4ec5dc3db159",
+      "local_build_sha256": "d46e815fbde9b377ba52d1c631fda41414cb9dfffffd1fff0f5c4ec5dc3db159"
+    },
+    {
+      "url": "https://stock-screener-two-pied.vercel.app/assets/index-rHbpII_V.css",
+      "status": 200,
+      "bytes": 48173,
+      "sha256": "b9dcbe51a00c13f5d0117cf6dd47c4102fe2b61589a89b53e5326f6d2b6869d5",
+      "local_build_sha256": "b9dcbe51a00c13f5d0117cf6dd47c4102fe2b61589a89b53e5326f6d2b6869d5"
+    }
+  ],
+  "backend_urls": [
+    "https://stock-screener-production-d90e.up.railway.app"
+  ],
+  "scope": "HTTP frontend HTML/assets and bundled backend URL; no interactive browser session available",
+  "local_checks": {
+    "node_tests": 8,
+    "failures": 0,
+    "lint": "PASS, 8 existing warnings",
+    "vite_build": "PASS, existing >500kB bundle warning",
+    "production_js_css_match_current_local_build": true
+  }
+}
